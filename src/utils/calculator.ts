@@ -30,6 +30,19 @@ export interface CalculationResults {
   delayedSipRequired: number;
   delayedSipTotalInvested: number;
   costOfDelay: number;
+  delayProjections: {
+    months: number;
+    sipRequired: number;
+    costOfDelay: number;
+  }[];
+  
+  yearlyData: {
+    year: number;
+    sipAmount: number;
+    sipBalance: number;
+    stepUpAmount: number;
+    stepUpBalance: number;
+  }[];
 }
 
 /**
@@ -91,6 +104,27 @@ export const calculateSipPlan = (inputs: CalculatorInputs): CalculationResults =
   const suTotalInvested = suStartAmount * P_mult;
   const suTax = Math.max(0, (suMaturityValue - suTotalInvested) * taxRate);
 
+  // Calculate Year-by-Year Schedule
+  const yearlyData = [];
+  let currentSipBalance = 0;
+  let currentStepUpBalance = 0;
+  let currentStepUpAmount = suStartAmount;
+
+  for (let y = 1; y <= years; y++) {
+    for (let m = 1; m <= 12; m++) {
+      currentSipBalance = (currentSipBalance + sipRequired) * (1 + r);
+      currentStepUpBalance = (currentStepUpBalance + currentStepUpAmount) * (1 + r);
+    }
+    yearlyData.push({
+      year: y,
+      sipAmount: sipRequired,
+      sipBalance: currentSipBalance,
+      stepUpAmount: currentStepUpAmount,
+      stepUpBalance: currentStepUpBalance
+    });
+    currentStepUpAmount = currentStepUpAmount * (1 + stepUpPercentage);
+  }
+
   // 4. Cost of Delay (Only affects Standard SIP in Excel macro)
   let delayedSipRequired = 0;
   let delayedSipTotalInvested = 0;
@@ -102,6 +136,22 @@ export const calculateSipPlan = (inputs: CalculatorInputs): CalculationResults =
     delayedSipRequired = targetGoal / (M_delay - taxRate * (M_delay - nDelay));
     delayedSipTotalInvested = delayedSipRequired * nDelay;
     costOfDelay = delayedSipTotalInvested - sipTotalInvested;
+  }
+
+  // Calculate 3, 6, 9, 12 month projections as seen in the Excel docx report
+  const delayProjections = [];
+  for (let m = 3; m <= 12; m += 3) {
+    if (m < n) {
+      const nDelay = n - m;
+      const M_delay = ((Math.pow(1 + r, nDelay) - 1) / r) * (1 + r);
+      const req = targetGoal / (M_delay - taxRate * (M_delay - nDelay));
+      const total = req * nDelay;
+      delayProjections.push({
+        months: m,
+        sipRequired: req,
+        costOfDelay: total - sipTotalInvested
+      });
+    }
   }
 
   return {
@@ -121,6 +171,9 @@ export const calculateSipPlan = (inputs: CalculatorInputs): CalculationResults =
     
     delayedSipRequired,
     delayedSipTotalInvested,
-    costOfDelay
+    costOfDelay,
+    delayProjections,
+    
+    yearlyData
   };
 };

@@ -12,7 +12,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Info, Calculator, TrendingUp, Wallet, ArrowRight, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Info, Calculator, TrendingUp, Wallet, ArrowRight, Clock, FileDown, Table } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, LabelList, Legend } from "recharts";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
@@ -91,6 +93,8 @@ const StatBox = ({ title, value, icon: Icon, subtext = "", highlight = false }: 
 );
 
 export default function Home() {
+  const [name, setName] = useState("Mr. John Doe");
+  const [showSchedule, setShowSchedule] = useState(false);
   const [inputs, setInputs] = useState<CalculatorInputs>({
     goalAmount: 10000000,
     years: 15,
@@ -109,28 +113,33 @@ export default function Home() {
     setInputs((prev) => ({ ...prev, [field]: value }));
   };
 
-  // We default to the mathematical solver for production use as it's exact and fast.
   const results = useMemo(() => calculateSipPlan(inputs), [inputs]);
 
   return (
-    <main className="min-h-screen py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-10 bg-background text-foreground">
-      
-      {/* Header */}
-      <div className="border-b pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <main className="min-h-screen py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto bg-background text-foreground">
+      {/* Header Area */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            Goal SIP Calculator
+            Goal SIP Planner
           </h1>
-          <p className="text-muted-foreground mt-1 text-sm sm:text-base">
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base no-print">
             Compare Standard and Step-Up SIP requirements side-by-side.
           </p>
         </div>
+        <div className="no-print">
+          <Button onClick={() => window.print()} variant="outline" className="gap-2">
+            <FileDown className="w-4 h-4" />
+            Download PDF Report
+          </Button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
-        
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start mb-10">
+
         {/* Left Column: Inputs */}
         <div className="xl:col-span-4 space-y-6">
+
           <Card className="shadow-none border rounded-xl overflow-hidden bg-card">
             <CardHeader className="bg-muted/30 border-b pb-4">
               <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -139,34 +148,44 @@ export default function Home() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-5 space-y-5">
-              
+
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Name</Label>
+                <Input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="font-medium h-10 print-input"
+                />
+              </div>
+
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Target Goal Amount (₹)</Label>
-                <Input 
-                  type="number" 
-                  value={inputs.goalAmount} 
+                <Input
+                  type="number"
+                  value={inputs.goalAmount}
                   onChange={(e) => handleInputChange('goalAmount', Number(e.target.value))}
-                  className="font-medium h-10"
+                  className="font-medium h-10 print-input"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Tenure (Years)</Label>
-                  <Input 
-                    type="number" 
-                    value={inputs.years} 
+                  <Input
+                    type="number"
+                    value={inputs.years}
                     onChange={(e) => handleInputChange('years', Number(e.target.value))}
-                    className="h-10"
+                    className="h-10 print-input"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Expected Return (%)</Label>
-                  <Input 
-                    type="number" 
-                    value={inputs.expectedReturnRate * 100} 
+                  <Input
+                    type="number"
+                    value={inputs.expectedReturnRate * 100}
                     onChange={(e) => handleInputChange('expectedReturnRate', Number(e.target.value) / 100)}
-                    className="h-10"
+                    className="h-10 print-input"
                   />
                 </div>
               </div>
@@ -174,20 +193,20 @@ export default function Home() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Tax Rate (%)</Label>
-                  <Input 
-                    type="number" 
-                    value={inputs.taxRate * 100} 
+                  <Input
+                    type="number"
+                    value={inputs.taxRate * 100}
                     onChange={(e) => handleInputChange('taxRate', Number(e.target.value) / 100)}
-                    className="h-10"
+                    className="h-10 print-input"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Inflation Rate (%)</Label>
-                  <Input 
-                    type="number" 
-                    value={inputs.inflationRate * 100} 
+                  <Input
+                    type="number"
+                    value={inputs.inflationRate * 100}
                     onChange={(e) => handleInputChange('inflationRate', Number(e.target.value) / 100)}
-                    className="h-10"
+                    className="h-10 print-input"
                   />
                 </div>
               </div>
@@ -195,34 +214,34 @@ export default function Home() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Step-Up Rate (%)</Label>
-                  <Input 
-                    type="number" 
-                    value={inputs.stepUpPercentage * 100} 
+                  <Input
+                    type="number"
+                    value={inputs.stepUpPercentage * 100}
                     onChange={(e) => handleInputChange('stepUpPercentage', Number(e.target.value) / 100)}
-                    className="h-10"
+                    className="h-10 print-input"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Delay (Months)</Label>
-                  <Input 
-                    type="number" 
+                  <Input
+                    type="number"
                     min="0"
-                    value={inputs.delayMonths} 
+                    value={inputs.delayMonths}
                     onChange={(e) => handleInputChange('delayMonths', Number(e.target.value))}
-                    className="h-10"
+                    className="h-10 print-input"
                   />
                 </div>
               </div>
 
-              <div className="pt-4 border-t">
+              <div className="pt-4 border-t no-print">
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-medium cursor-pointer" htmlFor="inflation-toggle">
                     Adjust target for inflation
                   </Label>
-                  <Switch 
+                  <Switch
                     id="inflation-toggle"
-                    checked={inputs.useInflationAdjusted} 
-                    onCheckedChange={(checked) => handleInputChange('useInflationAdjusted', checked)} 
+                    checked={inputs.useInflationAdjusted}
+                    onCheckedChange={(checked) => handleInputChange('useInflationAdjusted', checked)}
                   />
                 </div>
               </div>
@@ -233,7 +252,7 @@ export default function Home() {
 
         {/* Right Column: Results */}
         <div className="xl:col-span-8 space-y-6">
-          
+
           {/* Target Goal Summary */}
           <Card className="shadow-none border rounded-xl overflow-hidden bg-card">
             <CardContent className="p-6">
@@ -242,7 +261,7 @@ export default function Home() {
                   <div className="text-muted-foreground font-medium text-sm flex items-center gap-2">
                     {inputs.useInflationAdjusted ? "Inflation Adjusted Target" : "Target Goal"}
                   </div>
-                  <div 
+                  <div
                     className="text-4xl font-bold tracking-tight truncate"
                     title={formatIndianCurrency(results.targetGoal)}
                   >
@@ -257,104 +276,103 @@ export default function Home() {
             {/* Standard SIP Panel */}
             <div className="space-y-4">
               <h2 className="text-lg font-semibold border-b pb-2 flex items-center gap-2">
-                Standard SIP Plan
+                SIP Based Investment
               </h2>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2">
-                  <StatBox 
-                    title="Monthly SIP Required" 
-                    value={formatIndianCurrency(results.sipRequired)} 
-                    icon={Wallet} 
+                  <StatBox
+                    title="Monthly SIP Required"
+                    value={formatIndianCurrency(results.sipRequired)}
+                    icon={Wallet}
                     highlight={true}
                   />
                 </div>
-                <StatBox 
-                  title="Total Invested" 
-                  value={formatIndianCurrency(results.sipTotalInvested)} 
-                  icon={TrendingUp} 
+                <StatBox
+                  title="Total Invested"
+                  value={formatIndianCurrency(results.sipTotalInvested)}
+                  icon={TrendingUp}
                 />
-                <StatBox 
-                  title="Capital Gains Tax" 
-                  value={formatIndianCurrency(results.sipTax)} 
-                  icon={Info} 
+                <StatBox
+                  title="Capital Gains Tax"
+                  value={formatIndianCurrency(results.sipTax)}
+                  icon={Info}
                 />
               </div>
 
-              {/* Cost of Delay - Always present to maintain layout stability */}
-              <Card className="shadow-none border rounded-xl overflow-hidden bg-card mt-4">
-                <CardHeader className="pb-3 border-b bg-muted/20">
-                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                    <Clock className="w-4 h-4" />
-                    Cost of Delay Assessment
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 grid grid-cols-2 gap-4">
-                  <div className="overflow-hidden">
-                    <div className="text-xs font-medium text-muted-foreground mb-1">Delayed Monthly SIP</div>
-                    <div className="text-lg font-semibold truncate">
-                      {inputs.delayMonths > 0 ? formatIndianCurrency(results.delayedSipRequired) : "₹ 0"}
-                    </div>
-                  </div>
-                  <div className="overflow-hidden">
-                    <div className="text-xs font-medium text-muted-foreground mb-1">Lost Compounding</div>
-                    <div className={`text-lg font-semibold truncate ${inputs.delayMonths > 0 ? "text-destructive" : ""}`}>
-                      {inputs.delayMonths > 0 ? formatIndianCurrency(results.costOfDelay) : "₹ 0"}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              {/* Removed small Cost of Delay box */}
             </div>
 
             {/* Step-Up SIP Panel */}
             <div className="space-y-4">
               <h2 className="text-lg font-semibold border-b pb-2 flex items-center gap-2">
-                Step-Up SIP Plan
+                Step-Up SIP Based Investment
               </h2>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2">
-                  <StatBox 
-                    title="Starting SIP Amount" 
-                    value={formatIndianCurrency(results.suStartAmount)} 
-                    icon={Wallet} 
+                  <StatBox
+                    title="Starting SIP Amount"
+                    value={formatIndianCurrency(results.suStartAmount)}
+                    icon={Wallet}
                     highlight={true}
                     subtext={`Increases by ${inputs.stepUpPercentage * 100}% annually`}
                   />
                 </div>
-                <StatBox 
-                  title="Total Invested" 
-                  value={formatIndianCurrency(results.suTotalInvested)} 
-                  icon={TrendingUp} 
+                <StatBox
+                  title="Total Invested"
+                  value={formatIndianCurrency(results.suTotalInvested)}
+                  icon={TrendingUp}
                 />
-                <StatBox 
-                  title="Capital Gains Tax" 
-                  value={formatIndianCurrency(results.suTax)} 
-                  icon={Info} 
+                <StatBox
+                  title="Capital Gains Tax"
+                  value={formatIndianCurrency(results.suTax)}
+                  icon={Info}
                 />
               </div>
 
-              <Card className="shadow-none border rounded-xl overflow-hidden bg-card mt-4">
-                <CardHeader className="pb-3 border-b bg-muted/20">
-                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                    <ArrowRight className="w-4 h-4" />
-                    End of Tenure Outlook
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 grid grid-cols-1 gap-4">
-                  <div className="overflow-hidden">
-                    <div className="text-xs font-medium text-muted-foreground mb-1">Final Year Monthly SIP Amount</div>
-                    <div className="text-lg font-semibold truncate">
-                      {formatIndianCurrency(results.suEndAmount)}
-                    </div>
+              <div className="mt-4 pt-4 border-t">
+                <h3 className="text-sm font-semibold flex items-center gap-2 mb-3">
+                  <ArrowRight className="w-4 h-4" /> End of Tenure Outlook
+                </h3>
+                <div className="overflow-hidden">
+                  <div className="text-xs font-medium text-muted-foreground mb-1">Final Year Monthly SIP Amount</div>
+                  <div className="text-base font-semibold truncate">
+                    {formatIndianCurrency(results.suEndAmount)}
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
+            </div>
+          </div>
 
+          {/* Cost of Delay Projections (As in the official template) */}
+          <div className="mt-8 pt-6 border-t">
+            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+              <Clock className="w-5 h-5 text-primary" /> Cost of Delay
+            </h2>
+            <div className="overflow-x-auto rounded-lg border">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-muted text-muted-foreground">
+                  <tr>
+                    <th className="px-4 py-3 font-semibold border-b text-center">Delay</th>
+                    <th className="px-4 py-3 font-semibold border-b border-l text-right">SIP Amount Required</th>
+                    <th className="px-4 py-3 font-semibold border-b border-l text-right">Total Addt. Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {results.delayProjections.map((proj) => (
+                    <tr key={proj.months} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
+                      <td className="px-4 py-3 text-center font-medium">{proj.months} Months</td>
+                      <td className="px-4 py-3 border-l text-right font-medium">{formatIndianCurrency(proj.sipRequired)}</td>
+                      <td className="px-4 py-3 border-l text-right font-medium text-destructive">{formatIndianCurrency(proj.costOfDelay)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
 
             {/* Comparison Chart */}
-            <div className="md:col-span-2">
+            <div className="md:col-span-2 break-inside-avoid print:break-inside-avoid">
               <Card className="shadow-none border rounded-xl overflow-hidden bg-card">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg font-semibold flex items-center gap-2">
@@ -407,10 +425,10 @@ export default function Home() {
                       />
                       <Legend verticalAlign="bottom" height={36} iconType="square" wrapperStyle={{ paddingTop: "20px" }} />
                       <Bar dataKey="Standard" name="SIP" fill="var(--color-Standard)" radius={[2, 2, 0, 0]}>
-                         <LabelList dataKey="Standard" content={<CustomBarLabelSIP />} />
+                        <LabelList dataKey="Standard" content={<CustomBarLabelSIP />} />
                       </Bar>
                       <Bar dataKey="StepUp" name="StepUP SIP" fill="var(--color-StepUp)" radius={[2, 2, 0, 0]}>
-                         <LabelList dataKey="StepUp" content={<CustomBarLabelStepUp />} />
+                        <LabelList dataKey="StepUp" content={<CustomBarLabelStepUp />} />
                       </Bar>
                     </BarChart>
                   </ChartContainer>
@@ -422,6 +440,92 @@ export default function Home() {
 
         </div>
       </div>
+
+      {/* Yearly Schedule Section */}
+      <div className="border-t pt-8">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold">Investment Performance - Value by Year</h2>
+          <Button
+            variant="outline"
+            className="no-print gap-2"
+            onClick={() => setShowSchedule(!showSchedule)}
+          >
+            <Table className="w-4 h-4" />
+            {showSchedule ? "Hide Yearly Schedule" : "Show Yearly Schedule"}
+          </Button>
+        </div>
+
+        <div className={`${showSchedule ? 'block' : 'hidden'} print-only`}>
+          <Tabs defaultValue="standard" className="w-full">
+            <div className="flex justify-start mb-4 no-print">
+              <TabsList>
+                <TabsTrigger value="standard">Standard SIP Schedule</TabsTrigger>
+                <TabsTrigger value="stepup">Step-Up SIP Schedule</TabsTrigger>
+              </TabsList>
+            </div>
+            
+            <TabsContent value="standard" className="mt-0 print:block">
+              <div className="print-only hidden mb-2 text-lg font-semibold">Standard SIP Schedule</div>
+              <div className="overflow-x-auto rounded-lg border">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-muted text-muted-foreground">
+                    <tr>
+                      <th className="px-4 py-3 font-semibold border-b">Year</th>
+                      <th className="px-4 py-3 font-semibold border-b border-l">Monthly SIP</th>
+                      <th className="px-4 py-3 font-semibold border-b">Year-End Value</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {results.yearlyData.map((data) => (
+                      <tr key={data.year} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
+                        <td className="px-4 py-3 text-center w-24">{data.year}</td>
+                        <td className="px-4 py-3 border-l text-right font-medium">{formatIndianCurrency(data.sipAmount)}</td>
+                        <td className="px-4 py-3 text-right">{formatIndianCurrency(data.sipBalance)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="stepup" className="mt-0 print:block print:mt-8">
+              <div className="print-only hidden mb-2 text-lg font-semibold">Step-Up SIP Schedule</div>
+              <div className="overflow-x-auto rounded-lg border">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-muted text-muted-foreground">
+                    <tr>
+                      <th className="px-4 py-3 font-semibold border-b">Year</th>
+                      <th className="px-4 py-3 font-semibold border-b border-l">Monthly SIP</th>
+                      <th className="px-4 py-3 font-semibold border-b">Year-End Value</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {results.yearlyData.map((data) => (
+                      <tr key={data.year} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
+                        <td className="px-4 py-3 text-center w-24">{data.year}</td>
+                        <td className="px-4 py-3 border-l text-right font-medium">{formatIndianCurrency(data.stepUpAmount)}</td>
+                        <td className="px-4 py-3 text-right">{formatIndianCurrency(data.stepUpBalance)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
+
+      {/* Footer (Visible primarily for reports) */}
+      <div className="mt-16 pt-8 border-t text-center space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Thank you for reviewing the customized Goal SIP Planner. We appreciate your trust in Nivra Fintech and remain committed to providing high-quality, goal-oriented financial solutions. Please contact us should you require any further assistance.
+        </p>
+        <div>
+          <p className="font-bold">Nivra Fintech Team!</p>
+          <p className="text-sm text-muted-foreground italic">The Financial Engineers</p>
+        </div>
+      </div>
+
     </main>
   );
 }

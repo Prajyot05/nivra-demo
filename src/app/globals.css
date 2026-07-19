@@ -83,3 +83,35 @@
     @apply bg-background text-foreground;
   }
 }
+
+@media print {
+  @page {
+    margin: 0; /* This removes headers and footers (localhost, date, etc) */
+  }
+  
+  body {
+    @apply bg-white text-black;
+    padding: 2cm !important; /* Re-add padding inside the page so content isn't cut off */
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  .print-page-break {
+    page-break-before: always;
+  }
+  
+  /* Reset Card Styles for Printing */
+  .shadow-none, .border, .rounded-xl, .bg-card {
+    box-shadow: none !important;
+    border: 1px solid #e5e7eb !important;
+    background: transparent !important;
+  }
+  
+  main {
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+}
