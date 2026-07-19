@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, ElementType } from "react";
 import { calculateSipPlan, CalculatorInputs } from "@/utils/calculator";
 import { formatIndianCurrency } from "@/lib/utils";
 import {
@@ -13,6 +13,82 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Info, Calculator, TrendingUp, Wallet, ArrowRight, Clock } from "lucide-react";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, LabelList, Legend } from "recharts";
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+
+const chartConfig = {
+  Standard: {
+    label: "SIP",
+    color: "#a8d8d8",
+  },
+  StepUp: {
+    label: "StepUP SIP",
+    color: "#c3544e",
+  },
+} satisfies ChartConfig;
+
+const CustomBarLabelSIP = (props: { x?: number | string; y?: number | string; width?: number | string; height?: number | string; value?: React.ReactNode }) => {
+  const x = Number(props.x || 0);
+  const y = Number(props.y || 0);
+  const width = Number(props.width || 0);
+  const height = Number(props.height || 0);
+  const value = props.value;
+  const isSmall = height < 80;
+  const textX = x + width / 2;
+  const textY = isSmall ? y - 5 : y + height / 2;
+  return (
+    <text
+      x={textX}
+      y={textY}
+      fill={isSmall ? '#555' : '#333'}
+      fontSize={13}
+      fontWeight={600}
+      textAnchor={isSmall ? "start" : "middle"}
+      dominantBaseline="middle"
+      transform={`rotate(-90, ${textX}, ${textY})`}
+    >
+      {value ? `₹ ${Number(value).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : ''}
+    </text>
+  );
+};
+
+const CustomBarLabelStepUp = (props: { x?: number | string; y?: number | string; width?: number | string; height?: number | string; value?: React.ReactNode }) => {
+  const x = Number(props.x || 0);
+  const y = Number(props.y || 0);
+  const width = Number(props.width || 0);
+  const height = Number(props.height || 0);
+  const value = props.value;
+  const isSmall = height < 80;
+  const textX = x + width / 2;
+  const textY = isSmall ? y - 5 : y + height / 2;
+  return (
+    <text
+      x={textX}
+      y={textY}
+      fill={isSmall ? '#555' : '#fff'}
+      fontSize={13}
+      fontWeight={600}
+      textAnchor={isSmall ? "start" : "middle"}
+      dominantBaseline="middle"
+      transform={`rotate(-90, ${textX}, ${textY})`}
+    >
+      {value ? `₹ ${Number(value).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : ''}
+    </text>
+  );
+};
+
+const StatBox = ({ title, value, icon: Icon, subtext = "", highlight = false }: { title: string; value: string | number; icon?: ElementType; subtext?: string; highlight?: boolean }) => (
+  <div className={`p-4 rounded-lg border flex flex-col justify-center h-full ${highlight ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-foreground'}`}>
+    <div className="flex items-center gap-2 mb-2 opacity-80">
+      {Icon && <Icon className="w-4 h-4 shrink-0" />}
+      <span className="text-xs sm:text-sm font-medium tracking-wide">{title}</span>
+    </div>
+    <div className="text-lg sm:text-xl md:text-2xl font-semibold tracking-tight truncate" title={String(value)}>
+      {value}
+    </div>
+    {subtext && <div className="mt-1 text-xs font-medium opacity-70 truncate">{subtext}</div>}
+  </div>
+);
 
 export default function Home() {
   const [inputs, setInputs] = useState<CalculatorInputs>({
@@ -35,19 +111,6 @@ export default function Home() {
 
   // We default to the mathematical solver for production use as it's exact and fast.
   const results = useMemo(() => calculateSipPlan(inputs), [inputs]);
-
-  const StatBox = ({ title, value, icon: Icon, subtext = "", highlight = false }: any) => (
-    <div className={`p-4 rounded-lg border flex flex-col justify-center h-full ${highlight ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-foreground'}`}>
-      <div className="flex items-center gap-2 mb-2 opacity-80">
-        {Icon && <Icon className="w-4 h-4 shrink-0" />}
-        <span className="text-xs sm:text-sm font-medium tracking-wide">{title}</span>
-      </div>
-      <div className="text-lg sm:text-xl md:text-2xl font-semibold tracking-tight truncate" title={value}>
-        {value}
-      </div>
-      {subtext && <div className="mt-1 text-xs font-medium opacity-70 truncate">{subtext}</div>}
-    </div>
-  );
 
   return (
     <main className="min-h-screen py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-10 bg-background text-foreground">
@@ -289,6 +352,72 @@ export default function Home() {
               </Card>
 
             </div>
+
+            {/* Comparison Chart */}
+            <div className="md:col-span-2">
+              <Card className="shadow-none border rounded-xl overflow-hidden bg-card">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5" />
+                    Standard vs Step-Up Comparison
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ChartContainer config={chartConfig} className="min-h-[400px] w-full">
+                    <BarChart
+                      accessibilityLayer
+                      data={[
+                        {
+                          name: "Amount Invested",
+                          Standard: results.sipTotalInvested,
+                          StepUp: results.suTotalInvested,
+                        },
+                        {
+                          name: "Cap Gains Tax",
+                          Standard: results.sipTax,
+                          StepUp: results.suTax,
+                        },
+                        {
+                          name: "Final Corpus Value",
+                          Standard: results.sipMaturityValue,
+                          StepUp: results.suMaturityValue,
+                        },
+                      ]}
+                      margin={{ top: 30, right: 20, left: 10, bottom: 5 }}
+                    >
+                      <CartesianGrid vertical={false} horizontal={true} strokeDasharray="3 3" />
+                      <XAxis
+                        dataKey="name"
+                        tickLine={false}
+                        tickMargin={15}
+                        axisLine={true}
+                        tick={{ fontSize: 12, fontWeight: 500 }}
+                      />
+                      <YAxis
+                        width={90}
+                        axisLine={false}
+                        tickLine={false}
+                        tickMargin={10}
+                        tick={{ fontSize: 12, fill: "#666" }}
+                        tickFormatter={(value) => `₹ ${value.toLocaleString('en-IN')}`}
+                      />
+                      <ChartTooltip
+                        cursor={false}
+                        content={<ChartTooltipContent indicator="dashed" />}
+                      />
+                      <Legend verticalAlign="bottom" height={36} iconType="square" wrapperStyle={{ paddingTop: "20px" }} />
+                      <Bar dataKey="Standard" name="SIP" fill="var(--color-Standard)" radius={[2, 2, 0, 0]}>
+                         <LabelList dataKey="Standard" content={<CustomBarLabelSIP />} />
+                      </Bar>
+                      <Bar dataKey="StepUp" name="StepUP SIP" fill="var(--color-StepUp)" radius={[2, 2, 0, 0]}>
+                         <LabelList dataKey="StepUp" content={<CustomBarLabelStepUp />} />
+                      </Bar>
+                    </BarChart>
+                  </ChartContainer>
+                </CardContent>
+              </Card>
+            </div>
+
           </div>
 
         </div>
