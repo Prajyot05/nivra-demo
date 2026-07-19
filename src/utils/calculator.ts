@@ -30,9 +30,6 @@ export interface CalculationResults {
   delayedSipRequired: number;
   delayedSipTotalInvested: number;
   costOfDelay: number;
-  
-  // Method used for Step-Up calculation
-  stepUpMethodUsed: string;
 }
 
 /**
@@ -42,7 +39,7 @@ export const calculateFV = (rate: number, nper: number, pv: number): number => {
   return pv * Math.pow(1 + rate, nper);
 };
 
-export const calculateSipPlan = (inputs: CalculatorInputs, useGoalSeek: boolean = false): CalculationResults => {
+export const calculateSipPlan = (inputs: CalculatorInputs): CalculationResults => {
   const {
     goalAmount,
     years,
@@ -85,36 +82,9 @@ export const calculateSipPlan = (inputs: CalculatorInputs, useGoalSeek: boolean 
   }
 
   let suStartAmount = 0;
-  let stepUpMethodUsed = "Analytical (Mathematical Closed-Form)";
 
-  if (useGoalSeek) {
-    stepUpMethodUsed = "Iterative Solver (Goal Seek Simulation)";
-    // Simulate Excel's Goal Seek with Binary Search
-    let low = 0;
-    let high = targetGoal;
-    let guess = 0;
-    let iterations = 0;
-    const tolerance = 0.001;
-
-    while (high - low > tolerance && iterations < 1000) {
-      guess = (low + high) / 2;
-      const fvSim = guess * M_su;
-      const pSim = guess * P_mult;
-      const taxSim = Math.max(0, (fvSim - pSim) * taxRate);
-      const netSim = fvSim - taxSim;
-
-      if (netSim < targetGoal) {
-        low = guess;
-      } else {
-        high = guess;
-      }
-      iterations++;
-    }
-    suStartAmount = guess;
-  } else {
-    // Mathematical direct solution
-    suStartAmount = targetGoal / (M_su - taxRate * (M_su - P_mult));
-  }
+  // Mathematical direct solution
+  suStartAmount = targetGoal / (M_su - taxRate * (M_su - P_mult));
 
   const suEndAmount = suStartAmount * Math.pow(1 + stepUpPercentage, years - 1);
   const suMaturityValue = suStartAmount * M_su;
@@ -151,8 +121,6 @@ export const calculateSipPlan = (inputs: CalculatorInputs, useGoalSeek: boolean 
     
     delayedSipRequired,
     delayedSipTotalInvested,
-    costOfDelay,
-    
-    stepUpMethodUsed
+    costOfDelay
   };
 };
