@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef, ElementType } from "react";
+import { useState, useMemo, useRef, ElementType, useDeferredValue } from "react";
 import { useReactToPrint } from "react-to-print";
 import { calculateSipPlan, CalculatorInputs } from "@/utils/calculator";
 import { formatIndianCurrency } from "@/lib/utils";
@@ -115,7 +115,8 @@ export default function Home() {
     setInputs((prev) => ({ ...prev, [field]: value }));
   };
 
-  const results = useMemo(() => calculateSipPlan(inputs), [inputs]);
+  const deferredInputs = useDeferredValue(inputs);
+  const results = useMemo(() => calculateSipPlan(deferredInputs), [deferredInputs]);
 
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -416,10 +417,10 @@ export default function Home() {
                         content={<ChartTooltipContent indicator="dashed" />}
                       />
                       <Legend verticalAlign="bottom" height={36} iconType="square" wrapperStyle={{ paddingTop: "20px" }} />
-                      <Bar dataKey="Standard" name="SIP" fill="var(--color-Standard)" radius={[2, 2, 0, 0]}>
+                      <Bar dataKey="Standard" name="SIP" fill="var(--color-Standard)" radius={[2, 2, 0, 0]} isAnimationActive={false}>
                         <LabelList dataKey="Standard" content={<CustomBarLabelSIP />} />
                       </Bar>
-                      <Bar dataKey="StepUp" name="StepUP SIP" fill="var(--color-StepUp)" radius={[2, 2, 0, 0]}>
+                      <Bar dataKey="StepUp" name="StepUP SIP" fill="var(--color-StepUp)" radius={[2, 2, 0, 0]} isAnimationActive={false}>
                         <LabelList dataKey="StepUp" content={<CustomBarLabelStepUp />} />
                       </Bar>
                     </BarChart>
