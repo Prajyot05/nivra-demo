@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo, ElementType } from "react";
+import { useState, useMemo, useRef, ElementType } from "react";
+import { useReactToPrint } from "react-to-print";
 import { calculateSipPlan, CalculatorInputs } from "@/utils/calculator";
 import { formatIndianCurrency } from "@/lib/utils";
 import {
@@ -95,6 +96,7 @@ const StatBox = ({ title, value, icon: Icon, subtext = "", highlight = false }: 
 export default function Home() {
   const [name, setName] = useState("Mr. John Doe");
   const [showSchedule, setShowSchedule] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [inputs, setInputs] = useState<CalculatorInputs>({
     goalAmount: 10000000,
     years: 15,
@@ -106,7 +108,7 @@ export default function Home() {
     delayMonths: 0,
   });
 
-  const handleInputChange = (field: keyof CalculatorInputs, value: number | boolean) => {
+  const handleInputChange = (field: keyof CalculatorInputs, value: string | number | boolean) => {
     if (field === 'delayMonths' && typeof value === 'number') {
       value = Math.max(0, value);
     }
@@ -115,22 +117,41 @@ export default function Home() {
 
   const results = useMemo(() => calculateSipPlan(inputs), [inputs]);
 
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  const executePrint = useReactToPrint({
+    contentRef,
+    documentTitle: 'Goal_SIP_Planner',
+    onAfterPrint: () => {
+      setIsGeneratingPdf(false);
+    }
+  });
+
+  const handleDownloadPdf = async () => {
+    setIsGeneratingPdf(true);
+    // Give React time to re-render the DOM with print-specific elements visible
+    setTimeout(() => {
+      executePrint();
+    }, 100);
+  };
+
   return (
-    <main className="min-h-screen py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto bg-background text-foreground">
-      {/* Header Area */}
+    <main ref={contentRef} id="pdf-content" className="min-h-screen py-12 px-6 sm:px-10 lg:px-16 max-w-7xl mx-auto bg-background text-foreground">
+      
+      {/* Disclaimer (Visible always, specifically for the report) */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
             Goal SIP Planner
           </h1>
-          <p className="text-muted-foreground mt-1 text-sm sm:text-base no-print">
+          <p className={`text-muted-foreground mt-1 text-sm sm:text-base ${isGeneratingPdf ? 'hidden' : 'block'}`}>
             Compare Standard and Step-Up SIP requirements side-by-side.
           </p>
         </div>
-        <div className="no-print">
-          <Button onClick={() => window.print()} variant="outline" className="gap-2">
+        <div className={isGeneratingPdf ? 'hidden' : 'block'}>
+          <Button onClick={handleDownloadPdf} variant="outline" className="gap-2" disabled={isGeneratingPdf}>
             <FileDown className="w-4 h-4" />
-            Download PDF Report
+            {isGeneratingPdf ? 'Generating...' : 'Download PDF Report'}
           </Button>
         </div>
       </div>
@@ -299,8 +320,6 @@ export default function Home() {
                   icon={Info}
                 />
               </div>
-
-              {/* Removed small Cost of Delay box */}
             </div>
 
             {/* Step-Up SIP Panel */}
@@ -342,33 +361,6 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-
-          {/* Cost of Delay Projections (As in the official template) */}
-          <div className="mt-8 pt-6 border-t">
-            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-              <Clock className="w-5 h-5 text-primary" /> Cost of Delay
-            </h2>
-            <div className="overflow-x-auto rounded-lg border">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-muted text-muted-foreground">
-                  <tr>
-                    <th className="px-4 py-3 font-semibold border-b text-center">Delay</th>
-                    <th className="px-4 py-3 font-semibold border-b border-l text-right">SIP Amount Required</th>
-                    <th className="px-4 py-3 font-semibold border-b border-l text-right">Total Addt. Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {results.delayProjections.map((proj) => (
-                    <tr key={proj.months} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
-                      <td className="px-4 py-3 text-center font-medium">{proj.months} Months</td>
-                      <td className="px-4 py-3 border-l text-right font-medium">{formatIndianCurrency(proj.sipRequired)}</td>
-                      <td className="px-4 py-3 border-l text-right font-medium text-destructive">{formatIndianCurrency(proj.costOfDelay)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             </div>
 
             {/* Comparison Chart */}
@@ -435,19 +427,18 @@ export default function Home() {
                 </CardContent>
               </Card>
             </div>
-
           </div>
 
         </div>
       </div>
 
       {/* Yearly Schedule Section */}
-      <div className="border-t pt-8">
-        <div className="flex items-center justify-between mb-6">
+      <div className="mt-16 border-t pt-10 print:mt-16 print:pt-10 break-inside-avoid print:break-inside-avoid">
+        <div className="flex items-center justify-between mb-8">
           <h2 className="text-xl font-bold">Investment Performance - Value by Year</h2>
           <Button
             variant="outline"
-            className="no-print gap-2"
+            className={`gap-2 ${isGeneratingPdf ? 'hidden' : 'flex'}`}
             onClick={() => setShowSchedule(!showSchedule)}
           >
             <Table className="w-4 h-4" />
@@ -455,68 +446,126 @@ export default function Home() {
           </Button>
         </div>
 
-        <div className={`${showSchedule ? 'block' : 'hidden'} print-only`}>
-          <Tabs defaultValue="standard" className="w-full">
-            <div className="flex justify-start mb-4 no-print">
-              <TabsList>
-                <TabsTrigger value="standard">Standard SIP Schedule</TabsTrigger>
-                <TabsTrigger value="stepup">Step-Up SIP Schedule</TabsTrigger>
-              </TabsList>
+        <div className={`${showSchedule || isGeneratingPdf ? 'block' : 'hidden'} print:block`}>
+          
+          {/* Web View: Tabs */}
+          <div className={isGeneratingPdf ? 'hidden' : 'block'}>
+            <Tabs defaultValue="standard" className="w-full flex flex-col">
+              <div className="flex justify-center w-full mb-8">
+                <TabsList className="grid w-full max-w-md grid-cols-2">
+                  <TabsTrigger value="standard">Standard SIP Schedule</TabsTrigger>
+                  <TabsTrigger value="stepup">Step-Up SIP Schedule</TabsTrigger>
+                </TabsList>
+              </div>
+              
+              <TabsContent value="standard" className="mt-0">
+                <div className="overflow-x-auto rounded-lg border">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-muted text-muted-foreground">
+                      <tr>
+                        <th className="px-4 py-3 font-semibold border-b">Year</th>
+                        <th className="px-4 py-3 font-semibold border-b border-l">Monthly SIP</th>
+                        <th className="px-4 py-3 font-semibold border-b">Year-End Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {results.yearlyData.map((data) => (
+                        <tr key={data.year} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
+                          <td className="px-4 py-3 text-center w-24">{data.year}</td>
+                          <td className="px-4 py-3 border-l text-right font-medium">{formatIndianCurrency(data.sipAmount)}</td>
+                          <td className="px-4 py-3 text-right">{formatIndianCurrency(data.sipBalance)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="stepup" className="mt-0">
+                <div className="overflow-x-auto rounded-lg border">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-muted text-muted-foreground">
+                      <tr>
+                        <th className="px-4 py-3 font-semibold border-b">Year</th>
+                        <th className="px-4 py-3 font-semibold border-b border-l">Monthly SIP</th>
+                        <th className="px-4 py-3 font-semibold border-b">Year-End Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {results.yearlyData.map((data) => (
+                        <tr key={data.year} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
+                          <td className="px-4 py-3 text-center w-24">{data.year}</td>
+                          <td className="px-4 py-3 border-l text-right font-medium">{formatIndianCurrency(data.stepUpAmount)}</td>
+                          <td className="px-4 py-3 text-right">{formatIndianCurrency(data.stepUpBalance)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+
+          {/* Print View: Unified Table */}
+          <div className={isGeneratingPdf ? 'block w-full' : 'hidden print:block print:w-full'}>
+            <div className="overflow-x-auto rounded-lg border border-gray-300">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-gray-100 text-gray-700">
+                  <tr>
+                    <th className="px-4 py-3 font-bold border-b border-gray-300">Year</th>
+                    <th className="px-4 py-3 font-bold border-b border-gray-300 border-l">Standard Monthly SIP</th>
+                    <th className="px-4 py-3 font-bold border-b border-gray-300">Standard Year-End Value</th>
+                    <th className="px-4 py-3 font-bold border-b border-gray-300 border-l">Step-Up Monthly SIP</th>
+                    <th className="px-4 py-3 font-bold border-b border-gray-300">Step-Up Year-End Value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {results.yearlyData.map((data) => (
+                    <tr key={data.year} className="border-b border-gray-200 last:border-0">
+                      <td className="px-4 py-3 text-center text-gray-900">{data.year}</td>
+                      <td className="px-4 py-3 border-l border-gray-200 text-right font-medium text-gray-900">{formatIndianCurrency(data.sipAmount)}</td>
+                      <td className="px-4 py-3 text-right text-gray-900">{formatIndianCurrency(data.sipBalance)}</td>
+                      <td className="px-4 py-3 border-l border-gray-200 text-right font-medium text-gray-900">{formatIndianCurrency(data.stepUpAmount)}</td>
+                      <td className="px-4 py-3 text-right text-gray-900">{formatIndianCurrency(data.stepUpBalance)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            
-            <TabsContent value="standard" className="mt-0 print:block">
-              <div className="print-only hidden mb-2 text-lg font-semibold">Standard SIP Schedule</div>
-              <div className="overflow-x-auto rounded-lg border">
-                <table className="w-full text-sm text-left">
-                  <thead className="bg-muted text-muted-foreground">
-                    <tr>
-                      <th className="px-4 py-3 font-semibold border-b">Year</th>
-                      <th className="px-4 py-3 font-semibold border-b border-l">Monthly SIP</th>
-                      <th className="px-4 py-3 font-semibold border-b">Year-End Value</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {results.yearlyData.map((data) => (
-                      <tr key={data.year} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
-                        <td className="px-4 py-3 text-center w-24">{data.year}</td>
-                        <td className="px-4 py-3 border-l text-right font-medium">{formatIndianCurrency(data.sipAmount)}</td>
-                        <td className="px-4 py-3 text-right">{formatIndianCurrency(data.sipBalance)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="stepup" className="mt-0 print:block print:mt-8">
-              <div className="print-only hidden mb-2 text-lg font-semibold">Step-Up SIP Schedule</div>
-              <div className="overflow-x-auto rounded-lg border">
-                <table className="w-full text-sm text-left">
-                  <thead className="bg-muted text-muted-foreground">
-                    <tr>
-                      <th className="px-4 py-3 font-semibold border-b">Year</th>
-                      <th className="px-4 py-3 font-semibold border-b border-l">Monthly SIP</th>
-                      <th className="px-4 py-3 font-semibold border-b">Year-End Value</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {results.yearlyData.map((data) => (
-                      <tr key={data.year} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
-                        <td className="px-4 py-3 text-center w-24">{data.year}</td>
-                        <td className="px-4 py-3 border-l text-right font-medium">{formatIndianCurrency(data.stepUpAmount)}</td>
-                        <td className="px-4 py-3 text-right">{formatIndianCurrency(data.stepUpBalance)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </TabsContent>
-          </Tabs>
+          </div>
+
+        </div>
+      </div>
+
+      {/* Cost of Delay Projections (As in the official template) */}
+      <div className="mt-16 pt-10 border-t print:mt-16 print:pt-10 break-inside-avoid print:break-inside-avoid">
+        <h2 className="text-xl font-bold mb-8 flex items-center gap-2">
+          <Clock className="w-6 h-6 text-primary" /> Cost of Delay
+        </h2>
+        <div className="overflow-x-auto rounded-lg border">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-muted text-muted-foreground">
+              <tr>
+                <th className="px-6 py-4 font-semibold border-b text-center">Delay</th>
+                <th className="px-6 py-4 font-semibold border-b border-l text-right">SIP Amount Required</th>
+                <th className="px-6 py-4 font-semibold border-b border-l text-right">Total Addt. Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {results.delayProjections.map((proj) => (
+                <tr key={proj.months} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
+                  <td className="px-6 py-4 text-center font-medium text-base">{proj.months} Months</td>
+                  <td className="px-6 py-4 border-l text-right font-medium text-base">{formatIndianCurrency(proj.sipRequired)}</td>
+                  <td className="px-6 py-4 border-l text-right font-medium text-base text-destructive">{formatIndianCurrency(proj.costOfDelay)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
       {/* Footer (Visible primarily for reports) */}
-      <div className="mt-16 pt-8 border-t text-center space-y-4">
+      <div className="mt-20 pt-10 border-t text-center space-y-4">
         <p className="text-sm text-muted-foreground">
           Thank you for reviewing the customized Goal SIP Planner. We appreciate your trust in Nivra Fintech and remain committed to providing high-quality, goal-oriented financial solutions. Please contact us should you require any further assistance.
         </p>
