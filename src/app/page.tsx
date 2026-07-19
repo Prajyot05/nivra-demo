@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef, ElementType, useDeferredValue } from "react";
+import { useState, useMemo, useRef, ElementType, useEffect } from "react";
 import { useReactToPrint } from "react-to-print";
 import { calculateSipPlan, CalculatorInputs } from "@/utils/calculator";
 import { formatIndianCurrency } from "@/lib/utils";
@@ -93,6 +93,17 @@ const StatBox = ({ title, value, icon: Icon, subtext = "", highlight = false }: 
   </div>
 );
 
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+  return debouncedValue;
+}
+
 export default function Home() {
   const [name, setName] = useState("Mr. John Doe");
   const [showSchedule, setShowSchedule] = useState(false);
@@ -115,8 +126,9 @@ export default function Home() {
     setInputs((prev) => ({ ...prev, [field]: value }));
   };
 
-  const deferredInputs = useDeferredValue(inputs);
-  const results = useMemo(() => calculateSipPlan(deferredInputs), [deferredInputs]);
+  const debouncedInputs = useDebounce(inputs, 500);
+  const isCalculating = inputs !== debouncedInputs;
+  const results = useMemo(() => calculateSipPlan(debouncedInputs), [debouncedInputs]);
 
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -145,11 +157,11 @@ export default function Home() {
           <h1 className="text-3xl font-bold tracking-tight">
             Goal SIP Planner
           </h1>
-          <p className={`text-muted-foreground mt-1 text-sm sm:text-base ${isGeneratingPdf ? 'hidden' : 'block'}`}>
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base no-print">
             Compare Standard and Step-Up SIP requirements side-by-side.
           </p>
         </div>
-        <div className={isGeneratingPdf ? 'hidden' : 'block'}>
+        <div className="no-print">
           <Button onClick={handleDownloadPdf} variant="outline" className="gap-2" disabled={isGeneratingPdf}>
             <FileDown className="w-4 h-4" />
             {isGeneratingPdf ? 'Generating...' : 'Download PDF Report'}
@@ -273,7 +285,17 @@ export default function Home() {
         </div>
 
         {/* Right Column: Results */}
-        <div className="xl:col-span-8 space-y-6">
+        <div className="xl:col-span-8 space-y-6 relative">
+          
+          {/* Global Calculating Overlay */}
+          {isCalculating && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-[2px] rounded-xl">
+              <div className="flex flex-col items-center gap-3 bg-card p-6 rounded-xl shadow-lg border">
+                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-sm font-semibold text-foreground">Calculating Plan...</p>
+              </div>
+            </div>
+          )}
 
           {/* Target Goal Summary */}
           <Card className="shadow-none border rounded-xl overflow-hidden bg-card">
@@ -439,7 +461,7 @@ export default function Home() {
           <h2 className="text-xl font-bold">Investment Performance - Value by Year</h2>
           <Button
             variant="outline"
-            className={`gap-2 ${isGeneratingPdf ? 'hidden' : 'flex'}`}
+            className="no-print gap-2"
             onClick={() => setShowSchedule(!showSchedule)}
           >
             <Table className="w-4 h-4" />
@@ -447,10 +469,10 @@ export default function Home() {
           </Button>
         </div>
 
-        <div className={`${showSchedule || isGeneratingPdf ? 'block' : 'hidden'} print:block`}>
+        <div className={`${showSchedule ? 'block' : 'hidden'} print:block`}>
           
           {/* Web View: Tabs */}
-          <div className={isGeneratingPdf ? 'hidden' : 'block'}>
+          <div className="no-print">
             <Tabs defaultValue="standard" className="w-full flex flex-col">
               <div className="flex justify-center w-full mb-8">
                 <TabsList className="grid w-full max-w-md grid-cols-2">
@@ -508,7 +530,7 @@ export default function Home() {
           </div>
 
           {/* Print View: Unified Table */}
-          <div className={isGeneratingPdf ? 'block w-full' : 'hidden print:block print:w-full'}>
+          <div className="hidden print:block print:w-full">
             <div className="overflow-x-auto rounded-lg border border-gray-300">
               <table className="w-full text-sm text-left">
                 <thead className="bg-gray-100 text-gray-700">
