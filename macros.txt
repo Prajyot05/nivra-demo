@@ -1,0 +1,1005 @@
+olevba 0.60.2 on Python 3.12.2 - http://decalage.info/python/oletools
+===============================================================================
+FILE: Nivra Goal - Compute SIP_or_StepUP_SIP v3.xlsm
+Type: OpenXML
+WARNING  For now, VBA stomping cannot be detected for files in memory
+-------------------------------------------------------------------------------
+VBA MACRO modGoal.bas 
+in file: xl/vbaProject.bin - OLE stream: 'VBA/modGoal'
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+Sub showGoalPlan()
+'''''''''''' Write a Word Document"
+
+Dim wdApp As Word.Application
+Dim newdoc As Object
+Dim numVal As Variant
+Dim wks As Worksheet
+Dim msgboxtitle As String
+
+msgboxtitle = "Nivra Goal Planner"
+Set wks = ActiveWorkbook.Worksheets("Goal-SIPorSU_SIP")
+
+If wks.Range("C4").Value < 0 Then
+    MsgBox "The current calculation is Invalid.", vbCritical, msgboxtitle
+    Exit Sub
+End If
+
+
+'''''' OPEN WORD TEMPLATE ''''''
+    Dim strWordDocPath As String, strWordDocName As String, strWordDocDir  As String, strBkMark As String
+
+    'Check if Word is already opened
+    On Error Resume Next
+        Set wdApp = GetObject(, "Word.Application")
+        If Err.Number <> 0 Then
+            'If it isn't, open a new instance of it
+            Set wdApp = CreateObject("Word.Application")
+        End If
+    On Error GoTo 0
+ 
+    '''' Look for template in current Excel folder
+    strWordDocName = "Nivra Template.docx"
+    strWordDocDir = Workbooks.Application.ActiveWorkbook.Path
+    ''''OneDrive Path
+    strWordDocDir = GetThisWorkbookLocalPath2
+    strWordDocPath = strWordDocDir & "\" & strWordDocName
+   
+    Select Case FileStatus(strWordDocPath)
+        Case Is = 53 'Invalid filename
+            MsgBox "The Goal Planner Template: " & """" & strWordDocName & """" & " is invalid." & vbNewLine & _
+                    "Please check and try again.", vbExclamation, msgboxtitle
+            Set wdApp = Nothing 'Release object from memory
+            Exit Sub
+        Case Is = 70 'File is open
+            vbRes = MsgBox("The Goal Planner Template: " & """" & strWordDocName & """" & " is currently open." & vbNewLine & vbNewLine & _
+                    "Do you want to clear contents and generate new?", vbCritical + vbQuestion + vbYesNo, msgboxtitle)
+            If vbRes = vbYes Then
+                wdApp.ActiveDocument.Content.Delete
+            Else
+                Set wdApp = Nothing 'Release object from memory
+                Exit Sub
+            End If
+        Case Is = 76 'Invalid path
+            MsgBox "The entered directory path: " & """" & strWordDocDir & """" & " is invalid." & vbNewLine & _
+                    "Please check and try again.", vbExclamation, msgboxtitle
+            Set wdApp = Nothing 'Release object from memory
+            Exit Sub
+    End Select
+ 
+    Application.ScreenUpdating = False
+    
+    Set newdoc = wdApp.Documents.Open(strWordDocPath)
+
+    If wdApp.ActiveDocument.Words.Count > 1 Then
+        vbRes = MsgBox("The Goal Planner Template: " & """" & strWordDocName & """" & " is not empty." & vbNewLine & vbNewLine & _
+                    "Do you want to clear contents and generate new?", vbCritical + vbQuestion + vbYesNo, msgboxtitle)
+        If vbRes = vbYes Then
+            wdApp.ActiveDocument.Content.Delete
+        Else
+            wdApp.ActiveDocument.Close No
+            Set wdApp = Nothing
+            Exit Sub
+        End If
+    End If
+    
+    'Ensure the Word instance the document is in visible
+    wdApp.Visible = True
+    wdApp.Visible = True
+    wdApp.Activate
+
+    wdApp.ActiveDocument.BuiltinDocumentProperties(wdPropertyTitle) = "Goal SIP Planner"
+    wdApp.ActiveDocument.BuiltinDocumentProperties(wdPropertyCategory) = "Goal Planner"
+
+    wdApp.ActiveDocument.PageSetup.Orientation = wdOrientPortrait
+
+   ''''''''''' WRITE HEADER in Document
+        With wdApp.Selection
+            .ParagraphFormat.Alignment = wdAlignParagraphCenter
+            .BoldRun 'Switch Bold on
+
+            .Font.Size = 11
+            .Font.TextColor = RGB(255, 0, 0)
+            .TypeText "**  The information contained in this document is for Educational Purposes ONLY **"
+            .Font.TextColor = RGB(0, 0, 0)
+            .BoldRun 'Switch Bold off
+            .TypeParagraph
+
+            If wks.Range("H4").Text <> "" Then
+                .ParagraphFormat.SpaceAfter = 6
+                .Font.Size = 12
+                .Font.TextColor = RGB(112, 48, 160)
+                .TypeText "Name:  "
+                .BoldRun 'On
+                .TypeText wks.Range("H4").Value
+                .BoldRun 'Off
+                If wks.Range("H5").Value > 0 Then
+                    .TypeText "       Age:   "
+                    .BoldRun 'On
+                    .TypeText wks.Range("H5").Value & " yrs"
+                    .BoldRun 'Off
+                End If
+                .TypeParagraph
+                .Font.TextColor = RGB(0, 0, 0)
+                .Font.Size = 11
+                .ParagraphFormat.SpaceAfter = 3
+            End If
+
+            .TypeText "Goal Amount:  "
+            .BoldRun 'Switch Bold on
+             numVal = convertIndiaFormat(Format(wks.Range("C4").Value, "#.##"))
+            .TypeText "Rs.  " & numVal
+            .BoldRun 'Switch Bold off
+            .TypeText "       Goal Term:   "
+            .BoldRun 'On
+            .TypeText wks.Range("C5").Value & " yrs"
+            .BoldRun 'Off
+            .TypeParagraph
+            .TypeText "       Investment Rate of Return:   "
+            .BoldRun 'On
+            .TypeText Format(wks.Range("C9").Value, "#.00%")
+            .BoldRun 'Off
+            
+            If wks.Range("C10").Value > 0 Then
+                .TypeText "       Capital Gains Tax Rate:   "
+                .BoldRun 'Switch Bold on
+                .TypeText Format(wks.Range("C10").Value, "#.00%")
+                .BoldRun 'off
+            End If
+            .TypeParagraph
+            
+            '.Range.HighlightColorIndex = wdTurquoise
+            If wks.Range("C7") <> "Goal Amount" Then
+                .TypeText "       Inflation Rate:   "
+                .BoldRun 'Switch Bold on
+                .TypeText Format(wks.Range("D6").Value, "#.00%")
+                .BoldRun 'Switch Bold off
+                .TypeText "       Inflation Adjusted Goal Amount:  "
+                .Bookmarks.Add Name:="StartPoint"
+                .BoldRun 'Switch Bold on
+                 numVal = convertIndiaFormat(Round(Format(wks.Range("C6").Value, "#.##"), 0))
+                .TypeText "Rs.  " & numVal
+                .BoldRun 'Switch Bold off
+                .GoTo What:=wdGoToBookmark, Name:="StartPoint"
+                .EndOf Unit:=wdLine, Extend:=wdExtend
+                .Range.HighlightColorIndex = wdTurquoise
+                .EndKey Unit:=wdStory
+                ActiveDocument.Bookmarks("StartPoint").Delete
+                .TypeParagraph
+            End If
+            .Range.HighlightColorIndex = wdNoHighlight
+            
+            .TypeParagraph
+            .ParagraphFormat.SpaceAfter = 0
+            .Font.Size = 10
+            .ParagraphFormat.LineSpacingRule = wdLineSpaceSingle
+        End With
+        
+        
+'''''''''''''''''''''''''''''' Tables SIP + Step-p SIP '''''''''''''''''''''''''''
+        Dim tblNew As Table
+        Dim intRow, intCol As Integer
+        Dim colCnt, noofPeriods, totalYears As Integer
+        Dim tblrows, tblcols, rowage As Integer
+        
+       ''''''''''''''''''''Check if Lumpsum Investment
+        Set MyRange = wdApp.ActiveDocument.Content
+        MyRange.Collapse Direction:=wdCollapseEnd
+        
+        If wks.Range("C4") > 0 Then
+            Set tblNew = newdoc.Tables.Add(MyRange, IIf(wks.Range("C10").Value > 0, 8, 7), 5)
+        Else
+            Set tblNew = newdoc.Tables.Add(MyRange, IIf(wks.Range("C10").Value > 0, 8, 7), 2)
+        End If
+        
+        With tblNew
+            .Borders.InsideLineStyle = wdLineStyleSingle
+            .Borders.OutsideLineStyle = wdLineStyleSingle
+            .Borders.InsideLineWidth = wdLineWidth100pt
+            .Borders.OutsideLineWidth = wdLineWidth100pt
+            .Rows.Height = 13
+            .Rows.Alignment = wdAlignRowCenter
+            .Select
+                wdApp.Selection.Cells.VerticalAlignment = wdCellAlignVerticalCenter
+            wdApp.Selection.EndOf
+            
+            .Columns(1).SetWidth 120, wdAdjustNone
+            .Columns(2).SetWidth 100, wdAdjustNone
+            
+            If wks.Range("C4") > 0 Then
+                .Columns(3).SetWidth 15, wdAdjustNone
+                .Columns(4).SetWidth 130, wdAdjustNone
+                .Columns(5).SetWidth 100, wdAdjustNone
+                
+                .Cell(3, 1).Range.InsertAfter "Monthly SIP Amount:"
+                .Cell(3, 2).Range.InsertAfter "Rs. " & convertIndiaFormat(Round(Format(wks.Range("C13").Value, "#.##"), 0))
+                .Cell(5, 1).Range.InsertAfter "SIP Maturity Amount:"
+                .Cell(5, 2).Range.InsertAfter "Rs. " & convertIndiaFormat(Round(Format(wks.Range("c15").Value, "#.##"), 0))
+                .Cell(6, 1).Range.InsertAfter "Total Money Invested:"
+                .Cell(6, 2).Range.InsertAfter "Rs. " & convertIndiaFormat(Round(Format(wks.Range("C14").Value, "#.##"), 0))
+                .Cell(7, 1).Range.InsertAfter "Investment Gain:"
+                .Cell(7, 2).Range.InsertAfter "Rs. " & convertIndiaFormat(Round(Format(wks.Range("C15").Value - wks.Range("C14").Value, "#.##"), 0))
+                If wks.Range("C10").Value > 0 Then
+                    .Cell(8, 1).Range.InsertAfter "Capital Gain Tax:"
+                    .Cell(8, 2).Range.InsertAfter "Rs. " & convertIndiaFormat(Round(Format(wks.Range("C16").Value, "#.##"), 0))
+                End If
+                .Columns(2).Select
+                    wdApp.Selection.ParagraphFormat.Alignment = wdAlignParagraphRight
+                .Columns(2).Shading.BackgroundPatternColor = RGB(252, 246, 250) ' Light Purple
+                .Columns(1).Select
+                    wdApp.Selection.ParagraphFormat.Alignment = wdAlignParagraphLeft
+                .Columns(1).Shading.BackgroundPatternColor = RGB(252, 246, 250) ' Light BLue
+                wdApp.Selection.EndOf
+                                
+                SIPCol = 4
+            Else
+                SIPCol = 1
+            End If
+            
+            '''SIP Investment
+            If True Then
+                .Cell(2, SIPCol).Range.InsertAfter "SIP Step Up Rate:"
+                .Cell(2, SIPCol + 1).Range.InsertAfter Format(wks.Range("C19").Value, "#.00%")
+                .Cell(3, SIPCol).Range.InsertAfter "Starting Monthly Amount:"
+                .Cell(3, SIPCol + 1).Range.InsertAfter "Rs. " & convertIndiaFormat(Round(Format(wks.Range("C20").Value, "#.0"), 0))
+                .Cell(4, SIPCol).Range.InsertAfter "Ending Monthly Amount:"
+                .Cell(4, SIPCol + 1).Range.InsertAfter "Rs. " & convertIndiaFormat(Round(Format(wks.Range("C21").Value, "#.0"), 0))
+                .Cell(5, SIPCol).Range.InsertAfter "SIP Maturity Amount:"
+                .Cell(5, SIPCol + 1).Range.InsertAfter "Rs. " & convertIndiaFormat(Round(Format(wks.Range("C23").Value, "#.##"), 0))
+                .Cell(6, SIPCol).Range.InsertAfter "Total Money Invested:"
+                .Cell(6, SIPCol + 1).Range.InsertAfter "Rs. " & convertIndiaFormat(Round(Format(wks.Range("C22").Value, "#.##"), 0))
+                .Cell(7, SIPCol).Range.InsertAfter "Investment Gain:"
+                .Cell(7, SIPCol + 1).Range.InsertAfter "Rs. " & convertIndiaFormat(Round(Format(wks.Range("C23").Value - wks.Range("C22").Value, "#.##"), 0))
+                If wks.Range("C15").Value > 0 Then
+                    .Cell(8, SIPCol).Range.InsertAfter "Capital Gain Tax:"
+                    .Cell(8, SIPCol + 1).Range.InsertAfter "Rs. " & convertIndiaFormat(Format(Round(wks.Range("C24").Value, 0), "#.##"))
+                End If
+                .Columns(SIPCol + 1).Select
+                    wdApp.Selection.ParagraphFormat.Alignment = wdAlignParagraphRight
+                .Columns(SIPCol + 1).Shading.BackgroundPatternColor = RGB(235, 249, 255) ' Light BLue
+                .Columns(SIPCol).Select
+                    wdApp.Selection.ParagraphFormat.Alignment = wdAlignParagraphLeft
+                .Columns(SIPCol).Shading.BackgroundPatternColor = RGB(235, 249, 255) ' Light BLue
+                wdApp.Selection.EndOf
+    
+                ' Set Column Colors
+            End If ' If SIP2 exists
+        
+            ''Set Column 3 empty
+            .Columns(3).Select
+                With wdApp.Selection
+                    .Borders(wdBorderTop).LineStyle = wdLineStyleNone
+                    .Borders(wdBorderBottom).LineStyle = wdLineStyleNone
+                    .Borders(wdBorderHorizontal).LineStyle = wdLineStyleNone
+                End With
+                wdApp.Selection.EndOf
+                
+            SIPCol = 3
+            .Cell(1, 1).Select
+                wdApp.Selection.MoveRight Unit:=wdCharacter, Count:=1, Extend:=wdExtend
+                wdApp.Selection.Cells.Merge
+            .Cell(1, 1).Range.InsertAfter "SIP Investment"
+            
+            .Cell(1, SIPCol).Select
+                wdApp.Selection.MoveRight Unit:=wdCharacter, Count:=1, Extend:=wdExtend
+                wdApp.Selection.Cells.Merge
+                
+            .Cell(1, SIPCol).Range.InsertAfter "Step-Up SIP Investment"
+
+            .Rows(1).Select
+                wdApp.Selection.ParagraphFormat.Alignment = wdAlignParagraphCenter
+                wdApp.Selection.BoldRun
+            
+            .Rows(1).Range.Font.Size = 11
+            .Rows(2).Range.Font.TextColor = RGB(192, 0, 0)
+            .Rows(2).Range.Font.Bold = True
+            .Rows(3).Range.Font.TextColor = RGB(0, 0, 255)
+            .Rows(3).Range.Font.Bold = True
+            .Rows(4).Range.Font.TextColor = RGB(0, 0, 255)
+            .Rows(4).Range.Font.Bold = True
+            .Rows(7).Range.Font.TextColor = RGB(78, 167, 46)
+            .Rows(7).Range.Font.Bold = True
+            If wks.Range("C10").Value > 0 Then
+                .Rows(8).Range.Font.TextColor = RGB(255, 0, 0)
+            End If
+
+        End With
+            
+        wdApp.Selection.EndKey Unit:=wdStory
+        Set tblNew = Nothing
+
+        With wdApp.Selection
+            .TypeParagraph
+            .ParagraphFormat.SpaceAfter = 6
+            .BoldRun 'Switch Bold on
+            .Font.TextColor = RGB(0, 0, 0)
+            .BoldRun 'Switch Bold off
+            .Font.Size = 11
+        End With
+    
+'''''''''''''''''''''''''''''''''''''Corpus Value Info'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+    If wks.Range("C4") > 0 Then
+    
+            wdApp.Selection.TypeParagraph
+            Set MyRange = wdApp.ActiveDocument.Content
+            MyRange.Collapse Direction:=wdCollapseEnd
+    
+            With wdApp.Selection
+                .TypeParagraph
+                .ParagraphFormat.SpaceAfter = 6
+                .BoldRun 'Switch Bold on
+                .Font.Size = 13
+                .Font.TextColor = RGB(112, 48, 160)
+                .TypeText "Investment Performance - Value by Year"
+                .Font.TextColor = RGB(0, 0, 0)
+                .BoldRun 'Switch Bold off
+                .Font.Size = 11
+
+'''''''''''''Draw Line''''''''''''''''''''''''
+            'With wdApp.Selection
+                .TypeParagraph
+                .MoveUp
+                .Borders(wdBorderBottom).LineStyle = wdLineStyleSingle
+                .Borders(wdBorderBottom).LineWidth = wdLineWidth300pt
+                .Borders(wdBorderBottom).Color = -671039489 'Purple
+                .MoveDown
+            'End With
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+                .TypeParagraph
+                .Font.TextColor = RGB(112, 48, 160)
+                .BoldRun
+                    .TypeText "SIP Based Investment"
+                .BoldRun
+                .Font.TextColor = RGB(0, 0, 0)
+                .TypeParagraph
+                .ParagraphFormat.SpaceAfter = 0
+                .ParagraphFormat.SpaceBefore = 0
+                .Font.Size = 9
+            End With
+                
+                Set MyRange = wdApp.ActiveDocument.Content
+                MyRange.Collapse Direction:=wdCollapseEnd
+        
+                totalYears = wks.Range("C5").Value
+                '''''''''''''''''''''''''''''''''''''''''''''
+                If totalYears <= 5 Then
+                    colCnt = 1
+                    tblrows = totalYears + 1
+                    tblcols = 2
+                ElseIf totalYears <= 10 Then
+                    colCnt = 2
+                    tblrows = 6
+                    tblcols = 4
+                ElseIf totalYears <= 15 Then
+                    colCnt = 3
+                    tblrows = 6
+                    tblcols = 6
+                Else
+                    colCnt = 3
+                    tblrows = WorksheetFunction.RoundUp(totalYears / 3, 0) + 1
+                    tblcols = 6
+                End If
+                '''''''''''''''''''''''''''''''''''''''''''''
+                Set tblNew = newdoc.Tables.Add(MyRange, tblrows, tblcols)
+                With tblNew
+                    .Borders.InsideLineStyle = wdLineStyleSingle
+                    .Borders.OutsideLineStyle = wdLineStyleSingle
+                    .Borders.InsideLineWidth = wdLineWidth100pt
+                    .Borders.OutsideLineWidth = wdLineWidth100pt
+                    .Rows.Height = 13
+                    
+                    ' Set header row
+                    For intCol = 1 To colCnt
+                        .Columns(intCol * 2 - 1).SetWidth 45, wdAdjustNone
+                        .Columns(intCol * 2).SetWidth 100, wdAdjustNone
+                        
+                        .Cell(1, intCol * 2 - 1).Range.InsertAfter "Year"
+                        .Cell(1, intCol * 2).Range.InsertAfter "Investment Value"
+                        tblNew.Columns(intCol * 2 - 1).Select
+                            wdApp.Selection.ParagraphFormat.Alignment = wdAlignParagraphCenter
+                        tblNew.Columns(intCol * 2).Select
+                            wdApp.Selection.ParagraphFormat.Alignment = wdAlignParagraphRight
+                            wdApp.Selection.ParagraphFormat.RightIndent = 3
+                        wdApp.Selection.EndOf
+                    Next intCol
+                    
+                    'Set table format
+                    tblNew.Rows.Alignment = wdAlignRowCenter
+                    tblNew.Select
+                        wdApp.Selection.Cells.VerticalAlignment = wdCellAlignVerticalCenter
+                    tblNew.Rows(1).Select
+                        wdApp.Selection.BoldRun 'on
+                        wdApp.Selection.ParagraphFormat.RightIndent = 0
+                        wdApp.Selection.ParagraphFormat.Alignment = wdAlignParagraphCenter
+                    wdApp.Selection.EndOf
+            
+                    For intCol = 1 To colCnt
+                        For intRow = 2 To tblrows
+                            If intCol = colCnt And intRow > totalYears - (intCol - 1) * (tblrows - 1) + 1 Then
+                                Exit For
+                            End If
+                            rowage = (tblrows - 1) * (intCol - 1) + intRow - 1
+                            .Cell(intRow, intCol * 2 - 1).Range.InsertAfter wks.Range("AD" & 3 + rowage)
+                            
+                            rowyear = wks.Range("AD" & 3 + rowage)
+                            numVal = Format(Round(wks.Range("AF" & 3 + rowage), 0), "##,###")
+                            If numVal <> "" Then
+                            .Cell(intRow, intCol * 2).Range.InsertAfter "Rs.  " & convertIndiaFormat(numVal)
+                            '.Cell(intRow, intCol * 2).RightPadding = 12
+                            End If
+                        Next intRow
+                    Next intCol
+                    ' Move out of table
+                    wdApp.Selection.MoveDown Unit:=wdLine, Count:=tblrows + 1
+                End With
+        'End If
+
+        wdApp.Selection.EndKey Unit:=wdStory
+        Set tblNew = Nothing
+        
+        '''''''''''''''''Step-Up SIP Value Table''''''''''''''''''''
+            With wdApp.Selection
+                .TypeParagraph
+                .Font.Size = 11
+                .ParagraphFormat.SpaceAfter = 6
+                .Font.TextColor = RGB(112, 48, 160)
+                .BoldRun
+                    .TypeText "Step-Up SIP Based Investment"
+                .BoldRun
+                .Font.TextColor = RGB(0, 0, 0)
+                .TypeParagraph
+                .ParagraphFormat.SpaceAfter = 0
+                .ParagraphFormat.SpaceBefore = 0
+                .Font.Size = 9
+            End With
+                
+                Set MyRange = wdApp.ActiveDocument.Content
+                MyRange.Collapse Direction:=wdCollapseEnd
+        
+                totalYears = wks.Range("C5").Value
+                '''''''''''''''''''''''''''''''''''''''''''''
+                If totalYears <= 5 Then
+                    colCnt = 1
+                    tblrows = totalYears + 1
+                    tblcols = 2
+                ElseIf totalYears <= 10 Then
+                    colCnt = 2
+                    tblrows = 6
+                    tblcols = 4
+                ElseIf totalYears <= 15 Then
+                    colCnt = 3
+                    tblrows = 6
+                    tblcols = 6
+                Else
+                    colCnt = 3
+                    tblrows = WorksheetFunction.RoundUp(totalYears / 3, 0) + 1
+                    tblcols = 6
+                End If
+                '''''''''''''''''''''''''''''''''''''''''''''
+                Set tblNew = newdoc.Tables.Add(MyRange, tblrows, tblcols)
+                With tblNew
+                    .Borders.InsideLineStyle = wdLineStyleSingle
+                    .Borders.OutsideLineStyle = wdLineStyleSingle
+                    .Borders.InsideLineWidth = wdLineWidth100pt
+                    .Borders.OutsideLineWidth = wdLineWidth100pt
+                    .Rows.Height = 13
+                    
+                    ' Set header row
+                    For intCol = 1 To colCnt
+                        .Columns(intCol * 2 - 1).SetWidth 45, wdAdjustNone
+                        .Columns(intCol * 2).SetWidth 100, wdAdjustNone
+                        
+                        .Cell(1, intCol * 2 - 1).Range.InsertAfter "Year"
+                        .Cell(1, intCol * 2).Range.InsertAfter "Investment Value"
+                        tblNew.Columns(intCol * 2 - 1).Select
+                            wdApp.Selection.ParagraphFormat.Alignment = wdAlignParagraphCenter
+                        tblNew.Columns(intCol * 2).Select
+                            wdApp.Selection.ParagraphFormat.Alignment = wdAlignParagraphRight
+                            wdApp.Selection.ParagraphFormat.RightIndent = 3
+                        wdApp.Selection.EndOf
+                    Next intCol
+                    
+                    'Set table format
+                    tblNew.Rows.Alignment = wdAlignRowCenter
+                    tblNew.Select
+                        wdApp.Selection.Cells.VerticalAlignment = wdCellAlignVerticalCenter
+                    tblNew.Rows(1).Select
+                        wdApp.Selection.BoldRun 'on
+                        wdApp.Selection.ParagraphFormat.RightIndent = 0
+                        wdApp.Selection.ParagraphFormat.Alignment = wdAlignParagraphCenter
+                    wdApp.Selection.EndOf
+            
+                    For intCol = 1 To colCnt
+                        For intRow = 2 To tblrows
+                            If intCol = colCnt And intRow > totalYears - (intCol - 1) * (tblrows - 1) + 1 Then
+                                Exit For
+                            End If
+                            rowage = (tblrows - 1) * (intCol - 1) + intRow - 1
+                            .Cell(intRow, intCol * 2 - 1).Range.InsertAfter wks.Range("AD" & 3 + rowage)
+                            
+                            rowyear = wks.Range("AD" & 3 + rowage)
+                            numVal = Format(Round(wks.Range("AI" & 3 + rowage), 0), "##,###")
+                            If numVal <> "" Then
+                            .Cell(intRow, intCol * 2).Range.InsertAfter "Rs.  " & convertIndiaFormat(numVal)
+                            End If
+                        Next intRow
+                    Next intCol
+                    ' Move out of table
+                    wdApp.Selection.MoveDown Unit:=wdLine, Count:=tblrows + 1
+                End With
+        'End If
+
+        wdApp.Selection.EndKey Unit:=wdStory
+        Set tblNew = Nothing
+    End If
+
+'''''''''''''''''''''''CHART''''''''''''''''''''''''''''''''''''''''''''''''''''
+        
+        wdApp.Selection.TypeParagraph
+        wdApp.Selection.TypeParagraph
+        
+        strPicFile = strWordDocDir & "\goalchart.png"
+        Call saveChart(strWordDocDir, wks.ChartObjects("GoalChart"), "goalchart.png")
+        wdApp.Selection.TypeParagraph
+        wdApp.Selection.InlineShapes.AddPicture strPicFile, False, True
+        wdApp.Selection.TypeParagraph
+        wdApp.Selection.TypeParagraph
+        ''' Delete Picture
+        Call delChart(strPicFile)
+
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+'''''''''''  COST OF DELAY
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+    If wks.Range("C4").Value > 0 Then
+        wdApp.Selection.EndKey Unit:=wdStory
+
+        'Debug.Print "vPos = " & wdApp.Selection.Information(wdVerticalPositionRelativeToPage)
+
+        ' Position of cursor on page
+        If wdApp.Selection.Information(wdVerticalPositionRelativeToPage) > 550 Then
+            wdApp.Selection.InsertBreak Type:=wdPageBreak
+        Else
+            wdApp.Selection.TypeParagraph
+            wdApp.Selection.TypeParagraph
+        End If
+        
+        '''''''''''Investments Title
+        With wdApp.Selection
+            .ParagraphFormat.Alignment = wdAlignParagraphCenter
+            .Font.Size = 18
+            .Font.TextColor = -671039489
+            .BoldRun
+            .TypeText "Cost of Delay"
+            .BoldRun
+            .TypeParagraph
+            .MoveUp
+            .Borders(wdBorderBottom).LineStyle = wdLineStyleSingle
+            .Borders(wdBorderBottom).LineWidth = wdLineWidth300pt
+            .Borders(wdBorderBottom).Color = -671039489 'Purple
+            .MoveDown
+            '.TypeParagraph
+            .Font.TextColor = wdBlack
+                      
+            With wdApp.Options
+                .DefaultBorderLineStyle = wdLineStyleSingle
+                .DefaultBorderLineWidth = wdLineWidth050pt
+                .DefaultBorderColor = wdColorBlack
+            End With
+            .Font.Size = 10
+            .TypeParagraph
+            .TypeParagraph
+        End With
+        
+                '''''''Calculations for Cost of Delay
+        Set tblNew = Nothing
+               
+        '''''' Set Table Rows, Columns,
+            tblcols = 3
+            tblrows = 5
+        
+        Set MyRange = wdApp.ActiveDocument.Content
+        MyRange.Collapse Direction:=wdCollapseEnd
+        
+        With wdApp.Selection
+            .Font.Size = 10
+            .ParagraphFormat.RightIndent = 2
+            .ParagraphFormat.LeftIndent = 2
+            .TypeParagraph
+        End With
+        
+        ''''''Investment Performance over Life
+        Set tblNew = newdoc.Tables.Add(MyRange, tblrows, tblcols)
+        With tblNew
+            .Borders.InsideLineStyle = wdLineStyleSingle
+            .Borders.OutsideLineStyle = wdLineStyleSingle
+            .Rows.Height = 13
+            
+            ' Set header row
+            .Columns(1).SetWidth 60, wdAdjustNone
+            .Columns(2).SetWidth 120, wdAdjustNone
+            .Columns(3).SetWidth 120, wdAdjustNone
+            .Cell(1, 1).Range.InsertAfter "Delay"
+            .Cell(1, 2).Range.InsertAfter "SIP Amount Required"
+            .Cell(1, 3).Range.InsertAfter "Total Addt. Amount"
+            tblNew.Columns(1).Select
+                wdApp.Selection.ParagraphFormat.Alignment = wdAlignParagraphCenter
+            tblNew.Columns(2).Select
+                wdApp.Selection.ParagraphFormat.Alignment = wdAlignParagraphRight
+            tblNew.Columns(3).Select
+                wdApp.Selection.ParagraphFormat.Alignment = wdAlignParagraphRight
+            tblNew.Select
+                wdApp.Selection.Font.TextColor = RGB(255, 0, 0)
+            wdApp.Selection.EndOf
+            
+            'Set table format
+            tblNew.Rows.Alignment = wdAlignRowCenter
+            tblNew.Select
+                wdApp.Selection.Cells.VerticalAlignment = wdCellAlignVerticalCenter
+            tblNew.Rows(1).Select
+                wdApp.Selection.ParagraphFormat.Alignment = wdAlignParagraphCenter
+                wdApp.Selection.BoldRun 'Switch Bold on
+            wdApp.Selection.EndOf
+    
+            tempCostMonth = wks.Range("C25").Value
+                
+            For rownum = 1 To 4
+                Application.EnableEvents = False
+                wks.Range("C26").Value = 3 * rownum
+                'Call DelayGoalSeek
+                'DoEvents
+                    .Cell(rownum + 1, 1).Range.InsertAfter 3 * rownum & " Months"
+                    .Cell(rownum + 1, 2).Range.InsertAfter "Rs. " & convertIndiaFormat(Format(Round(wks.Range("C27").Value, 0), "#.##"))
+                    .Cell(rownum + 1, 3).Range.InsertAfter "Rs. " & convertIndiaFormat(Format(Round(wks.Range("C29").Value, 0), "#.##"))
+            Next rownum
+            wks.Range("C26").Value = tempCostMonth
+            Application.EnableEvents = True
+            'DoEvents
+            'move out of table
+            wdApp.Selection.EndKey Unit:=wdStory
+            Set tblNew = Nothing
+        End With
+    End If '''Check for Sufficient investment to show Delay cost or not
+    
+    
+        ''''''''''''''''''''''''''''''Message'''''''''''''''''''''''''''
+        With wdApp.Selection
+            '.TypeParagraph
+            .TypeParagraph
+            .Font.Size = 9
+            .Font.TextColor = RGB(0, 112, 192)
+            .ParagraphFormat.LeftIndent = 20
+            .ParagraphFormat.RightIndent = 20
+            .ParagraphFormat.Alignment = wdAlignParagraphJustify
+            .TypeText "Thank you for reviewing the customized Goal SIP Planner. We appreciate your trust in Nivra Fintech and " & _
+                        "remain committed to providing high-quality, goal-oriented financial solutions. Please contact us should " & _
+                        "you require any further assistance."
+            .TypeParagraph
+            .TypeParagraph
+            .TypeText "Nivra Fintech Team!"
+            .TypeParagraph
+            .Font.Italic = True
+            .TypeText "The Financial Engineers"
+            .Font.Italic = False
+        End With
+        
+        'Debug.Print "vPosEnd = " & wdApp.Selection.Information(wdVerticalPositionRelativeToPage)
+
+        Set tblNew = Nothing
+        Set wdApp = Nothing
+        
+End Sub
+
+'-------------------------------------------------------------------------------
+' OneDrive??VBA?ThisWorkbook.Path?URL??????????
+' Resolve problem with ThisWorkbook.Path returning URL in VBA on OneDrive.
+' Get local path from open explorer.
+'
+'
+' Author: Excel VBA Diary (@excelvba_diary)
+' Created: December 11, 2023
+' Last Updated: January, 14, 2024
+' Version: 1.003
+' License: MIT
+'-------------------------------------------------------------------------------
+
+Public Function GetThisWorkbookLocalPath2() As String
+
+    If Not ThisWorkbook.Path Like "http*" Then
+        GetThisWorkbookLocalPath2 = ThisWorkbook.Path
+        Exit Function
+    End If
+    
+    'If it has already been retrieved, the retrieved value is returned.
+    
+    Static myLocalPathCache As String, lastUpdated As Date
+    If myLocalPathCache <> "" And Now() - lastUpdated <= 30 / 86400 Then
+        GetThisWorkbookLocalPath2 = myLocalPathCache
+        Exit Function
+    End If
+    
+    Dim myLocalPath As String, urlFolderName As String, wObj As Object
+    Dim tempArray As Variant, tempLocalPath As String, tempFolderName As String
+    Select Case True
+        Case LCase(ThisWorkbook.Path) Like "https://d.docs.live.net/????????????????"
+            myLocalPath = Environ("OneDrive")
+        Case LCase(ThisWorkbook.Path) Like "https://*-my.sharepoint.com/personal/*/documents"
+            myLocalPath = Environ("OneDriveCommercial")
+        Case Else
+            urlFolderName = Mid(ThisWorkbook.Path, InStrRev(ThisWorkbook.Path, "/") + 1)
+            '?????
+            If LCase(urlFolderName) = "shared documents" Then urlFolderName = "??????"
+            For Each wObj In CreateObject("Shell.Application").Windows
+                If LCase(wObj.FullName) Like "*explorer.exe" Then
+                    tempLocalPath = DecodeURL_ASCII(wObj.LocationURL)
+                    tempLocalPath = Replace(tempLocalPath, "file:///", "")
+                    tempLocalPath = Replace(tempLocalPath, "/", "\")
+                    tempArray = Split(wObj.LocationName, " - ")
+                    If UBound(tempArray) = 1 Then
+                        If tempLocalPath Like Environ("OneDriveCommercial") & "*" Then
+                            'OneDrive for Business (Cloud Icon)
+                            tempFolderName = tempArray(0)
+                        Else
+                            'SharePoint sync folder (Building Icon)
+                            tempFolderName = tempArray(1)
+                        End If
+                    Else
+                        tempFolderName = wObj.LocationName
+                    End If
+                    If tempFolderName = urlFolderName Then
+                        myLocalPath = tempLocalPath
+                        Exit For
+                    End If
+                End If
+            Next
+    End Select
+    
+    If myLocalPath = "" Then Exit Function
+                
+    'Verify that the file actually exists
+    
+    Dim fso As Object
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    If Not fso.FileExists(myLocalPath & "\" & ThisWorkbook.Name) Then Exit Function
+    myLocalPathCache = myLocalPath
+    lastUpdated = Now()
+    GetThisWorkbookLocalPath2 = myLocalPathCache
+
+End Function
+'-------------------------------------------------------------------------------
+' ????????URL???????(ASCII????)
+' Decode encoded URL (ASCII characters only)
+'-------------------------------------------------------------------------------
+Private Function DecodeURL_ASCII(ByVal URL As String) As String
+    If URL = "" Then Exit Function
+    Dim i As Long, v As Integer
+    i = 1
+    Do While i < Len(URL)
+        i = InStr(i, URL, "%")
+        If i = 0 Then Exit Do
+        v = Val("&H" & Mid(URL, i + 1, 2))
+        If v >= 32 And v <= 126 Then URL = Replace(URL, Mid(URL, i, 3), Chr(v))
+        i = i + 1
+    Loop
+    DecodeURL_ASCII = URL
+End Function
+
+
+'-------------------------------------------------------------------------------
+' ????????URL???????(ENCODEURL??????)
+' Decode encoded URL (reverse conversion of ENCODEURL function)
+' ??????Microsoft HTML Object Library??????????.
+' If you use this function instead of the DecodeURL_ASCII function,
+' Check the "Microsoft HTML Object Library" in the references dialog box.
+'-------------------------------------------------------------------------------
+Private Function DecodeURL(ByVal URL As String) As String
+    If URL = "" Then Exit Function
+    Dim htmlDoc As New MSHTML.HTMLDocument
+    Dim span As MSHTML.HTMLSpanElement
+    Set span = htmlDoc.createElement("span")
+    span.setAttribute "id", "result"
+    htmlDoc.appendChild span
+    htmlDoc.parentWindow.execScript "document.getElementById('result').innerText = " & _
+                                    "decodeURIComponent('" & URL & "');"
+    DecodeURL = span.innerText
+End Function
+
+
+'-------------------------------------------------------------------------------
+' Convert to Indian number format
+'-------------------------------------------------------------------------------
+Function convertIndiaFormat(numVal As Variant) As String
+
+    If numVal <> "" Then
+        convertIndiaFormat = Format(numVal, ";-") & Format(Abs(Fix(numVal)), Right("##\,##\,##\,##\,##\,##\,", ((Len(CStr(Abs(Fix(numVal)))) - 2) \ 2) * 4) & "##0") & _
+                        IIf(numVal - Fix(numVal), LTrim(Str(Abs(numVal - Fix(numVal)))), "")
+    End If
+    
+End Function
+-------------------------------------------------------------------------------
+VBA MACRO ThisWorkbook.cls 
+in file: xl/vbaProject.bin - OLE stream: 'VBA/ThisWorkbook'
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+(empty macro)
+-------------------------------------------------------------------------------
+VBA MACRO GoalSIP.cls 
+in file: xl/vbaProject.bin - OLE stream: 'VBA/GoalSIP'
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+Private Sub btnPrint_Click()
+    Call showGoalPlan
+End Sub
+
+Private Sub cbGoalInflRate_Change()
+    Me.Range("M2").Value = CSng(Me.Range("M2").Value)
+    Me.Range("D6").Value = Round(Me.Range("M2").Value, 4)
+End Sub
+
+Private Sub Worksheet_Change(ByVal target As Range)
+
+    If Me.Range("C4").Value > 0 Then
+         If Not Intersect(target, Range("C4:C19")) Is Nothing Or _
+             Not Intersect(target, Range("D6")) Is Nothing Then
+                 Call SIPGoalSeek
+         ElseIf Not Intersect(target, Range("C26")) Is Nothing Then
+                'Call DelayGoalSeek
+         End If
+    End If
+    
+End Sub
+
+-------------------------------------------------------------------------------
+VBA MACRO CalcModule.bas 
+in file: xl/vbaProject.bin - OLE stream: 'VBA/CalcModule'
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+Function FileStatus(strFileName As String) As Long
+
+    Dim lngFileNum As Long
+    Dim lngErr     As Long
+
+    On Error Resume Next
+        lngFileNum = FreeFile()
+        Open strFileName For Input Lock Read As #lngFileNum
+        Close lngFileNum
+        FileStatus = Err
+    On Error GoTo 0
+  
+End Function
+Function delChart(strPicFile)
+
+Dim filetoDelete As String
+    filetoDelete = strPicFile
+   If FileExists(filetoDelete) Then 'See above
+      ' First remove readonly attribute, if set
+      SetAttr filetoDelete, vbNormal
+      ' Then delete the file
+      Kill filetoDelete
+   End If
+   
+End Function
+
+Function FileExists(ByVal FileToTest As String) As Boolean
+   FileExists = (Dir(FileToTest) <> "")
+End Function
+'''''''''''''''''''''''''''''''''''''''''''''''''
+'''''   Save chart to Folder
+'''''''''''''''''''''''''''''''''''''''''''''''''
+Sub saveChart(strWordDocDir As String, chartobj As Object, stChartName As String)
+    
+    'Turn off screen updating.
+    Application.ScreenUpdating = False
+    chartobj.Chart.Export _
+                   Filename:=strWordDocDir & "/" & stChartName, _
+                   FilterName:="PNG"
+
+End Sub
+
+Sub SIPGoalSeek()
+Dim wks As Worksheet
+
+    Set wks = Worksheets("Goal-SIPorSU_SIP")
+    
+    Application.ScreenUpdating = False
+    Application.Calculation = xlManual
+    Application.Cursor = xlWait
+
+    wks.Activate
+    
+    '''''''''Change to Calculated SIP Option and then run. After completion, set it back.
+    If wks.Range("C4").Value > 0 Then
+        If wks.Range("C9").Value > 0 Then
+            On Error Resume Next
+            DoEvents
+            Application.EnableEvents = False
+                wks.Range("O27") = 1
+                wks.Range("R27") = 1
+                'wks.Range("U27") = 1
+                wks.Range("O28").GoalSeek Goal:=0, ChangingCell:=wks.Range("O27")
+                wks.Range("R28").GoalSeek Goal:=0, ChangingCell:=wks.Range("R27")
+                'wks.Range("U28").GoalSeek Goal:=0, ChangingCell:=wks.Range("U27")
+                'XX = GoalSeekLike(0, 0, 60, 0.0001, 100, wks.Range("O9"), wks.Range("J8"))
+                'If wks.Range("C26") > 0 Then ' Delay Calcs
+                '    wks.Range("X27") = 1
+                '    wks.Range("X28").GoalSeek Goal:=0, ChangingCell:=wks.Range("X27")
+                'End If
+            Application.EnableEvents = True
+        End If
+    End If
+
+    Application.Calculation = xlCalculationAutomatic
+    Application.ScreenUpdating = True
+    Application.Cursor = xlDefault
+    
+    Set wks = Nothing
+    
+End Sub
+
+Sub DelayGoalSeek()
+Dim wks As Worksheet
+
+    Set wks = Worksheets("Goal-SIPorSU_SIP")
+    
+    Application.ScreenUpdating = False
+    Application.Calculation = xlManual
+    Application.Cursor = xlWait
+
+    wks.Activate
+    
+    '''''''''Change to Calculated SIP Option and then run. After completion, set it back.
+    If wks.Range("C4").Value > 0 Then
+        If wks.Range("C9").Value > 0 Then
+            On Error Resume Next
+            DoEvents
+            'Application.EnableEvents = False
+                If wks.Range("C26") > 0 Then ' Delay Calcs
+                    wks.Range("X27") = 1
+                    wks.Range("X28").GoalSeek Goal:=0, ChangingCell:=wks.Range("X27")
+                End If
+            'Application.EnableEvents = True
+        End If
+    End If
+
+    Application.Calculation = xlCalculationAutomatic
+    Application.ScreenUpdating = True
+    Application.Cursor = xlDefault
+    
+    Set wks = Nothing
+    
+End Sub
+
++----------+--------------------+---------------------------------------------+
+|Type      |Keyword             |Description                                  |
++----------+--------------------+---------------------------------------------+
+|AutoExec  |btnPrint_Click      |Runs when the file is opened and ActiveX     |
+|          |                    |objects trigger events                       |
+|AutoExec  |cbGoalInflRate_Chang|Runs when the file is opened and ActiveX     |
+|          |e                   |objects trigger events                       |
+|Suspicious|Environ             |May read system environment variables        |
+|Suspicious|OPEN                |May open a file                              |
+|Suspicious|Write               |May write to a file (if combined with Open)  |
+|Suspicious|Kill                |May delete a file                            |
+|Suspicious|Shell               |May run an executable file or a system       |
+|          |                    |command                                      |
+|Suspicious|vbNormal            |May run an executable file or a system       |
+|          |                    |command                                      |
+|Suspicious|run                 |May run an executable file or a system       |
+|          |                    |command                                      |
+|Suspicious|Call                |May call a DLL using Excel 4 Macros (XLM/XLF)|
+|Suspicious|CreateObject        |May create an OLE object                     |
+|Suspicious|GetObject           |May get an OLE object with a running instance|
+|Suspicious|Shell.Application   |May run an application (if combined with     |
+|          |                    |CreateObject)                                |
+|Suspicious|Windows             |May enumerate application windows (if        |
+|          |                    |combined with Shell.Application object)      |
+|Suspicious|Chr                 |May attempt to obfuscate specific strings    |
+|          |                    |(use option --deobf to deobfuscate)          |
+|Suspicious|Hex Strings         |Hex-encoded strings were detected, may be    |
+|          |                    |used to obfuscate strings (option --decode to|
+|          |                    |see all)                                     |
+|Suspicious|Base64 Strings      |Base64-encoded strings were detected, may be |
+|          |                    |used to obfuscate strings (option --decode to|
+|          |                    |see all)                                     |
+|IOC       |https://d.docs.live.|URL                                          |
+|          |net/????????????????|                                             |
+|IOC       |explorer.exe        |Executable file name                         |
++----------+--------------------+---------------------------------------------+
+
