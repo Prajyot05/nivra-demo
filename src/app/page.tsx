@@ -38,19 +38,28 @@ const CustomBarLabelSIP = (props: { x?: number | string; y?: number | string; wi
   const value = props.value;
   const isSmall = height < 80;
   const textX = x + width / 2;
-  const textY = isSmall ? y - 5 : y + height / 2;
+
+  if (isSmall) {
+    return (
+      <text x={textX} y={y - 25} fill="#555" fontSize={11} fontWeight={600} textAnchor="middle">
+        {value ? `₹${Number(value).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : ''}
+      </text>
+    );
+  }
+
+  const textY = y + height / 2;
   return (
     <text
       x={textX}
       y={textY}
-      fill={isSmall ? '#555' : '#333'}
+      fill="#333"
       fontSize={13}
       fontWeight={600}
-      textAnchor={isSmall ? "start" : "middle"}
+      textAnchor="middle"
       dominantBaseline="middle"
       transform={`rotate(-90, ${textX}, ${textY})`}
     >
-      {value ? `₹ ${Number(value).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : ''}
+      {value ? `₹${Number(value).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : ''}
     </text>
   );
 };
@@ -63,33 +72,42 @@ const CustomBarLabelStepUp = (props: { x?: number | string; y?: number | string;
   const value = props.value;
   const isSmall = height < 80;
   const textX = x + width / 2;
-  const textY = isSmall ? y - 5 : y + height / 2;
+
+  if (isSmall) {
+    return (
+      <text x={textX} y={y - 10} fill="#555" fontSize={11} fontWeight={600} textAnchor="middle">
+        {value ? `₹${Number(value).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : ''}
+      </text>
+    );
+  }
+
+  const textY = y + height / 2;
   return (
     <text
       x={textX}
       y={textY}
-      fill={isSmall ? '#555' : '#fff'}
+      fill="#fff"
       fontSize={13}
       fontWeight={600}
-      textAnchor={isSmall ? "start" : "middle"}
+      textAnchor="middle"
       dominantBaseline="middle"
       transform={`rotate(-90, ${textX}, ${textY})`}
     >
-      {value ? `₹ ${Number(value).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : ''}
+      {value ? `₹${Number(value).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : ''}
     </text>
   );
 };
 
 const StatBox = ({ title, value, icon: Icon, subtext = "", highlight = false }: { title: string; value: string | number; icon?: ElementType; subtext?: string; highlight?: boolean }) => (
-  <div className={`p-4 rounded-lg border flex flex-col justify-center h-full ${highlight ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-foreground'}`}>
-    <div className="flex items-center gap-2 mb-2 opacity-80">
+  <div className={`p-4 rounded-lg border flex flex-col justify-center h-full print:bg-transparent print:text-black print:border-gray-300 ${highlight ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-foreground'}`}>
+    <div className="flex items-center gap-2 mb-2 opacity-80 print:opacity-100">
       {Icon && <Icon className="w-4 h-4 shrink-0" />}
       <span className="text-xs sm:text-sm font-medium tracking-wide">{title}</span>
     </div>
-    <div className="text-lg sm:text-xl md:text-2xl font-semibold tracking-tight truncate" title={String(value)}>
+    <div className="text-lg sm:text-xl md:text-2xl font-semibold tracking-tight truncate print:whitespace-normal print:opacity-100" title={String(value)}>
       {value}
     </div>
-    {subtext && <div className="mt-1 text-xs font-medium opacity-70 truncate">{subtext}</div>}
+    {subtext && <div className="mt-1 text-xs font-medium opacity-70 truncate print:text-gray-800 print:opacity-100 print:whitespace-normal">{subtext}</div>}
   </div>
 );
 
@@ -405,12 +423,12 @@ export default function Home() {
                         tick={{ fontSize: 12, fontWeight: 500 }}
                       />
                       <YAxis
-                        width={90}
+                        width={110}
                         axisLine={false}
                         tickLine={false}
-                        tickMargin={10}
+                        tickMargin={5}
                         tick={{ fontSize: 12, fill: "#666" }}
-                        tickFormatter={(value) => `₹ ${value.toLocaleString('en-IN')}`}
+                        tickFormatter={(value) => `₹${value.toLocaleString('en-IN')}`}
                       />
                       <ChartTooltip
                         cursor={false}
