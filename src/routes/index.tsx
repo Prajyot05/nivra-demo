@@ -267,34 +267,16 @@ function Index() {
                 onChange={(e) => setAge(+e.target.value)}
               />
             </Field>
-            <div className="space-y-2 sm:col-span-2 md:col-span-1 xl:col-span-1">
-              <Field label="Target Goal Amount">
-                <Input
-                  inputMode="numeric"
-                  value={fmtINR(goal)}
-                  onChange={(e) => {
-                    const raw = e.target.value.replace(/[^0-9]/g, "");
-                    setGoal(raw === "" ? 0 : Number(raw));
-                  }}
-                />
-              </Field>
-              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
-                    Use Infl. Adj. Goal
-                  </span>
-                  <Switch checked={useInflAdj} onCheckedChange={setUseInflAdj} />
-                </div>
-                {useInflAdj && (
-                  <p className="text-xs font-medium tracking-wide text-slate-500 sm:ml-4">
-                    Inflation Adjusted Goal:{" "}
-                    <span className="text-sm font-semibold text-slate-900">
-                      ₹{fmtINR(inflAdjGoal)}
-                    </span>
-                  </p>
-                )}
-              </div>
-            </div>
+            <Field label="Target Goal Amount">
+              <Input
+                inputMode="numeric"
+                value={fmtINR(goal)}
+                onChange={(e) => {
+                  const raw = e.target.value.replace(/[^0-9]/g, "");
+                  setGoal(raw === "" ? 0 : Number(raw));
+                }}
+              />
+            </Field>
             <Field label="Tenure (Yrs)">
               <Input
                 type="number"
@@ -330,6 +312,23 @@ function Index() {
                 onChange={(e) => setStepUp(+e.target.value)}
               />
             </Field>
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+              Use Infl. Adj. Goal
+            </span>
+            <Switch checked={useInflAdj} onCheckedChange={setUseInflAdj} />
+            {useInflAdj && (
+              <div className="flex items-baseline gap-2 sm:ml-10 md:ml-16">
+                <span className="text-xs font-medium text-slate-500">
+                  Inflation Adjusted Goal:
+                </span>
+                <span className="text-sm font-semibold tabular-nums text-slate-900">
+                  ₹{fmtINR(inflAdjGoal)}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
