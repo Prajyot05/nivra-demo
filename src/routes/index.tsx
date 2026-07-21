@@ -303,7 +303,7 @@ function Index() {
                 <div className="text-[11px] font-semibold uppercase tracking-widest text-slate-300">
                   Monthly SIP Required
                 </div>
-                <div className="mt-2 font-serif text-3xl font-semibold text-white">
+                <div className="mt-2 font-sans text-3xl font-semibold text-white">
                   Rs. {fmtINR(activeSIP)}
                 </div>
               </div>
