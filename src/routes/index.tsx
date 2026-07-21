@@ -123,9 +123,6 @@ function Index() {
   const [stepUp, setStepUp] = useState(10);
   const [useInflAdj, setUseInflAdj] = useState(false);
   const [view, setView] = useState<"standard" | "stepup">("standard");
-  const [scheduleView, setScheduleView] = useState<"standard" | "stepup">(
-    "standard",
-  );
 
   const inflAdjGoal = useMemo(
     () => goal * Math.pow(1 + inflation / 100, tenure),
@@ -161,13 +158,13 @@ function Index() {
   const schedule = useMemo(
     () =>
       buildSchedule(
-        scheduleView === "standard" ? standardSIP : stepUpSIP,
+        view === "standard" ? standardSIP : stepUpSIP,
         tenure,
         returnPct,
         stepUp,
-        scheduleView === "stepup",
+        view === "stepup",
       ),
-    [scheduleView, standardSIP, stepUpSIP, tenure, returnPct, stepUp],
+    [view, standardSIP, stepUpSIP, tenure, returnPct, stepUp],
   );
 
   const delays = [3, 6, 9, 12].map((mo) => {
@@ -300,10 +297,10 @@ function Index() {
               </Tabs>
 
               <div className="mt-5 rounded-lg bg-slate-900 px-5 py-6 text-center">
-                <div className="text-[11px] font-semibold uppercase tracking-widest text-slate-300">
+                <div className="text-xs font-semibold uppercase tracking-wider text-slate-300">
                   Monthly SIP Required
                 </div>
-                <div className="mt-2 font-sans text-3xl font-semibold text-white">
+                <div className="mt-2 text-2xl font-medium text-white">
                   Rs. {fmtINR(activeSIP)}
                 </div>
               </div>
@@ -412,8 +409,8 @@ function Index() {
               </div>
 
               <Tabs
-                value={scheduleView}
-                onValueChange={(v) => setScheduleView(v as "standard" | "stepup")}
+                value={view}
+                onValueChange={(v) => setView(v as "standard" | "stepup")}
                 className="mt-4"
               >
                 <TabsList className="grid w-full grid-cols-2 bg-slate-100">
