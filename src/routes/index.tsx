@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Download, RotateCcw, Calendar, Clock } from "lucide-react";
+import { Download, Calendar, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { downloadSipPdf } from "@/lib/download-sip-pdf";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -167,6 +168,15 @@ function Index() {
     [view, standardSIP, stepUpSIP, tenure, returnPct, stepUp],
   );
 
+  const stdSchedule = useMemo(
+    () => buildSchedule(standardSIP, tenure, returnPct, stepUp, false),
+    [standardSIP, tenure, returnPct, stepUp],
+  );
+  const stepSchedule = useMemo(
+    () => buildSchedule(stepUpSIP, tenure, returnPct, stepUp, true),
+    [stepUpSIP, tenure, returnPct, stepUp],
+  );
+
   const delays = [3, 6, 9, 12].map((mo) => {
     const remaining = tenure - mo / 12;
     const sip = calcStandardSIP(targetGoal, remaining, returnPct);
@@ -181,10 +191,43 @@ function Index() {
     { name: "Tax", value: activeTax, color: "hsl(0 72% 60%)" },
   ];
 
+  const handleDownload = () => {
+    try {
+      downloadSipPdf({
+        clientName,
+        age,
+        goal,
+        inflAdjGoal,
+        useInflAdj,
+        targetGoal,
+        tenure,
+        returnPct,
+        inflation,
+        tax,
+        stepUp,
+        standardSIP,
+        stepUpSIP,
+        stdInvested,
+        stepInvested,
+        stdGain,
+        stepGain,
+        stdTax,
+        stepTax,
+        stdCorpus,
+        stepCorpus,
+        stdSchedule,
+        stepSchedule,
+        delays,
+      });
+    } catch (err) {
+      console.error("PDF download failed:", err);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[#faf9f6] px-6 py-8 md:px-10">
+    <div className="min-h-screen bg-[#faf9f6] px-6 py-4 md:px-10">
       <div className="mx-auto max-w-[1600px]">
-        <div className="flex items-start justify-between gap-4 pb-6">
+        <div className="flex items-start justify-between gap-4 pb-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-slate-900">
               Goal SIP Planner
@@ -194,29 +237,23 @@ function Index() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button className="bg-slate-900 hover:bg-slate-800">
+            <Button
+              className="bg-slate-900 hover:bg-slate-800"
+              onClick={handleDownload}
+            >
               <Download className="mr-2 h-4 w-4" />
               Download
-            </Button>
-            <Button variant="ghost" size="icon">
-              <RotateCcw className="h-4 w-4" />
             </Button>
           </div>
         </div>
 
         <div className="border-t border-slate-200" />
 
-        <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50/60 p-6">
-          <div className="mb-5 flex items-center justify-between">
+        <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50/60 p-5">
+          <div className="mb-4">
             <span className="text-xs font-semibold uppercase tracking-widest text-slate-600">
               Financial Assumptions
             </span>
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-semibold uppercase tracking-widest text-slate-500">
-                Use Infl. Adj. Goal
-              </span>
-              <Switch checked={useInflAdj} onCheckedChange={setUseInflAdj} />
-            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4 xl:grid-cols-8">
@@ -233,13 +270,34 @@ function Index() {
                 onChange={(e) => setAge(+e.target.value)}
               />
             </Field>
-            <Field label="Target Goal Amount">
-              <Input
-                type="number"
-                value={goal}
-                onChange={(e) => setGoal(+e.target.value)}
-              />
-            </Field>
+            <div className="relative z-10 space-y-2 overflow-visible">
+              <Field label="Target Goal Amount">
+                <Input
+                  inputMode="numeric"
+                  value={fmtINR(goal)}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/[^0-9]/g, "");
+                    setGoal(raw === "" ? 0 : Number(raw));
+                  }}
+                />
+              </Field>
+              <div className="flex items-center whitespace-nowrap">
+                <div className="flex items-center gap-2">
+                  <span className="shrink-0 text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+                    Use Infl. Adj. Goal
+                  </span>
+                  <Switch checked={useInflAdj} onCheckedChange={setUseInflAdj} />
+                </div>
+                {useInflAdj && (
+                  <p className="ml-10 text-xs font-medium tracking-wide text-slate-500">
+                    Inflation Adjusted Goal:{" "}
+                    <span className="text-sm font-semibold text-slate-900">
+                      ₹{fmtINR(inflAdjGoal)}
+                    </span>
+                  </p>
+                )}
+              </div>
+            </div>
             <Field label="Tenure (Yrs)">
               <Input
                 type="number"
@@ -276,14 +334,9 @@ function Index() {
               />
             </Field>
           </div>
-
-          <div className="mt-5 text-center text-xs font-medium uppercase tracking-wider text-slate-500">
-            Inflation Adjusted Goal:{" "}
-            <span className="text-slate-900">₹{fmtINR(inflAdjGoal)}</span>
-          </div>
         </div>
 
-        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <div className="mt-4 grid grid-cols-1 gap-5 lg:grid-cols-12">
           <div className="lg:col-span-3">
             <div className="rounded-xl border border-slate-200 bg-white p-5">
               <Tabs
@@ -296,7 +349,7 @@ function Index() {
                 </TabsList>
               </Tabs>
 
-              <div className="mt-5 rounded-lg bg-slate-900 px-5 py-6 text-center">
+              <div className="mt-5 rounded-lg bg-slate-900 px-5 py-5 text-center">
                 <div className="text-xs font-semibold uppercase tracking-wider text-slate-300">
                   Monthly SIP Required
                 </div>
@@ -305,7 +358,7 @@ function Index() {
                 </div>
               </div>
 
-              <div className="mt-8 flex justify-center">
+                <div className="mt-6 flex justify-center">
                 <div className="relative h-52 w-52">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -334,7 +387,7 @@ function Index() {
                 </div>
               </div>
 
-              <div className="mt-8 space-y-3">
+              <div className="mt-6 space-y-3">
                 <LegendRow
                   color="hsl(215 30% 15%)"
                   label="Invested"
@@ -357,9 +410,14 @@ function Index() {
           <div className="lg:col-span-6">
             <div className="rounded-xl border border-slate-200 bg-white p-6">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-widest text-slate-600">
-                  Visual Comparison
-                </span>
+                <div>
+                  <h2 className="text-lg font-semibold tracking-tight text-slate-900">
+                    Standard vs Step-Up Comparison
+                  </h2>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    Invested amount, tax, and final corpus side-by-side
+                  </p>
+                </div>
                 <div className="flex items-center gap-4 text-xs text-slate-600">
                   <span className="flex items-center gap-1.5">
                     <span className="h-2 w-2 rounded-full bg-slate-900" />
@@ -391,7 +449,7 @@ function Index() {
                 max={maxBar}
               />
 
-              <div className="mt-8 flex justify-between pl-20 pr-24 text-[11px] text-slate-400">
+              <div className="mt-6 flex justify-between pl-20 pr-24 text-[11px] text-slate-400">
                 <span>0</span>
                 <span>{fmtLakh(maxBar * 0.25)}</span>
                 <span>{fmtLakh(maxBar * 0.5)}</span>
@@ -401,7 +459,7 @@ function Index() {
             </div>
           </div>
 
-          <div className="space-y-6 lg:col-span-3">
+          <div className="space-y-5 lg:col-span-3">
             <div className="rounded-xl border border-slate-200 bg-white p-5">
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-slate-600">
                 <Calendar className="h-4 w-4" />

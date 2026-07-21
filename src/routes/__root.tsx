@@ -77,21 +77,28 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Goal SIP Planner" },
+      {
+        name: "description",
+        content:
+          "Plan and compare Standard and Step-Up SIP requirements side-by-side.",
+      },
+      { property: "og:title", content: "Goal SIP Planner" },
+      {
+        property: "og:description",
+        content:
+          "Plan and compare Standard and Step-Up SIP requirements side-by-side.",
+      },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:card", content: "summary" },
     ],
     links: [
       {
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      // Blank favicon so browsers don't fall back to a default / cached logo
+      { rel: "icon", href: "data:," },
     ],
   }),
   shellComponent: RootShell,
