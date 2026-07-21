@@ -17,6 +17,12 @@ export const metadata: Metadata = {
   description: "Advanced Goal SIP Planner by Nivra Fintech",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{

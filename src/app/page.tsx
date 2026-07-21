@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useRef, ElementType, useEffect } from "react";
-import { useReactToPrint } from "react-to-print";
+import { flushSync } from "react-dom";
 import { calculateSipPlan, CalculatorInputs } from "@/utils/calculator";
 import { formatIndianCurrency } from "@/lib/utils";
 import {
@@ -16,87 +16,22 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Info, Calculator, TrendingUp, Wallet, ArrowRight, Clock, FileDown, Table } from "lucide-react";
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, LabelList, Legend } from "recharts";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Legend } from "recharts";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { PdfReport } from "@/components/pdf-report";
+import { buildPdfFromSections } from "@/lib/pdf-export";
+import { comparisonChartData } from "@/components/chart-bar-labels";
 
 const chartConfig = {
   Standard: {
     label: "SIP",
-    color: "#a8d8d8",
+    color: "#195b70",
   },
   StepUp: {
     label: "StepUP SIP",
-    color: "#c3544e",
+    color: "#f4d5cc",
   },
 } satisfies ChartConfig;
-
-const CustomBarLabelSIP = (props: { x?: number | string; y?: number | string; width?: number | string; height?: number | string; value?: React.ReactNode }) => {
-  const x = Number(props.x || 0);
-  const y = Number(props.y || 0);
-  const width = Number(props.width || 0);
-  const height = Number(props.height || 0);
-  const value = props.value;
-  const isSmall = height < 80;
-  const textX = x + width / 2;
-
-  if (isSmall) {
-    return (
-      <text x={textX} y={y - 25} fill="#555" fontSize={11} fontWeight={600} textAnchor="middle">
-        {value ? `₹${Number(value).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : ''}
-      </text>
-    );
-  }
-
-  const textY = y + height / 2;
-  return (
-    <text
-      x={textX}
-      y={textY}
-      fill="#333"
-      fontSize={13}
-      fontWeight={600}
-      textAnchor="middle"
-      dominantBaseline="middle"
-      transform={`rotate(-90, ${textX}, ${textY})`}
-    >
-      {value ? `₹${Number(value).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : ''}
-    </text>
-  );
-};
-
-const CustomBarLabelStepUp = (props: { x?: number | string; y?: number | string; width?: number | string; height?: number | string; value?: React.ReactNode }) => {
-  const x = Number(props.x || 0);
-  const y = Number(props.y || 0);
-  const width = Number(props.width || 0);
-  const height = Number(props.height || 0);
-  const value = props.value;
-  const isSmall = height < 80;
-  const textX = x + width / 2;
-
-  if (isSmall) {
-    return (
-      <text x={textX} y={y - 10} fill="#555" fontSize={11} fontWeight={600} textAnchor="middle">
-        {value ? `₹${Number(value).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : ''}
-      </text>
-    );
-  }
-
-  const textY = y + height / 2;
-  return (
-    <text
-      x={textX}
-      y={textY}
-      fill="#fff"
-      fontSize={13}
-      fontWeight={600}
-      textAnchor="middle"
-      dominantBaseline="middle"
-      transform={`rotate(-90, ${textX}, ${textY})`}
-    >
-      {value ? `₹${Number(value).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : ''}
-    </text>
-  );
-};
 
 const StatBox = ({ title, value, icon: Icon, subtext = "", highlight = false }: { title: string; value: string | number; icon?: ElementType; subtext?: string; highlight?: boolean }) => (
   <div className={`p-4 rounded-lg border flex flex-col justify-center h-full print:bg-transparent print:text-black print:border-gray-300 ${highlight ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-foreground'}`}>
@@ -124,6 +59,7 @@ function useDebounce<T>(value: T, delay: number): T {
 
 export default function Home() {
   const [name, setName] = useState("Mr. John Doe");
+  const [age, setAge] = useState<number | string>(30);
   const [showSchedule, setShowSchedule] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [inputs, setInputs] = useState<CalculatorInputs>({
@@ -149,337 +85,354 @@ export default function Home() {
   const results = useMemo(() => calculateSipPlan(debouncedInputs), [debouncedInputs]);
 
   const contentRef = useRef<HTMLDivElement>(null);
+  const pdfReportRef = useRef<HTMLDivElement>(null);
 
-  const executePrint = useReactToPrint({
-    contentRef,
-    documentTitle: 'Goal_SIP_Planner',
-    onAfterPrint: () => {
-      setIsGeneratingPdf(false);
-    }
-  });
+  const waitForPaint = () =>
+    new Promise<void>((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+    });
 
   const handleDownloadPdf = async () => {
-    setIsGeneratingPdf(true);
-    // Give React time to re-render the DOM with print-specific elements visible
-    setTimeout(() => {
-      executePrint();
-    }, 100);
+    flushSync(() => setIsGeneratingPdf(true));
+    await waitForPaint();
+    // Allow chart/SVG to finish layout before capture
+    await new Promise((resolve) => setTimeout(resolve, 400));
+
+    const root = pdfReportRef.current;
+    if (!root) {
+      setIsGeneratingPdf(false);
+      return;
+    }
+
+    try {
+      const { toCanvas } = await import("html-to-image");
+      const { jsPDF } = await import("jspdf");
+
+      const pdf = new jsPDF("p", "mm", "a4");
+      await buildPdfFromSections(root, toCanvas, pdf);
+
+      const safeName = name.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "_") || "Client";
+      pdf.save(`Goal_SIP_Planner_${safeName}.pdf`);
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+    } finally {
+      setIsGeneratingPdf(false);
+    }
   };
 
   return (
-    <main ref={contentRef} id="pdf-content" className="min-h-screen py-12 px-6 sm:px-10 lg:px-16 max-w-7xl mx-auto bg-background text-foreground">
-      
-      {/* Disclaimer (Visible always, specifically for the report) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
+    <>
+      {/* Render report in-viewport (behind overlay) so the browser paints it for capture */}
+      {isGeneratingPdf && (
+        <>
+          <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50">
+            <p className="text-lg font-semibold text-white">Generating PDF report…</p>
+          </div>
+          <div className="fixed left-0 top-0 z-[9999]">
+            <PdfReport
+              ref={pdfReportRef}
+              name={name}
+              age={age}
+              inputs={debouncedInputs}
+              results={results}
+            />
+          </div>
+        </>
+      )}
+
+    <main
+      ref={contentRef}
+      id="pdf-content"
+      className="min-h-screen w-full py-6 px-4 sm:py-10 sm:px-6 md:px-8 lg:py-12 lg:px-12 xl:px-16 max-w-7xl mx-auto bg-background text-foreground overflow-x-hidden"
+    >
+
+      {/* Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-10">
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
             Goal SIP Planner
           </h1>
           <p className="text-muted-foreground mt-1 text-sm sm:text-base no-print">
             Compare Standard and Step-Up SIP requirements side-by-side.
           </p>
         </div>
-        <div className="no-print">
-          <Button onClick={handleDownloadPdf} variant="outline" className="gap-2" disabled={isGeneratingPdf}>
+        <div className="no-print shrink-0">
+          <Button
+            onClick={handleDownloadPdf}
+            variant="outline"
+            className="gap-2 w-full sm:w-auto"
+            disabled={isGeneratingPdf}
+          >
             <FileDown className="w-4 h-4" />
-            {isGeneratingPdf ? 'Generating...' : 'Download PDF Report'}
+            {isGeneratingPdf ? "Generating..." : "Download PDF Report"}
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start mb-10">
+      <div className="space-y-4 mb-8 sm:mb-10">
 
-        {/* Left Column: Inputs */}
-        <div className="xl:col-span-4 space-y-6">
-
-          <Card className="shadow-none border rounded-xl overflow-hidden bg-card">
-            <CardHeader className="bg-muted/30 border-b pb-4">
-              <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <Calculator className="w-4 h-4" />
-                Parameters
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-5 space-y-5">
-
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Name</Label>
+        {/* Financial Assumptions */}
+        <div className="border-[1.5px] border-[#1a5163] rounded-2xl bg-white overflow-hidden shadow-sm">
+          <div className="text-center py-2.5 px-3 text-sm sm:text-[15px] font-medium text-[#1a5163] tracking-wide">
+            Financial Assumptions
+          </div>
+          <div className="p-4 sm:p-6 pt-2 space-y-4 sm:space-y-5">
+            {/* Client details */}
+            <div className="grid grid-cols-1 sm:grid-cols-[1fr_7rem] gap-3 sm:gap-4 max-w-xl">
+              <div className="space-y-1 min-w-0">
+                <Label className="text-xs text-gray-700 font-medium">Client Name</Label>
                 <Input
-                  type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="font-medium h-10 print-input"
+                  className="h-9 sm:h-8 rounded-lg border-[#1a5163] focus-visible:ring-0 focus-visible:ring-offset-0"
                 />
               </div>
+              <div className="space-y-1 w-full sm:w-28">
+                <Label className="text-xs text-gray-700 font-medium">Age</Label>
+                <Input
+                  type="number"
+                  value={age}
+                  onChange={(e) => setAge(e.target.value)}
+                  className="h-9 sm:h-8 rounded-lg border-[#1a5163] focus-visible:ring-0 focus-visible:ring-offset-0"
+                />
+              </div>
+            </div>
 
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Target Goal Amount (₹)</Label>
+            {/* Goal & rates — responsive grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+              <div className="space-y-1 col-span-2 sm:col-span-1">
+                <Label className="text-xs text-gray-700 font-medium">Target Goal Amount</Label>
                 <Input
                   type="number"
                   value={inputs.goalAmount}
-                  onChange={(e) => handleInputChange('goalAmount', Number(e.target.value))}
-                  className="font-medium h-10 print-input"
+                  onChange={(e) => handleInputChange("goalAmount", Number(e.target.value))}
+                  className="h-9 sm:h-8 rounded-lg border-[#1a5163] focus-visible:ring-0 focus-visible:ring-offset-0"
                 />
               </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-700 font-medium">Tenure (Years)</Label>
+                <Input
+                  type="number"
+                  value={inputs.years}
+                  onChange={(e) => handleInputChange("years", Number(e.target.value))}
+                  className="h-9 sm:h-8 rounded-lg border-[#1a5163] focus-visible:ring-0 focus-visible:ring-offset-0"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-700 font-medium">Expected Return (%)</Label>
+                <Input
+                  type="number"
+                  value={inputs.expectedReturnRate * 100}
+                  onChange={(e) => handleInputChange("expectedReturnRate", Number(e.target.value) / 100)}
+                  className="h-9 sm:h-8 rounded-lg border-[#1a5163] focus-visible:ring-0 focus-visible:ring-offset-0"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-700 font-medium">Inflation Rate (%)</Label>
+                <Input
+                  type="number"
+                  value={inputs.inflationRate * 100}
+                  onChange={(e) => handleInputChange("inflationRate", Number(e.target.value) / 100)}
+                  className="h-9 sm:h-8 rounded-lg border-[#1a5163] focus-visible:ring-0 focus-visible:ring-offset-0"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-700 font-medium">Tax Rate (%)</Label>
+                <Input
+                  type="number"
+                  value={inputs.taxRate * 100}
+                  onChange={(e) => handleInputChange("taxRate", Number(e.target.value) / 100)}
+                  className="h-9 sm:h-8 rounded-lg border-[#1a5163] focus-visible:ring-0 focus-visible:ring-offset-0"
+                />
+              </div>
+            </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Tenure (Years)</Label>
-                  <Input
-                    type="number"
-                    value={inputs.years}
-                    onChange={(e) => handleInputChange('years', Number(e.target.value))}
-                    className="h-10 print-input"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Expected Return (%)</Label>
-                  <Input
-                    type="number"
-                    value={inputs.expectedReturnRate * 100}
-                    onChange={(e) => handleInputChange('expectedReturnRate', Number(e.target.value) / 100)}
-                    className="h-10 print-input"
-                  />
+            {/* Step-up + inflation adjusted */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 items-end">
+              <div className="space-y-1 max-w-xs">
+                <Label className="text-xs text-gray-700 font-medium">Step-Up SIP Rate (%)</Label>
+                <Input
+                  type="number"
+                  value={inputs.stepUpPercentage * 100}
+                  onChange={(e) => handleInputChange("stepUpPercentage", Number(e.target.value) / 100)}
+                  className="h-9 sm:h-8 rounded-lg border-[#1a5163] focus-visible:ring-0 focus-visible:ring-offset-0"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-700 font-medium mb-1 block">
+                  Inflation Adjusted Goal Amount
+                </Label>
+                <div className="h-9 sm:h-8 w-full rounded-lg border border-[#1a5163] bg-[#d9ebd9] flex items-center justify-center px-3 font-medium text-sm text-[#1a5163]">
+                  {formatIndianCurrency(results.targetGoal)}
                 </div>
               </div>
+            </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Tax Rate (%)</Label>
-                  <Input
-                    type="number"
-                    value={inputs.taxRate * 100}
-                    onChange={(e) => handleInputChange('taxRate', Number(e.target.value) / 100)}
-                    className="h-10 print-input"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Inflation Rate (%)</Label>
-                  <Input
-                    type="number"
-                    value={inputs.inflationRate * 100}
-                    onChange={(e) => handleInputChange('inflationRate', Number(e.target.value) / 100)}
-                    className="h-10 print-input"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Step-Up Rate (%)</Label>
-                  <Input
-                    type="number"
-                    value={inputs.stepUpPercentage * 100}
-                    onChange={(e) => handleInputChange('stepUpPercentage', Number(e.target.value) / 100)}
-                    className="h-10 print-input"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Delay (Months)</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    value={inputs.delayMonths}
-                    onChange={(e) => handleInputChange('delayMonths', Number(e.target.value))}
-                    className="h-10 print-input"
-                  />
-                </div>
-              </div>
-
-              <div className="pt-4 border-t no-print">
-                <div className="flex items-center justify-between">
-                  <Label className="text-sm font-medium cursor-pointer" htmlFor="inflation-toggle">
-                    Adjust target for inflation
-                  </Label>
-                  <Switch
-                    id="inflation-toggle"
-                    checked={inputs.useInflationAdjusted}
-                    onCheckedChange={(checked) => handleInputChange('useInflationAdjusted', checked)}
-                  />
-                </div>
-              </div>
-
-            </CardContent>
-          </Card>
+            {/* Toggle */}
+            <div className="flex flex-wrap items-center gap-3 pt-1 no-print">
+              <Label
+                className="text-xs text-gray-700 font-medium cursor-pointer leading-snug"
+                htmlFor="inflation-toggle"
+              >
+                Use Inflation Adjusted Goal Amount
+              </Label>
+              <Switch
+                id="inflation-toggle"
+                checked={inputs.useInflationAdjusted}
+                onCheckedChange={(checked) => handleInputChange("useInflationAdjusted", checked)}
+                className="data-[state=checked]:bg-[#1a5163] border-[#1a5163]"
+              />
+            </div>
+          </div>
         </div>
 
-        {/* Right Column: Results */}
-        <div className="xl:col-span-8 space-y-6 relative">
-          
-          {/* Global Calculating Overlay */}
-          {isCalculating && (
-            <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-[2px] rounded-xl">
-              <div className="flex flex-col items-center gap-3 bg-card p-6 rounded-xl shadow-lg border">
-                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-sm font-semibold text-foreground">Calculating Plan...</p>
-              </div>
-            </div>
-          )}
+        {/* Target Goal Summary Banner */}
+        <div className="bg-[#247c94] text-white rounded-lg p-3 px-4 sm:px-6 shadow-sm flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+          <span className="font-semibold text-sm sm:text-base">
+            Goal Amount / Infl. Adjusted Goal Amount:
+          </span>
+          <span className="font-bold text-base sm:text-lg tracking-wide">
+            Rs. {results.targetGoal.toLocaleString("en-IN")}
+          </span>
+        </div>
 
-          {/* Target Goal Summary */}
-          <Card className="shadow-none border rounded-xl overflow-hidden bg-card">
-            <CardContent className="p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <div className="text-muted-foreground font-medium text-sm flex items-center gap-2">
-                    {inputs.useInflationAdjusted ? "Inflation Adjusted Target" : "Target Goal"}
-                  </div>
-                  <div
-                    className="text-4xl font-bold tracking-tight truncate"
-                    title={formatIndianCurrency(results.targetGoal)}
-                  >
-                    {formatIndianCurrency(results.targetGoal)}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Results: 1 col mobile → 2 col tablet → 3 col laptop */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:min-h-[420px]">
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Standard SIP Panel */}
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold border-b pb-2 flex items-center gap-2">
-                SIP Based Investment
-              </h2>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="sm:col-span-2">
-                  <StatBox
-                    title="Monthly SIP Required"
-                    value={formatIndianCurrency(results.sipRequired)}
-                    icon={Wallet}
-                    highlight={true}
-                  />
-                </div>
-                <StatBox
-                  title="Total Invested"
-                  value={formatIndianCurrency(results.sipTotalInvested)}
-                  icon={TrendingUp}
-                />
-                <StatBox
-                  title="Capital Gains Tax"
-                  value={formatIndianCurrency(results.sipTax)}
-                  icon={Info}
-                />
+          {/* Standard SIP Panel */}
+          <div className="bg-[#fff9eb] border-[1.5px] border-[#1a5163] rounded-2xl p-4 flex flex-col items-center">
+            <h2 className="text-[#a47b2c] text-sm sm:text-[15px] font-semibold mb-3 sm:mb-4 text-center">
+              SIP Based Investment
+            </h2>
+            <div className="w-full bg-[#af8821] rounded-xl p-3 sm:p-4 text-center text-white mb-3 sm:mb-4 shadow-sm border border-[#9c781d]">
+              <div className="text-sm font-medium mb-1 sm:mb-2">Monthly SIP Required</div>
+              <div className="text-xl sm:text-2xl font-bold break-all">
+                {formatIndianCurrency(results.sipRequired).replace("₹", "")}
               </div>
             </div>
 
-            {/* Step-Up SIP Panel */}
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold border-b pb-2 flex items-center gap-2">
-                Step-Up SIP Based Investment
-              </h2>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="sm:col-span-2">
-                  <StatBox
-                    title="Starting SIP Amount"
-                    value={formatIndianCurrency(results.suStartAmount)}
-                    icon={Wallet}
-                    highlight={true}
-                    subtext={`Increases by ${inputs.stepUpPercentage * 100}% annually`}
-                  />
-                </div>
-                <StatBox
-                  title="Total Invested"
-                  value={formatIndianCurrency(results.suTotalInvested)}
-                  icon={TrendingUp}
-                />
-                <StatBox
-                  title="Capital Gains Tax"
-                  value={formatIndianCurrency(results.suTax)}
-                  icon={Info}
-                />
-              </div>
-
-              <div className="mt-4 pt-4 border-t">
-                <h3 className="text-sm font-semibold flex items-center gap-2 mb-3">
-                  <ArrowRight className="w-4 h-4" /> End of Tenure Outlook
-                </h3>
-                <div className="overflow-hidden">
-                  <div className="text-xs font-medium text-muted-foreground mb-1">Final Year Monthly SIP Amount</div>
-                  <div className="text-base font-semibold truncate">
-                    {formatIndianCurrency(results.suEndAmount)}
-                  </div>
+            <div className="w-full grow flex flex-col justify-between gap-2.5 sm:gap-3">
+              <div className="bg-white border-[1.5px] border-[#1a5163] rounded-lg p-3 text-center flex-1 flex flex-col justify-center">
+                <div className="text-xs font-semibold text-gray-800">Total Invested</div>
+                <div className="text-base sm:text-lg font-bold text-gray-800 mt-1 break-all">
+                  {formatIndianCurrency(results.sipTotalInvested).replace("₹", "")}
                 </div>
               </div>
-            </div>
-
-            {/* Comparison Chart */}
-            <div className="md:col-span-2 break-inside-avoid print:break-inside-avoid">
-              <Card className="shadow-none border rounded-xl overflow-hidden bg-card">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5" />
-                    Standard vs Step-Up Comparison
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ChartContainer config={chartConfig} className="min-h-[400px] w-full">
-                    <BarChart
-                      accessibilityLayer
-                      data={[
-                        {
-                          name: "Amount Invested",
-                          Standard: results.sipTotalInvested,
-                          StepUp: results.suTotalInvested,
-                        },
-                        {
-                          name: "Cap Gains Tax",
-                          Standard: results.sipTax,
-                          StepUp: results.suTax,
-                        },
-                        {
-                          name: "Final Corpus Value",
-                          Standard: results.sipMaturityValue,
-                          StepUp: results.suMaturityValue,
-                        },
-                      ]}
-                      margin={{ top: 30, right: 20, left: 10, bottom: 5 }}
-                    >
-                      <CartesianGrid vertical={false} horizontal={true} strokeDasharray="3 3" />
-                      <XAxis
-                        dataKey="name"
-                        tickLine={false}
-                        tickMargin={15}
-                        axisLine={true}
-                        tick={{ fontSize: 12, fontWeight: 500 }}
-                      />
-                      <YAxis
-                        width={110}
-                        axisLine={false}
-                        tickLine={false}
-                        tickMargin={5}
-                        tick={{ fontSize: 12, fill: "#666" }}
-                        tickFormatter={(value) => `₹${value.toLocaleString('en-IN')}`}
-                      />
-                      <ChartTooltip
-                        cursor={false}
-                        content={<ChartTooltipContent indicator="dashed" />}
-                      />
-                      <Legend verticalAlign="bottom" height={36} iconType="square" wrapperStyle={{ paddingTop: "20px" }} />
-                      <Bar dataKey="Standard" name="SIP" fill="var(--color-Standard)" radius={[2, 2, 0, 0]} isAnimationActive={false}>
-                        <LabelList dataKey="Standard" content={<CustomBarLabelSIP />} />
-                      </Bar>
-                      <Bar dataKey="StepUp" name="StepUP SIP" fill="var(--color-StepUp)" radius={[2, 2, 0, 0]} isAnimationActive={false}>
-                        <LabelList dataKey="StepUp" content={<CustomBarLabelStepUp />} />
-                      </Bar>
-                    </BarChart>
-                  </ChartContainer>
-                </CardContent>
-              </Card>
+              <div className="bg-white border-[1.5px] border-[#1a5163] rounded-lg p-3 text-center flex-1 flex flex-col justify-center">
+                <div className="text-xs font-semibold text-gray-800">Capital Gains Tax</div>
+                <div className="text-base sm:text-lg font-bold text-gray-800 mt-1 break-all">
+                  {formatIndianCurrency(results.sipTax).replace("₹", "")}
+                </div>
+              </div>
+              <div className="bg-white border-[1.5px] border-[#1a5163] rounded-lg p-3 text-center flex-1 flex flex-col justify-center">
+                <div className="text-xs font-semibold text-gray-800">Final Corpus Value</div>
+                <div className="text-base sm:text-lg font-bold text-gray-800 mt-1 break-all">
+                  {formatIndianCurrency(results.sipMaturityValue).replace("₹", "")}
+                </div>
+              </div>
             </div>
           </div>
 
+          {/* Step-Up SIP Panel */}
+          <div className="bg-[#e4eed7] border-[1.5px] border-[#1a5163] rounded-2xl p-4 flex flex-col items-center">
+            <h2 className="text-[#a47b2c] text-sm sm:text-[15px] font-semibold mb-3 sm:mb-4 text-center">
+              Step-Up SIP Based Investment
+            </h2>
+            <div className="w-full bg-[#af8821] rounded-xl p-3 text-center text-white mb-3 sm:mb-4 shadow-sm border border-[#9c781d]">
+              <div className="text-xs sm:text-[13px] font-medium mb-1">Starting Monthly SIP Amount</div>
+              <div className="text-lg sm:text-xl font-bold break-all">
+                {formatIndianCurrency(results.suStartAmount).replace("₹", "")}
+              </div>
+              <div className="text-[11px] font-normal mt-1 opacity-90">
+                Increase {inputs.stepUpPercentage * 100}% Annually
+              </div>
+              <div className="text-[11px] mt-1.5 opacity-90 break-all">
+                Final Year SIP: Rs. {formatIndianCurrency(results.suEndAmount).replace("₹", "")}
+              </div>
+            </div>
+
+            <div className="w-full grow flex flex-col justify-between gap-2.5 sm:gap-3">
+              <div className="bg-white border-[1.5px] border-[#1a5163] rounded-lg p-3 text-center flex-1 flex flex-col justify-center">
+                <div className="text-xs font-semibold text-gray-800">Total Invested</div>
+                <div className="text-base sm:text-lg font-bold text-gray-800 mt-1 break-all">
+                  {formatIndianCurrency(results.suTotalInvested).replace("₹", "")}
+                </div>
+              </div>
+              <div className="bg-white border-[1.5px] border-[#1a5163] rounded-lg p-3 text-center flex-1 flex flex-col justify-center">
+                <div className="text-xs font-semibold text-gray-800">Capital Gains Tax</div>
+                <div className="text-base sm:text-lg font-bold text-gray-800 mt-1 break-all">
+                  {formatIndianCurrency(results.suTax).replace("₹", "")}
+                </div>
+              </div>
+              <div className="bg-white border-[1.5px] border-[#1a5163] rounded-lg p-3 text-center flex-1 flex flex-col justify-center">
+                <div className="text-xs font-semibold text-gray-800">Final Corpus Value</div>
+                <div className="text-base sm:text-lg font-bold text-gray-800 mt-1 break-all">
+                  {formatIndianCurrency(results.suMaturityValue).replace("₹", "")}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Comparison Chart */}
+          <div className="bg-white border-[1.5px] border-[#1a5163] rounded-2xl p-4 flex flex-col md:col-span-2 lg:col-span-1 min-h-[280px] sm:min-h-[320px] lg:min-h-0 lg:h-full">
+            <h2 className="text-[#1a5163] text-sm font-semibold mb-2 text-center lg:hidden">
+              Visual Comparison
+            </h2>
+            {results.targetGoal > 0 ? (
+              <div className="flex-1 min-h-[240px] relative">
+                <ChartContainer config={chartConfig} className="absolute inset-0 w-full h-full">
+                  <BarChart
+                    accessibilityLayer
+                    data={comparisonChartData(results)}
+                    margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
+                    barGap={0}
+                  >
+                    <CartesianGrid vertical={false} horizontal={false} />
+                    <ChartTooltip
+                      cursor={false}
+                      content={<ChartTooltipContent indicator="dashed" />}
+                    />
+                    <Bar
+                      dataKey="Standard"
+                      name="SIP"
+                      fill="var(--color-Standard)"
+                      stroke="#000"
+                      strokeWidth={1}
+                      isAnimationActive={false}
+                    />
+                    <Bar
+                      dataKey="StepUp"
+                      name="StepUP SIP"
+                      fill="var(--color-StepUp)"
+                      stroke="#000"
+                      strokeWidth={1}
+                      isAnimationActive={false}
+                    />
+                  </BarChart>
+                </ChartContainer>
+              </div>
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center text-[#1a5163] opacity-80 h-full p-4 text-center">
+                <TrendingUp className="w-12 h-12 mb-3 opacity-50" />
+                <p className="text-sm font-medium">No active data to display.</p>
+                <p className="text-xs mt-1">
+                  Please enter a valid Target Goal Amount to view the comparison chart.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Yearly Schedule Section */}
-      <div className="mt-16 border-t pt-10 print:mt-16 print:pt-10 break-inside-avoid print:break-inside-avoid">
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-xl font-bold">Investment Performance - Value by Year</h2>
+      <div className="mt-10 sm:mt-16 border-t pt-8 sm:pt-10 print:mt-16 print:pt-10 break-inside-avoid print:break-inside-avoid">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8">
+          <h2 className="text-lg sm:text-xl font-bold">
+            Investment Performance - Value by Year
+          </h2>
           <Button
             variant="outline"
-            className="no-print gap-2"
+            className="no-print gap-2 w-full sm:w-auto shrink-0"
             onClick={() => setShowSchedule(!showSchedule)}
           >
             <Table className="w-4 h-4" />
@@ -487,57 +440,86 @@ export default function Home() {
           </Button>
         </div>
 
-        <div className={`${showSchedule ? 'block' : 'hidden'} print:block`}>
-          
+        <div className={`${showSchedule ? "block" : "hidden"} print:block`}>
           {/* Web View: Tabs */}
           <div className="no-print">
             <Tabs defaultValue="standard" className="w-full flex flex-col">
-              <div className="flex justify-center w-full mb-8">
-                <TabsList className="grid w-full max-w-md grid-cols-2">
-                  <TabsTrigger value="standard">Standard SIP Schedule</TabsTrigger>
-                  <TabsTrigger value="stepup">Step-Up SIP Schedule</TabsTrigger>
+              <div className="flex justify-center w-full mb-4 sm:mb-8">
+                <TabsList className="grid w-full max-w-md grid-cols-2 h-auto">
+                  <TabsTrigger value="standard" className="text-xs sm:text-sm py-2">
+                    Standard SIP
+                  </TabsTrigger>
+                  <TabsTrigger value="stepup" className="text-xs sm:text-sm py-2">
+                    Step-Up SIP
+                  </TabsTrigger>
                 </TabsList>
               </div>
-              
+
               <TabsContent value="standard" className="mt-0">
-                <div className="overflow-x-auto rounded-lg border">
-                  <table className="w-full text-sm text-left">
+                <div className="overflow-x-auto rounded-lg border -mx-1 px-0">
+                  <table className="w-full text-xs sm:text-sm text-left min-w-[320px]">
                     <thead className="bg-muted text-muted-foreground">
                       <tr>
-                        <th className="px-4 py-3 font-semibold border-b">Year</th>
-                        <th className="px-4 py-3 font-semibold border-b border-l">Monthly SIP</th>
-                        <th className="px-4 py-3 font-semibold border-b">Year-End Value</th>
+                        <th className="px-3 sm:px-4 py-2.5 sm:py-3 font-semibold border-b">Year</th>
+                        <th className="px-3 sm:px-4 py-2.5 sm:py-3 font-semibold border-b border-l">
+                          Monthly SIP
+                        </th>
+                        <th className="px-3 sm:px-4 py-2.5 sm:py-3 font-semibold border-b">
+                          Year-End Value
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {results.yearlyData.map((data) => (
-                        <tr key={data.year} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
-                          <td className="px-4 py-3 text-center w-24">{data.year}</td>
-                          <td className="px-4 py-3 border-l text-right font-medium">{formatIndianCurrency(data.sipAmount)}</td>
-                          <td className="px-4 py-3 text-right">{formatIndianCurrency(data.sipBalance)}</td>
+                        <tr
+                          key={data.year}
+                          className="border-b last:border-0 hover:bg-muted/50 transition-colors"
+                        >
+                          <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-center w-16 sm:w-24">
+                            {data.year}
+                          </td>
+                          <td className="px-3 sm:px-4 py-2.5 sm:py-3 border-l text-right font-medium whitespace-nowrap">
+                            {formatIndianCurrency(data.sipAmount)}
+                          </td>
+                          <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-right whitespace-nowrap">
+                            {formatIndianCurrency(data.sipBalance)}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
               </TabsContent>
-              
+
               <TabsContent value="stepup" className="mt-0">
-                <div className="overflow-x-auto rounded-lg border">
-                  <table className="w-full text-sm text-left">
+                <div className="overflow-x-auto rounded-lg border -mx-1 px-0">
+                  <table className="w-full text-xs sm:text-sm text-left min-w-[320px]">
                     <thead className="bg-muted text-muted-foreground">
                       <tr>
-                        <th className="px-4 py-3 font-semibold border-b">Year</th>
-                        <th className="px-4 py-3 font-semibold border-b border-l">Monthly SIP</th>
-                        <th className="px-4 py-3 font-semibold border-b">Year-End Value</th>
+                        <th className="px-3 sm:px-4 py-2.5 sm:py-3 font-semibold border-b">Year</th>
+                        <th className="px-3 sm:px-4 py-2.5 sm:py-3 font-semibold border-b border-l">
+                          Monthly SIP
+                        </th>
+                        <th className="px-3 sm:px-4 py-2.5 sm:py-3 font-semibold border-b">
+                          Year-End Value
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {results.yearlyData.map((data) => (
-                        <tr key={data.year} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
-                          <td className="px-4 py-3 text-center w-24">{data.year}</td>
-                          <td className="px-4 py-3 border-l text-right font-medium">{formatIndianCurrency(data.stepUpAmount)}</td>
-                          <td className="px-4 py-3 text-right">{formatIndianCurrency(data.stepUpBalance)}</td>
+                        <tr
+                          key={data.year}
+                          className="border-b last:border-0 hover:bg-muted/50 transition-colors"
+                        >
+                          <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-center w-16 sm:w-24">
+                            {data.year}
+                          </td>
+                          <td className="px-3 sm:px-4 py-2.5 sm:py-3 border-l text-right font-medium whitespace-nowrap">
+                            {formatIndianCurrency(data.stepUpAmount)}
+                          </td>
+                          <td className="px-3 sm:px-4 py-2.5 sm:py-3 text-right whitespace-nowrap">
+                            {formatIndianCurrency(data.stepUpBalance)}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -554,50 +536,80 @@ export default function Home() {
                 <thead className="bg-gray-100 text-gray-700">
                   <tr>
                     <th className="px-4 py-3 font-bold border-b border-gray-300">Year</th>
-                    <th className="px-4 py-3 font-bold border-b border-gray-300 border-l">Standard Monthly SIP</th>
-                    <th className="px-4 py-3 font-bold border-b border-gray-300">Standard Year-End Value</th>
-                    <th className="px-4 py-3 font-bold border-b border-gray-300 border-l">Step-Up Monthly SIP</th>
-                    <th className="px-4 py-3 font-bold border-b border-gray-300">Step-Up Year-End Value</th>
+                    <th className="px-4 py-3 font-bold border-b border-gray-300 border-l">
+                      Standard Monthly SIP
+                    </th>
+                    <th className="px-4 py-3 font-bold border-b border-gray-300">
+                      Standard Year-End Value
+                    </th>
+                    <th className="px-4 py-3 font-bold border-b border-gray-300 border-l">
+                      Step-Up Monthly SIP
+                    </th>
+                    <th className="px-4 py-3 font-bold border-b border-gray-300">
+                      Step-Up Year-End Value
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {results.yearlyData.map((data) => (
                     <tr key={data.year} className="border-b border-gray-200 last:border-0">
                       <td className="px-4 py-3 text-center text-gray-900">{data.year}</td>
-                      <td className="px-4 py-3 border-l border-gray-200 text-right font-medium text-gray-900">{formatIndianCurrency(data.sipAmount)}</td>
-                      <td className="px-4 py-3 text-right text-gray-900">{formatIndianCurrency(data.sipBalance)}</td>
-                      <td className="px-4 py-3 border-l border-gray-200 text-right font-medium text-gray-900">{formatIndianCurrency(data.stepUpAmount)}</td>
-                      <td className="px-4 py-3 text-right text-gray-900">{formatIndianCurrency(data.stepUpBalance)}</td>
+                      <td className="px-4 py-3 border-l border-gray-200 text-right font-medium text-gray-900">
+                        {formatIndianCurrency(data.sipAmount)}
+                      </td>
+                      <td className="px-4 py-3 text-right text-gray-900">
+                        {formatIndianCurrency(data.sipBalance)}
+                      </td>
+                      <td className="px-4 py-3 border-l border-gray-200 text-right font-medium text-gray-900">
+                        {formatIndianCurrency(data.stepUpAmount)}
+                      </td>
+                      <td className="px-4 py-3 text-right text-gray-900">
+                        {formatIndianCurrency(data.stepUpBalance)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           </div>
-
         </div>
       </div>
 
-      {/* Cost of Delay Projections (As in the official template) */}
-      <div className="mt-16 pt-10 border-t print:mt-16 print:pt-10 break-inside-avoid print:break-inside-avoid">
-        <h2 className="text-xl font-bold mb-8 flex items-center gap-2">
-          <Clock className="w-6 h-6 text-primary" /> Cost of Delay
+      {/* Cost of Delay */}
+      <div className="mt-10 sm:mt-16 pt-8 sm:pt-10 border-t print:mt-16 print:pt-10 break-inside-avoid print:break-inside-avoid">
+        <h2 className="text-lg sm:text-xl font-bold mb-4 sm:mb-8 flex items-center gap-2">
+          <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-primary shrink-0" /> Cost of Delay
         </h2>
         <div className="overflow-x-auto rounded-lg border">
-          <table className="w-full text-sm text-left">
+          <table className="w-full text-xs sm:text-sm text-left min-w-[360px]">
             <thead className="bg-muted text-muted-foreground">
               <tr>
-                <th className="px-6 py-4 font-semibold border-b text-center">Delay</th>
-                <th className="px-6 py-4 font-semibold border-b border-l text-right">SIP Amount Required</th>
-                <th className="px-6 py-4 font-semibold border-b border-l text-right">Total Addt. Amount</th>
+                <th className="px-3 sm:px-6 py-3 sm:py-4 font-semibold border-b text-center">
+                  Delay
+                </th>
+                <th className="px-3 sm:px-6 py-3 sm:py-4 font-semibold border-b border-l text-right">
+                  SIP Amount Required
+                </th>
+                <th className="px-3 sm:px-6 py-3 sm:py-4 font-semibold border-b border-l text-right">
+                  Total Addt. Amount
+                </th>
               </tr>
             </thead>
             <tbody>
               {results.delayProjections.map((proj) => (
-                <tr key={proj.months} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
-                  <td className="px-6 py-4 text-center font-medium text-base">{proj.months} Months</td>
-                  <td className="px-6 py-4 border-l text-right font-medium text-base">{formatIndianCurrency(proj.sipRequired)}</td>
-                  <td className="px-6 py-4 border-l text-right font-medium text-base text-destructive">{formatIndianCurrency(proj.costOfDelay)}</td>
+                <tr
+                  key={proj.months}
+                  className="border-b last:border-0 hover:bg-muted/50 transition-colors"
+                >
+                  <td className="px-3 sm:px-6 py-3 sm:py-4 text-center font-medium text-sm sm:text-base whitespace-nowrap">
+                    {proj.months} Months
+                  </td>
+                  <td className="px-3 sm:px-6 py-3 sm:py-4 border-l text-right font-medium text-sm sm:text-base whitespace-nowrap">
+                    {formatIndianCurrency(proj.sipRequired)}
+                  </td>
+                  <td className="px-3 sm:px-6 py-3 sm:py-4 border-l text-right font-medium text-sm sm:text-base text-destructive whitespace-nowrap">
+                    {formatIndianCurrency(proj.costOfDelay)}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -605,17 +617,20 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Footer (Visible primarily for reports) */}
-      <div className="mt-20 pt-10 border-t text-center space-y-4">
-        <p className="text-sm text-muted-foreground">
-          Thank you for reviewing the customized Goal SIP Planner. We appreciate your trust in Nivra Fintech and remain committed to providing high-quality, goal-oriented financial solutions. Please contact us should you require any further assistance.
+      {/* Footer */}
+      <div className="mt-12 sm:mt-20 pt-8 sm:pt-10 border-t text-center space-y-3 sm:space-y-4 px-1">
+        <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+          Thank you for reviewing the customized Goal SIP Planner. We appreciate your trust in
+          Nivra Fintech and remain committed to providing high-quality, goal-oriented financial
+          solutions. Please contact us should you require any further assistance.
         </p>
         <div>
-          <p className="font-bold">Nivra Fintech Team!</p>
-          <p className="text-sm text-muted-foreground italic">The Financial Engineers</p>
+          <p className="font-bold text-sm sm:text-base">Nivra Fintech Team!</p>
+          <p className="text-xs sm:text-sm text-muted-foreground italic">The Financial Engineers</p>
         </div>
       </div>
 
     </main>
+    </>
   );
 }

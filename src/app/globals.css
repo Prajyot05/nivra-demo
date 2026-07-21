@@ -140,3 +140,14 @@
     padding: 0 !important;
   }
 }
+
+/* Applied during PDF image capture for symmetric layout */
+.pdf-capture {
+  max-width: 100% !important;
+  width: 100% !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: 2rem !important;
+  padding-right: 2rem !important;
+  box-sizing: border-box !important;
+}
