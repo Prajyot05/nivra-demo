@@ -255,22 +255,22 @@ function Index() {
 
   return (
     <div
-      className="flex h-dvh flex-col overflow-y-auto bg-[var(--app-bg)] px-4 py-3 sm:px-6 md:px-8 lg:overflow-hidden lg:px-10"
+      className="flex min-h-dvh flex-col overflow-x-hidden overflow-y-auto bg-[var(--app-bg)] pt-[max(0.75rem,env(safe-area-inset-top))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] sm:px-6 md:px-8 xl:h-dvh xl:overflow-hidden xl:px-10"
       style={theme.vars as CSSProperties}
     >
-      <div className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col">
-        <div className="flex shrink-0 flex-col gap-2 pb-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+      <div className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col gap-3">
+        <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div className="min-w-0">
-            <h1 className="text-2xl font-bold tracking-tight text-[var(--app-text)] sm:text-3xl">
+            <h1 className="text-xl font-bold tracking-tight text-[var(--app-text)] sm:text-2xl lg:text-3xl">
               Goal SIP Planner
             </h1>
-            <p className="mt-0.5 text-sm text-[var(--app-text-muted)]">
+            <p className="mt-0.5 text-xs text-[var(--app-text-muted)] sm:text-sm">
               Compare Standard and Step-Up SIP requirements side-by-side.
             </p>
           </div>
-          <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-            <div className="flex items-center gap-2">
-              <Palette className="hidden h-4 w-4 text-[var(--app-text-muted)] sm:block" />
+          <div className="grid w-full shrink-0 grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center">
+            <div className="flex min-w-0 items-center gap-2">
+              <Palette className="hidden h-4 w-4 shrink-0 text-[var(--app-text-muted)] sm:block" />
               <Select
                 value={themeId}
                 onValueChange={(v) => setThemeId(v as ColorThemeId)}
@@ -299,24 +299,24 @@ function Index() {
 
         <div className="shrink-0 border-t border-[var(--app-border)]" />
 
-        <div className="mt-3 flex shrink-0 flex-col justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-5 py-6 sm:px-7 sm:py-7">
-          <div className="mb-5">
+        <div className="flex shrink-0 flex-col justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-4 sm:px-5 sm:py-5 lg:px-7 lg:py-6">
+          <div className="mb-3 sm:mb-4 lg:mb-5">
             <span className="text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
               Financial Assumptions
             </span>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-8 sm:gap-5">
+          <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-2 md:grid-cols-4 xl:grid-cols-8 sm:gap-4 lg:gap-5">
             <Field label="Client Name">
               <Input
-                className="h-11"
+                className="h-10 sm:h-11"
                 value={clientName}
                 onChange={(e) => setClientName(e.target.value)}
               />
             </Field>
             <Field label="Age">
               <Input
-                className="h-11"
+                className="h-10 sm:h-11"
                 type="number"
                 value={age}
                 onChange={(e) => setAge(+e.target.value)}
@@ -324,7 +324,7 @@ function Index() {
             </Field>
             <Field label="Target Goal Amount">
               <Input
-                className="h-11"
+                className="h-10 sm:h-11"
                 inputMode="numeric"
                 value={fmtINR(goal)}
                 onChange={(e) => {
@@ -335,7 +335,7 @@ function Index() {
             </Field>
             <Field label="Tenure (Yrs)">
               <Input
-                className="h-11"
+                className="h-10 sm:h-11"
                 type="number"
                 value={tenure}
                 onChange={(e) => setTenure(+e.target.value)}
@@ -343,7 +343,7 @@ function Index() {
             </Field>
             <Field label="Return (%)">
               <Input
-                className="h-11"
+                className="h-10 sm:h-11"
                 type="number"
                 value={returnPct}
                 onChange={(e) => setReturnPct(+e.target.value)}
@@ -351,7 +351,7 @@ function Index() {
             </Field>
             <Field label="Inflation (%)">
               <Input
-                className="h-11"
+                className="h-10 sm:h-11"
                 type="number"
                 value={inflation}
                 onChange={(e) => setInflation(+e.target.value)}
@@ -359,7 +359,7 @@ function Index() {
             </Field>
             <Field label="Tax (%)">
               <Input
-                className="h-11"
+                className="h-10 sm:h-11"
                 type="number"
                 value={tax}
                 onChange={(e) => setTax(+e.target.value)}
@@ -367,7 +367,7 @@ function Index() {
             </Field>
             <Field label="Step-Up (%)">
               <Input
-                className="h-11"
+                className="h-10 sm:h-11"
                 type="number"
                 value={stepUp}
                 onChange={(e) => setStepUp(+e.target.value)}
@@ -375,34 +375,36 @@ function Index() {
             </Field>
           </div>
 
-          <div className="mt-5 flex min-h-9 flex-wrap items-center gap-x-3 gap-y-2">
+          <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 sm:mt-5">
             <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--app-text-subtle)]">
               Use Infl. Adj. Goal
             </span>
             <Switch checked={useInflAdj} onCheckedChange={setUseInflAdj} />
             <div
-              className={`flex min-w-0 flex-1 flex-wrap items-center justify-between gap-3 sm:ml-6 ${
-                useInflAdj ? "visible" : "invisible"
+              className={`flex min-w-0 flex-1 basis-full flex-col gap-2 sm:ml-6 sm:basis-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3 ${
+                useInflAdj
+                  ? "visible"
+                  : "hidden sm:invisible sm:flex"
               }`}
               aria-hidden={!useInflAdj}
             >
               <Badge
                 variant="secondary"
-                className="border border-[var(--app-warn-border)] bg-[var(--app-warn-bg)] px-3 py-1.5 text-xs font-medium text-[var(--app-warn-text)] shadow-sm"
+                className="w-fit max-w-full border border-[var(--app-warn-border)] bg-[var(--app-warn-bg)] px-3 py-1.5 text-xs font-medium break-words text-[var(--app-warn-text)] shadow-sm"
               >
                 Inflation Adjusted Goal:{" "}
                 <span className="ml-1 font-semibold tabular-nums text-[var(--app-warn-text-strong)]">
                   ₹{fmtINR(inflAdjGoal)}
                 </span>
               </Badge>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[var(--app-text-muted)]">
-                <span>
+              <div className="flex flex-col gap-1 text-xs text-[var(--app-text-muted)] sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-1">
+                <span className="min-w-0">
                   Target Goal Amount:{" "}
                   <span className="font-semibold text-[var(--app-text)]">
                     {fmtRsUnit(goal)}
                   </span>
                 </span>
-                <span className="text-[var(--app-warn-muted)]">
+                <span className="min-w-0 text-[var(--app-warn-muted)]">
                   Inflation Adjusted Goal:{" "}
                   <span className="font-semibold text-[var(--app-warn-text-strong)]">
                     {fmtRsUnit(inflAdjGoal)}
@@ -413,11 +415,11 @@ function Index() {
           </div>
         </div>
 
-        <div className="mt-3 grid min-h-[520px] flex-1 grid-cols-1 gap-3 md:gap-4 lg:min-h-0 lg:grid-cols-12">
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 md:gap-4 xl:min-h-0 xl:grid-cols-12">
           {/* Chart + SIP panel */}
-          <div className="flex min-h-0 lg:col-span-7">
+          <div className="flex min-h-0 xl:col-span-7">
             <div className="flex min-h-0 w-full flex-col rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 sm:p-4">
-              <div className="grid shrink-0 grid-cols-1 gap-2 sm:grid-cols-2">
+              <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
                 <SipCard
                   title="Standard SIP"
                   amount={standardSIP}
@@ -451,7 +453,7 @@ function Index() {
               </div>
 
               {chartType === "pie" ? (
-                <div className="mt-3 grid min-h-0 flex-1 grid-cols-1 gap-3 md:grid-cols-2">
+                <div className="mt-3 grid min-h-0 flex-1 grid-cols-1 gap-3 md:grid-cols-2 xl:min-h-[320px]">
                   <DonutPanel
                     title="Standard SIP"
                     data={stdDonut}
@@ -472,7 +474,7 @@ function Index() {
                   />
                 </div>
               ) : (
-                <div className="mt-3 flex min-h-0 flex-1 flex-col justify-evenly">
+                <div className="mt-3 flex min-h-0 flex-1 flex-col justify-evenly overflow-x-auto">
                   <div className="mb-1 flex items-center justify-end gap-4 text-xs text-[var(--app-text-muted)]">
                     <span className="flex items-center gap-1.5">
                       <span className="h-2 w-2 rounded-full bg-[var(--app-primary)]" />
@@ -501,7 +503,7 @@ function Index() {
                     step={stepCorpus}
                     max={maxBar}
                   />
-                  <div className="mt-2 flex justify-between pl-12 text-[10px] text-[var(--app-text-subtle)] sm:pl-20 sm:pr-24 sm:text-[11px]">
+                  <div className="mt-2 flex justify-between pl-10 text-[10px] text-[var(--app-text-subtle)] sm:pl-20 sm:pr-24 sm:text-[11px]">
                     <span>0</span>
                     <span className="hidden sm:inline">
                       {fmtLakh(maxBar * 0.25)}
@@ -518,13 +520,13 @@ function Index() {
           </div>
 
           {/* Schedule + Delay */}
-          <div className="flex min-h-0 flex-col gap-3 lg:col-span-5">
-            <div className="flex min-h-0 flex-1 flex-col rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 sm:p-4">
+          <div className="flex min-h-0 flex-col gap-3 xl:col-span-5 xl:min-h-0">
+            <div className="flex min-h-[280px] flex-1 flex-col rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 sm:min-h-[320px] sm:p-4 xl:min-h-0">
               <div className="flex shrink-0 items-center gap-2 text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
                 <Calendar className="h-4 w-4 shrink-0" />
                 Yearly Schedule
               </div>
-              <div className="mt-2 flex shrink-0 flex-wrap gap-3 text-[10px] font-semibold uppercase tracking-wider">
+              <div className="mt-2 flex shrink-0 flex-wrap gap-2 text-[10px] font-semibold uppercase tracking-wider sm:gap-3">
                 <span className="rounded bg-[var(--app-std-bg)] px-2 py-0.5 text-[var(--app-std-text)]">
                   Standard SIP
                 </span>
@@ -534,48 +536,50 @@ function Index() {
               </div>
 
               <div className="mt-3 min-h-0 flex-1 overflow-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="sticky top-0 bg-[var(--app-surface)] text-[10px] uppercase tracking-widest">
-                        Yr
-                      </TableHead>
-                      <TableHead className="sticky top-0 bg-[var(--app-std-bg-soft)] text-[10px] uppercase tracking-widest text-[var(--app-std-text)]">
-                        Std Monthly
-                      </TableHead>
-                      <TableHead className="sticky top-0 bg-[var(--app-std-bg-soft)] text-right text-[10px] uppercase tracking-widest text-[var(--app-std-text)]">
-                        Std Year-End
-                      </TableHead>
-                      <TableHead className="sticky top-0 bg-[var(--app-step-bg-soft)] text-[10px] uppercase tracking-widest text-[var(--app-step-text)]">
-                        Step Monthly
-                      </TableHead>
-                      <TableHead className="sticky top-0 bg-[var(--app-step-bg-soft)] text-right text-[10px] uppercase tracking-widest text-[var(--app-step-text)]">
-                        Step Year-End
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {combinedSchedule.map((row) => (
-                      <TableRow key={row.year}>
-                        <TableCell className="py-1 text-xs font-medium">
-                          {row.year}
-                        </TableCell>
-                        <TableCell className="bg-[var(--app-std-bg-soft)] py-1 text-xs whitespace-nowrap text-[var(--app-std-text-strong)]">
-                          ₹{fmtINR(row.stdMonthly)}
-                        </TableCell>
-                        <TableCell className="bg-[var(--app-std-bg-soft)] py-1 text-right text-xs whitespace-nowrap text-[var(--app-std-text-strong)]">
-                          ₹{fmtINR(row.stdYearEnd)}
-                        </TableCell>
-                        <TableCell className="bg-[var(--app-step-bg-soft)] py-1 text-xs whitespace-nowrap text-[var(--app-step-text-strong)]">
-                          ₹{fmtINR(row.stepMonthly)}
-                        </TableCell>
-                        <TableCell className="bg-[var(--app-step-bg-soft)] py-1 text-right text-xs whitespace-nowrap text-[var(--app-step-text-strong)]">
-                          ₹{fmtINR(row.stepYearEnd)}
-                        </TableCell>
+                <div className="min-w-[520px]">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="sticky top-0 bg-[var(--app-surface)] text-[10px] uppercase tracking-widest">
+                          Yr
+                        </TableHead>
+                        <TableHead className="sticky top-0 bg-[var(--app-std-bg-soft)] text-[10px] uppercase tracking-widest text-[var(--app-std-text)]">
+                          Std Monthly
+                        </TableHead>
+                        <TableHead className="sticky top-0 bg-[var(--app-std-bg-soft)] text-right text-[10px] uppercase tracking-widest text-[var(--app-std-text)]">
+                          Std Year-End
+                        </TableHead>
+                        <TableHead className="sticky top-0 bg-[var(--app-step-bg-soft)] text-[10px] uppercase tracking-widest text-[var(--app-step-text)]">
+                          Step Monthly
+                        </TableHead>
+                        <TableHead className="sticky top-0 bg-[var(--app-step-bg-soft)] text-right text-[10px] uppercase tracking-widest text-[var(--app-step-text)]">
+                          Step Year-End
+                        </TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {combinedSchedule.map((row) => (
+                        <TableRow key={row.year}>
+                          <TableCell className="py-1 text-xs font-medium">
+                            {row.year}
+                          </TableCell>
+                          <TableCell className="bg-[var(--app-std-bg-soft)] py-1 text-xs whitespace-nowrap text-[var(--app-std-text-strong)]">
+                            ₹{fmtINR(row.stdMonthly)}
+                          </TableCell>
+                          <TableCell className="bg-[var(--app-std-bg-soft)] py-1 text-right text-xs whitespace-nowrap text-[var(--app-std-text-strong)]">
+                            ₹{fmtINR(row.stdYearEnd)}
+                          </TableCell>
+                          <TableCell className="bg-[var(--app-step-bg-soft)] py-1 text-xs whitespace-nowrap text-[var(--app-step-text-strong)]">
+                            ₹{fmtINR(row.stepMonthly)}
+                          </TableCell>
+                          <TableCell className="bg-[var(--app-step-bg-soft)] py-1 text-right text-xs whitespace-nowrap text-[var(--app-step-text-strong)]">
+                            ₹{fmtINR(row.stepYearEnd)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </div>
             </div>
 
@@ -652,11 +656,11 @@ function SipCard({
   accent: string;
 }) {
   return (
-    <div className={`rounded-lg ${accent} px-4 py-3 text-center`}>
-      <div className="text-xs font-semibold uppercase tracking-wider text-[var(--app-primary-fg-muted)]">
+    <div className={`rounded-lg ${accent} px-3 py-2.5 text-center sm:px-4 sm:py-3`}>
+      <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-primary-fg-muted)] sm:text-xs">
         {title} · Monthly SIP
       </div>
-      <div className="mt-1.5 text-2xl font-semibold text-[var(--app-primary-fg)] sm:text-3xl">
+      <div className="mt-1 truncate text-lg font-semibold tabular-nums text-[var(--app-primary-fg)] sm:mt-1.5 sm:text-2xl lg:text-3xl">
         Rs. {fmtINR(amount)}
       </div>
     </div>
@@ -680,22 +684,33 @@ function DonutPanel({
   taxAmt: number;
   chartColors: { invested: string; gain: string; tax: string };
 }) {
+  const corpusLabel = fmtLakh(corpus);
+  const corpusFont =
+    corpusLabel.length > 9
+      ? "text-[9px] sm:text-[10px]"
+      : corpusLabel.length > 7
+        ? "text-[10px] sm:text-xs"
+        : "text-xs sm:text-sm";
+
   return (
-    <div className="flex min-h-0 flex-1 flex-col rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3">
+    <div className="flex min-h-0 flex-col rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-2.5 sm:p-3">
       <div className="shrink-0 text-center text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
         {title}
       </div>
-      <div className="mt-2 flex min-h-0 flex-1 items-center justify-center py-1">
-        <div className="relative aspect-square h-full max-h-[300px] w-full max-w-[300px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
+      <div className="mt-2 flex min-h-[180px] shrink-0 items-center justify-center py-2 sm:min-h-[220px]">
+        <div className="relative aspect-square w-full max-w-[180px] sm:max-w-[220px] md:max-w-[240px] lg:max-w-[220px] xl:max-w-[250px]">
+          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+            <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
               <Pie
                 data={data}
                 dataKey="value"
-                innerRadius="58%"
-                outerRadius="88%"
+                cx="50%"
+                cy="50%"
+                innerRadius="65%"
+                outerRadius="95%"
                 paddingAngle={2}
                 stroke="none"
+                isAnimationActive={false}
               >
                 {data.map((d, i) => (
                   <Cell key={i} fill={d.color} />
@@ -703,12 +718,17 @@ function DonutPanel({
               </Pie>
             </PieChart>
           </ResponsiveContainer>
-          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-            <div className="text-[10px] font-semibold uppercase tracking-widest text-[var(--app-text-subtle)]">
-              Corpus
-            </div>
-            <div className="text-base font-semibold text-[var(--app-text)] sm:text-lg">
-              {fmtINR(corpus)}
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <div className="flex w-[60%] flex-col items-center justify-center overflow-hidden text-center">
+              <div className="text-[8px] font-semibold uppercase tracking-widest text-[var(--app-text-subtle)] sm:text-[9px]">
+                Corpus
+              </div>
+              <div
+                className={`mt-0.5 w-full font-semibold leading-none tabular-nums text-[var(--app-text)] ${corpusFont}`}
+                style={{ wordBreak: "break-word" }}
+              >
+                {corpusLabel}
+              </div>
             </div>
           </div>
         </div>
@@ -744,18 +764,18 @@ function LegendRow({
   value: number;
 }) {
   return (
-    <div className="flex items-center justify-between text-sm">
-      <div className="flex items-center gap-2 text-[var(--app-text-muted)]">
+    <div className="flex items-center justify-between gap-2 text-sm">
+      <div className="flex min-w-0 items-center gap-2 text-[var(--app-text-muted)]">
         <span
-          className="h-2 w-2 rounded-full"
+          className="h-2 w-2 shrink-0 rounded-full"
           style={{ backgroundColor: color }}
         />
-        <span className="text-[10px] font-semibold uppercase tracking-wider sm:text-xs">
+        <span className="truncate text-[10px] font-semibold uppercase tracking-wider sm:text-xs">
           {label}
         </span>
       </div>
-      <span className="text-xs font-medium text-[var(--app-text)] sm:text-sm">
-        {fmtINR(value)}
+      <span className="max-w-[45%] shrink-0 truncate text-right text-xs font-medium tabular-nums text-[var(--app-text)] sm:max-w-none sm:text-sm">
+        {value >= 100000 ? fmtLakh(value) : fmtINR(value)}
       </span>
     </div>
   );
@@ -773,7 +793,7 @@ function ComparisonGroup({
   max: number;
 }) {
   return (
-    <div className="mt-4 sm:mt-5">
+    <div className="mt-3 sm:mt-5">
       <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
         {label}
       </div>
@@ -801,17 +821,17 @@ function BarRow({
 }) {
   const pct = max ? (value / max) * 100 : 0;
   return (
-    <div className="mb-3 flex items-center gap-2 sm:gap-3">
-      <div className="w-12 shrink-0 text-right text-[9px] font-semibold uppercase tracking-widest text-[var(--app-text-subtle)] sm:w-16 sm:text-[10px]">
+    <div className="mb-2.5 flex items-center gap-2 sm:mb-3 sm:gap-3">
+      <div className="w-10 shrink-0 text-right text-[9px] font-semibold uppercase tracking-widest text-[var(--app-text-subtle)] sm:w-16 sm:text-[10px]">
         {label}
       </div>
-      <div className="relative h-3 min-w-0 flex-1 rounded bg-[var(--app-bar-track)] sm:h-3.5">
+      <div className="relative h-2.5 min-w-0 flex-1 rounded bg-[var(--app-bar-track)] sm:h-3.5">
         <div
           className="h-full rounded"
           style={{ width: `${pct}%`, backgroundColor: color }}
         />
       </div>
-      <div className="w-20 shrink-0 text-right text-xs font-medium text-[var(--app-text)] sm:w-24 sm:text-sm">
+      <div className="w-16 shrink-0 text-right text-[11px] font-medium tabular-nums text-[var(--app-text)] sm:w-24 sm:text-sm">
         {fmtINR(value)}
       </div>
     </div>
