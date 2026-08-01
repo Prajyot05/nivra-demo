@@ -255,7 +255,7 @@ function Index() {
 
   return (
     <div
-      className="flex min-h-dvh flex-col overflow-x-hidden overflow-y-auto bg-[var(--app-bg)] pt-[max(0.75rem,env(safe-area-inset-top))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] sm:px-6 md:px-8 xl:h-dvh xl:overflow-hidden xl:px-10"
+      className="flex min-h-dvh flex-col overflow-x-hidden overflow-y-auto bg-[var(--app-bg)] pt-[max(0.75rem,env(safe-area-inset-top))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] sm:px-6 md:px-8 lg:h-dvh lg:overflow-hidden lg:px-10"
       style={theme.vars as CSSProperties}
     >
       <div className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col gap-3">
@@ -415,9 +415,9 @@ function Index() {
           </div>
         </div>
 
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 md:gap-4 xl:min-h-0 xl:grid-cols-12">
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 md:gap-4 lg:min-h-0 lg:grid-cols-12">
           {/* Chart + SIP panel */}
-          <div className="flex min-h-0 xl:col-span-7">
+          <div className="flex min-h-0 lg:col-span-7">
             <div className="flex min-h-0 w-full flex-col rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 sm:p-4">
               <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
                 <SipCard
@@ -453,7 +453,7 @@ function Index() {
               </div>
 
               {chartType === "pie" ? (
-                <div className="mt-3 grid min-h-0 flex-1 grid-cols-1 gap-3 md:grid-cols-2 xl:min-h-[320px]">
+                <div className="mt-3 grid min-h-0 flex-1 grid-cols-1 gap-3 md:grid-cols-2">
                   <DonutPanel
                     title="Standard SIP"
                     data={stdDonut}
@@ -520,7 +520,7 @@ function Index() {
           </div>
 
           {/* Schedule + Delay */}
-          <div className="flex min-h-0 flex-col gap-3 xl:col-span-5 xl:min-h-0">
+          <div className="flex min-h-0 flex-col gap-3 lg:col-span-5 lg:min-h-0">
             <div className="flex min-h-[280px] flex-1 flex-col rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 sm:min-h-[320px] sm:p-4 xl:min-h-0">
               <div className="flex shrink-0 items-center gap-2 text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
                 <Calendar className="h-4 w-4 shrink-0" />
@@ -684,22 +684,26 @@ function DonutPanel({
   taxAmt: number;
   chartColors: { invested: string; gain: string; tax: string };
 }) {
-  const corpusLabel = fmtLakh(corpus);
+  const corpusLabel = fmtINR(corpus);
+  const len = corpusLabel.length;
+  // Larger by default; shrinks by screen size and by digit length for huge amounts
   const corpusFont =
-    corpusLabel.length > 9
-      ? "text-[9px] sm:text-[10px]"
-      : corpusLabel.length > 7
-        ? "text-[10px] sm:text-xs"
-        : "text-xs sm:text-sm";
+    len > 14
+      ? "text-[10px] sm:text-xs md:text-[11px] lg:text-xs xl:text-sm"
+      : len > 11
+        ? "text-xs sm:text-sm md:text-sm lg:text-sm xl:text-base"
+        : len > 8
+          ? "text-sm sm:text-base md:text-[15px] lg:text-base xl:text-lg"
+          : "text-base sm:text-lg md:text-lg lg:text-xl xl:text-2xl";
 
   return (
     <div className="flex min-h-0 flex-col rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-2.5 sm:p-3">
       <div className="shrink-0 text-center text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
         {title}
       </div>
-      <div className="mt-2 flex min-h-[180px] shrink-0 items-center justify-center py-2 sm:min-h-[220px]">
-        <div className="relative aspect-square w-full max-w-[180px] sm:max-w-[220px] md:max-w-[240px] lg:max-w-[220px] xl:max-w-[250px]">
-          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+      <div className="mt-2 flex min-h-[160px] shrink-0 items-center justify-center py-2 sm:min-h-[180px]">
+        <div className="relative aspect-square w-full max-w-[140px] sm:max-w-[180px] md:max-w-[160px] lg:max-w-[160px] xl:max-w-[200px]">
+          <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100}>
             <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
               <Pie
                 data={data}
@@ -710,7 +714,8 @@ function DonutPanel({
                 outerRadius="95%"
                 paddingAngle={2}
                 stroke="none"
-                isAnimationActive={false}
+                isAnimationActive={true}
+                animationDuration={800}
               >
                 {data.map((d, i) => (
                   <Cell key={i} fill={d.color} />
@@ -719,13 +724,13 @@ function DonutPanel({
             </PieChart>
           </ResponsiveContainer>
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <div className="flex w-[60%] flex-col items-center justify-center overflow-hidden text-center">
-              <div className="text-[8px] font-semibold uppercase tracking-widest text-[var(--app-text-subtle)] sm:text-[9px]">
+            <div className="flex w-[78%] flex-col items-center justify-center overflow-hidden text-center">
+              <div className="text-[8px] font-semibold uppercase tracking-widest text-[var(--app-text-subtle)] sm:text-[9px] xl:text-[10px]">
                 Corpus
               </div>
               <div
-                className={`mt-0.5 w-full font-semibold leading-none tabular-nums text-[var(--app-text)] ${corpusFont}`}
-                style={{ wordBreak: "break-word" }}
+                className={`mt-0.5 w-full font-semibold leading-tight tabular-nums text-[var(--app-text)] ${corpusFont}`}
+                style={{ wordBreak: "break-all" }}
               >
                 {corpusLabel}
               </div>
@@ -774,8 +779,8 @@ function LegendRow({
           {label}
         </span>
       </div>
-      <span className="max-w-[45%] shrink-0 truncate text-right text-xs font-medium tabular-nums text-[var(--app-text)] sm:max-w-none sm:text-sm">
-        {value >= 100000 ? fmtLakh(value) : fmtINR(value)}
+      <span className="max-w-[55%] shrink-0 truncate text-right text-xs font-medium tabular-nums text-[var(--app-text)] sm:max-w-none sm:text-sm">
+        {fmtINR(value)}
       </span>
     </div>
   );
@@ -827,7 +832,7 @@ function BarRow({
       </div>
       <div className="relative h-2.5 min-w-0 flex-1 rounded bg-[var(--app-bar-track)] sm:h-3.5">
         <div
-          className="h-full rounded"
+          className="h-full rounded transition-all duration-700 ease-out"
           style={{ width: `${pct}%`, backgroundColor: color }}
         />
       </div>
