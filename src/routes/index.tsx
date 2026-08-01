@@ -1,11 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { Download, Calendar, Clock } from "lucide-react";
+import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { Download, Calendar, Clock, Palette } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -16,6 +23,11 @@ import {
 } from "@/components/ui/table";
 import { ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { downloadSipPdf } from "@/lib/download-sip-pdf";
+import {
+  COLOR_THEMES,
+  getColorTheme,
+  type ColorThemeId,
+} from "@/lib/color-themes";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -48,6 +60,23 @@ const fmtLakh = (n: number) => {
   if (n >= 100000) return `${(n / 100000).toFixed(1)}L`;
   if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
   return `${Math.round(n)}`;
+};
+
+/** Human-readable Rs in Cr / Lakh / Thousand */
+const fmtRsUnit = (n: number) => {
+  if (!Number.isFinite(n)) return "Rs. —";
+  const abs = Math.abs(n);
+  const sign = n < 0 ? "-" : "";
+  if (abs >= 10000000) {
+    return `${sign}Rs. ${(abs / 10000000).toFixed(2)} Cr`;
+  }
+  if (abs >= 100000) {
+    return `${sign}Rs. ${(abs / 100000).toFixed(2)} Lakh`;
+  }
+  if (abs >= 1000) {
+    return `${sign}Rs. ${(abs / 1000).toFixed(2)} Thousand`;
+  }
+  return `${sign}Rs. ${Math.round(abs)}`;
 };
 
 function calcStandardSIP(goal: number, years: number, annualReturn: number) {
@@ -122,7 +151,9 @@ function Index() {
   const [tax, setTax] = useState(12.5);
   const [stepUp, setStepUp] = useState(10);
   const [useInflAdj, setUseInflAdj] = useState(false);
-  const [view, setView] = useState<"standard" | "stepup">("standard");
+  const [chartType, setChartType] = useState<"pie" | "bar">("pie");
+  const [themeId, setThemeId] = useState<ColorThemeId>("classic");
+  const theme = useMemo(() => getColorTheme(themeId), [themeId]);
 
   const inflAdjGoal = useMemo(
     () => goal * Math.pow(1 + inflation / 100, tenure),
@@ -149,24 +180,6 @@ function Index() {
   const stdTax = (stdGain * tax) / 100;
   const stepTax = (stepGain * tax) / 100;
 
-  const activeSIP = view === "standard" ? standardSIP : stepUpSIP;
-  const activeInvested = view === "standard" ? stdInvested : stepInvested;
-  const activeGain = view === "standard" ? stdGain : stepGain;
-  const activeTax = view === "standard" ? stdTax : stepTax;
-  const activeCorpus = view === "standard" ? stdCorpus : stepCorpus;
-
-  const schedule = useMemo(
-    () =>
-      buildSchedule(
-        view === "standard" ? standardSIP : stepUpSIP,
-        tenure,
-        returnPct,
-        stepUp,
-        view === "stepup",
-      ),
-    [view, standardSIP, stepUpSIP, tenure, returnPct, stepUp],
-  );
-
   const stdSchedule = useMemo(
     () => buildSchedule(standardSIP, tenure, returnPct, stepUp, false),
     [standardSIP, tenure, returnPct, stepUp],
@@ -174,6 +187,18 @@ function Index() {
   const stepSchedule = useMemo(
     () => buildSchedule(stepUpSIP, tenure, returnPct, stepUp, true),
     [stepUpSIP, tenure, returnPct, stepUp],
+  );
+
+  const combinedSchedule = useMemo(
+    () =>
+      stdSchedule.map((row, i) => ({
+        year: row.year,
+        stdMonthly: row.monthly,
+        stdYearEnd: row.yearEnd,
+        stepMonthly: stepSchedule[i]?.monthly ?? 0,
+        stepYearEnd: stepSchedule[i]?.yearEnd ?? 0,
+      })),
+    [stdSchedule, stepSchedule],
   );
 
   const delays = [3, 6, 9, 12].map((mo) => {
@@ -184,10 +209,15 @@ function Index() {
 
   const maxBar = Math.max(stdInvested, stepInvested, stdCorpus, stepCorpus);
 
-  const donutData = [
-    { name: "Invested", value: activeInvested, color: "hsl(215 30% 15%)" },
-    { name: "Gain", value: activeGain, color: "hsl(158 64% 52%)" },
-    { name: "Tax", value: activeTax, color: "hsl(0 72% 60%)" },
+  const stdDonut = [
+    { name: "Invested", value: stdInvested, color: theme.chart.invested },
+    { name: "Gain", value: stdGain, color: theme.chart.gain },
+    { name: "Tax", value: stdTax, color: theme.chart.tax },
+  ];
+  const stepDonut = [
+    { name: "Invested", value: stepInvested, color: theme.chart.invested },
+    { name: "Gain", value: stepGain, color: theme.chart.gain },
+    { name: "Tax", value: stepTax, color: theme.chart.tax },
   ];
 
   const handleDownload = () => {
@@ -224,44 +254,69 @@ function Index() {
   };
 
   return (
-    <div className="min-h-screen bg-[#faf9f6] px-4 py-4 sm:px-6 md:px-8 lg:px-10">
-      <div className="mx-auto max-w-[1600px]">
-        <div className="flex flex-col gap-3 pb-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+    <div
+      className="flex h-dvh flex-col overflow-y-auto bg-[var(--app-bg)] px-4 py-3 sm:px-6 md:px-8 lg:overflow-hidden lg:px-10"
+      style={theme.vars as CSSProperties}
+    >
+      <div className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col">
+        <div className="flex shrink-0 flex-col gap-2 pb-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div className="min-w-0">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+            <h1 className="text-2xl font-bold tracking-tight text-[var(--app-text)] sm:text-3xl">
               Goal SIP Planner
             </h1>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-0.5 text-sm text-[var(--app-text-muted)]">
               Compare Standard and Step-Up SIP requirements side-by-side.
             </p>
           </div>
-          <Button
-            className="w-full shrink-0 bg-slate-900 hover:bg-slate-800 sm:w-auto"
-            onClick={handleDownload}
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Download
-          </Button>
+          <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+            <div className="flex items-center gap-2">
+              <Palette className="hidden h-4 w-4 text-[var(--app-text-muted)] sm:block" />
+              <Select
+                value={themeId}
+                onValueChange={(v) => setThemeId(v as ColorThemeId)}
+              >
+                <SelectTrigger className="w-full sm:w-36">
+                  <SelectValue placeholder="Theme" />
+                </SelectTrigger>
+                <SelectContent>
+                  {COLOR_THEMES.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              className="w-full bg-[var(--app-primary)] text-[var(--app-primary-fg)] hover:bg-[var(--app-primary-hover)] sm:w-auto"
+              onClick={handleDownload}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Download
+            </Button>
+          </div>
         </div>
 
-        <div className="border-t border-slate-200" />
+        <div className="shrink-0 border-t border-[var(--app-border)]" />
 
-        <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5">
-          <div className="mb-4">
-            <span className="text-xs font-semibold uppercase tracking-widest text-slate-600">
+        <div className="mt-3 flex shrink-0 flex-col justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-5 py-6 sm:px-7 sm:py-7">
+          <div className="mb-5">
+            <span className="text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
               Financial Assumptions
             </span>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-8">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-8 sm:gap-5">
             <Field label="Client Name">
               <Input
+                className="h-11"
                 value={clientName}
                 onChange={(e) => setClientName(e.target.value)}
               />
             </Field>
             <Field label="Age">
               <Input
+                className="h-11"
                 type="number"
                 value={age}
                 onChange={(e) => setAge(+e.target.value)}
@@ -269,6 +324,7 @@ function Index() {
             </Field>
             <Field label="Target Goal Amount">
               <Input
+                className="h-11"
                 inputMode="numeric"
                 value={fmtINR(goal)}
                 onChange={(e) => {
@@ -279,6 +335,7 @@ function Index() {
             </Field>
             <Field label="Tenure (Yrs)">
               <Input
+                className="h-11"
                 type="number"
                 value={tenure}
                 onChange={(e) => setTenure(+e.target.value)}
@@ -286,6 +343,7 @@ function Index() {
             </Field>
             <Field label="Return (%)">
               <Input
+                className="h-11"
                 type="number"
                 value={returnPct}
                 onChange={(e) => setReturnPct(+e.target.value)}
@@ -293,6 +351,7 @@ function Index() {
             </Field>
             <Field label="Inflation (%)">
               <Input
+                className="h-11"
                 type="number"
                 value={inflation}
                 onChange={(e) => setInflation(+e.target.value)}
@@ -300,6 +359,7 @@ function Index() {
             </Field>
             <Field label="Tax (%)">
               <Input
+                className="h-11"
                 type="number"
                 value={tax}
                 onChange={(e) => setTax(+e.target.value)}
@@ -307,6 +367,7 @@ function Index() {
             </Field>
             <Field label="Step-Up (%)">
               <Input
+                className="h-11"
                 type="number"
                 value={stepUp}
                 onChange={(e) => setStepUp(+e.target.value)}
@@ -314,195 +375,202 @@ function Index() {
             </Field>
           </div>
 
-          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
-            <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+          <div className="mt-5 flex min-h-9 flex-wrap items-center gap-x-3 gap-y-2">
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--app-text-subtle)]">
               Use Infl. Adj. Goal
             </span>
             <Switch checked={useInflAdj} onCheckedChange={setUseInflAdj} />
-            {useInflAdj && (
-              <div className="flex items-baseline gap-2 sm:ml-10 md:ml-16">
-                <span className="text-xs font-medium text-slate-500">
-                  Inflation Adjusted Goal:
-                </span>
-                <span className="text-sm font-semibold tabular-nums text-slate-900">
+            <div
+              className={`flex min-w-0 flex-1 flex-wrap items-center justify-between gap-3 sm:ml-6 ${
+                useInflAdj ? "visible" : "invisible"
+              }`}
+              aria-hidden={!useInflAdj}
+            >
+              <Badge
+                variant="secondary"
+                className="border border-[var(--app-warn-border)] bg-[var(--app-warn-bg)] px-3 py-1.5 text-xs font-medium text-[var(--app-warn-text)] shadow-sm"
+              >
+                Inflation Adjusted Goal:{" "}
+                <span className="ml-1 font-semibold tabular-nums text-[var(--app-warn-text-strong)]">
                   ₹{fmtINR(inflAdjGoal)}
                 </span>
+              </Badge>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[var(--app-text-muted)]">
+                <span>
+                  Target Goal Amount:{" "}
+                  <span className="font-semibold text-[var(--app-text)]">
+                    {fmtRsUnit(goal)}
+                  </span>
+                </span>
+                <span className="text-[var(--app-warn-muted)]">
+                  Inflation Adjusted Goal:{" "}
+                  <span className="font-semibold text-[var(--app-warn-text-strong)]">
+                    {fmtRsUnit(inflAdjGoal)}
+                  </span>
+                </span>
               </div>
-            )}
+            </div>
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-1 gap-4 md:gap-5 lg:grid-cols-12">
-          <div className="lg:col-span-3">
-            <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
-              <Tabs
-                value={view}
-                onValueChange={(v) => setView(v as "standard" | "stepup")}
-              >
-                <TabsList className="grid w-full grid-cols-2 bg-slate-100">
-                  <TabsTrigger value="standard">Standard</TabsTrigger>
-                  <TabsTrigger value="stepup">Step-Up</TabsTrigger>
-                </TabsList>
-              </Tabs>
-
-              <div className="mt-4 rounded-lg bg-slate-900 px-4 py-4 text-center sm:mt-5 sm:px-5 sm:py-5">
-                <div className="text-xs font-semibold uppercase tracking-wider text-slate-300">
-                  Monthly SIP Required
-                </div>
-                <div className="mt-2 text-xl font-medium text-white sm:text-2xl">
-                  Rs. {fmtINR(activeSIP)}
-                </div>
+        <div className="mt-3 grid min-h-[520px] flex-1 grid-cols-1 gap-3 md:gap-4 lg:min-h-0 lg:grid-cols-12">
+          {/* Chart + SIP panel */}
+          <div className="flex min-h-0 lg:col-span-7">
+            <div className="flex min-h-0 w-full flex-col rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 sm:p-4">
+              <div className="grid shrink-0 grid-cols-1 gap-2 sm:grid-cols-2">
+                <SipCard
+                  title="Standard SIP"
+                  amount={standardSIP}
+                  accent="bg-[var(--app-primary)]"
+                />
+                <SipCard
+                  title="Step-Up SIP"
+                  amount={stepUpSIP}
+                  accent="bg-[var(--app-primary-soft)]"
+                />
               </div>
 
-              <div className="mt-5 flex justify-center sm:mt-6">
-                <div className="relative h-44 w-44 sm:h-52 sm:w-52">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={donutData}
-                        dataKey="value"
-                        innerRadius={55}
-                        outerRadius={80}
-                        paddingAngle={2}
-                        stroke="none"
-                      >
-                        {donutData.map((d, i) => (
-                          <Cell key={i} fill={d.color} />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                    <div className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
-                      Corpus
-                    </div>
-                    <div className="text-base font-semibold text-slate-900 sm:text-lg">
-                      {fmtINR(activeCorpus)}
-                    </div>
+              <div className="mt-3 flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <span className="text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
+                  {chartType === "pie"
+                    ? "Corpus Breakdown"
+                    : "Standard vs Step-Up Comparison"}
+                </span>
+                <Select
+                  value={chartType}
+                  onValueChange={(v) => setChartType(v as "pie" | "bar")}
+                >
+                  <SelectTrigger className="w-full sm:w-44">
+                    <SelectValue placeholder="Chart type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pie">Pie Chart</SelectItem>
+                    <SelectItem value="bar">Bar Chart</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {chartType === "pie" ? (
+                <div className="mt-3 grid min-h-0 flex-1 grid-cols-1 gap-3 md:grid-cols-2">
+                  <DonutPanel
+                    title="Standard SIP"
+                    data={stdDonut}
+                    corpus={stdCorpus}
+                    invested={stdInvested}
+                    gain={stdGain}
+                    taxAmt={stdTax}
+                    chartColors={theme.chart}
+                  />
+                  <DonutPanel
+                    title="Step-Up SIP"
+                    data={stepDonut}
+                    corpus={stepCorpus}
+                    invested={stepInvested}
+                    gain={stepGain}
+                    taxAmt={stepTax}
+                    chartColors={theme.chart}
+                  />
+                </div>
+              ) : (
+                <div className="mt-3 flex min-h-0 flex-1 flex-col justify-evenly">
+                  <div className="mb-1 flex items-center justify-end gap-4 text-xs text-[var(--app-text-muted)]">
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-[var(--app-primary)]" />
+                      SIP
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-[var(--app-primary-soft)]" />
+                      Step-Up
+                    </span>
+                  </div>
+                  <ComparisonGroup
+                    label="Invested"
+                    sip={stdInvested}
+                    step={stepInvested}
+                    max={maxBar}
+                  />
+                  <ComparisonGroup
+                    label="Tax Liability"
+                    sip={stdTax}
+                    step={stepTax}
+                    max={Math.max(stdTax, stepTax)}
+                  />
+                  <ComparisonGroup
+                    label="Final Corpus"
+                    sip={stdCorpus}
+                    step={stepCorpus}
+                    max={maxBar}
+                  />
+                  <div className="mt-2 flex justify-between pl-12 text-[10px] text-[var(--app-text-subtle)] sm:pl-20 sm:pr-24 sm:text-[11px]">
+                    <span>0</span>
+                    <span className="hidden sm:inline">
+                      {fmtLakh(maxBar * 0.25)}
+                    </span>
+                    <span>{fmtLakh(maxBar * 0.5)}</span>
+                    <span className="hidden sm:inline">
+                      {fmtLakh(maxBar * 0.75)}
+                    </span>
+                    <span>{fmtLakh(maxBar)}</span>
                   </div>
                 </div>
-              </div>
-
-              <div className="mt-5 space-y-3 sm:mt-6">
-                <LegendRow
-                  color="hsl(215 30% 15%)"
-                  label="Invested"
-                  value={activeInvested}
-                />
-                <LegendRow
-                  color="hsl(158 64% 52%)"
-                  label="Gain (Pre-Tax)"
-                  value={activeGain}
-                />
-                <LegendRow
-                  color="hsl(0 72% 60%)"
-                  label="Capital Gain Tax"
-                  value={activeTax}
-                />
-              </div>
+              )}
             </div>
           </div>
 
-          <div className="lg:col-span-6">
-            <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0">
-                  <h2 className="text-base font-semibold tracking-tight text-slate-900 sm:text-lg">
-                    Standard vs Step-Up Comparison
-                  </h2>
-                  <p className="mt-0.5 text-xs text-slate-500">
-                    Invested amount, tax, and final corpus side-by-side
-                  </p>
-                </div>
-                <div className="flex shrink-0 items-center gap-4 text-xs text-slate-600">
-                  <span className="flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-slate-900" />
-                    SIP
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-slate-400" />
-                    Step-Up
-                  </span>
-                </div>
-              </div>
-
-              <ComparisonGroup
-                label="Invested"
-                sip={stdInvested}
-                step={stepInvested}
-                max={maxBar}
-              />
-              <ComparisonGroup
-                label="Tax Liability"
-                sip={stdTax}
-                step={stepTax}
-                max={Math.max(stdTax, stepTax)}
-              />
-              <ComparisonGroup
-                label="Final Corpus"
-                sip={stdCorpus}
-                step={stepCorpus}
-                max={maxBar}
-              />
-
-              <div className="mt-4 flex justify-between pl-12 text-[10px] text-slate-400 sm:mt-6 sm:pl-20 sm:pr-24 sm:text-[11px]">
-                <span>0</span>
-                <span className="hidden sm:inline">{fmtLakh(maxBar * 0.25)}</span>
-                <span>{fmtLakh(maxBar * 0.5)}</span>
-                <span className="hidden sm:inline">{fmtLakh(maxBar * 0.75)}</span>
-                <span>{fmtLakh(maxBar)}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:col-span-3 lg:grid-cols-1">
-            <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-slate-600">
+          {/* Schedule + Delay */}
+          <div className="flex min-h-0 flex-col gap-3 lg:col-span-5">
+            <div className="flex min-h-0 flex-1 flex-col rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 sm:p-4">
+              <div className="flex shrink-0 items-center gap-2 text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
                 <Calendar className="h-4 w-4 shrink-0" />
                 Yearly Schedule
               </div>
+              <div className="mt-2 flex shrink-0 flex-wrap gap-3 text-[10px] font-semibold uppercase tracking-wider">
+                <span className="rounded bg-[var(--app-std-bg)] px-2 py-0.5 text-[var(--app-std-text)]">
+                  Standard SIP
+                </span>
+                <span className="rounded bg-[var(--app-step-bg)] px-2 py-0.5 text-[var(--app-step-text)]">
+                  Step-Up SIP
+                </span>
+              </div>
 
-              <Tabs
-                value={view}
-                onValueChange={(v) => setView(v as "standard" | "stepup")}
-                className="mt-4"
-              >
-                <TabsList className="grid w-full grid-cols-2 bg-slate-100">
-                  <TabsTrigger value="standard" className="text-xs sm:text-sm">
-                    Standard SIP
-                  </TabsTrigger>
-                  <TabsTrigger value="stepup" className="text-xs sm:text-sm">
-                    Step-Up SIP
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-
-              <div className="mt-4 max-h-56 overflow-auto">
+              <div className="mt-3 min-h-0 flex-1 overflow-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="text-[10px] uppercase tracking-widest">
+                      <TableHead className="sticky top-0 bg-[var(--app-surface)] text-[10px] uppercase tracking-widest">
                         Yr
                       </TableHead>
-                      <TableHead className="text-[10px] uppercase tracking-widest">
-                        Monthly
+                      <TableHead className="sticky top-0 bg-[var(--app-std-bg-soft)] text-[10px] uppercase tracking-widest text-[var(--app-std-text)]">
+                        Std Monthly
                       </TableHead>
-                      <TableHead className="text-right text-[10px] uppercase tracking-widest">
-                        Year-End
+                      <TableHead className="sticky top-0 bg-[var(--app-std-bg-soft)] text-right text-[10px] uppercase tracking-widest text-[var(--app-std-text)]">
+                        Std Year-End
+                      </TableHead>
+                      <TableHead className="sticky top-0 bg-[var(--app-step-bg-soft)] text-[10px] uppercase tracking-widest text-[var(--app-step-text)]">
+                        Step Monthly
+                      </TableHead>
+                      <TableHead className="sticky top-0 bg-[var(--app-step-bg-soft)] text-right text-[10px] uppercase tracking-widest text-[var(--app-step-text)]">
+                        Step Year-End
                       </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {schedule.map((row) => (
+                    {combinedSchedule.map((row) => (
                       <TableRow key={row.year}>
-                        <TableCell className="py-1.5 text-xs">
+                        <TableCell className="py-1 text-xs font-medium">
                           {row.year}
                         </TableCell>
-                        <TableCell className="py-1.5 text-xs whitespace-nowrap">
-                          ₹{fmtINR(row.monthly)}
+                        <TableCell className="bg-[var(--app-std-bg-soft)] py-1 text-xs whitespace-nowrap text-[var(--app-std-text-strong)]">
+                          ₹{fmtINR(row.stdMonthly)}
                         </TableCell>
-                        <TableCell className="py-1.5 text-right text-xs whitespace-nowrap">
-                          ₹{fmtINR(row.yearEnd)}
+                        <TableCell className="bg-[var(--app-std-bg-soft)] py-1 text-right text-xs whitespace-nowrap text-[var(--app-std-text-strong)]">
+                          ₹{fmtINR(row.stdYearEnd)}
+                        </TableCell>
+                        <TableCell className="bg-[var(--app-step-bg-soft)] py-1 text-xs whitespace-nowrap text-[var(--app-step-text-strong)]">
+                          ₹{fmtINR(row.stepMonthly)}
+                        </TableCell>
+                        <TableCell className="bg-[var(--app-step-bg-soft)] py-1 text-right text-xs whitespace-nowrap text-[var(--app-step-text-strong)]">
+                          ₹{fmtINR(row.stepYearEnd)}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -511,13 +579,13 @@ function Index() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-slate-600">
+            <div className="shrink-0 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 sm:p-4">
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
                 <Clock className="h-4 w-4 shrink-0" />
                 Cost of Delay
               </div>
 
-              <div className="mt-4 overflow-x-auto">
+              <div className="mt-3 overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -535,13 +603,13 @@ function Index() {
                   <TableBody>
                     {delays.map((d) => (
                       <TableRow key={d.mo}>
-                        <TableCell className="py-2 text-xs whitespace-nowrap">
+                        <TableCell className="py-1.5 text-xs whitespace-nowrap">
                           {d.mo} Mo
                         </TableCell>
-                        <TableCell className="py-2 text-xs whitespace-nowrap">
+                        <TableCell className="py-1.5 text-xs whitespace-nowrap">
                           ₹{fmtINR(d.sip)}
                         </TableCell>
-                        <TableCell className="py-2 text-right text-xs font-medium whitespace-nowrap text-red-500">
+                        <TableCell className="py-1.5 text-right text-xs font-medium whitespace-nowrap text-[var(--app-danger)]">
                           ₹{fmtINR(d.extra)}
                         </TableCell>
                       </TableRow>
@@ -562,14 +630,106 @@ function Field({
   children,
 }: {
   label: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <div className="space-y-2">
-      <Label className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+      <Label className="text-[10px] font-semibold uppercase tracking-widest text-[var(--app-text-subtle)]">
         {label}
       </Label>
       {children}
+    </div>
+  );
+}
+
+function SipCard({
+  title,
+  amount,
+  accent,
+}: {
+  title: string;
+  amount: number;
+  accent: string;
+}) {
+  return (
+    <div className={`rounded-lg ${accent} px-4 py-3 text-center`}>
+      <div className="text-xs font-semibold uppercase tracking-wider text-[var(--app-primary-fg-muted)]">
+        {title} · Monthly SIP
+      </div>
+      <div className="mt-1.5 text-2xl font-semibold text-[var(--app-primary-fg)] sm:text-3xl">
+        Rs. {fmtINR(amount)}
+      </div>
+    </div>
+  );
+}
+
+function DonutPanel({
+  title,
+  data,
+  corpus,
+  invested,
+  gain,
+  taxAmt,
+  chartColors,
+}: {
+  title: string;
+  data: { name: string; value: number; color: string }[];
+  corpus: number;
+  invested: number;
+  gain: number;
+  taxAmt: number;
+  chartColors: { invested: string; gain: string; tax: string };
+}) {
+  return (
+    <div className="flex min-h-0 flex-1 flex-col rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-3">
+      <div className="shrink-0 text-center text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
+        {title}
+      </div>
+      <div className="mt-2 flex min-h-0 flex-1 items-center justify-center py-1">
+        <div className="relative aspect-square h-full max-h-[300px] w-full max-w-[300px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={data}
+                dataKey="value"
+                innerRadius="58%"
+                outerRadius="88%"
+                paddingAngle={2}
+                stroke="none"
+              >
+                {data.map((d, i) => (
+                  <Cell key={i} fill={d.color} />
+                ))}
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+            <div className="text-[10px] font-semibold uppercase tracking-widest text-[var(--app-text-subtle)]">
+              Corpus
+            </div>
+            <div className="text-base font-semibold text-[var(--app-text)] sm:text-lg">
+              {fmtINR(corpus)}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="mt-2 shrink-0 space-y-1.5">
+        <LegendRow
+          color={chartColors.invested}
+          label="Invested"
+          value={invested}
+        />
+        <LegendRow
+          color={chartColors.gain}
+          label="Gain (Pre-Tax)"
+          value={gain}
+        />
+        <LegendRow
+          color={chartColors.tax}
+          label="Capital Gain Tax"
+          value={taxAmt}
+        />
+      </div>
     </div>
   );
 }
@@ -585,16 +745,18 @@ function LegendRow({
 }) {
   return (
     <div className="flex items-center justify-between text-sm">
-      <div className="flex items-center gap-2 text-slate-600">
+      <div className="flex items-center gap-2 text-[var(--app-text-muted)]">
         <span
           className="h-2 w-2 rounded-full"
           style={{ backgroundColor: color }}
         />
-        <span className="text-xs font-semibold uppercase tracking-wider">
+        <span className="text-[10px] font-semibold uppercase tracking-wider sm:text-xs">
           {label}
         </span>
       </div>
-      <span className="font-medium text-slate-900">{fmtINR(value)}</span>
+      <span className="text-xs font-medium text-[var(--app-text)] sm:text-sm">
+        {fmtINR(value)}
+      </span>
     </div>
   );
 }
@@ -611,12 +773,17 @@ function ComparisonGroup({
   max: number;
 }) {
   return (
-    <div className="mt-5 sm:mt-8">
-      <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-600 sm:mb-4">
+    <div className="mt-4 sm:mt-5">
+      <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
         {label}
       </div>
-      <BarRow label="SIP" value={sip} max={max} color="bg-slate-900" />
-      <BarRow label="Step-Up" value={step} max={max} color="bg-slate-400" />
+      <BarRow label="SIP" value={sip} max={max} color="var(--app-primary)" />
+      <BarRow
+        label="Step-Up"
+        value={step}
+        max={max}
+        color="var(--app-primary-soft)"
+      />
     </div>
   );
 }
@@ -635,16 +802,16 @@ function BarRow({
   const pct = max ? (value / max) * 100 : 0;
   return (
     <div className="mb-3 flex items-center gap-2 sm:gap-3">
-      <div className="w-12 shrink-0 text-right text-[9px] font-semibold uppercase tracking-widest text-slate-500 sm:w-16 sm:text-[10px]">
+      <div className="w-12 shrink-0 text-right text-[9px] font-semibold uppercase tracking-widest text-[var(--app-text-subtle)] sm:w-16 sm:text-[10px]">
         {label}
       </div>
-      <div className="relative h-5 min-w-0 flex-1 rounded bg-slate-50 sm:h-6">
+      <div className="relative h-3 min-w-0 flex-1 rounded bg-[var(--app-bar-track)] sm:h-3.5">
         <div
-          className={`h-full rounded ${color}`}
-          style={{ width: `${pct}%` }}
+          className="h-full rounded"
+          style={{ width: `${pct}%`, backgroundColor: color }}
         />
       </div>
-      <div className="w-20 shrink-0 text-right text-xs font-medium text-slate-900 sm:w-24 sm:text-sm">
+      <div className="w-20 shrink-0 text-right text-xs font-medium text-[var(--app-text)] sm:w-24 sm:text-sm">
         {fmtINR(value)}
       </div>
     </div>
