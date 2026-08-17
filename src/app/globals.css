@@ -125,6 +125,12 @@
     border-color: var(--color-border);
   }
 
+  html,
+  body {
+    height: 100%;
+    overflow: hidden;
+  }
+
   body {
     font-family: var(--font-sans);
     background-color: var(--color-background);

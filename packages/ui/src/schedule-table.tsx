@@ -11,13 +11,17 @@ export function ScheduleTable<T extends Record<string, unknown>>({
   columns,
   rows,
   caption,
+  className,
 }: {
   columns: ScheduleColumn<T>[];
   rows: T[];
   caption?: string;
+  className?: string;
 }) {
   return (
-    <div className="flex h-full min-h-[300px] flex-1 flex-col rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 sm:p-4">
+    <div
+      className={`flex h-full flex-1 flex-col overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 sm:p-4 ${className ?? "min-h-[300px]"}`}
+    >
       {caption ? (
         <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
           {caption}

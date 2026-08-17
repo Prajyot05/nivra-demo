@@ -27,7 +27,7 @@ export function CalculatorPage({
 
   return (
     <div
-      className="flex h-full min-h-0 flex-col overflow-x-hidden overflow-y-auto bg-[var(--app-bg)] pt-[max(0.75rem,env(safe-area-inset-top))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] sm:px-6 md:px-8 lg:overflow-hidden lg:px-10"
+      className="flex h-full min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto bg-[var(--app-bg)] pt-[max(0.75rem,env(safe-area-inset-top))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] sm:px-6 md:px-8 lg:overflow-hidden lg:px-10"
       style={theme.vars as CSSProperties}
     >
       <div className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col gap-3">
@@ -72,8 +72,8 @@ export function CalculatorPage({
           {form}
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col">{results}</div>
-        {footer ?? <Disclaimer />}
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{results}</div>
+        <div className="shrink-0">{footer ?? <Disclaimer />}</div>
       </div>
     </div>
   );

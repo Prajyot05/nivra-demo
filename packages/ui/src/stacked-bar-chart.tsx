@@ -19,17 +19,22 @@ export function StackedBarChart({
   data,
   series,
   title = "Breakdown",
+  className,
 }: {
   data: StackedBarPoint[];
   series: Array<{ key: string; label: string; color: string }>;
   title?: string;
+  className?: string;
 }) {
   return (
-    <div className="flex h-full min-h-[300px] flex-1 flex-col rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 sm:p-4">
-      <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
+    <div
+      className={`flex h-full flex-1 flex-col overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 sm:p-4 ${className ?? "min-h-[300px]"}`}
+    >
+      <div className="mb-3 shrink-0 text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
         {title}
       </div>
-      <div className="min-h-0 flex-1">
+      <div className="relative min-h-0 flex-1">
+        <div className="absolute inset-0">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--app-border)" vertical={false} />
@@ -78,6 +83,7 @@ export function StackedBarChart({
             ))}
           </BarChart>
         </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );

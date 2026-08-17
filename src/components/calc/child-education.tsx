@@ -106,9 +106,9 @@ export function ChildEducationPlanner() {
   return (
     <CalculatorPage
       title="Child Education Planner"
-      description="Unprotected Education-Plan v4. Lumpsum is backward PV of tax-grossed fees; SIP GoalSeeks the last fee-year balance to 0."
+      description="Fund future school and college fees with a lumpsum today or a monthly SIP."
       form={
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3">
           <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 sm:gap-4 lg:gap-3 xl:gap-5">
             <ClientHeader name={name} age={age} onNameChange={setName} onAgeChange={setAge} />
             <Field label="Child's name">
@@ -138,7 +138,7 @@ export function ChildEducationPlanner() {
         </div>
       }
       results={
-        <div className="flex min-h-0 flex-1 flex-col gap-3">
+        <div className="flex h-full min-h-0 flex-1 flex-col gap-3 lg:overflow-hidden">
           {error ? <p className="text-sm text-[var(--app-danger)]">{error}</p> : null}
           {loading && !result ? (
             <p className="text-sm text-[var(--app-text-muted)]">Calculating…</p>
@@ -158,41 +158,29 @@ function CostGrid({
   onCostChange: (index: number, cost: number) => void;
 }) {
   return (
-    <div className="rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 sm:p-4">
-      <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
+    <div>
+      <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
         Education cost by class
       </div>
-      <div className="max-h-72 overflow-auto rounded-md border border-[var(--app-border)]">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-[var(--app-border)] text-left text-[10px] uppercase tracking-widest text-[var(--app-text-subtle)]">
-              <th className="sticky top-0 z-10 bg-[var(--app-surface-muted)] px-3 py-2">Age</th>
-              <th className="sticky top-0 z-10 bg-[var(--app-surface-muted)] px-3 py-2">Class</th>
-              <th className="sticky top-0 z-10 bg-[var(--app-surface-muted)] px-3 py-2 text-right">
-                Edu. cost
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {costs.map((row, index) => (
-              <tr key={`${row.age}-${row.classLabel}`} className="border-b border-[var(--app-border)]/60">
-                <td className="px-3 py-1.5 tabular-nums text-[var(--app-text)]">{row.age}</td>
-                <td className="px-3 py-1.5 text-[var(--app-text)]">{row.classLabel}</td>
-                <td className="px-3 py-1.5">
-                  <TextInput
-                    inputMode="numeric"
-                    aria-label={`${row.classLabel} cost`}
-                    className="h-8 text-right"
-                    value={formatINR(row.cost)}
-                    onChange={(e) =>
-                      onCostChange(index, parseDigits(e.target.value.replace(/,/g, "")))
-                    }
-                  />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="max-h-36 overflow-y-auto pr-1 lg:max-h-32">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
+          {costs.map((row, index) => (
+            <label key={`${row.age}-${row.classLabel}`} className="block min-w-0">
+              <span className="mb-1 block truncate text-[10px] font-semibold uppercase tracking-widest text-[var(--app-text-subtle)]">
+                {row.classLabel}
+              </span>
+              <TextInput
+                inputMode="numeric"
+                aria-label={`${row.classLabel} cost`}
+                className="h-8 text-right"
+                value={formatINR(row.cost)}
+                onChange={(e) =>
+                  onCostChange(index, parseDigits(e.target.value.replace(/,/g, "")))
+                }
+              />
+            </label>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -200,61 +188,51 @@ function CostGrid({
 
 function EducationResults({ result }: { result: EducationResult }) {
   return (
-    <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 md:gap-4 lg:grid-cols-12">
-      <div className="flex min-h-0 flex-col gap-3 lg:col-span-7 lg:overflow-y-auto lg:pr-2">
+    <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:h-full lg:grid-cols-12 lg:grid-rows-[minmax(0,1fr)] lg:overflow-hidden">
+      <div className="flex min-h-0 flex-col gap-3 lg:col-span-7 lg:overflow-hidden">
         <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
           <StatCard title="Lumpsum required today" value={result.lumpsum.lumpsum} />
           <StatCard title="Monthly SIP required" value={result.sip.monthlySip} variant="soft" />
         </div>
-        <CompareChart
-          title="Lumpsum vs SIP"
-          data={result.compare}
-          series={[
-            { key: "lumpsum", label: "Lumpsum", color: "var(--app-chart-invested)" },
-            { key: "sip", label: "SIP", color: "var(--app-chart-gain)" },
-          ]}
-        />
-        <StackedBarChart
-          title="Year-wise education cost"
-          data={result.costChart.map((row) => ({
-            category: row.classLabel,
-            cost: row.cost,
-            tax: row.tax,
-          }))}
-          series={[
-            { key: "cost", label: "Edu. cost", color: "var(--app-chart-invested)" },
-            { key: "tax", label: "Cap. gains", color: "var(--app-chart-tax)" },
-          ]}
-        />
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 md:grid-cols-2 md:grid-rows-[minmax(0,1fr)] lg:overflow-hidden">
+          <CompareChart
+            className="min-h-[220px] lg:min-h-0"
+            title="Lumpsum vs SIP"
+            data={result.compare}
+            series={[
+              { key: "lumpsum", label: "Lumpsum", color: "var(--app-chart-invested)" },
+              { key: "sip", label: "SIP", color: "var(--app-chart-gain)" },
+            ]}
+          />
+          <StackedBarChart
+            className="min-h-[220px] lg:min-h-0"
+            title="Year-wise education cost"
+            data={result.costChart.map((row) => ({
+              category: row.classLabel,
+              cost: row.cost,
+              tax: row.tax,
+            }))}
+            series={[
+              { key: "cost", label: "Edu. cost", color: "var(--app-chart-invested)" },
+              { key: "tax", label: "Cap. gains", color: "var(--app-chart-tax)" },
+            ]}
+          />
+        </div>
       </div>
-      <div className="flex min-h-0 flex-col gap-3 lg:col-span-5 lg:overflow-y-auto lg:pr-2">
-        <ResultCard
-          title="Lumpsum required"
-          items={[
-            { label: "Amount today", value: result.lumpsum.lumpsum },
-            { label: "Invested", value: result.lumpsum.invested },
-            { label: "Cap. gains tax", value: result.lumpsum.tax },
-            { label: "Peak corpus", value: result.lumpsum.peakCorpus },
-          ]}
-        />
-        <ResultCard
-          title="Monthly SIP required"
-          items={[
-            { label: "Monthly SIP", value: result.sip.monthlySip },
-            { label: "Invested", value: result.sip.invested, hint: `${result.sipYears} years` },
-            { label: "Cap. gains tax", value: result.sip.tax },
-            { label: "Peak corpus", value: result.sip.peakCorpus },
-          ]}
-        />
-        <ResultCard
-          title="Education need"
-          items={[
-            { label: "Future fees", value: result.totalCost },
-            { label: "Total withdrawal", value: result.totalWithdrawal },
-            { label: "Cap. gains tax", value: result.totalTax },
-          ]}
-        />
+      <div className="flex min-h-0 flex-col gap-3 lg:col-span-5 lg:overflow-hidden">
+        <div className="shrink-0">
+          <ResultCard
+            title="Plan summary"
+            items={[
+              { label: "Amount today", value: result.lumpsum.lumpsum },
+              { label: "Monthly SIP", value: result.sip.monthlySip, hint: `${result.sipYears} years` },
+              { label: "Total withdrawal", value: result.totalWithdrawal },
+              { label: "Peak corpus (SIP)", value: result.sip.peakCorpus },
+            ]}
+          />
+        </div>
         <ScheduleTable
+          className="min-h-[220px] lg:min-h-0"
           caption="Education investment and withdrawal plan"
           columns={[
             { key: "age", header: "Age" },
