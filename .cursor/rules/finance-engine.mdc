@@ -1,0 +1,15 @@
+---
+description: Pure finance engine — no UI, no rounding, Excel parity
+globs: packages/finance/**/*.ts
+alwaysApply: false
+---
+
+# `@nivra/finance`
+
+- Pure functions only. No React, fetch, or rounding.
+- SIP / goals / periodic: `monthlyRate` = `(1+r)^(1/12)-1`, payments beginning-of-period (Excel type=1).
+- Loans only: `nominalMonthlyRate` = `r/12`. EMI must match Unprotected Loan EMI v1 fixtures.
+- Rates in this package are decimals (`0.12`). Callers in `calculate-dispatch.ts` convert from API percents.
+- Add a unit test in `packages/finance/tests/` against Unprotected sample numbers for every new helper.
+- XIRR is not in the engine yet. Do not stub a wrong IRR.
+- Capital gains: tax on `max(0, maturity - invested)`. Goal SIP solves **net after tax ≈ target**.

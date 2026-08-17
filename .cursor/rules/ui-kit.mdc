@@ -1,0 +1,15 @@
+---
+description: Reuse @nivra/ui — do not invent new calculator primitives
+globs: packages/ui/**/*.tsx,packages/ui/**/*.ts,src/app/**/*.tsx
+alwaysApply: false
+---
+
+# UI kit
+
+Prefer `@nivra/ui` over new inputs/tables/charts.
+
+- Display money with `formatINR` / `formatINRCurrency` (full `en-IN`).
+- `formatCompactINR` only for axis ticks, not result values.
+- `CalculatorPage` slots: title, `ClientHeader`, `ModeTabs`, form, results, disclaimer.
+- Goal SIP Planner (`goal-sip-planner.tsx`) is a one-off. Other products must not clone its custom cards/themes.
+- Keep layouts usable on mobile, tablet, and desktop (`min-h-dvh`, wrap grids, no clipped pie/bar charts).

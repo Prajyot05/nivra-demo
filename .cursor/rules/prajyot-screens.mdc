@@ -1,0 +1,22 @@
+---
+description: Prajyot calculator pages — wire API, reuse UI kit
+globs: src/app/{mf-fd,loans,insurance,multi-goal}/**/*.tsx,src/components/calc/**/*.tsx
+alwaysApply: false
+---
+
+# Prajyot screens
+
+Replace `ComingSoonCalculator` with a real client page.
+
+Use only `@nivra/ui`: `CalculatorPage`, `ClientHeader`, `ModeTabs`, `MoneyInput`, `PercentInput`, `YearInput` / `AgeInput`, `ResultCard`, `ScheduleTable`, `GrowthChart`, `Disclaimer`.
+
+```tsx
+import { calculate } from "@/lib/calculate-client";
+const { result } = await calculate("loan-emi", { principal, years, interestPct });
+```
+
+- `/loans` first live id: `loan-emi` (do not reimplement EMI; loans use `r/12`).
+- `/mf-fd` and insurance IRR need new finance ids — do not fake numbers as `0` forever; either wire the API or leave coming-soon copy that says blocked.
+- Debounce fetches (see `src/hooks/use-goal-sip.ts`).
+- Responsive grid: 1 col mobile, 2+ on larger screens. Tables `overflow-x-auto`.
+- Set `ready: true` in `src/lib/calculator-nav.ts` when done.
