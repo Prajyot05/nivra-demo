@@ -24,6 +24,18 @@ test("step-up SIP: Unprotected SIP Step-Up v1 sample (5000, 10%, 10y, 12%)", () 
   close(result.endMonthly, 5000 * 1.1 ** 9);
 });
 
+test("step-up SIP taxes the capital gain", () => {
+  const result = calculateStepUpSip({
+    startMonthly: 5000,
+    sipYears: 10,
+    annualReturn: 0.12,
+    stepUpRate: 0.1,
+    taxRate: 0.125,
+  });
+  close(result.tax, result.gain * 0.125);
+  close(result.netAfterTax, result.maturity - result.tax);
+});
+
 test("step-up projection is linear in starting SIP", () => {
   const a = stepUpProjection({
     startMonthly: 1,

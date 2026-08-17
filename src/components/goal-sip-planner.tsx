@@ -29,7 +29,7 @@ import {
   COLOR_THEMES,
   getColorTheme,
   type ColorThemeId,
-} from "@/lib/color-themes";
+} from "@nivra/ui";
 
 const fmtINR = (n: number) =>
   new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(

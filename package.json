@@ -11,7 +11,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test": "npm run test -w @nivra/finance",
+    "test": "npm run test -w @nivra/finance && tsx --test src/lib/calculate-dispatch.test.ts",
     "format": "prettier --write ."
   },
   "dependencies": {

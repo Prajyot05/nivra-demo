@@ -8,7 +8,7 @@ alwaysApply: false
 
 Replace `ComingSoonCalculator` with a real client page.
 
-Use only `@nivra/ui`: `CalculatorPage`, `ClientHeader`, `ModeTabs`, `MoneyInput`, `PercentInput`, `YearInput` / `AgeInput`, `ResultCard`, `ScheduleTable`, `GrowthChart`, `Disclaimer`.
+Use only `@nivra/ui`: `CalculatorPage`, `ClientHeader`, `ModeTabs`, `MoneyInput`, `PercentInput`, `YearInput` / `AgeInput`, `SelectInput`, `ResultCard`, `ScheduleTable`, chart from [`docs/charts.md`](docs/charts.md), `Disclaimer`. Do not default to `GrowthChart`.
 
 ```tsx
 import { calculate } from "@/lib/calculate-client";

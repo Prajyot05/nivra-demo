@@ -1,6 +1,12 @@
 import {
   calculateAmort,
+  calculateEducation,
+  calculateGoalCompounding,
+  calculateGoalExistingSip,
+  calculateGoalLsSipOptions,
+  calculateGoalPeriodicLumpsum,
   calculateGoalSipVsStepUp,
+  calculateGoalWithCurrent,
   calculateLumpsum,
   calculatePeriodic,
   calculateSip,
@@ -8,6 +14,12 @@ import {
 } from "@nivra/finance";
 import type { CalculatorId } from "./calculate-schemas";
 import {
+  educationSchema,
+  goalCompoundingSchema,
+  goalCurrentSchema,
+  goalExistingSipSchema,
+  goalLsSipSchema,
+  goalPeriodicSchema,
   goalSipSchema,
   growthLumpsumSchema,
   growthPeriodicSchema,
@@ -79,6 +91,73 @@ export function dispatch(id: string, body: unknown) {
         delayMonths: input.delayMonths,
       });
     }
+    case "goal-current": {
+      const input = goalCurrentSchema.parse(body);
+      return calculateGoalWithCurrent({
+        goalAmount: input.goalAmount,
+        tenureYears: input.tenureYears,
+        annualReturn: pct(input.returnPct),
+        inflationRate: pct(input.inflationPct),
+        taxRate: pct(input.taxPct),
+        stepUpRate: pct(input.stepUpPct),
+        useInflationAdjustedGoal: input.useInflationAdjustedGoal,
+        currentCorpus: input.currentCorpus,
+        currentMonthlySip: input.currentMonthlySip,
+      });
+    }
+    case "goal-ls-sip": {
+      const input = goalLsSipSchema.parse(body);
+      return calculateGoalLsSipOptions({
+        goalAmount: input.goalAmount,
+        tenureYears: input.tenureYears,
+        annualReturn: pct(input.returnPct),
+        inflationRate: pct(input.inflationPct),
+        taxRate: pct(input.taxPct),
+        stepUpRate: pct(input.stepUpPct),
+        useInflationAdjustedGoal: input.useInflationAdjustedGoal,
+        currentCorpus: input.currentCorpus,
+        extraLumpsum: input.extraLumpsum,
+      });
+    }
+    case "goal-existing-sip": {
+      const input = goalExistingSipSchema.parse(body);
+      return calculateGoalExistingSip({
+        goalAmount: input.goalAmount,
+        tenureYears: input.tenureYears,
+        annualReturn: pct(input.returnPct),
+        inflationRate: pct(input.inflationPct),
+        taxRate: pct(input.taxPct),
+        stepUpRate: pct(input.stepUpPct),
+        useInflationAdjustedGoal: input.useInflationAdjustedGoal,
+        currentMonthlySip: input.currentMonthlySip,
+      });
+    }
+    case "goal-periodic": {
+      const input = goalPeriodicSchema.parse(body);
+      return calculateGoalPeriodicLumpsum({
+        goalAmount: input.goalAmount,
+        tenureYears: input.tenureYears,
+        annualReturn: pct(input.returnPct),
+        inflationRate: pct(input.inflationPct),
+        taxRate: pct(input.taxPct),
+        stepUpRate: pct(input.stepUpPct),
+        useInflationAdjustedGoal: input.useInflationAdjustedGoal,
+        amount: input.amount,
+        timesPerYear: input.timesPerYear,
+      });
+    }
+    case "goal-compounding": {
+      const input = goalCompoundingSchema.parse(body);
+      return calculateGoalCompounding({
+        goalAmount: input.goalAmount,
+        tenureYears: input.tenureYears,
+        annualReturn: pct(input.returnPct),
+        inflationRate: pct(input.inflationPct),
+        taxRate: pct(input.taxPct),
+        useInflationAdjustedGoal: input.useInflationAdjustedGoal,
+        extraYears: input.extraYears,
+      });
+    }
     case "loan-emi": {
       const input = loanEmiSchema.parse(body);
       const result = calculateAmort({
@@ -93,6 +172,15 @@ export function dispatch(id: string, body: unknown) {
         totalPaid: result.totalPaid,
         schedule: result.schedule,
       };
+    }
+    case "education": {
+      const input = educationSchema.parse(body);
+      return calculateEducation({
+        childAge: input.childAge,
+        annualReturn: pct(input.returnPct),
+        taxRate: pct(input.taxPct),
+        costs: input.costs,
+      });
     }
     default:
       throw Object.assign(new Error(`Unknown calculator id: ${id}`), {

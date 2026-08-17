@@ -50,6 +50,19 @@ test("engine does not round intermediate SIP values", () => {
   assert.notEqual(result.maturity, Math.round(result.maturity));
 });
 
+test("flat SIP applies capital-gains tax on gain", () => {
+  const result = calculateSip(
+    {
+      monthlyInvestment: 1500,
+      sipYears: 5,
+      annualReturn: 0.12,
+    },
+    0.125,
+  );
+  close(result.tax, 31655.418800290776 * 0.125);
+  close(result.netAfterTax, result.maturity - result.tax);
+});
+
 test("lumpsum: Unprotected One-Time Investment v2 sample", () => {
   const result = calculateLumpsum({
     amount: 5_000_000,

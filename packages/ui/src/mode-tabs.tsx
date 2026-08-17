@@ -10,7 +10,7 @@ export function ModeTabs({
   onChange: (id: string) => void;
 }) {
   return (
-    <div className="flex flex-wrap gap-2" role="tablist">
+    <div className="flex flex-wrap gap-2 mb-2" role="tablist">
       {tabs.map((tab) => {
         const active = tab.id === value;
         return (
@@ -21,8 +21,8 @@ export function ModeTabs({
             aria-selected={active}
             className={
               active
-                ? "rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground"
-                : "rounded-md border border-border bg-background px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent"
+                ? "rounded-md bg-[var(--app-primary)] px-3 py-1.5 text-sm font-semibold tracking-wide text-[var(--app-primary-fg)] transition-colors"
+                : "rounded-md border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-1.5 text-sm font-medium tracking-wide text-[var(--app-text-muted)] transition-colors hover:bg-[var(--app-surface-muted)]"
             }
             onClick={() => onChange(tab.id)}
           >

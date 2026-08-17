@@ -57,6 +57,9 @@ export const COLOR_THEMES: ColorTheme[] = [
       "--app-warn-muted": "#b45309",
       "--app-danger": "#ef4444",
       "--app-bar-track": "#f8fafc",
+      "--app-chart-invested": "#152033",
+      "--app-chart-gain": "#34d399",
+      "--app-chart-tax": "#f87171",
     },
     chart: {
       invested: "#152033",
@@ -95,6 +98,9 @@ export const COLOR_THEMES: ColorTheme[] = [
       "--app-warn-muted": "#0e7490",
       "--app-danger": "#e11d48",
       "--app-bar-track": "#e0f2fe",
+      "--app-chart-invested": "#0c4a6e",
+      "--app-chart-gain": "#2dd4bf",
+      "--app-chart-tax": "#fb7185",
     },
     chart: {
       invested: "#0c4a6e",
@@ -133,6 +139,9 @@ export const COLOR_THEMES: ColorTheme[] = [
       "--app-warn-muted": "#a16207",
       "--app-danger": "#dc2626",
       "--app-bar-track": "#f0fdf4",
+      "--app-chart-invested": "#14532d",
+      "--app-chart-gain": "#4ade80",
+      "--app-chart-tax": "#f87171",
     },
     chart: {
       invested: "#14532d",
@@ -171,6 +180,9 @@ export const COLOR_THEMES: ColorTheme[] = [
       "--app-warn-muted": "#b45309",
       "--app-danger": "#e11d48",
       "--app-bar-track": "#fff7ed",
+      "--app-chart-invested": "#9a3412",
+      "--app-chart-gain": "#fb923c",
+      "--app-chart-tax": "#fb7185",
     },
     chart: {
       invested: "#9a3412",
@@ -209,6 +221,9 @@ export const COLOR_THEMES: ColorTheme[] = [
       "--app-warn-muted": "#64748b",
       "--app-danger": "#dc2626",
       "--app-bar-track": "#f8fafc",
+      "--app-chart-invested": "#1e293b",
+      "--app-chart-gain": "#60a5fa",
+      "--app-chart-tax": "#f87171",
     },
     chart: {
       invested: "#1e293b",
@@ -247,6 +262,9 @@ export const COLOR_THEMES: ColorTheme[] = [
       "--app-warn-muted": "#ea580c",
       "--app-danger": "#dc2626",
       "--app-bar-track": "#fff1f2",
+      "--app-chart-invested": "#9f1239",
+      "--app-chart-gain": "#fb923c",
+      "--app-chart-tax": "#f43f5e",
     },
     chart: {
       invested: "#9f1239",
@@ -285,6 +303,9 @@ export const COLOR_THEMES: ColorTheme[] = [
       "--app-warn-muted": "#7e22ce",
       "--app-danger": "#e11d48",
       "--app-bar-track": "#eef2ff",
+      "--app-chart-invested": "#312e81",
+      "--app-chart-gain": "#a78bfa",
+      "--app-chart-tax": "#fb7185",
     },
     chart: {
       invested: "#312e81",
@@ -323,6 +344,9 @@ export const COLOR_THEMES: ColorTheme[] = [
       "--app-warn-muted": "#059669",
       "--app-danger": "#e11d48",
       "--app-bar-track": "#f0fdfa",
+      "--app-chart-invested": "#134e4a",
+      "--app-chart-gain": "#2dd4bf",
+      "--app-chart-tax": "#fb7185",
     },
     chart: {
       invested: "#134e4a",
@@ -361,6 +385,9 @@ export const COLOR_THEMES: ColorTheme[] = [
       "--app-warn-muted": "#db2777",
       "--app-danger": "#dc2626",
       "--app-bar-track": "#fff1f2",
+      "--app-chart-invested": "#881337",
+      "--app-chart-gain": "#f472b6",
+      "--app-chart-tax": "#f43f5e",
     },
     chart: {
       invested: "#881337",
@@ -399,6 +426,9 @@ export const COLOR_THEMES: ColorTheme[] = [
       "--app-warn-muted": "#ca8a04",
       "--app-danger": "#dc2626",
       "--app-bar-track": "#fffbeb",
+      "--app-chart-invested": "#92400e",
+      "--app-chart-gain": "#fbbf24",
+      "--app-chart-tax": "#f87171",
     },
     chart: {
       invested: "#92400e",
@@ -437,6 +467,9 @@ export const COLOR_THEMES: ColorTheme[] = [
       "--app-warn-muted": "#be123c",
       "--app-danger": "#b91c1c",
       "--app-bar-track": "#faf5f5",
+      "--app-chart-invested": "#4c0519",
+      "--app-chart-gain": "#c084fc",
+      "--app-chart-tax": "#f43f5e",
     },
     chart: {
       invested: "#4c0519",
@@ -475,6 +508,9 @@ export const COLOR_THEMES: ColorTheme[] = [
       "--app-warn-muted": "#2563eb",
       "--app-danger": "#e11d48",
       "--app-bar-track": "#f0f9ff",
+      "--app-chart-invested": "#0c4a6e",
+      "--app-chart-gain": "#38bdf8",
+      "--app-chart-tax": "#fb7185",
     },
     chart: {
       invested: "#0c4a6e",

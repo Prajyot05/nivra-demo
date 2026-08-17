@@ -10,11 +10,12 @@ npm test
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Goal SIP Planner is at `/`. Calculate API is `POST /api/calculate/:id` on the same origin.
+Open [http://localhost:3000](http://localhost:3000). Goal SIP Planner is at `/`. Unified Goal Planner is at `/goals`. Investment Growth is at `/growth`. Child Education is at `/education`. Calculate API is `POST /api/calculate/:id` on the same origin.
 
 - **Cursor / Prajyot guide:** [`AGENTS.md`](AGENTS.md) (also `.cursor/rules/`)
 - Formula notes and Days 1–5 work: [`PROGRESS.md`](PROGRESS.md)
 - API contract: [`docs/API_CONTRACT.md`](docs/API_CONTRACT.md)
+- Charts (per calculator): [`docs/charts.md`](docs/charts.md)
 
 ## Layout
 

@@ -7,12 +7,13 @@ alwaysApply: true
 
 Next.js App Router app. Shared math is `@nivra/finance`. Shared UI is `@nivra/ui`. Calculate is `POST /api/calculate/:id` on the same origin.
 
-- Read `AGENTS.md` and `docs/API_CONTRACT.md` before adding a calculator.
+- Read `AGENTS.md`, `docs/API_CONTRACT.md`, and `docs/charts.md` before adding a calculator.
 - **Never** implement SIP / EMI / FV / tax / inflation / XIRR in React. Call `calculate()` from `src/lib/calculate-client.ts`.
 - API percents are human (`12` = 12%). Finance functions take decimals (`0.12`). Dispatch already converts.
 - Engine does not round. Round only when displaying via `formatINR` / `formatINRCurrency`.
 - Result amounts must be **full INR** (`10,05,434`), not `L`/`Cr`. Compact format is chart axes only.
-- Do not copy `src/components/goal-sip-planner.tsx`. Clone `CalculatorPage` + `/growth` / `ComingSoonCalculator`.
+- **Charts:** follow `docs/charts.md`. Do not default every calculator to `GrowthChart`.
+- Do not copy `src/components/goal-sip-planner.tsx`. Clone live `/growth` or `/goals` (`CalculatorPage` + `calculate()`). Empty products may start from `ComingSoonCalculator`.
 - New formulas: add to `packages/finance` + tests, then schema + `dispatch`. Prajyot should not invent formulas in the UI — ask Yash if blocked.
 - Unprotected Excel is source of truth except Vehicle Loan and Multi-Goal corpus assignment (Full Set). Skip those two unless explicitly unblocked.
 - After `packages/finance` edits, run `npm test`.

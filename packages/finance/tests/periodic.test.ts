@@ -10,6 +10,19 @@ const close = (actual: number, expected: number, rel = 1e-9) => {
   );
 };
 
+test("periodic rejects timesPerYear that do not divide 12", () => {
+  assert.throws(
+    () =>
+      calculatePeriodic({
+        amount: 100_000,
+        timesPerYear: 5,
+        years: 1,
+        annualReturn: 0.12,
+      }),
+    /timesPerYear must be a positive divisor of 12/,
+  );
+});
+
 test("periodic: Unprotected Periodic Investment v1 sample (1L x2 / year, 1y, 12%, 12% tax)", () => {
   const result = calculatePeriodic({
     amount: 100_000,

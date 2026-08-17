@@ -18,9 +18,38 @@ export { calculateAmort, loanEmi } from "./amort";
 export type { AmortInput, AmortRow } from "./amort";
 export {
   calculateGoalSipVsStepUp,
+  calculateGoalWithCurrent,
+  calculateGoalLsSipOptions,
+  calculateGoalExistingSip,
+  calculateGoalPeriodicLumpsum,
+  calculateGoalCompounding,
   requiredSip,
   requiredLumpsum,
   requiredStepUpSip,
   sipAnnuityDueFactor,
+  existingNetCredit,
+  residualTarget,
 } from "./goal";
-export type { GoalSipInput, GoalLeg, DelayRow } from "./goal";
+export type {
+  GoalSipInput,
+  GoalLeg,
+  DelayRow,
+  GoalCurrentInput,
+  GoalLsSipInput,
+  GoalExistingSipInput,
+  GoalPeriodicInput,
+  GoalCompoundingInput,
+  FundingLeg,
+} from "./goal";
+export {
+  calculateEducation,
+  projectEducationSipForInput,
+  DEFAULT_EDUCATION_COSTS,
+} from "./education";
+export type {
+  EducationInput,
+  EducationResult,
+  EducationCostRow,
+  EducationScheduleRow,
+  EducationLeg,
+} from "./education";

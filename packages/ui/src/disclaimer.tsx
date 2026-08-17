@@ -3,5 +3,5 @@ export function Disclaimer({
 }: {
   text?: string;
 }) {
-  return <p className="text-xs text-muted-foreground">{text}</p>;
+  return <p className="text-xs text-[var(--app-text-subtle)] text-center mt-2">{text}</p>;
 }

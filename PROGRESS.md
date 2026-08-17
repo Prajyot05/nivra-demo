@@ -1,6 +1,44 @@
-# Progress — Days 1–5 shared kit + Goal SIP wiring
+# Progress — Days 1–8 kit + Growth + Unified Goal Planner
 
 **Stack update:** the app is Next.js (App Router). Calculate lives at `POST /api/calculate/:id` in `src/app/api`. TanStack Start, Vite, and the separate Express server were removed. Finance math in `packages/finance` is unchanged.
+
+End-to-end = engine + unit tests + Zod schema + `dispatch` + UI on a live route. Unchecked rows are not started (or only partially present, e.g. `loan-emi` engine without a real Loans page).
+
+## Tracker (23 Excel files + platform)
+
+
+| Done | #   | Item                                                | Owner   | Live route / id                                |
+| ---- | --- | --------------------------------------------------- | ------- | ---------------------------------------------- |
+| [x]  | —   | Shared kit (engine, UI, `POST /api/calculate/:id`)  | Yash    | —                                              |
+| [x]  | 1   | SIP Calculator v3                                   | Yash    | `/growth` · `growth-sip`                       |
+| [x]  | 2   | SIP Step-Up v1                                      | Yash    | `/growth` · `growth-stepup`                    |
+| [x]  | 3   | One-Time Investment v2                              | Yash    | `/growth` · `growth-lumpsum`                   |
+| [x]  | 4   | Periodic Investment v1                              | Yash    | `/growth` · `growth-periodic`                  |
+| [ ]  | 5   | MF vs FD v1                                         | Prajyot | `/mf-fd`                                       |
+| [ ]  | 6   | Loan EMI v1                                         | Prajyot | engine `loan-emi` only; page still coming-soon |
+| [ ]  | 7   | Loan with Periodic Extra Payments v1                | Prajyot | `/loans`                                       |
+| [ ]  | 8   | Loan Extra Payment vs Investment **v2**             | Prajyot | `/loans`                                       |
+| [ ]  | 9   | Loan Interest Recovery v7                           | Prajyot | `/loans`                                       |
+| [ ]  | 10  | Vehicle Loan Benefit Analysis-v2 (Full Set)         | Prajyot | blocked unless Yash agrees                     |
+| [ ]  | 11  | Insurance IRR v1                                    | Prajyot | waits on XIRR in `@nivra/finance`              |
+| [ ]  | 12  | Insurance Convert to TP v3                          | Prajyot | `/insurance`                                   |
+| [x]  | 13  | Child Education Planner v4                          | Yash    | `/education` · `education`                     |
+| [x]  | 14  | Goal SIP vs Step-up v3                              | Yash    | `/` and `/goals` · `goal-sip`                  |
+| [x]  | 15  | Goal with Current Investment LS/SIP/SU              | Yash    | `/goals` · `goal-current`                      |
+| [x]  | 16  | Goal LS–SIP Options v3                              | Yash    | `/goals` · `goal-ls-sip`                       |
+| [x]  | 17  | Goal Existing SIP v3                                | Yash    | `/goals` · `goal-existing-sip`                 |
+| [x]  | 18  | Goal Periodic Lumpsum v2                            | Yash    | `/goals` · `goal-periodic`                     |
+| [x]  | 19  | Goal Power of Compounding / Growth Steps            | Yash    | `/goals` · `goal-compounding`                  |
+| [ ]  | 20  | Multiple Goals with Corpus Assignment v2 (Full Set) | Prajyot | blocked unless Yash agrees                     |
+| [ ]  | 21  | SIP for Multiple Withdrawals v2                     | Prajyot | `/multi-goal`                                  |
+| [ ]  | 22  | FIRE Planner v10                                    | Yash    | `/fire`                                        |
+| [ ]  | 23  | Financial Health Analysis v4                        | Yash    | `/fire`                                        |
+| [ ]  | —   | Excel parity QA / review                            | Both    | Days 21–22                                     |
+
+
+**Checked now: 12 / 24 rows** (kit + Growth ×4 + Goal ×6 + Education). Remaining Yash: FIRE, Health, QA. Remaining Prajyot: MF vs FD, all loan screens, insurance, multi-goal.
+
+Charts are **not** one line chart for every product. Spec: `[docs/charts.md](docs/charts.md)` (from Unprotected / Full Set Excel). `AGENTS.md` requires that file for all future UI.
 
 ---
 
@@ -34,7 +72,7 @@ Run:
 
 ```sh
 npm install
-npm test          # finance unit tests
+npm test          # finance unit tests + growth dispatch fixtures
 npm run dev       # Next.js on :3000 (pages + API)
 ```
 
@@ -53,7 +91,8 @@ Built and unit-tested against Unprotected SIP / One-Time / Loan EMI / Goal numbe
 | `monthlyRate`                | `(1 + r)^(1/12) - 1` for SIP / goals / periodic                     |
 | `nominalMonthlyRate`         | `r / 12` for **loans only**                                         |
 | Inflation                    | `present * (1+inf)^years` and the inverse                           |
-| Capital-gains tax            | `tax * max(0, maturity − invested)`                                 |
+| Capital-gains tax            | `tax * max(0, maturity − invested)` for growth/goals. Education taxes **fees**. |
+| Education plan               | Multi-withdrawal PV (lumpsum) + GoalSeek SIP so last-year balance is 0 |
 | Flat SIP                     | Maturity, invested, delay cost, optional extra invest-horizon years |
 | Step-up SIP                  | Yearly step-up, start/end SIP, invested                             |
 | Periodic                     | n times per year (`timesPerYear` divides 12)                        |
@@ -67,6 +106,7 @@ Tests live in `packages/finance/tests/`. Fixtures include:
 - One-time v2: ₹50L / 16y / 12% → maturity **3,06,51,968.25**
 - Loan EMI v1: ₹75L / 20y / 9.2% → EMI **68,447.15**
 - Goal v3: ₹1Cr / 15y / infl. 5.25% / tax 12.5% → SIP **49,082.47**, step-up start **27,918.05**
+- Education v4: child age 5 / 12% / 12.5% tax / sample grid → lumpsum **32,31,850.69**, total withdrawal **1,67,51,587.50**
 
 XIRR is **not** in the engine yet (wait until those screens).
 
@@ -77,12 +117,12 @@ XIRR is **not** in the engine yet (wait until those screens).
 `packages/ui` (clone this, do not invent a new layout):
 
 - `CalculatorPage` — title, client header, form, results, disclaimer
-- `MoneyInput`, `PercentInput`, `YearInput` / `AgeInput`
+- `MoneyInput`, `PercentInput`, `YearInput` / `AgeInput`, `SelectInput`
 - `ClientHeader`, `ModeTabs`
 - `ResultCard`, `ScheduleTable`, `GrowthChart`
 - INR / % formatters (display only)
 
-App shell + sidebar lists every product. Empty routes (Growth, Education, FIRE, MF vs FD, Loans, Insurance, Multi-Goal) use the same template and tell Prajyot which `calculator id` to call.
+App shell + sidebar lists every product. **Investment Growth** (`/growth`), **Unified Goal Planner** (`/goals`), and **Child Education** (`/education`) are live. Remaining empty routes (FIRE, MF vs FD, Loans, Insurance, Multi-Goal) use `ComingSoonCalculator`.
 
 ---
 
@@ -104,7 +144,7 @@ Numbers will differ slightly from the old client-side version because Unprotecte
 
 Contract: `[docs/API_CONTRACT.md](docs/API_CONTRACT.md)`
 
-Copy `/growth` (Investment Growth page) and call `POST /api/calculate/:id`. No new inputs/tables/math.
+Copy **Investment Growth** (`/growth`) — the live four-mode page — and call `POST /api/calculate/:id`. No new inputs/tables/math. Do not copy `ComingSoonCalculator` zeros or the Goal SIP custom layout.
 
 He can start **MF vs FD**, then **Loan EMI** (`loan-emi` is already implemented in the engine).
 
@@ -112,15 +152,64 @@ Do **not** implement Vehicle Loan or Multi-Goal corpus assignment unless he is b
 
 ---
 
-## 7. Not done yet (later days)
+## 7. Investment Growth (Days 6–8, wired)
+
+`/growth` is the reference calculator. Form → `calculate(id)` → `@nivra/ui` results. Defaults match Unprotected samples.
 
 
-| When       | What                                                                            |
-| ---------- | ------------------------------------------------------------------------------- |
-| Days 6–8   | Wire Investment Growth four modes (SIP / Lumpsum / Step-up / Periodic) for real |
-| Days 9–14  | Rest of Unified Goal Planner modes                                              |
-| Days 15–16 | Child Education                                                                 |
-| Days 17–20 | FIRE + Financial Health                                                         |
-| Days 21–22 | Remaining Excel fixture tests + review Prajyot PRs                              |
+| Mode     | API id            | Default sample                                                                         |
+| -------- | ----------------- | -------------------------------------------------------------------------------------- |
+| SIP      | `growth-sip`      | ₹1,500 / 5y SIP / 5y horizon / 12% / infl. 5.75% / delay 6m → maturity **1,21,655.42** |
+| Step-up  | `growth-stepup`   | ₹5,000 start / 10% step / 10y / 12% → maturity **16,34,449.24**                        |
+| Lumpsum  | `growth-lumpsum`  | ₹50L / 16y / 12% → maturity **3,06,51,968.25**                                         |
+| Periodic | `growth-periodic` | ₹1L × 2 / year / 1y / 12% / tax 12% → maturity **2,17,830.05**                         |
+
+
+- Percents stay human in the form (`12` = 12%). Dispatch divides by 100.
+- Result cards use full `en-IN` amounts. Chart axes may use compact `L`/`Cr`.
+- `timesPerYear` must be 1, 2, 3, 4, 6, or 12. SIP `investYears` must be ≥ `sipYears`.
+- Finance + dispatch fixture tests cover these four ids (`npm test`).
+
+---
+
+## 8. Unified Goal Planner (Days 9–14, wired)
+
+`/goals` is the six-mode planner (clone `/growth`, not the custom `/` layout). `/` stays the existing Goal SIP vs Step-up screen (`goal-sip`).
+
+Defaults match Goal v3: ₹1 Cr / 15y / 12% / infl. 5.25% / tax 12.5% / step-up 10%, inflation-adjusted goal on.
+
+
+| Mode               | API id              | What it solves                                              |
+| ------------------ | ------------------- | ----------------------------------------------------------- |
+| SIP vs Step-up     | `goal-sip`          | Required SIP and step-up so net after tax = target          |
+| Current investment | `goal-current`      | Existing corpus + SIP; remaining LS / SIP / step-up         |
+| LS + SIP options   | `goal-ls-sip`       | All-LS vs all-SIP vs extra lumpsum + remaining SIP          |
+| Existing SIP       | `goal-existing-sip` | Additional SIP = full required − current SIP                |
+| Periodic lumpsum   | `goal-periodic`     | Periodic contributions first; remaining SIP / step-up       |
+| Growth steps       | `goal-compounding`  | Required SIP vs lumpsum year path + extra compounding years |
+
+
+Combined existing + additional uses linear net-credit `(1 − t)×FV + t×invested`, so additional SIP/LS still hits **net after tax ≈ target**. Overfunded current corpus returns 0 additional.
+
+---
+
+## 9. Child Education Planner (Days 15–16, wired)
+
+`/education` clones `CalculatorPage` (not the custom Goal SIP layout). Form → `POST /api/calculate/education` → `@nivra/ui`. Defaults match Unprotected Child Education Planner v4: child age **5**, return **12%**, tax **12.5%**, Nursery–College cost grid (College-4 = ₹70L).
+
+- Withdrawal = future fee × (1 + tax). Tax is on **fees**, not investment gain.
+- Lumpsum required = backward PV of those withdrawals (Excel Q10 = **₹32,31,850.69**).
+- Monthly SIP GoalSeeks last fee-year SIP balance to 0 (Excel’s cached ₹32,012 is stale vs College-4 = 70L).
+- Charts: required **CompareChart** (lumpsum vs SIP: invested / tax / peak corpus). Extra **StackedBarChart** of the cost grid. No `GrowthChart`.
+
+---
+
+## 10. Not done yet (later days)
+
+
+| When       | What                                               |
+| ---------- | -------------------------------------------------- |
+| Days 17–20 | FIRE + Financial Health                            |
+| Days 21–22 | Remaining Excel fixture tests + review Prajyot PRs |
 
 

@@ -12,4 +12,4 @@ alwaysApply: false
 - Rates in this package are decimals (`0.12`). Callers in `calculate-dispatch.ts` convert from API percents.
 - Add a unit test in `packages/finance/tests/` against Unprotected sample numbers for every new helper.
 - XIRR is not in the engine yet. Do not stub a wrong IRR.
-- Capital gains: tax on `max(0, maturity - invested)`. Goal SIP solves **net after tax ≈ target**.
+- Capital gains: tax on `max(0, maturity - invested)` for growth/goals. Education Planner taxes **fees** (`cost × taxRate`) and withdraws `cost + tax`. Goal SIP solves **net after tax ≈ target**.

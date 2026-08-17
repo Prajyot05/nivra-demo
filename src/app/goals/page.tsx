@@ -1,5 +1,8 @@
-import { redirect } from "next/navigation";
+import type { Metadata } from "next";
+import { UnifiedGoalPlanner } from "@/components/calc/unified-goal-planner";
 
-export default function GoalsRedirect() {
-  redirect("/");
+export const metadata: Metadata = { title: "Unified Goal Planner" };
+
+export default function GoalsPage() {
+  return <UnifiedGoalPlanner />;
 }

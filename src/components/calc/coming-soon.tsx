@@ -36,12 +36,12 @@ export function ComingSoonCalculator({
       title={title}
       description={
         description ??
-        `Clone this page. Keep these inputs/results. Call POST /api/calculate/${calculatorId} — do not add math in the UI.`
+        `Clone this page. Keep these inputs/results. Copy /growth for a live example. Call POST /api/calculate/${calculatorId} — do not add math in the UI.`
       }
-      header={<ClientHeader name={name} age={age} onNameChange={setName} onAgeChange={setAge} />}
       modes={<ModeTabs tabs={modes} value={mode} onChange={setMode} />}
       form={
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 sm:gap-4">
+          <ClientHeader name={name} age={age} onNameChange={setName} onAgeChange={setAge} />
           <MoneyInput label="Amount" value={amount} onChange={setAmount} />
           <YearInput value={years} onChange={setYears} />
           <PercentInput label="Return (%)" value={rate} onChange={setRate} />

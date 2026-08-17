@@ -1,6 +1,7 @@
 export type NavItem = {
   to:
     | "/"
+    | "/goals"
     | "/growth"
     | "/education"
     | "/fire"
@@ -15,8 +16,9 @@ export type NavItem = {
 
 export const CALCULATOR_NAV: NavItem[] = [
   { to: "/", label: "Goal SIP Planner", owner: "Yash", ready: true },
-  { to: "/growth", label: "Investment Growth", owner: "Yash" },
-  { to: "/education", label: "Child Education", owner: "Yash" },
+  { to: "/goals", label: "Unified Goal Planner", owner: "Yash", ready: true },
+  { to: "/growth", label: "Investment Growth", owner: "Yash", ready: true },
+  { to: "/education", label: "Child Education", owner: "Yash", ready: true },
   { to: "/fire", label: "FIRE / Health", owner: "Yash" },
   { to: "/mf-fd", label: "MF vs FD", owner: "Prajyot" },
   { to: "/loans", label: "Loans", owner: "Prajyot" },
