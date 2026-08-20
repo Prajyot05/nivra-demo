@@ -11,6 +11,9 @@ import {
   MoneyInput,
   PercentInput,
   ResultCard,
+  RESULTS_LEFT,
+  RESULTS_RIGHT,
+  RESULTS_SPLIT,
   ScheduleTable,
   SelectInput,
   StatCard,
@@ -40,7 +43,7 @@ const FREQUENCY_OPTIONS = [
 ];
 
 const FORM_GRID =
-  "grid grid-cols-1 gap-3 min-[400px]:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 sm:gap-4 lg:gap-3 xl:gap-5";
+  "grid grid-cols-1 items-start gap-3 min-[400px]:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 sm:gap-4 lg:gap-3 xl:gap-5";
 
 const CALCULATOR_ID: Record<Mode, string> = {
   sip: "goal-sip",
@@ -172,15 +175,15 @@ export function UnifiedGoalPlanner() {
       form={
         <div className={FORM_GRID}>
           <ClientHeader name={name} age={age} onNameChange={setName} onAgeChange={setAge} />
-          <MoneyInput label="Target Goal Amount" value={goalAmount} onChange={setGoalAmount} />
-          <YearInput label="Tenure (Yrs)" value={tenureYears} min={1} max={75} onChange={setTenureYears} />
+          <MoneyInput label="Goal amount" value={goalAmount} onChange={setGoalAmount} />
+          <YearInput label="Tenure (yrs)" value={tenureYears} min={1} max={75} onChange={setTenureYears} />
           <PercentInput label="Return (%)" value={returnPct} onChange={setReturnPct} />
           <PercentInput label="Inflation (%)" value={inflationPct} onChange={setInflationPct} />
           <PercentInput label="Tax (%)" value={taxPct} onChange={setTaxPct} />
           {mode !== "compounding" ? (
             <PercentInput label="Step-up (%)" value={stepUpPct} onChange={setStepUpPct} />
           ) : (
-            <YearInput label="Extra years after goal" value={extraYears} min={0} max={50} onChange={setExtraYears} />
+            <YearInput label="Extra years" value={extraYears} min={0} max={50} onChange={setExtraYears} />
           )}
           <SelectInput
             label="Goal basis"
@@ -195,16 +198,16 @@ export function UnifiedGoalPlanner() {
             <MoneyInput label="Current corpus" value={currentCorpus} onChange={setCurrentCorpus} />
           ) : null}
           {mode === "current" || mode === "existing" ? (
-            <MoneyInput label="Current monthly SIP" value={currentMonthlySip} onChange={setCurrentMonthlySip} />
+            <MoneyInput label="Current SIP" value={currentMonthlySip} onChange={setCurrentMonthlySip} />
           ) : null}
           {mode === "ls-sip" ? (
-            <MoneyInput label="Extra lumpsum now" value={extraLumpsum} onChange={setExtraLumpsum} />
+            <MoneyInput label="Extra lumpsum" value={extraLumpsum} onChange={setExtraLumpsum} />
           ) : null}
           {mode === "periodic" ? (
             <>
-              <MoneyInput label="Periodic amount" value={periodicAmount} onChange={setPeriodicAmount} />
+              <MoneyInput label="Periodic amt" value={periodicAmount} onChange={setPeriodicAmount} />
               <SelectInput
-                label="Times per year"
+                label="Times / year"
                 value={String(timesPerYear)}
                 onChange={(value) => setTimesPerYear(Number(value))}
                 options={FREQUENCY_OPTIONS}
@@ -267,29 +270,31 @@ function GoalResults({ mode, result }: { mode: Mode; result: GoalPlannerResult }
   }
 
   return (
-    <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 md:gap-4 lg:grid-cols-12">
-      <div className="flex min-h-0 flex-col gap-3 lg:col-span-7 lg:overflow-y-auto lg:pr-2">
+    <div className={RESULTS_SPLIT}>
+      <div className={RESULTS_LEFT}>
         <GoalHero mode={mode} result={result} />
         {goalRequiredChart(mode, result)}
         {goalExtraChart(mode, result)}
       </div>
-      <div className="flex min-h-0 flex-col gap-3 lg:col-span-5 lg:overflow-y-auto lg:pr-2">
-        <ResultCard
-          title={result.overfunded ? "Results · already funded" : "Goal summary"}
-          items={summaryItems}
-        />
-        {result.standard ? (
+      <div className={RESULTS_RIGHT}>
+        <div className="flex shrink-0 flex-col gap-3">
           <ResultCard
-            title={mode === "sip" ? "Standard SIP" : "Additional SIP"}
-            items={legItems(result.standard)}
+            title={result.overfunded ? "Results · already funded" : "Goal summary"}
+            items={summaryItems}
           />
-        ) : null}
-        {result.stepUp ? (
-          <ResultCard title={mode === "sip" ? "Step-up SIP" : "Additional step-up SIP"} items={legItems(result.stepUp)} />
-        ) : null}
-        {result.lumpsum?.lumpsum != null ? (
-          <ResultCard title="Additional lumpsum today" items={legItems(result.lumpsum)} />
-        ) : null}
+          {result.standard ? (
+            <ResultCard
+              title={mode === "sip" ? "Standard SIP" : "Additional SIP"}
+              items={legItems(result.standard)}
+            />
+          ) : null}
+          {result.stepUp ? (
+            <ResultCard title={mode === "sip" ? "Step-up SIP" : "Additional step-up SIP"} items={legItems(result.stepUp)} />
+          ) : null}
+          {result.lumpsum?.lumpsum != null ? (
+            <ResultCard title="Additional lumpsum today" items={legItems(result.lumpsum)} />
+          ) : null}
+        </div>
         <ScheduleTable
           caption="Yearly schedule"
           columns={scheduleColumns(mode)}

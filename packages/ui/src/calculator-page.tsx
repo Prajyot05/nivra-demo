@@ -27,10 +27,10 @@ export function CalculatorPage({
 
   return (
     <div
-      className="flex h-full min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto bg-[var(--app-bg)] pt-[max(0.75rem,env(safe-area-inset-top))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] sm:px-6 md:px-8 lg:overflow-hidden lg:px-10"
+      className="custom-scrollbar flex h-full min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto bg-[var(--app-bg)] pt-[max(0.75rem,env(safe-area-inset-top))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] sm:px-6 md:px-8 lg:px-10"
       style={theme.vars as CSSProperties}
     >
-      <div className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col gap-3">
+      <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-3 pb-2">
         <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div className="min-w-0">
             <h1 className="text-xl font-bold tracking-tight text-[var(--app-text)] sm:text-2xl lg:text-3xl">
@@ -63,7 +63,7 @@ export function CalculatorPage({
         {modes}
 
         <div className="flex shrink-0 flex-col justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-4 sm:px-5 sm:py-5 lg:px-6 lg:py-5">
-          <div className="mb-3 sm:mb-4 lg:mb-5">
+          <div className="mb-3 sm:mb-4">
             <span className="text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
               Financial Assumptions
             </span>
@@ -72,8 +72,10 @@ export function CalculatorPage({
           {form}
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{results}</div>
-        <div className="shrink-0">{footer ?? <Disclaimer />}</div>
+        <div className="flex flex-col">{results}</div>
+        <div className="mt-1 shrink-0 border-t border-[var(--app-border)] pt-3">
+          {footer ?? <Disclaimer />}
+        </div>
       </div>
     </div>
   );

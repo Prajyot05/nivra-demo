@@ -10,12 +10,19 @@ export function Field({
   children: ReactNode;
 }) {
   return (
-    <label className="block space-y-2">
-      <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--app-text-subtle)]">
+    <label className="flex min-w-0 flex-col gap-1.5">
+      <span
+        className="block h-4 truncate text-[10px] font-semibold uppercase tracking-wide text-[var(--app-text-subtle)]"
+        title={label}
+      >
         {label}
       </span>
       {children}
-      {hint ? <span className="text-xs text-[var(--app-text-muted)]">{hint}</span> : null}
+      {hint ? (
+        <span className="truncate text-[11px] leading-4 text-[var(--app-text-muted)]" title={hint}>
+          {hint}
+        </span>
+      ) : null}
     </label>
   );
 }

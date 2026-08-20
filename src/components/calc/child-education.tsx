@@ -10,6 +10,9 @@ import {
   parseDigits,
   PercentInput,
   ResultCard,
+  RESULTS_LEFT,
+  RESULTS_RIGHT,
+  RESULTS_SPLIT,
   ScheduleTable,
   StackedBarChart,
   StatCard,
@@ -109,23 +112,23 @@ export function ChildEducationPlanner() {
       description="Fund future school and college fees with a lumpsum today or a monthly SIP."
       form={
         <div className="flex flex-col gap-3">
-          <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 sm:gap-4 lg:gap-3 xl:gap-5">
+          <div className="grid grid-cols-1 items-start gap-3 min-[400px]:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 sm:gap-4 lg:gap-3 xl:gap-5">
             <ClientHeader name={name} age={age} onNameChange={setName} onAgeChange={setAge} />
-            <Field label="Child's name">
+            <Field label="Child name">
               <TextInput
                 value={childName}
                 onChange={(e) => setChildName(e.target.value)}
               />
             </Field>
             <YearInput
-              label="Child's age (years)"
+              label="Child age"
               value={childAge}
               min={0}
               max={40}
               onChange={setChildAge}
             />
             <PercentInput label="Return (%)" value={returnPct} onChange={setReturnPct} />
-            <PercentInput label="Tax on fees (%)" value={taxPct} onChange={setTaxPct} />
+            <PercentInput label="Fee tax (%)" value={taxPct} onChange={setTaxPct} />
           </div>
           <CostGrid
             costs={costs}
@@ -138,7 +141,7 @@ export function ChildEducationPlanner() {
         </div>
       }
       results={
-        <div className="flex h-full min-h-0 flex-1 flex-col gap-3 lg:overflow-hidden">
+        <div className="flex flex-col gap-3">
           {error ? <p className="text-sm text-[var(--app-danger)]">{error}</p> : null}
           {loading && !result ? (
             <p className="text-sm text-[var(--app-text-muted)]">Calculating…</p>
@@ -166,7 +169,10 @@ function CostGrid({
         <div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
           {costs.map((row, index) => (
             <label key={`${row.age}-${row.classLabel}`} className="block min-w-0">
-              <span className="mb-1 block truncate text-[10px] font-semibold uppercase tracking-widest text-[var(--app-text-subtle)]">
+              <span
+                className="mb-1.5 block h-4 truncate text-[10px] font-semibold uppercase tracking-wide text-[var(--app-text-subtle)]"
+                title={row.classLabel}
+              >
                 {row.classLabel}
               </span>
               <TextInput
@@ -188,15 +194,14 @@ function CostGrid({
 
 function EducationResults({ result }: { result: EducationResult }) {
   return (
-    <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:h-full lg:grid-cols-12 lg:grid-rows-[minmax(0,1fr)] lg:overflow-hidden">
-      <div className="flex min-h-0 flex-col gap-3 lg:col-span-7 lg:overflow-hidden">
+    <div className={RESULTS_SPLIT}>
+      <div className={RESULTS_LEFT}>
         <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
           <StatCard title="Lumpsum required today" value={result.lumpsum.lumpsum} />
           <StatCard title="Monthly SIP required" value={result.sip.monthlySip} variant="soft" />
         </div>
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 md:grid-cols-2 md:grid-rows-[minmax(0,1fr)] lg:overflow-hidden">
+        <div className="grid grid-cols-1 items-start gap-3 md:grid-cols-2">
           <CompareChart
-            className="min-h-[220px] lg:min-h-0"
             title="Lumpsum vs SIP"
             data={result.compare}
             series={[
@@ -205,7 +210,6 @@ function EducationResults({ result }: { result: EducationResult }) {
             ]}
           />
           <StackedBarChart
-            className="min-h-[220px] lg:min-h-0"
             title="Year-wise education cost"
             data={result.costChart.map((row) => ({
               category: row.classLabel,
@@ -219,7 +223,7 @@ function EducationResults({ result }: { result: EducationResult }) {
           />
         </div>
       </div>
-      <div className="flex min-h-0 flex-col gap-3 lg:col-span-5 lg:overflow-hidden">
+      <div className={RESULTS_RIGHT}>
         <div className="shrink-0">
           <ResultCard
             title="Plan summary"
@@ -232,7 +236,6 @@ function EducationResults({ result }: { result: EducationResult }) {
           />
         </div>
         <ScheduleTable
-          className="min-h-[220px] lg:min-h-0"
           caption="Education investment and withdrawal plan"
           columns={[
             { key: "age", header: "Age" },

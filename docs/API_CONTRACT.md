@@ -45,7 +45,16 @@ Percents are **human numbers** (12 = 12%), not decimals. Money is INR. The engin
 | `goal-existing-sip` | Unified Goal Planner · Existing SIP | Additional SIP = full required − current SIP |
 | `goal-periodic` | Unified Goal Planner · Periodic lumpsum | `timesPerYear` must divide 12 |
 | `goal-compounding` | Unified Goal Planner · Growth steps | Required SIP + lumpsum paths; extra years after goal |
-| `loan-emi` | Loan EMI | Uses `r/12` (not effective monthly). **Must** use this helper. |
+| `loan-emi` | Loan EMI | Uses `r/12` (not effective monthly). **Must** use this helper. UI `/loans` |
+| `loan-prepay` | Loan yearly extra | Unprotected Periodic Extra Payments v1. UI `/loans` |
+| `loan-extra-vs-invest` | Extra vs invest **v2** | Unprotected v2. UI `/loans` |
+| `loan-interest-recovery` | Interest recovery v7 | Proposed shorter loan + SIP. UI `/loans` |
+| `vehicle-loan` | Vehicle loan benefit | Full Set Veh-Loan. UI `/loans` |
+| `mf-fd` | MF vs FD | Day-count post-tax compare. UI `/mf-fd` |
+| `insurance-irr` | Insurance IRR | XIRR on premium/maturity cashflows. UI `/insurance` |
+| `insurance-tp` | Convert to term + invest | Keep vs surrender. UI `/insurance` |
+| `multi-goal-assign` | Multi-goal corpus assign | Full Set. UI `/multi-goal` |
+| `multi-withdrawals` | SIP for withdrawals | Unprotected v2. UI `/multi-goal` |
 | `education` | Child Education Planner | Age/class cost grid. Tax grosses **fees**, not investment gain. UI `/education` |
 
 Health: `GET /api/health` → `{ ok, calculators }`.
@@ -229,6 +238,86 @@ EMI formula matches Unprotected Loan EMI v1: `[P × R × (1+R)^N] / [(1+R)^N −
 | `schedule[]` | `{ age, classLabel, cost, tax, withdrawal, sipCorpus, sipBalance, lumpsumBalance }` |
 
 Lumpsum is a backward PV of later withdrawals (Excel type=0). SIP uses effective monthly rate and beginning-of-month payments (type=1). Past years (`age ≤ childAge`) have zero withdrawal / SIP / lumpsum activity.
+
+---
+
+## `mf-fd`
+
+**Input:** `amount`, `days`, `mfReturnPct`, `fdReturnPct`, `mfTaxPct`, `fdTaxPct`.
+
+**Output:** `mf` / `fd` legs (`annualizedReturn`, `preTax`, `tax`, `postTax`, `invested`, `gain`, `net`), `mfAdvantage`, `fdAdvantage`, `compare[]`.
+
+Annualized return = amount × rate. Per-day = annualized / 365. Pre-tax = per-day × days. Post-tax = pre-tax × (1 − tax). Sample: ₹100 Cr / 15 days / 5% vs 3% / 20% vs 25% tax → MF post-tax **16,43,835.62**.
+
+---
+
+## `loan-prepay`
+
+**Input:** `principal`, `years`, `interestPct`, `yearlyExtra`, optional `recoverReturnPct` (default 12).
+
+**Output:** EMI schedule with extra at months 12, 24, …; `monthsPaid`, `interestSaved`, `totalExtra`, `recoverSip` / `revisedRecoverSip` (SIP to recover original vs remaining interest).
+
+---
+
+## `loan-extra-vs-invest`
+
+**Input:** `principal`, `years`, `interestPct`, `extraAmount`, `extraMonth`, `investReturnPct`, `taxPct`, `incomeTaxPct`.
+
+**Output:** option 1 prepay (`option1Saving`, remaining months) vs option 2 invest extra (`corpusAfterTax`, `option2Saving`), plus `path[]` of outstanding vs investment.
+
+Sample: ₹2 Cr / 20y / 8.5% / extra ₹50 L at month 49 / 9% / 12.5% CG / 20% income tax.
+
+---
+
+## `loan-interest-recovery`
+
+**Input:** `principal`, `years`, `interestPct`, `proposedYears`, `sipReturnPct`.
+
+**Output:** baseline vs proposed EMI, SIP that recovers proposed interest (annuity due), `sipAtHorizon`, year `schedule` of baseline / proposed / SIP.
+
+---
+
+## `vehicle-loan`
+
+**Input:** `onRoadCost`, `loanAmount`, `interestPct`, `years`, `incomeTaxPct`, `depreciationPct`, returns and tax for FD / debt / conservative / equity.
+
+**Output:** `emi`, depreciation schedule, `options[]` (No loan, FD, MF debt, conservative, equity) with `financialBenefit`, `compare[]`.
+
+FD uses quarterly FV; others annual FV. Depreciation is declining balance on on-road cost.
+
+---
+
+## `insurance-irr`
+
+**Input:** `premium`, `payTerm`, `corpusAtPayEnd`, `policyTerm`, `returnPct`, `taxPct`.
+
+**Output:** `maturity` = FV(return, policy − pay, 0, −corpusAtPayEnd, 1), `gain`, `tax`, `net`, `xirr`, `payTermRate`.
+
+Sample: ₹2 L × 5y, corpus ₹11.6 L, 20y, 11%, 12.5% tax → maturity **55,50,123.81**.
+
+---
+
+## `insurance-tp`
+
+**Input:** current policy (`premium`, `payTerm`, `yearsPaid`, `policyTerm`, `yearsToMaturity`, `maturityValue`, `taxPct`, `surrenderValue`) plus term (`termPremium`, `termYears`) and `returnPct`.
+
+**Output:** `keep` (net after tax, IRR) vs `switch` (`investMaturity`, term cost, IRR), `compare[]`.
+
+---
+
+## `multi-goal-assign`
+
+**Input:** `shortTermYears`, `shortTermReturnPct`, `longTermReturnPct`, `inflationPct`, `taxPct`, optional `delayMonths`, `currentCorpus`, `corpusReturnPct`, `goals[]` of `{ name, amount, years }`.
+
+**Output:** per-goal SIP / lumpsum (net after tax = inflated goal, ST vs LT yield), corpus assigned soonest-first, `compare[]`.
+
+---
+
+## `multi-withdrawals`
+
+**Input:** `age`, `returnPct`, `taxPct`, `withdrawals[]` of `{ name, amount, atAge }`.
+
+**Output:** independent required SIP per withdrawal, `startMonthlySip`, totals, `ageChart` / `schedule`.
 
 ---
 

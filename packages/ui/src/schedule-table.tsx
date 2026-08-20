@@ -7,6 +7,13 @@ export type ScheduleColumn<T> = {
   format?: "inr" | "text" | "number";
 };
 
+/** Two-column results: left charts set height; right column matches and scrolls. */
+export const RESULTS_SPLIT =
+  "grid grid-cols-1 gap-3 md:gap-4 lg:grid-cols-12";
+export const RESULTS_LEFT = "flex flex-col gap-3 lg:col-span-7";
+export const RESULTS_RIGHT =
+  "flex min-h-0 flex-col gap-3 overflow-hidden lg:col-span-5 lg:h-0 lg:min-h-full";
+
 export function ScheduleTable<T extends Record<string, unknown>>({
   columns,
   rows,
@@ -20,14 +27,14 @@ export function ScheduleTable<T extends Record<string, unknown>>({
 }) {
   return (
     <div
-      className={`flex h-full flex-1 flex-col overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 sm:p-4 ${className ?? "min-h-[300px]"}`}
+      className={`custom-scrollbar flex min-h-[240px] flex-1 flex-col overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 sm:p-4 max-lg:max-h-[360px] max-lg:flex-none ${className ?? ""}`}
     >
       {caption ? (
-        <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
+        <div className="mb-3 shrink-0 text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
           {caption}
         </div>
       ) : null}
-      <div className="min-h-0 flex-1 overflow-auto rounded-md border border-[var(--app-border)]">
+      <div className="custom-scrollbar min-h-0 flex-1 overflow-auto rounded-md border border-[var(--app-border)]">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-[var(--app-border)] text-left text-[10px] uppercase tracking-widest text-[var(--app-text-subtle)]">
@@ -43,7 +50,10 @@ export function ScheduleTable<T extends Record<string, unknown>>({
           </thead>
           <tbody>
             {rows.map((row, i) => (
-              <tr key={i} className="border-b border-[var(--app-border)]/60 hover:bg-[var(--app-surface-muted)] transition-colors">
+              <tr
+                key={i}
+                className="border-b border-[var(--app-border)]/60 transition-colors hover:bg-[var(--app-surface-muted)]"
+              >
                 {columns.map((col) => {
                   const raw = row[col.key as keyof T];
                   let text: string;

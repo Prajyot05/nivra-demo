@@ -1,7 +1,7 @@
 import { Field, TextInput } from "./field";
 
 export function YearInput({
-  label = "Tenure (Yrs)",
+  label = "Tenure (yrs)",
   value,
   onChange,
   min = 1,

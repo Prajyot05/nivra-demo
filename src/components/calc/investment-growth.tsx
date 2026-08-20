@@ -10,6 +10,9 @@ import {
   MoneyInput,
   PercentInput,
   ResultCard,
+  RESULTS_LEFT,
+  RESULTS_RIGHT,
+  RESULTS_SPLIT,
   ScheduleTable,
   SelectInput,
   StatCard,
@@ -36,7 +39,7 @@ const FREQUENCY_OPTIONS = [
 ];
 
 const FORM_GRID =
-  "grid grid-cols-1 gap-3 min-[400px]:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 sm:gap-4 lg:gap-3 xl:gap-5";
+  "grid grid-cols-1 items-start gap-3 min-[400px]:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 sm:gap-4 lg:gap-3 xl:gap-5";
 
 type YearRow = {
   year: number;
@@ -208,7 +211,7 @@ export function InvestmentGrowth() {
               }}
             />
             <YearInput
-              label="Invest horizon (Yrs)"
+              label="Horizon (yrs)"
               value={investYears}
               min={sipYears}
               max={100}
@@ -216,13 +219,13 @@ export function InvestmentGrowth() {
             />
             <PercentInput label="Return (%)" value={sipReturn} onChange={setSipReturn} />
             <PercentInput label="Inflation (%)" value={sipInflation} onChange={setSipInflation} />
-            <YearInput label="Delay (months)" value={sipDelay} min={0} max={1200} onChange={setSipDelay} />
+            <YearInput label="Delay (mos)" value={sipDelay} min={0} max={1200} onChange={setSipDelay} />
             <PercentInput label="Tax (%)" value={sipTax} onChange={setSipTax} />
           </div>
         ) : mode === "stepup" ? (
           <div className={FORM_GRID}>
             <ClientHeader name={name} age={age} onNameChange={setName} onAgeChange={setAge} />
-            <MoneyInput label="Start monthly SIP" value={stepStart} onChange={setStepStart} />
+            <MoneyInput label="Start SIP" value={stepStart} onChange={setStepStart} />
             <YearInput label="SIP years" value={stepYears} min={1} max={100} onChange={setStepYears} />
             <PercentInput label="Return (%)" value={stepReturn} onChange={setStepReturn} />
             <PercentInput label="Step-up (%)" value={stepUpPct} onChange={setStepUpPct} />
@@ -236,21 +239,21 @@ export function InvestmentGrowth() {
             <YearInput value={lumpYears} min={1} max={100} onChange={setLumpYears} />
             <PercentInput label="Return (%)" value={lumpReturn} onChange={setLumpReturn} />
             <PercentInput label="Inflation (%)" value={lumpInflation} onChange={setLumpInflation} />
-            <YearInput label="Delay (months)" value={lumpDelay} min={0} max={1200} onChange={setLumpDelay} />
+            <YearInput label="Delay (mos)" value={lumpDelay} min={0} max={1200} onChange={setLumpDelay} />
             <PercentInput label="Tax (%)" value={lumpTax} onChange={setLumpTax} />
           </div>
         ) : (
           <div className={FORM_GRID}>
             <ClientHeader name={name} age={age} onNameChange={setName} onAgeChange={setAge} />
-            <MoneyInput label="Amount per contribution" value={periodicAmount} onChange={setPeriodicAmount} />
+            <MoneyInput label="Amount each" value={periodicAmount} onChange={setPeriodicAmount} />
             <SelectInput
-              label="Times per year"
+              label="Times / year"
               value={String(timesPerYear)}
               onChange={(value) => setTimesPerYear(Number(value))}
               options={FREQUENCY_OPTIONS}
               hint="Must divide 12"
             />
-            <YearInput label="Tenure (Yrs)" value={periodicYears} min={1} max={50} onChange={setPeriodicYears} />
+            <YearInput label="Tenure (yrs)" value={periodicYears} min={1} max={50} onChange={setPeriodicYears} />
             <PercentInput label="Return (%)" value={periodicReturn} onChange={setPeriodicReturn} />
             <PercentInput label="Tax (%)" value={periodicTax} onChange={setPeriodicTax} />
           </div>
@@ -351,8 +354,8 @@ function GrowthResults({ mode, result }: { mode: Mode; result: GrowthResult }) {
     );
 
   return (
-    <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 md:gap-4 lg:grid-cols-12">
-      <div className="flex min-h-0 flex-col gap-3 lg:col-span-7 lg:overflow-y-auto lg:pr-2">
+    <div className={RESULTS_SPLIT}>
+      <div className={RESULTS_LEFT}>
         <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
           <StatCard title="Invested" value={result.totalInvested} />
           <StatCard title="Maturity" value={result.maturity} variant="soft" />
@@ -360,8 +363,10 @@ function GrowthResults({ mode, result }: { mode: Mode; result: GrowthResult }) {
         {requiredChart}
         {extraChart}
       </div>
-      <div className="flex min-h-0 flex-col gap-3 lg:col-span-5 lg:overflow-y-auto lg:pr-2">
-        <ResultCard title="Results" items={items} />
+      <div className={RESULTS_RIGHT}>
+        <div className="shrink-0">
+          <ResultCard title="Results" items={items} />
+        </div>
         {mode === "periodic" ? (
           <ScheduleTable
             caption="Contribution schedule"

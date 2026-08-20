@@ -163,7 +163,7 @@ export function GoalSipPlanner() {
 
   return (
     <div
-      className="flex h-full min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto bg-[var(--app-bg)] pt-[max(0.75rem,env(safe-area-inset-top))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] sm:px-6 md:px-8 lg:overflow-hidden lg:px-10"
+      className="custom-scrollbar flex h-full min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto bg-[var(--app-bg)] pt-[max(0.75rem,env(safe-area-inset-top))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] sm:px-6 md:px-8 lg:px-10"
       style={theme.vars as CSSProperties}
     >
       <div className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col gap-3">
@@ -221,7 +221,7 @@ export function GoalSipPlanner() {
             </span>
           </div>
 
-          <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 sm:gap-4 lg:gap-3 xl:gap-5">
+          <div className="grid grid-cols-1 items-start gap-3 min-[400px]:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 sm:gap-4 lg:gap-3 xl:gap-5">
             <Field label="Client Name">
               <Input
                 className="h-10 sm:h-11"
@@ -237,7 +237,7 @@ export function GoalSipPlanner() {
                 onChange={(e) => setAge(+e.target.value)}
               />
             </Field>
-            <Field label="Target Goal Amount">
+            <Field label="Goal amount">
               <Input
                 className="h-10 sm:h-11"
                 inputMode="numeric"
@@ -248,7 +248,7 @@ export function GoalSipPlanner() {
                 }}
               />
             </Field>
-            <Field label="Tenure (Yrs)">
+            <Field label="Tenure (yrs)">
               <Input
                 className="h-10 sm:h-11"
                 type="number"

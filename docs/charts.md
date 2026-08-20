@@ -93,7 +93,17 @@ Do **not** add extras that need new math. Only plot fields already on `result`.
 | `/goals` Periodic | Pie + remaining SIP vs step-up | **OK** | — |
 | `/goals` Compounding | Line of growth steps + SIP donut | **OK** | — |
 | `/education` | Compare + stacked cost bars | **OK** | Optional corpus-vs-year line |
-| Coming-soon | Line stub | Replace using the row for that id | — |
+| `/mf-fd` | Clustered compare + two donuts | **OK** | — |
+| `/loans` EMI | Line + donut + stacked area | **OK** | — |
+| `/loans` Prepay | Line outstanding + compare | **OK** | — |
+| `/loans` Extra vs invest | Compare + path line | **OK** | — |
+| `/loans` Recovery | Three-line + compare | **OK** | — |
+| `/loans` Vehicle | Clustered benefit + stacked bar | **OK** | — |
+| `/insurance` IRR | Pie + cash compare | **OK** | — |
+| `/insurance` TP | Keep vs switch compare | **OK** | — |
+| `/multi-goal` Assign | Compare / stacked assigned | **OK** | — |
+| `/multi-goal` Withdrawals | Columns by age + line | **OK** | — |
+| `/fire` | Coming-soon stub | Replace using FIRE / Health rows | — |
 
 ---
 

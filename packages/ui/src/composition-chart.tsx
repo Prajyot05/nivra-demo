@@ -32,13 +32,13 @@ export function CompositionChart({
           : "text-base sm:text-lg";
 
   return (
-    <div className="flex h-full min-h-[300px] flex-1 flex-col rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 sm:p-4">
-      <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
+    <div className="flex h-[300px] shrink-0 flex-col overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 sm:p-4">
+      <div className="mb-3 shrink-0 text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
         {title}
       </div>
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-        <div className="flex min-h-[160px] shrink-0 items-center justify-center py-1">
-          <div className="relative aspect-square w-full max-w-[200px]">
+        <div className="flex min-h-0 flex-1 items-center justify-center py-1">
+          <div className="relative aspect-square w-full max-w-[180px]">
             <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100}>
               <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
                 <Pie

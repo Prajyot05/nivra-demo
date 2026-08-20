@@ -14,14 +14,14 @@ End-to-end = engine + unit tests + Zod schema + `dispatch` + UI on a live route.
 | [x]  | 2   | SIP Step-Up v1                                      | Yash    | `/growth` · `growth-stepup`                    |
 | [x]  | 3   | One-Time Investment v2                              | Yash    | `/growth` · `growth-lumpsum`                   |
 | [x]  | 4   | Periodic Investment v1                              | Yash    | `/growth` · `growth-periodic`                  |
-| [ ]  | 5   | MF vs FD v1                                         | Prajyot | `/mf-fd`                                       |
-| [ ]  | 6   | Loan EMI v1                                         | Prajyot | engine `loan-emi` only; page still coming-soon |
-| [ ]  | 7   | Loan with Periodic Extra Payments v1                | Prajyot | `/loans`                                       |
-| [ ]  | 8   | Loan Extra Payment vs Investment **v2**             | Prajyot | `/loans`                                       |
-| [ ]  | 9   | Loan Interest Recovery v7                           | Prajyot | `/loans`                                       |
-| [ ]  | 10  | Vehicle Loan Benefit Analysis-v2 (Full Set)         | Prajyot | blocked unless Yash agrees                     |
-| [ ]  | 11  | Insurance IRR v1                                    | Prajyot | waits on XIRR in `@nivra/finance`              |
-| [ ]  | 12  | Insurance Convert to TP v3                          | Prajyot | `/insurance`                                   |
+| [x]  | 5   | MF vs FD v1                                         | Prajyot | `/mf-fd` · `mf-fd`                             |
+| [x]  | 6   | Loan EMI v1                                         | Prajyot | `/loans` · `loan-emi`                          |
+| [x]  | 7   | Loan with Periodic Extra Payments v1                | Prajyot | `/loans` · `loan-prepay`                       |
+| [x]  | 8   | Loan Extra Payment vs Investment **v2**             | Prajyot | `/loans` · `loan-extra-vs-invest`              |
+| [x]  | 9   | Loan Interest Recovery v7                           | Prajyot | `/loans` · `loan-interest-recovery`            |
+| [x]  | 10  | Vehicle Loan Benefit Analysis-v2 (Full Set)         | Prajyot | `/loans` · `vehicle-loan`                      |
+| [x]  | 11  | Insurance IRR v1                                    | Prajyot | `/insurance` · `insurance-irr`                 |
+| [x]  | 12  | Insurance Convert to TP v3                          | Prajyot | `/insurance` · `insurance-tp`                  |
 | [x]  | 13  | Child Education Planner v4                          | Yash    | `/education` · `education`                     |
 | [x]  | 14  | Goal SIP vs Step-up v3                              | Yash    | `/` and `/goals` · `goal-sip`                  |
 | [x]  | 15  | Goal with Current Investment LS/SIP/SU              | Yash    | `/goals` · `goal-current`                      |
@@ -29,14 +29,14 @@ End-to-end = engine + unit tests + Zod schema + `dispatch` + UI on a live route.
 | [x]  | 17  | Goal Existing SIP v3                                | Yash    | `/goals` · `goal-existing-sip`                 |
 | [x]  | 18  | Goal Periodic Lumpsum v2                            | Yash    | `/goals` · `goal-periodic`                     |
 | [x]  | 19  | Goal Power of Compounding / Growth Steps            | Yash    | `/goals` · `goal-compounding`                  |
-| [ ]  | 20  | Multiple Goals with Corpus Assignment v2 (Full Set) | Prajyot | blocked unless Yash agrees                     |
-| [ ]  | 21  | SIP for Multiple Withdrawals v2                     | Prajyot | `/multi-goal`                                  |
+| [x]  | 20  | Multiple Goals with Corpus Assignment v2 (Full Set) | Prajyot | `/multi-goal` · `multi-goal-assign`            |
+| [x]  | 21  | SIP for Multiple Withdrawals v2                     | Prajyot | `/multi-goal` · `multi-withdrawals`            |
 | [ ]  | 22  | FIRE Planner v10                                    | Yash    | `/fire`                                        |
 | [ ]  | 23  | Financial Health Analysis v4                        | Yash    | `/fire`                                        |
 | [ ]  | —   | Excel parity QA / review                            | Both    | Days 21–22                                     |
 
 
-**Checked now: 12 / 24 rows** (kit + Growth ×4 + Goal ×6 + Education). Remaining Yash: FIRE, Health, QA. Remaining Prajyot: MF vs FD, all loan screens, insurance, multi-goal.
+**Checked now: 22 / 24 rows** (kit + Growth ×4 + Goal ×6 + Education + Prajyot’s 10 Excel files). Remaining Yash: FIRE, Health. Excel parity QA still open.
 
 Charts are **not** one line chart for every product. Spec: `[docs/charts.md](docs/charts.md)` (from Unprotected / Full Set Excel). `AGENTS.md` requires that file for all future UI.
 
@@ -122,7 +122,7 @@ XIRR is **not** in the engine yet (wait until those screens).
 - `ResultCard`, `ScheduleTable`, `GrowthChart`
 - INR / % formatters (display only)
 
-App shell + sidebar lists every product. **Investment Growth** (`/growth`), **Unified Goal Planner** (`/goals`), and **Child Education** (`/education`) are live. Remaining empty routes (FIRE, MF vs FD, Loans, Insurance, Multi-Goal) use `ComingSoonCalculator`.
+App shell + sidebar lists every product. **Investment Growth** (`/growth`), **Unified Goal Planner** (`/goals`), **Child Education** (`/education`), **MF vs FD** (`/mf-fd`), **Loans** (`/loans`), **Insurance** (`/insurance`), and **Multi-Goal** (`/multi-goal`) are live. Remaining empty route: FIRE (`ComingSoonCalculator`).
 
 ---
 

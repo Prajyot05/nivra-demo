@@ -1,16 +1,25 @@
 import {
   calculateAmort,
+  calculateAmortWithYearlyExtra,
   calculateEducation,
+  calculateExtraVsInvest,
   calculateGoalCompounding,
   calculateGoalExistingSip,
   calculateGoalLsSipOptions,
   calculateGoalPeriodicLumpsum,
   calculateGoalSipVsStepUp,
   calculateGoalWithCurrent,
+  calculateInsuranceIrr,
+  calculateInsuranceTp,
+  calculateInterestRecovery,
   calculateLumpsum,
+  calculateMfVsFd,
+  calculateMultiGoalAssign,
+  calculateMultiWithdrawals,
   calculatePeriodic,
   calculateSip,
   calculateStepUpSip,
+  calculateVehicleLoan,
 } from "@nivra/finance";
 import type { CalculatorId } from "./calculate-schemas";
 import {
@@ -25,7 +34,16 @@ import {
   growthPeriodicSchema,
   growthSipSchema,
   growthStepUpSchema,
+  insuranceIrrSchema,
+  insuranceTpSchema,
   loanEmiSchema,
+  loanExtraVsInvestSchema,
+  loanInterestRecoverySchema,
+  loanPrepaySchema,
+  mfFdSchema,
+  multiGoalAssignSchema,
+  multiWithdrawalsSchema,
+  vehicleLoanSchema,
 } from "./calculate-schemas";
 
 const pct = (n: number) => n / 100;
@@ -172,6 +190,119 @@ export function dispatch(id: string, body: unknown) {
         totalPaid: result.totalPaid,
         schedule: result.schedule,
       };
+    }
+    case "loan-prepay": {
+      const input = loanPrepaySchema.parse(body);
+      return calculateAmortWithYearlyExtra({
+        principal: input.principal,
+        years: input.years,
+        annualRate: pct(input.interestPct),
+        yearlyExtra: input.yearlyExtra,
+        recoverReturn: pct(input.recoverReturnPct),
+      });
+    }
+    case "loan-extra-vs-invest": {
+      const input = loanExtraVsInvestSchema.parse(body);
+      return calculateExtraVsInvest({
+        principal: input.principal,
+        years: input.years,
+        annualRate: pct(input.interestPct),
+        extraAmount: input.extraAmount,
+        extraMonth: input.extraMonth,
+        investReturn: pct(input.investReturnPct),
+        taxRate: pct(input.taxPct),
+        incomeTaxRate: pct(input.incomeTaxPct),
+      });
+    }
+    case "loan-interest-recovery": {
+      const input = loanInterestRecoverySchema.parse(body);
+      return calculateInterestRecovery({
+        principal: input.principal,
+        years: input.years,
+        annualRate: pct(input.interestPct),
+        proposedYears: input.proposedYears,
+        sipReturn: pct(input.sipReturnPct),
+      });
+    }
+    case "vehicle-loan": {
+      const input = vehicleLoanSchema.parse(body);
+      return calculateVehicleLoan({
+        onRoadCost: input.onRoadCost,
+        loanAmount: input.loanAmount,
+        annualRate: pct(input.interestPct),
+        years: input.years,
+        incomeTaxRate: pct(input.incomeTaxPct),
+        depreciationRate: pct(input.depreciationPct),
+        fdRate: pct(input.fdReturnPct),
+        debtRate: pct(input.debtReturnPct),
+        conservativeRate: pct(input.conservativeReturnPct),
+        equityRate: pct(input.equityReturnPct),
+        fdTaxRate: pct(input.fdTaxPct),
+        debtTaxRate: pct(input.debtTaxPct),
+        conservativeTaxRate: pct(input.conservativeTaxPct),
+        equityTaxRate: pct(input.equityTaxPct),
+      });
+    }
+    case "mf-fd": {
+      const input = mfFdSchema.parse(body);
+      return calculateMfVsFd({
+        amount: input.amount,
+        days: input.days,
+        mfRate: pct(input.mfReturnPct),
+        fdRate: pct(input.fdReturnPct),
+        mfTaxRate: pct(input.mfTaxPct),
+        fdTaxRate: pct(input.fdTaxPct),
+      });
+    }
+    case "insurance-irr": {
+      const input = insuranceIrrSchema.parse(body);
+      return calculateInsuranceIrr({
+        premium: input.premium,
+        payTerm: input.payTerm,
+        corpusAtPayEnd: input.corpusAtPayEnd,
+        policyTerm: input.policyTerm,
+        expectedReturn: pct(input.returnPct),
+        taxRate: pct(input.taxPct),
+      });
+    }
+    case "insurance-tp": {
+      const input = insuranceTpSchema.parse(body);
+      return calculateInsuranceTp({
+        premium: input.premium,
+        payTerm: input.payTerm,
+        yearsPaid: input.yearsPaid,
+        policyTerm: input.policyTerm,
+        yearsToMaturity: input.yearsToMaturity,
+        maturityValue: input.maturityValue,
+        taxRate: pct(input.taxPct),
+        surrenderValue: input.surrenderValue,
+        termPremium: input.termPremium,
+        termYears: input.termYears,
+        expectedReturn: pct(input.returnPct),
+      });
+    }
+    case "multi-goal-assign": {
+      const input = multiGoalAssignSchema.parse(body);
+      return calculateMultiGoalAssign({
+        shortTermYears: input.shortTermYears,
+        shortTermReturn: pct(input.shortTermReturnPct),
+        longTermReturn: pct(input.longTermReturnPct),
+        inflationRate: pct(input.inflationPct),
+        taxRate: pct(input.taxPct),
+        delayMonths: input.delayMonths,
+        currentCorpus: input.currentCorpus,
+        corpusReturn: pct(input.corpusReturnPct ?? input.shortTermReturnPct),
+        goals: input.goals,
+      });
+    }
+    case "multi-withdrawals": {
+      const input = multiWithdrawalsSchema.parse(body);
+      return calculateMultiWithdrawals({
+        age: input.age ?? 0,
+        annualReturn: pct(input.returnPct),
+        taxRate: pct(input.taxPct),
+        withdrawals: input.withdrawals,
+      });
     }
     case "education": {
       const input = educationSchema.parse(body);

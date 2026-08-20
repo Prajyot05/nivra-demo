@@ -131,6 +131,127 @@ export const loanEmiSchema = z.object({
   interestPct: pct,
 });
 
+export const mfFdSchema = z.object({
+  ...clientFields,
+  amount: money,
+  days: z.number().int().positive().max(36500),
+  mfReturnPct: pct,
+  fdReturnPct: pct,
+  mfTaxPct: pct,
+  fdTaxPct: pct,
+});
+
+export const loanPrepaySchema = z.object({
+  ...clientFields,
+  principal: money,
+  years,
+  interestPct: pct,
+  yearlyExtra: money.optional().default(0),
+  recoverReturnPct: pct.optional().default(12),
+});
+
+export const loanExtraVsInvestSchema = z.object({
+  ...clientFields,
+  principal: money,
+  years,
+  interestPct: pct,
+  extraAmount: money,
+  extraMonth: z.number().int().positive().max(1200),
+  investReturnPct: pct,
+  taxPct: pct,
+  incomeTaxPct: pct,
+});
+
+export const loanInterestRecoverySchema = z.object({
+  ...clientFields,
+  principal: money,
+  years,
+  interestPct: pct,
+  proposedYears: years,
+  sipReturnPct: pct,
+});
+
+export const vehicleLoanSchema = z.object({
+  ...clientFields,
+  onRoadCost: money,
+  loanAmount: money,
+  interestPct: pct,
+  years,
+  incomeTaxPct: pct,
+  depreciationPct: pct.optional().default(15),
+  fdReturnPct: pct,
+  debtReturnPct: pct,
+  conservativeReturnPct: pct,
+  equityReturnPct: pct,
+  fdTaxPct: pct,
+  debtTaxPct: pct,
+  conservativeTaxPct: pct,
+  equityTaxPct: pct,
+});
+
+export const insuranceIrrSchema = z.object({
+  ...clientFields,
+  premium: money,
+  payTerm: years,
+  corpusAtPayEnd: money,
+  policyTerm: z.number().positive().max(50),
+  returnPct: pct,
+  taxPct: pct,
+});
+
+export const insuranceTpSchema = z.object({
+  ...clientFields,
+  premium: money,
+  payTerm: years,
+  yearsPaid: z.number().min(0).max(50),
+  policyTerm: z.number().positive().max(50),
+  yearsToMaturity: years,
+  maturityValue: money,
+  taxPct: pct,
+  surrenderValue: money,
+  termPremium: money,
+  termYears: years,
+  returnPct: pct,
+});
+
+export const multiGoalAssignSchema = z.object({
+  ...clientFields,
+  shortTermYears: z.number().positive().max(20).default(5),
+  shortTermReturnPct: pct,
+  longTermReturnPct: pct,
+  inflationPct: pct,
+  taxPct: pct,
+  delayMonths: months.optional().default(0),
+  currentCorpus: money.optional().default(0),
+  corpusReturnPct: pct.optional(),
+  goals: z
+    .array(
+      z.object({
+        name: z.string().min(1),
+        amount: money,
+        years: z.number().min(0).max(75),
+      }),
+    )
+    .min(1)
+    .max(10),
+});
+
+export const multiWithdrawalsSchema = z.object({
+  ...clientFields,
+  returnPct: pct,
+  taxPct: pct,
+  withdrawals: z
+    .array(
+      z.object({
+        name: z.string().min(1),
+        amount: money,
+        atAge: age,
+      }),
+    )
+    .min(1)
+    .max(10),
+}).refine((d) => d.age != null, { message: "age is required", path: ["age"] });
+
 export const educationSchema = z.object({
   ...clientFields,
   childName: z.string().optional(),
@@ -161,7 +282,16 @@ export const CALCULATOR_IDS = [
   "goal-periodic",
   "goal-compounding",
   "loan-emi",
+  "loan-prepay",
+  "loan-extra-vs-invest",
+  "loan-interest-recovery",
+  "vehicle-loan",
   "education",
+  "mf-fd",
+  "insurance-irr",
+  "insurance-tp",
+  "multi-goal-assign",
+  "multi-withdrawals",
 ] as const;
 
 export type CalculatorId = (typeof CALCULATOR_IDS)[number];

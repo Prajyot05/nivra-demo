@@ -216,3 +216,48 @@ test("dispatch education matches Unprotected Education-Plan lumpsum and withdraw
   close(result.lastFeeAge, 21, 0);
   assert.ok(result.sip.monthlySip > 32_012);
 });
+
+test("dispatch mf-fd matches Unprotected MF vs FD v1 sample", () => {
+  const result = dispatch("mf-fd", {
+    amount: 1_000_000_000,
+    days: 15,
+    mfReturnPct: 5,
+    fdReturnPct: 3,
+    mfTaxPct: 20,
+    fdTaxPct: 25,
+  }) as { mf: { postTax: number }; mfAdvantage: number };
+  close(result.mf.postTax, 1643835.616438356);
+  close(result.mfAdvantage, 719178.08219178068);
+});
+
+test("dispatch loan-prepay converts percents and yearly extra", () => {
+  const result = dispatch("loan-prepay", {
+    principal: 15_000_000,
+    years: 5,
+    interestPct: 10,
+    yearlyExtra: 318705.67,
+    recoverReturnPct: 12,
+  }) as { monthsPaid: number; emi: number };
+  assert.equal(result.monthsPaid, 55);
+  close(result.emi, 318705.67066902522);
+});
+
+test("dispatch vehicle-loan Full Set sample", () => {
+  const result = dispatch("vehicle-loan", {
+    onRoadCost: 3_500_000,
+    loanAmount: 2_800_000,
+    interestPct: 8.5,
+    years: 5,
+    incomeTaxPct: 20,
+    depreciationPct: 15,
+    fdReturnPct: 7,
+    debtReturnPct: 8,
+    conservativeReturnPct: 9,
+    equityReturnPct: 12,
+    fdTaxPct: 20,
+    debtTaxPct: 25,
+    conservativeTaxPct: 12.5,
+    equityTaxPct: 12.5,
+  }) as { emi: number };
+  close(result.emi, 57446.2877157435);
+});

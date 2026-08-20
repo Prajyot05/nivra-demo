@@ -3,9 +3,13 @@ export {
   pv,
   pmt,
   rate,
+  nper,
+  irr,
+  xirr,
   monthlyRate,
   nominalMonthlyRate,
 } from "./core";
+export type { XirrCashflow } from "./core";
 export { inflate, deflate } from "./inflation";
 export { capitalGain, capitalGainsTax, netAfterTax } from "./tax";
 export { calculateSip, calculateLumpsum } from "./sip";
@@ -14,8 +18,8 @@ export { calculateStepUpSip, stepUpProjection, stepUpMonthly } from "./stepup";
 export type { StepUpSipInput } from "./stepup";
 export { calculatePeriodic } from "./periodic";
 export type { PeriodicInput, PeriodicRow } from "./periodic";
-export { calculateAmort, loanEmi } from "./amort";
-export type { AmortInput, AmortRow } from "./amort";
+export { calculateAmort, loanEmi, calculateAmortWithYearlyExtra, calculateExtraVsInvest, calculateInterestRecovery } from "./amort";
+export type { AmortInput, AmortRow, ExtraAmortRow, ExtraVsInvestInput, InterestRecoveryInput } from "./amort";
 export {
   calculateGoalSipVsStepUp,
   calculateGoalWithCurrent,
@@ -53,3 +57,13 @@ export type {
   EducationScheduleRow,
   EducationLeg,
 } from "./education";
+export { calculateMfVsFd } from "./mf-fd";
+export type { MfFdInput, MfFdLeg } from "./mf-fd";
+export { calculateVehicleLoan } from "./vehicle";
+export type { VehicleLoanInput, VehicleOption } from "./vehicle";
+export { calculateInsuranceIrr, calculateInsuranceTp } from "./insurance";
+export type { InsuranceIrrInput, InsuranceTpInput } from "./insurance";
+export { calculateMultiGoalAssign } from "./multi-goal";
+export type { MultiGoalInput, MultiGoalItem } from "./multi-goal";
+export { calculateMultiWithdrawals } from "./withdrawals";
+export type { MultiWithdrawalsInput, WithdrawalItem } from "./withdrawals";
