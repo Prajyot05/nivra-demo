@@ -13,6 +13,7 @@ const eslintConfig = [
       "node_modules/**",
       "Unprotected/**",
       "Nivra Tools - Full Set/**",
+      "next-env.d.ts",
     ],
   },
   ...compat.extends("next/core-web-vitals", "next/typescript"),

@@ -29,7 +29,6 @@ function yieldFor(years: number, shortTermYears: number, st: number, lt: number)
  */
 export function calculateMultiGoalAssign(input: MultiGoalInput) {
   const delay = input.delayMonths ?? 0;
-  const corpusReturn = input.corpusReturn ?? input.shortTermReturn;
   let remainingCorpus = input.currentCorpus ?? 0;
 
   const ordered = input.goals
