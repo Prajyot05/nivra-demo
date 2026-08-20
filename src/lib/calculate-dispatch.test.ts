@@ -261,3 +261,50 @@ test("dispatch vehicle-loan Full Set sample", () => {
   }) as { emi: number };
   close(result.emi, 57446.2877157435);
 });
+
+test("dispatch fire-planner matches Unprotected FIRE v10 sample", () => {
+  const result = dispatch("fire-planner", {
+    age: 40,
+    retirementAge: 55,
+    survivingAge: 90,
+    monthlyExpenses: 150_000,
+    lifestyleYearly: 1_500_000,
+    monthlyExpenseFactorPct: 100,
+    lifestyleFactorPct: 100,
+    inflationPct: 5.75,
+    returnPct: 12,
+    returnAfterPct: 8,
+    taxPct: 12.5,
+    corpusSlices: [
+      { returnPct: 9, amount: 5_000_000 },
+      { returnPct: 12, amount: 3_500_000 },
+    ],
+    currentSipMonthly: 10_000,
+    currentSipReturnPct: 10,
+    stepUpPct: 10,
+    delayMonths: 3,
+  }) as { corpusRequired: number; monthlySip: number; additionalLumpsum: number };
+  close(result.corpusRequired, 210442136.92288274);
+  close(result.monthlySip, 355210.9244250518);
+  close(result.additionalLumpsum, 30885905.04278836);
+});
+
+test("dispatch financial-health matches Unprotected Health v4 sample", () => {
+  const result = dispatch("financial-health", {
+    currentCorpus: 250_000_000,
+    monthlyExpenses: 350_000,
+    monthlyInvestment: 100_000,
+    lifestyleYearly: 2_500_000,
+    age: 59,
+    retirementAge: 60,
+    survivingAge: 90,
+    inflationPct: 5.75,
+    returnPct: 9.75,
+    returnAfterPct: 8,
+    taxPct: 12.5,
+    events: [{ age: 62, amount: 20_000_000, type: "Expense" }],
+  }) as { corpusAtRetirement: number; remainingAtSurvival: number; yearsLasting: number };
+  close(result.corpusAtRetirement, 275637474.340114);
+  close(result.remainingAtSurvival, 814285941.8433343);
+  assert.equal(result.yearsLasting, 30);
+});

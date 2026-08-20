@@ -19,7 +19,7 @@ Add to the kit when a page needs them. Do not paste one-off Recharts into `src/a
 | `GrowthChart` | `lineChart` | Value over **time** (month / year / age). |
 | `CompositionChart` | `pieChart` / `pie3DChart` | Mix of invested / gain / tax. Donut, not 3D. |
 | `CompareChart` | `barChart` `barDir=col` clustered | Side-by-side **options** (SIP vs step-up, MF vs FD). |
-| `ComboChart` | column + line | Financial Health: corpus columns + overlay vs **age**. |
+| `ComboChart` | column + line | Financial Health: corpus columns + overlay vs **age**. **Shipped** in `@nivra/ui`. |
 | `StackedBarChart` | (web extra) | Two parts of one total: principal vs interest, existing vs additional. |
 | `StackedAreaChart` | (web extra) | Mix **over time**: remaining principal vs interest paid; FIRE save vs withdraw. |
 | `WaterfallChart` | (web extra) | How a goal is funded: existing → additional → target (or shortfall). |
@@ -103,7 +103,9 @@ Do **not** add extras that need new math. Only plot fields already on `result`.
 | `/insurance` TP | Keep vs switch compare | **OK** | — |
 | `/multi-goal` Assign | Compare / stacked assigned | **OK** | — |
 | `/multi-goal` Withdrawals | Columns by age + line | **OK** | — |
-| `/fire` | Coming-soon stub | Replace using FIRE / Health rows | — |
+| `/multi-goal` Withdrawals | Columns by age + line | **OK** | — |
+| `/fire` FIRE | Line + stacked area + donut | **OK** | Optional delay compare shipped |
+| `/fire` Health | Combo + donut | **OK** | — |
 
 ---
 

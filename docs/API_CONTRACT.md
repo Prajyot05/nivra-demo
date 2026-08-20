@@ -56,6 +56,8 @@ Percents are **human numbers** (12 = 12%), not decimals. Money is INR. The engin
 | `multi-goal-assign` | Multi-goal corpus assign | Full Set. UI `/multi-goal` |
 | `multi-withdrawals` | SIP for withdrawals | Unprotected v2. UI `/multi-goal` |
 | `education` | Child Education Planner | Age/class cost grid. Tax grosses **fees**, not investment gain. UI `/education` |
+| `fire-planner` | FIRE Planner v10 | Corpus / SIP to retire early. UI `/fire` |
+| `financial-health` | Financial Health v4 | How long corpus lasts. UI `/fire` |
 
 Health: `GET /api/health` → `{ ok, calculators }`.
 
@@ -318,6 +320,26 @@ Sample: ₹2 L × 5y, corpus ₹11.6 L, 20y, 11%, 12.5% tax → maturity **55,50
 **Input:** `age`, `returnPct`, `taxPct`, `withdrawals[]` of `{ name, amount, atAge }`.
 
 **Output:** independent required SIP per withdrawal, `startMonthlySip`, totals, `ageChart` / `schedule`.
+
+---
+
+## `fire-planner`
+
+**Input:** `age`, `retirementAge`, `survivingAge`, `monthlyExpenses`, `lifestyleYearly`, `monthlyExpenseFactorPct` / `lifestyleFactorPct` (100 = same as current), `inflationPct`, `returnPct`, `returnAfterPct`, `taxPct`, optional `corpusSlices[]` of `{ returnPct, amount }` (max 3), `currentSipMonthly`, `currentSipReturnPct`, `limitSipYears`, `stepUpPct`, `delayMonths`.
+
+**Output:** inflated expenses at retirement, `corpusRequired` (backward PV of taxed withdrawals), `currentAtRetirement`, `balanceCorpus`, `additionalLumpsum`, flat `monthlySip` / `stepUpStartSip`, delay SIP/lumpsum, age `schedule[]` (`corpus`, `contribution`, `withdrawal`, `phase`).
+
+UI `/fire` · FIRE tab. Sample: age 40 / ret 55 / surv 90 → corpus **₹21,04,42,136.92**, SIP **₹3,55,210.92**.
+
+---
+
+## `financial-health`
+
+**Input:** `currentCorpus`, `monthlyExpenses`, `monthlyInvestment`, `lifestyleYearly`, ages, `inflationPct`, `returnPct`, `returnAfterPct`, `taxPct`, optional `retirementBenefit`, `savingsGrowthPct`, `events[]` of `{ age, amount, type: Expense|Income }`.
+
+**Output:** `corpusAtRetirement`, `yearsLasting` / `monthsLasting`, `remainingAtSurvival`, `remainingPvToday`, `funded`, `message`, `gapAtRetirement`, age `schedule[]`.
+
+UI `/fire` · Health tab. Sample: ₹25 Cr / age 59→60, event ₹2 Cr expense at 62 → lasting **30 yrs**, remaining **₹81,42,85,941.84**.
 
 ---
 

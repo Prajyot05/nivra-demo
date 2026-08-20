@@ -3,6 +3,8 @@ import {
   calculateAmortWithYearlyExtra,
   calculateEducation,
   calculateExtraVsInvest,
+  calculateFinancialHealth,
+  calculateFirePlanner,
   calculateGoalCompounding,
   calculateGoalExistingSip,
   calculateGoalLsSipOptions,
@@ -24,6 +26,8 @@ import {
 import type { CalculatorId } from "./calculate-schemas";
 import {
   educationSchema,
+  financialHealthSchema,
+  firePlannerSchema,
   goalCompoundingSchema,
   goalCurrentSchema,
   goalExistingSipSchema,
@@ -311,6 +315,52 @@ export function dispatch(id: string, body: unknown) {
         annualReturn: pct(input.returnPct),
         taxRate: pct(input.taxPct),
         costs: input.costs,
+      });
+    }
+    case "fire-planner": {
+      const input = firePlannerSchema.parse(body);
+      return calculateFirePlanner({
+        age: input.age,
+        retirementAge: input.retirementAge,
+        survivingAge: input.survivingAge,
+        monthlyExpenses: input.monthlyExpenses,
+        lifestyleYearly: input.lifestyleYearly,
+        monthlyExpenseFactor: pct(input.monthlyExpenseFactorPct),
+        lifestyleFactor: pct(input.lifestyleFactorPct),
+        inflationRate: pct(input.inflationPct),
+        annualReturn: pct(input.returnPct),
+        returnAfterRetirement: pct(input.returnAfterPct),
+        taxRate: pct(input.taxPct),
+        corpusSlices: input.corpusSlices.map((s) => ({
+          rate: pct(s.returnPct),
+          amount: s.amount,
+        })),
+        currentSipMonthly: input.currentSipMonthly,
+        currentSipReturn: pct(input.currentSipReturnPct),
+        limitSipYears: input.limitSipYears,
+        stepUpRate: pct(input.stepUpPct),
+        delayMonths: input.delayMonths,
+      });
+    }
+    case "financial-health": {
+      const input = financialHealthSchema.parse(body);
+      return calculateFinancialHealth({
+        currentCorpus: input.currentCorpus,
+        monthlyExpenses: input.monthlyExpenses,
+        monthlyInvestment: input.monthlyInvestment,
+        lifestyleYearly: input.lifestyleYearly,
+        age: input.age,
+        retirementAge: input.retirementAge,
+        survivingAge: input.survivingAge,
+        inflationRate: pct(input.inflationPct),
+        annualReturn: pct(input.returnPct),
+        returnAfterRetirement: pct(input.returnAfterPct),
+        taxRate: pct(input.taxPct),
+        monthlyExpenseFactor: pct(input.monthlyExpenseFactorPct),
+        lifestyleFactor: pct(input.lifestyleFactorPct),
+        retirementBenefit: input.retirementBenefit,
+        savingsGrowthRate: pct(input.savingsGrowthPct),
+        events: input.events,
       });
     }
     default:

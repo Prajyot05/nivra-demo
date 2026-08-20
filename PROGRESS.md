@@ -31,12 +31,12 @@ End-to-end = engine + unit tests + Zod schema + `dispatch` + UI on a live route.
 | [x]  | 19  | Goal Power of Compounding / Growth Steps            | Yash    | `/goals` · `goal-compounding`                  |
 | [x]  | 20  | Multiple Goals with Corpus Assignment v2 (Full Set) | Prajyot | `/multi-goal` · `multi-goal-assign`            |
 | [x]  | 21  | SIP for Multiple Withdrawals v2                     | Prajyot | `/multi-goal` · `multi-withdrawals`            |
-| [ ]  | 22  | FIRE Planner v10                                    | Yash    | `/fire`                                        |
-| [ ]  | 23  | Financial Health Analysis v4                        | Yash    | `/fire`                                        |
+| [x]  | 22  | FIRE Planner v10                                    | Yash    | `/fire` · `fire-planner`                       |
+| [x]  | 23  | Financial Health Analysis v4                        | Yash    | `/fire` · `financial-health`                   |
 | [ ]  | —   | Excel parity QA / review                            | Both    | Days 21–22                                     |
 
 
-**Checked now: 22 / 24 rows** (kit + Growth ×4 + Goal ×6 + Education + Prajyot’s 10 Excel files). Remaining Yash: FIRE, Health. Excel parity QA still open.
+**Checked now: 24 / 24 product rows** (kit + all Excel calculators). Excel parity QA still open.
 
 Charts are **not** one line chart for every product. Spec: `[docs/charts.md](docs/charts.md)` (from Unprotected / Full Set Excel). `AGENTS.md` requires that file for all future UI.
 
@@ -108,7 +108,7 @@ Tests live in `packages/finance/tests/`. Fixtures include:
 - Goal v3: ₹1Cr / 15y / infl. 5.25% / tax 12.5% → SIP **49,082.47**, step-up start **27,918.05**
 - Education v4: child age 5 / 12% / 12.5% tax / sample grid → lumpsum **32,31,850.69**, total withdrawal **1,67,51,587.50**
 
-XIRR is **not** in the engine yet (wait until those screens).
+XIRR is in the engine (`irr` / `xirr` in `packages/finance`) for insurance.
 
 ---
 
@@ -122,7 +122,7 @@ XIRR is **not** in the engine yet (wait until those screens).
 - `ResultCard`, `ScheduleTable`, `GrowthChart`
 - INR / % formatters (display only)
 
-App shell + sidebar lists every product. **Investment Growth** (`/growth`), **Unified Goal Planner** (`/goals`), **Child Education** (`/education`), **MF vs FD** (`/mf-fd`), **Loans** (`/loans`), **Insurance** (`/insurance`), and **Multi-Goal** (`/multi-goal`) are live. Remaining empty route: FIRE (`ComingSoonCalculator`).
+App shell + sidebar lists every product. **Investment Growth** (`/growth`), **Unified Goal Planner** (`/goals`), **Child Education** (`/education`), **MF vs FD** (`/mf-fd`), **Loans** (`/loans`), **Insurance** (`/insurance`), **Multi-Goal** (`/multi-goal`), and **FIRE / Health** (`/fire`) are live.
 
 ---
 
@@ -209,7 +209,20 @@ Combined existing + additional uses linear net-credit `(1 − t)×FV + t×invest
 
 | When       | What                                               |
 | ---------- | -------------------------------------------------- |
-| Days 17–20 | FIRE + Financial Health                            |
-| Days 21–22 | Remaining Excel fixture tests + review Prajyot PRs |
+| Days 21–22 | Remaining Excel fixture tests + review             |
+
+
+---
+
+## 11. FIRE + Financial Health (Days 17–20, wired)
+
+`/fire` has two modes via `CalculatorPage` + `calculate()`:
+
+| Mode   | API id             | Defaults (Unprotected) |
+| ------ | ------------------ | ---------------------- |
+| FIRE   | `fire-planner`     | Age 40 / ret 55 / surv 90 · exp ₹1.5L/mo + ₹15L lifestyle · 12% / 8% post · tax 12.5% · corpus sleeves + ₹10k SIP |
+| Health | `financial-health` | ₹25 Cr corpus · age 59→60 · sample ₹2 Cr expense at 62 |
+
+Charts: FIRE line + stacked area + donut; Health `ComboChart` + donut. `ComboChart` lives in `@nivra/ui`.
 
 

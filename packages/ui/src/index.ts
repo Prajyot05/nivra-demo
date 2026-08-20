@@ -25,6 +25,8 @@ export { WaterfallChart } from "./waterfall-chart";
 export type { WaterfallStep } from "./waterfall-chart";
 export { StackedAreaChart } from "./stacked-area-chart";
 export type { StackedAreaPoint } from "./stacked-area-chart";
+export { ComboChart } from "./combo-chart";
+export type { ComboPoint } from "./combo-chart";
 export { Disclaimer } from "./disclaimer";
 export { CalculatorPage } from "./calculator-page";
 export { COLOR_THEMES, getColorTheme } from "./color-themes";

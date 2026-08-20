@@ -67,3 +67,7 @@ export { calculateMultiGoalAssign } from "./multi-goal";
 export type { MultiGoalInput, MultiGoalItem } from "./multi-goal";
 export { calculateMultiWithdrawals } from "./withdrawals";
 export type { MultiWithdrawalsInput, WithdrawalItem } from "./withdrawals";
+export { calculateFirePlanner, corpusRequiredAtRetirement } from "./fire";
+export type { FireInput, FireResult, FireCorpusSlice, FireAgeRow } from "./fire";
+export { calculateFinancialHealth } from "./health";
+export type { HealthInput, HealthResult, HealthEvent, HealthAgeRow } from "./health";

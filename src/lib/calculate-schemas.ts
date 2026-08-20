@@ -270,6 +270,84 @@ export const educationSchema = z.object({
     .max(80),
 });
 
+export const firePlannerSchema = z
+  .object({
+    ...clientFields,
+    age,
+    retirementAge: age,
+    survivingAge: age,
+    monthlyExpenses: money,
+    lifestyleYearly: money,
+    monthlyExpenseFactorPct: pct.optional().default(100),
+    lifestyleFactorPct: pct.optional().default(100),
+    inflationPct: pct,
+    returnPct: pct,
+    returnAfterPct: pct,
+    taxPct: pct,
+    corpusSlices: z
+      .array(
+        z.object({
+          returnPct: pct,
+          amount: money,
+        }),
+      )
+      .max(3)
+      .optional()
+      .default([]),
+    currentSipMonthly: money.optional().default(0),
+    currentSipReturnPct: pct.optional().default(0),
+    limitSipYears: z.number().min(0).max(50).optional().default(0),
+    stepUpPct: pct.optional().default(10),
+    delayMonths: months.optional().default(0),
+  })
+  .refine((d) => d.retirementAge >= d.age, {
+    message: "retirementAge must be >= age",
+    path: ["retirementAge"],
+  })
+  .refine((d) => d.survivingAge >= d.retirementAge, {
+    message: "survivingAge must be >= retirementAge",
+    path: ["survivingAge"],
+  });
+
+export const financialHealthSchema = z
+  .object({
+    ...clientFields,
+    currentCorpus: money,
+    monthlyExpenses: money,
+    monthlyInvestment: money,
+    lifestyleYearly: money,
+    age,
+    retirementAge: age,
+    survivingAge: age,
+    inflationPct: pct,
+    returnPct: pct,
+    returnAfterPct: pct,
+    taxPct: pct,
+    monthlyExpenseFactorPct: pct.optional().default(100),
+    lifestyleFactorPct: pct.optional().default(100),
+    retirementBenefit: money.optional().default(0),
+    savingsGrowthPct: pct.optional().default(0),
+    events: z
+      .array(
+        z.object({
+          age,
+          amount: money,
+          type: z.enum(["Expense", "Income"]),
+        }),
+      )
+      .max(10)
+      .optional()
+      .default([]),
+  })
+  .refine((d) => d.retirementAge >= d.age, {
+    message: "retirementAge must be >= age",
+    path: ["retirementAge"],
+  })
+  .refine((d) => d.survivingAge >= d.retirementAge, {
+    message: "survivingAge must be >= retirementAge",
+    path: ["survivingAge"],
+  });
+
 export const CALCULATOR_IDS = [
   "growth-sip",
   "growth-lumpsum",
@@ -292,6 +370,8 @@ export const CALCULATOR_IDS = [
   "insurance-tp",
   "multi-goal-assign",
   "multi-withdrawals",
+  "fire-planner",
+  "financial-health",
 ] as const;
 
 export type CalculatorId = (typeof CALCULATOR_IDS)[number];
