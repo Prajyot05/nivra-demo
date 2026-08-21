@@ -302,66 +302,68 @@ function EmiResults({ result }: { result: EmiResult }) {
     return { year: row.month, remaining: row.balance, interestPaid: interestToDate };
   });
   return (
-    <div className={RESULTS_SPLIT}>
-      <div className={RESULTS_LEFT}>
-        <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
-          <StatCard title="EMI" value={result.emi} />
-          <StatCard title="Total interest" value={result.totalInterest} variant="soft" />
-        </div>
-        <GrowthChart
-          title="Principal vs interest by month"
-          data={result.schedule.map((row) => ({
-            year: row.month,
-            principal: row.principal,
-            interest: row.interest,
-          }))}
-          series={[
-            { key: "principal", label: "Principal", color: "var(--app-chart-invested)" },
-            { key: "interest", label: "Interest", color: "var(--app-chart-tax)" },
-          ]}
-        />
-        <CompositionChart
-          title="Lifetime mix"
-          slices={[
-            { name: "Principal", value: result.totalPrincipal, color: "var(--app-chart-invested)" },
-            { name: "Interest", value: result.totalInterest, color: "var(--app-chart-tax)" },
-          ]}
-          centerLabel="Paid"
-          centerValue={result.totalPaid}
-        />
-        <StackedAreaChart
-          title="Remaining principal vs interest paid"
-          data={area}
-          series={[
-            { key: "remaining", label: "Remaining principal", color: "var(--app-chart-invested)" },
-            { key: "interestPaid", label: "Interest paid", color: "var(--app-chart-tax)" },
-          ]}
-        />
-      </div>
-      <div className={RESULTS_RIGHT}>
-        <div className="shrink-0">
-          <ResultCard
-            title="Results"
-            items={[
-              { label: "EMI", value: result.emi },
-              { label: "Principal", value: result.totalPrincipal },
-              { label: "Interest", value: result.totalInterest },
-              { label: "Total paid", value: result.totalPaid },
+    <div className="flex flex-col gap-4 lg:gap-6">
+      <div className={RESULTS_SPLIT}>
+        <div className={RESULTS_LEFT}>
+          <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
+            <StatCard title="EMI" value={result.emi} />
+            <StatCard title="Total interest" value={result.totalInterest} variant="soft" />
+          </div>
+          <GrowthChart
+            title="Principal vs interest by month"
+            data={result.schedule.map((row) => ({
+              year: row.month,
+              principal: row.principal,
+              interest: row.interest,
+            }))}
+            series={[
+              { key: "principal", label: "Principal", color: "var(--app-chart-invested)" },
+              { key: "interest", label: "Interest", color: "var(--app-chart-tax)" },
+            ]}
+          />
+          <CompositionChart
+            title="Lifetime mix"
+            slices={[
+              { name: "Principal", value: result.totalPrincipal, color: "var(--app-chart-invested)" },
+              { name: "Interest", value: result.totalInterest, color: "var(--app-chart-tax)" },
+            ]}
+            centerLabel="Paid"
+            centerValue={result.totalPaid}
+          />
+          <StackedAreaChart
+            title="Remaining principal vs interest paid"
+            data={area}
+            series={[
+              { key: "remaining", label: "Remaining principal", color: "var(--app-chart-invested)" },
+              { key: "interestPaid", label: "Interest paid", color: "var(--app-chart-tax)" },
             ]}
           />
         </div>
-        <ScheduleTable
-          caption="Amortisation"
-          columns={[
-            { key: "month", header: "Month" },
-            { key: "emi", header: "EMI", format: "inr", align: "right" },
-            { key: "principal", header: "Principal", format: "inr", align: "right" },
-            { key: "interest", header: "Interest", format: "inr", align: "right" },
-            { key: "balance", header: "Balance", format: "inr", align: "right" },
-          ]}
-          rows={result.schedule}
-        />
+        <div className={RESULTS_RIGHT}>
+          <div className="shrink-0">
+            <ResultCard
+              title="Results"
+              items={[
+                { label: "EMI", value: result.emi },
+                { label: "Principal", value: result.totalPrincipal },
+                { label: "Interest", value: result.totalInterest },
+                { label: "Total paid", value: result.totalPaid },
+              ]}
+            />
+          </div>
+        </div>
       </div>
+      <ScheduleTable
+        caption="Amortisation"
+        columns={[
+          { key: "month", header: "Month" },
+          { key: "emi", header: "EMI", format: "inr", align: "right" },
+          { key: "principal", header: "Principal", format: "inr", align: "right" },
+          { key: "interest", header: "Interest", format: "inr", align: "right" },
+          { key: "balance", header: "Balance", format: "inr", align: "right" },
+        ]}
+        rows={result.schedule}
+      />
     </div>
   );
 }
@@ -378,111 +380,115 @@ function PrepayResults({ result }: { result: PrepayResult }) {
     };
   });
   return (
-    <div className={RESULTS_SPLIT}>
-      <div className={RESULTS_LEFT}>
-        <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
-          <StatCard title="Interest saved" value={result.interestSaved} />
-          <StatCard title="Total extra" value={result.totalExtra} variant="soft" />
-        </div>
-        <GrowthChart
-          title="Outstanding: scheduled vs extra"
-          data={line}
-          series={[
-            { key: "scheduled", label: "Scheduled", color: "var(--app-chart-tax)" },
-            { key: "prepaid", label: "With extra", color: "var(--app-chart-invested)" },
-          ]}
-        />
-        <CompareChart
-          title="Interest and tenure"
-          data={[
-            { category: "Interest", original: result.originalInterest, prepaid: result.totalInterest },
-            { category: "Months", original: result.originalSchedule.length, prepaid: result.monthsPaid },
-          ]}
-          series={[
-            { key: "original", label: "Original", color: "var(--app-chart-tax)" },
-            { key: "prepaid", label: "With extra", color: "var(--app-chart-gain)" },
-          ]}
-        />
-      </div>
-      <div className={RESULTS_RIGHT}>
-        <div className="shrink-0">
-          <ResultCard
-            title="Results"
-            items={[
-              { label: "EMI", value: result.emi, hint: `Paid in ${result.monthsPaid} months` },
-              { label: "Interest saved", value: result.interestSaved, hint: `${result.monthsSaved} months saved` },
-              { label: "Total extra", value: result.totalExtra },
-              { label: "SIP to recover original interest", value: result.recoverSip },
-              { label: "SIP to recover revised interest", value: result.revisedRecoverSip },
+    <div className="flex flex-col gap-4 lg:gap-6">
+      <div className={RESULTS_SPLIT}>
+        <div className={RESULTS_LEFT}>
+          <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
+            <StatCard title="Interest saved" value={result.interestSaved} />
+            <StatCard title="Total extra" value={result.totalExtra} variant="soft" />
+          </div>
+          <GrowthChart
+            title="Outstanding: scheduled vs extra"
+            data={line}
+            series={[
+              { key: "scheduled", label: "Scheduled", color: "var(--app-chart-tax)" },
+              { key: "prepaid", label: "With extra", color: "var(--app-chart-invested)" },
+            ]}
+          />
+          <CompareChart
+            title="Interest and tenure"
+            data={[
+              { category: "Interest", original: result.originalInterest, prepaid: result.totalInterest },
+              { category: "Months", original: result.originalSchedule.length, prepaid: result.monthsPaid },
+            ]}
+            series={[
+              { key: "original", label: "Original", color: "var(--app-chart-tax)" },
+              { key: "prepaid", label: "With extra", color: "var(--app-chart-gain)" },
             ]}
           />
         </div>
-        <ScheduleTable
-          caption="Prepaid schedule"
-          columns={[
-            { key: "month", header: "Month" },
-            { key: "emi", header: "EMI", format: "inr", align: "right" },
-            { key: "extra", header: "Extra", format: "inr", align: "right" },
-            { key: "interest", header: "Interest", format: "inr", align: "right" },
-            { key: "balance", header: "Balance", format: "inr", align: "right" },
-          ]}
-          rows={result.schedule}
-        />
+        <div className={RESULTS_RIGHT}>
+          <div className="shrink-0">
+            <ResultCard
+              title="Results"
+              items={[
+                { label: "EMI", value: result.emi, hint: `Paid in ${result.monthsPaid} months` },
+                { label: "Interest saved", value: result.interestSaved, hint: `${result.monthsSaved} months saved` },
+                { label: "Total extra", value: result.totalExtra },
+                { label: "SIP to recover original interest", value: result.recoverSip },
+                { label: "SIP to recover revised interest", value: result.revisedRecoverSip },
+              ]}
+            />
+          </div>
+        </div>
       </div>
+      <ScheduleTable
+        caption="Prepaid schedule"
+        columns={[
+          { key: "month", header: "Month" },
+          { key: "emi", header: "EMI", format: "inr", align: "right" },
+          { key: "extra", header: "Extra", format: "inr", align: "right" },
+          { key: "interest", header: "Interest", format: "inr", align: "right" },
+          { key: "balance", header: "Balance", format: "inr", align: "right" },
+        ]}
+        rows={result.schedule}
+      />
     </div>
   );
 }
 
 function ExtraVsInvestResults({ result }: { result: ExtraVsInvestResult }) {
   return (
-    <div className={RESULTS_SPLIT}>
-      <div className={RESULTS_LEFT}>
-        <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
-          <StatCard title="Prepay saving" value={result.option1Saving} />
-          <StatCard title="Invest saving" value={result.option2Saving} variant="soft" />
+    <div className="flex flex-col gap-4 lg:gap-6">
+      <div className={RESULTS_SPLIT}>
+        <div className={RESULTS_LEFT}>
+          <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
+            <StatCard title="Prepay saving" value={result.option1Saving} />
+            <StatCard title="Invest saving" value={result.option2Saving} variant="soft" />
+          </div>
+          <CompareChart
+            title="Prepay vs invest"
+            data={[
+              { category: "Interest saved", prepay: result.interestSavedVsOriginal, invest: 0 },
+              { category: "Corpus", prepay: 0, invest: result.corpusAfterTax },
+              { category: "Net saving", prepay: result.option1Saving, invest: result.option2Saving },
+            ]}
+            series={[
+              { key: "prepay", label: "Prepay", color: "var(--app-chart-invested)" },
+              { key: "invest", label: "Invest extra", color: "var(--app-chart-gain)" },
+            ]}
+          />
+          <GrowthChart
+            title="Outstanding vs investment"
+            data={result.path.map((row) => ({
+              year: row.month,
+              outstanding: row.outstandingPrepay,
+              investment: row.investment,
+            }))}
+            series={[
+              { key: "outstanding", label: "Loan outstanding", color: "var(--app-chart-tax)" },
+              { key: "investment", label: "Investment", color: "var(--app-chart-gain)" },
+            ]}
+          />
         </div>
-        <CompareChart
-          title="Prepay vs invest"
-          data={[
-            { category: "Interest saved", prepay: result.interestSavedVsOriginal, invest: 0 },
-            { category: "Corpus", prepay: 0, invest: result.corpusAfterTax },
-            { category: "Net saving", prepay: result.option1Saving, invest: result.option2Saving },
-          ]}
-          series={[
-            { key: "prepay", label: "Prepay", color: "var(--app-chart-invested)" },
-            { key: "invest", label: "Invest extra", color: "var(--app-chart-gain)" },
-          ]}
-        />
-        <GrowthChart
-          title="Outstanding vs investment"
-          data={result.path.map((row) => ({
-            year: row.month,
-            outstanding: row.outstandingPrepay,
-            investment: row.investment,
-          }))}
-          series={[
-            { key: "outstanding", label: "Loan outstanding", color: "var(--app-chart-tax)" },
-            { key: "investment", label: "Investment", color: "var(--app-chart-gain)" },
-          ]}
-        />
-      </div>
-      <div className={RESULTS_RIGHT}>
-        <ResultCard
-          title="Option 1 · Prepay"
-          items={[
-            { label: "Interest after extra", value: result.option1Interest, hint: `${result.remainingMonths.toFixed(1)} months left` },
-            { label: "Net cost", value: result.option1NetCost },
-            { label: "Net saving vs original", value: result.option1Saving },
-          ]}
-        />
-        <ResultCard
-          title="Option 2 · Invest"
-          items={[
-            { label: "Corpus after tax", value: result.corpusAfterTax },
-            { label: "Net cost", value: result.option2NetCost },
-            { label: "Net saving vs original", value: result.option2Saving },
-          ]}
-        />
+        <div className={RESULTS_RIGHT}>
+          <ResultCard
+            title="Option 1 · Prepay"
+            items={[
+              { label: "Interest after extra", value: result.option1Interest, hint: `${result.remainingMonths.toFixed(1)} months left` },
+              { label: "Net cost", value: result.option1NetCost },
+              { label: "Net saving vs original", value: result.option1Saving },
+            ]}
+          />
+          <ResultCard
+            title="Option 2 · Invest"
+            items={[
+              { label: "Corpus after tax", value: result.corpusAfterTax },
+              { label: "Net cost", value: result.option2NetCost },
+              { label: "Net saving vs original", value: result.option2Saving },
+            ]}
+          />
+        </div>
       </div>
     </div>
   );
@@ -490,49 +496,51 @@ function ExtraVsInvestResults({ result }: { result: ExtraVsInvestResult }) {
 
 function RecoveryResults({ result }: { result: RecoveryResult }) {
   return (
-    <div className={RESULTS_SPLIT}>
-      <div className={RESULTS_LEFT}>
-        <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
-          <StatCard title="Proposed EMI" value={result.proposedEmi} />
-          <StatCard title="Monthly SIP" value={result.monthlySip} variant="soft" />
+    <div className="flex flex-col gap-4 lg:gap-6">
+      <div className={RESULTS_SPLIT}>
+        <div className={RESULTS_LEFT}>
+          <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
+            <StatCard title="Proposed EMI" value={result.proposedEmi} />
+            <StatCard title="Monthly SIP" value={result.monthlySip} variant="soft" />
+          </div>
+          <GrowthChart
+            title="Baseline, SIP, loan + SIP"
+            data={result.schedule.map((row) => ({
+              year: row.year,
+              baseline: row.baseline,
+              sip: row.sip,
+              proposed: row.loanPlusSip,
+            }))}
+            series={[
+              { key: "baseline", label: "Baseline", color: "var(--app-chart-tax)" },
+              { key: "sip", label: "SIP value", color: "var(--app-chart-gain)" },
+              { key: "proposed", label: "Loan + SIP", color: "var(--app-chart-invested)" },
+            ]}
+          />
+          <CompareChart
+            title="Wealth at horizon"
+            data={[
+              { category: "Loan-only wealth", value: 0 },
+              { category: "Loan + SIP wealth", value: result.totalAssetPlusWealth },
+            ]}
+            series={[{ key: "value", label: "Wealth", color: "var(--app-chart-gain)" }]}
+          />
         </div>
-        <GrowthChart
-          title="Baseline, SIP, loan + SIP"
-          data={result.schedule.map((row) => ({
-            year: row.year,
-            baseline: row.baseline,
-            sip: row.sip,
-            proposed: row.loanPlusSip,
-          }))}
-          series={[
-            { key: "baseline", label: "Baseline", color: "var(--app-chart-tax)" },
-            { key: "sip", label: "SIP value", color: "var(--app-chart-gain)" },
-            { key: "proposed", label: "Loan + SIP", color: "var(--app-chart-invested)" },
-          ]}
-        />
-        <CompareChart
-          title="Wealth at horizon"
-          data={[
-            { category: "Loan-only wealth", value: 0 },
-            { category: "Loan + SIP wealth", value: result.totalAssetPlusWealth },
-          ]}
-          series={[{ key: "value", label: "Wealth", color: "var(--app-chart-gain)" }]}
-        />
-      </div>
-      <div className={RESULTS_RIGHT}>
-        <ResultCard
-          title="Results"
-          items={[
-            { label: "Baseline EMI", value: result.baselineEmi },
-            { label: "Baseline interest", value: result.baselineInterest },
-            { label: "Proposed EMI", value: result.proposedEmi },
-            { label: "Proposed interest", value: result.proposedInterest },
-            { label: "Monthly SIP", value: result.monthlySip },
-            { label: "SIP at horizon", value: result.sipAtHorizon },
-            { label: "Asset + wealth", value: result.totalAssetPlusWealth },
-            { label: "Additional wealth", value: result.additionalWealth },
-          ]}
-        />
+        <div className={RESULTS_RIGHT}>
+          <ResultCard
+            title="Results"
+            items={[
+              { label: "Baseline EMI", value: result.baselineEmi },
+              { label: "Baseline interest", value: result.baselineInterest },
+              { label: "Proposed EMI", value: result.proposedEmi },
+              { label: "Proposed interest", value: result.proposedInterest },
+              { label: "Monthly SIP", value: result.monthlySip },
+              { label: "SIP at horizon", value: result.sipAtHorizon },
+              { label: "Asset + wealth", value: result.totalAssetPlusWealth },
+              { label: "Additional wealth", value: result.additionalWealth },
+            ]}
+          />
+        </div>
       </div>
     </div>
   );
@@ -540,51 +548,53 @@ function RecoveryResults({ result }: { result: RecoveryResult }) {
 
 function VehicleResults({ result }: { result: VehicleResult }) {
   return (
-    <div className={RESULTS_SPLIT}>
-      <div className={RESULTS_LEFT}>
-        <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
-          <StatCard title="EMI" value={result.emi} />
-          <StatCard title="Tax saved" value={result.totalTaxSaved} variant="soft" />
-        </div>
-        <CompareChart
-          title="Financial benefit"
-          data={result.compare.map((row) => ({ category: row.category, benefit: row.benefit }))}
-          series={[{ key: "benefit", label: "Benefit", color: "var(--app-chart-gain)" }]}
-        />
-        <StackedBarChart
-          title="Tax shield vs opportunity vs net"
-          data={result.stacked}
-          series={[
-            { key: "taxShield", label: "Tax shield", color: "var(--app-chart-invested)" },
-            { key: "opportunity", label: "Opportunity", color: "var(--app-chart-gain)" },
-            { key: "netBenefit", label: "Net benefit", color: "var(--app-chart-tax)" },
-          ]}
-        />
-      </div>
-      <div className={RESULTS_RIGHT}>
-        <div className="shrink-0">
-          <ResultCard
-            title="Results"
-            items={[
-              { label: "EMI", value: result.emi },
-              { label: "Interest", value: result.totalInterest },
-              { label: "Depreciation", value: result.totalDepreciation },
-              { label: "Tax saved", value: result.totalTaxSaved },
-              ...result.options.map((opt) => ({ label: `${opt.name} benefit`, value: opt.financialBenefit })),
+    <div className="flex flex-col gap-4 lg:gap-6">
+      <div className={RESULTS_SPLIT}>
+        <div className={RESULTS_LEFT}>
+          <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
+            <StatCard title="EMI" value={result.emi} />
+            <StatCard title="Tax saved" value={result.totalTaxSaved} variant="soft" />
+          </div>
+          <CompareChart
+            title="Financial benefit"
+            data={result.compare.map((row) => ({ category: row.category, benefit: row.benefit }))}
+            series={[{ key: "benefit", label: "Benefit", color: "var(--app-chart-gain)" }]}
+          />
+          <StackedBarChart
+            title="Tax shield vs opportunity vs net"
+            data={result.stacked}
+            series={[
+              { key: "taxShield", label: "Tax shield", color: "var(--app-chart-invested)" },
+              { key: "opportunity", label: "Opportunity", color: "var(--app-chart-gain)" },
+              { key: "netBenefit", label: "Net benefit", color: "var(--app-chart-tax)" },
             ]}
           />
         </div>
-        <ScheduleTable
-          caption="Depreciation"
-          columns={[
-            { key: "year", header: "Year" },
-            { key: "value", header: "Value", format: "inr", align: "right" },
-            { key: "depreciation", header: "Depreciation", format: "inr", align: "right" },
-            { key: "balance", header: "Balance", format: "inr", align: "right" },
-          ]}
-          rows={result.depreciation}
-        />
+        <div className={RESULTS_RIGHT}>
+          <div className="shrink-0">
+            <ResultCard
+              title="Results"
+              items={[
+                { label: "EMI", value: result.emi },
+                { label: "Interest", value: result.totalInterest },
+                { label: "Depreciation", value: result.totalDepreciation },
+                { label: "Tax saved", value: result.totalTaxSaved },
+                ...result.options.map((opt) => ({ label: `${opt.name} benefit`, value: opt.financialBenefit })),
+              ]}
+            />
+          </div>
+        </div>
       </div>
+      <ScheduleTable
+        caption="Depreciation"
+        columns={[
+          { key: "year", header: "Year" },
+          { key: "value", header: "Value", format: "inr", align: "right" },
+          { key: "depreciation", header: "Depreciation", format: "inr", align: "right" },
+          { key: "balance", header: "Balance", format: "inr", align: "right" },
+        ]}
+        rows={result.depreciation}
+      />
     </div>
   );
 }

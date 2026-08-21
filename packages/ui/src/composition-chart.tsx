@@ -12,11 +12,13 @@ export function CompositionChart({
   slices,
   centerLabel = "Total",
   centerValue,
+  className,
 }: {
   title?: string;
   slices: CompositionSlice[];
   centerLabel?: string;
   centerValue?: number;
+  className?: string;
 }) {
   const data = slices.filter((s) => s.value > 0);
   const total = centerValue ?? data.reduce((sum, s) => sum + s.value, 0);
@@ -32,13 +34,15 @@ export function CompositionChart({
           : "text-base sm:text-lg";
 
   return (
-    <div className="flex h-[300px] shrink-0 flex-col overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 sm:p-4">
+    <div
+      className={`flex min-h-[320px] flex-1 flex-col rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 sm:p-4 ${className ?? ""}`}
+    >
       <div className="mb-3 shrink-0 text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
         {title}
       </div>
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-        <div className="flex min-h-0 flex-1 items-center justify-center py-1">
-          <div className="relative aspect-square w-full max-w-[180px]">
+      <div className="flex flex-1 flex-col gap-4 sm:flex-row sm:items-center">
+        <div className="flex shrink-0 items-center justify-center py-1 sm:w-[44%] sm:flex-none sm:self-stretch">
+          <div className="relative aspect-square h-full max-h-[220px] w-full max-w-[220px]">
             <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100}>
               <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
                 <Pie
@@ -73,7 +77,7 @@ export function CompositionChart({
             </div>
           </div>
         </div>
-        <div className="mt-2 space-y-1.5">
+        <div className="custom-scrollbar min-w-0 flex-1 space-y-2 overflow-y-auto max-h-[220px]">
           {slices.map((s) => (
             <div key={s.name} className="flex items-center justify-between gap-2 text-sm">
               <div className="flex min-w-0 items-center gap-2 text-[var(--app-text-muted)]">

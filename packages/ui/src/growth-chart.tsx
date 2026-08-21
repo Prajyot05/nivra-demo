@@ -25,11 +25,11 @@ export function GrowthChart({
   title?: string;
 }) {
   return (
-    <div className="flex h-[300px] shrink-0 flex-col overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 sm:p-4">
+    <div className="flex min-h-[320px] flex-1 flex-col rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 sm:p-4">
       <div className="mb-3 shrink-0 text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
         {title}
       </div>
-      <div className="relative min-h-0 flex-1">
+      <div className="relative flex-1">
         <div className="absolute inset-0">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>

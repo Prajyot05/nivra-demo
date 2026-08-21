@@ -141,7 +141,7 @@ export function ChildEducationPlanner() {
         </div>
       }
       results={
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-4">
           {error ? <p className="text-sm text-[var(--app-danger)]">{error}</p> : null}
           {loading && !result ? (
             <p className="text-sm text-[var(--app-text-muted)]">Calculating…</p>
@@ -194,62 +194,64 @@ function CostGrid({
 
 function EducationResults({ result }: { result: EducationResult }) {
   return (
-    <div className={RESULTS_SPLIT}>
-      <div className={RESULTS_LEFT}>
-        <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
-          <StatCard title="Lumpsum required today" value={result.lumpsum.lumpsum} />
-          <StatCard title="Monthly SIP required" value={result.sip.monthlySip} variant="soft" />
+    <div className="flex flex-col gap-4 lg:gap-6">
+      <div className={RESULTS_SPLIT}>
+        <div className={RESULTS_LEFT}>
+          <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
+            <StatCard title="Lumpsum required today" value={result.lumpsum.lumpsum} />
+            <StatCard title="Monthly SIP required" value={result.sip.monthlySip} variant="soft" />
+          </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <CompareChart
+              title="Lumpsum vs SIP"
+              data={result.compare}
+              series={[
+                { key: "lumpsum", label: "Lumpsum", color: "var(--app-chart-invested)" },
+                { key: "sip", label: "SIP", color: "var(--app-chart-gain)" },
+              ]}
+            />
+            <StackedBarChart
+              title="Year-wise education cost"
+              data={result.costChart.map((row) => ({
+                category: row.classLabel,
+                cost: row.cost,
+                tax: row.tax,
+              }))}
+              series={[
+                { key: "cost", label: "Edu. cost", color: "var(--app-chart-invested)" },
+                { key: "tax", label: "Cap. gains", color: "var(--app-chart-tax)" },
+              ]}
+            />
+          </div>
         </div>
-        <div className="grid grid-cols-1 items-start gap-3 md:grid-cols-2">
-          <CompareChart
-            title="Lumpsum vs SIP"
-            data={result.compare}
-            series={[
-              { key: "lumpsum", label: "Lumpsum", color: "var(--app-chart-invested)" },
-              { key: "sip", label: "SIP", color: "var(--app-chart-gain)" },
-            ]}
-          />
-          <StackedBarChart
-            title="Year-wise education cost"
-            data={result.costChart.map((row) => ({
-              category: row.classLabel,
-              cost: row.cost,
-              tax: row.tax,
-            }))}
-            series={[
-              { key: "cost", label: "Edu. cost", color: "var(--app-chart-invested)" },
-              { key: "tax", label: "Cap. gains", color: "var(--app-chart-tax)" },
-            ]}
-          />
+        <div className={RESULTS_RIGHT}>
+          <div className="shrink-0">
+            <ResultCard
+              title="Plan summary"
+              items={[
+                { label: "Amount today", value: result.lumpsum.lumpsum },
+                { label: "Monthly SIP", value: result.sip.monthlySip, hint: `${result.sipYears} years` },
+                { label: "Total withdrawal", value: result.totalWithdrawal },
+                { label: "Peak corpus (SIP)", value: result.sip.peakCorpus },
+              ]}
+            />
+          </div>
         </div>
       </div>
-      <div className={RESULTS_RIGHT}>
-        <div className="shrink-0">
-          <ResultCard
-            title="Plan summary"
-            items={[
-              { label: "Amount today", value: result.lumpsum.lumpsum },
-              { label: "Monthly SIP", value: result.sip.monthlySip, hint: `${result.sipYears} years` },
-              { label: "Total withdrawal", value: result.totalWithdrawal },
-              { label: "Peak corpus (SIP)", value: result.sip.peakCorpus },
-            ]}
-          />
-        </div>
-        <ScheduleTable
-          caption="Education investment and withdrawal plan"
-          columns={[
-            { key: "age", header: "Age" },
-            { key: "classLabel", header: "Class", format: "text" },
-            { key: "cost", header: "Edu. cost", format: "inr", align: "right" },
-            { key: "tax", header: "Cap. gains", format: "inr", align: "right" },
-            { key: "withdrawal", header: "Withdrawal", format: "inr", align: "right" },
-            { key: "sipCorpus", header: "SIP corpus", format: "inr", align: "right" },
-            { key: "sipBalance", header: "SIP balance", format: "inr", align: "right" },
-            { key: "lumpsumBalance", header: "Lumpsum balance", format: "inr", align: "right" },
-          ]}
-          rows={result.schedule}
-        />
-      </div>
+      <ScheduleTable
+        caption="Education investment and withdrawal plan"
+        columns={[
+          { key: "age", header: "Age" },
+          { key: "classLabel", header: "Class", format: "text" },
+          { key: "cost", header: "Edu. cost", format: "inr", align: "right" },
+          { key: "tax", header: "Cap. gains", format: "inr", align: "right" },
+          { key: "withdrawal", header: "Withdrawal", format: "inr", align: "right" },
+          { key: "sipCorpus", header: "SIP corpus", format: "inr", align: "right" },
+          { key: "sipBalance", header: "SIP balance", format: "inr", align: "right" },
+          { key: "lumpsumBalance", header: "Lumpsum balance", format: "inr", align: "right" },
+        ]}
+        rows={result.schedule}
+      />
     </div>
   );
 }

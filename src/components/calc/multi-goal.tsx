@@ -258,112 +258,116 @@ function WithdrawalGrid({
 
 function AssignResults({ result }: { result: AssignResult }) {
   return (
-    <div className={RESULTS_SPLIT}>
-      <div className={RESULTS_LEFT}>
-        <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
-          <StatCard title="Total monthly SIP" value={result.totalMonthlySip} />
-          <StatCard title="Total lumpsum" value={result.totalLumpsum} variant="soft" />
-        </div>
-        <CompareChart
-          title="Assigned vs remaining lumpsum"
-          data={result.compare}
-          series={[
-            { key: "assigned", label: "Assigned corpus", color: "var(--app-chart-invested)" },
-            { key: "remaining", label: "Remaining LS", color: "var(--app-chart-gain)" },
-          ]}
-        />
-        <StackedBarChart
-          title="Corpus assigned per goal"
-          data={result.compare.map((row) => ({
-            category: row.category,
-            assigned: row.assigned,
-            remaining: row.remaining,
-          }))}
-          series={[
-            { key: "assigned", label: "Assigned", color: "var(--app-chart-invested)" },
-            { key: "remaining", label: "Still needed", color: "var(--app-chart-tax)" },
-          ]}
-        />
-      </div>
-      <div className={RESULTS_RIGHT}>
-        <div className="shrink-0">
-          <ResultCard
-            title="Totals"
-            items={[
-              { label: "Monthly SIP", value: result.totalMonthlySip },
-              { label: "Lumpsum", value: result.totalLumpsum },
-              { label: "Assigned corpus", value: result.totalAssigned },
-              { label: "Unassigned corpus", value: result.unassignedCorpus },
+    <div className="flex flex-col gap-4 lg:gap-6">
+      <div className={RESULTS_SPLIT}>
+        <div className={RESULTS_LEFT}>
+          <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
+            <StatCard title="Total monthly SIP" value={result.totalMonthlySip} />
+            <StatCard title="Total lumpsum" value={result.totalLumpsum} variant="soft" />
+          </div>
+          <CompareChart
+            title="Assigned vs remaining lumpsum"
+            data={result.compare}
+            series={[
+              { key: "assigned", label: "Assigned corpus", color: "var(--app-chart-invested)" },
+              { key: "remaining", label: "Remaining LS", color: "var(--app-chart-gain)" },
+            ]}
+          />
+          <StackedBarChart
+            title="Corpus assigned per goal"
+            data={result.compare.map((row) => ({
+              category: row.category,
+              assigned: row.assigned,
+              remaining: row.remaining,
+            }))}
+            series={[
+              { key: "assigned", label: "Assigned", color: "var(--app-chart-invested)" },
+              { key: "remaining", label: "Still needed", color: "var(--app-chart-tax)" },
             ]}
           />
         </div>
-        <ScheduleTable
-          caption="Per goal"
-          columns={[
-            { key: "name", header: "Goal" },
-            { key: "years", header: "Years" },
-            { key: "monthlySip", header: "SIP", format: "inr", align: "right" },
-            { key: "lumpsum", header: "Lumpsum", format: "inr", align: "right" },
-            { key: "assigned", header: "Assigned", format: "inr", align: "right" },
-          ]}
-          rows={result.goals}
-        />
+        <div className={RESULTS_RIGHT}>
+          <div className="shrink-0">
+            <ResultCard
+              title="Totals"
+              items={[
+                { label: "Monthly SIP", value: result.totalMonthlySip },
+                { label: "Lumpsum", value: result.totalLumpsum },
+                { label: "Assigned corpus", value: result.totalAssigned },
+                { label: "Unassigned corpus", value: result.unassignedCorpus },
+              ]}
+            />
+          </div>
+        </div>
       </div>
+      <ScheduleTable
+        caption="Per goal"
+        columns={[
+          { key: "name", header: "Goal" },
+          { key: "years", header: "Years" },
+          { key: "monthlySip", header: "SIP", format: "inr", align: "right" },
+          { key: "lumpsum", header: "Lumpsum", format: "inr", align: "right" },
+          { key: "assigned", header: "Assigned", format: "inr", align: "right" },
+        ]}
+        rows={result.goals}
+      />
     </div>
   );
 }
 
 function WithdrawResults({ result }: { result: WithdrawResult }) {
   return (
-    <div className={RESULTS_SPLIT}>
-      <div className={RESULTS_LEFT}>
-        <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
-          <StatCard title="Start monthly SIP" value={result.startMonthlySip} />
-          <StatCard title="Total withdrawn" value={result.totalWithdrawn} variant="soft" />
-        </div>
-        <CompareChart
-          title="Corpus by age at withdrawals"
-          data={result.ageChart
-            .filter((row) => row.withdrawal > 0)
-            .map((row) => ({ category: String(row.age), corpus: row.corpus }))}
-          series={[{ key: "corpus", label: "Corpus", color: "var(--app-chart-gain)" }]}
-        />
-        <GrowthChart
-          title="Corpus over age"
-          data={result.schedule.map((row) => ({
-            year: row.age,
-            corpus: row.corpus,
-            withdrawal: row.withdrawal,
-          }))}
-          series={[
-            { key: "corpus", label: "Corpus", color: "var(--app-chart-gain)" },
-            { key: "withdrawal", label: "Withdrawal", color: "var(--app-chart-tax)" },
-          ]}
-        />
-      </div>
-      <div className={RESULTS_RIGHT}>
-        <div className="shrink-0">
-          <ResultCard
-            title="Results"
-            items={[
-              { label: "Start SIP", value: result.startMonthlySip },
-              { label: "Invested", value: result.totalInvested },
-              { label: "Withdrawn", value: result.totalWithdrawn },
-              { label: "Tax", value: result.totalTax },
+    <div className="flex flex-col gap-4 lg:gap-6">
+      <div className={RESULTS_SPLIT}>
+        <div className={RESULTS_LEFT}>
+          <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
+            <StatCard title="Start monthly SIP" value={result.startMonthlySip} />
+            <StatCard title="Total withdrawn" value={result.totalWithdrawn} variant="soft" />
+          </div>
+          <CompareChart
+            title="Corpus by age at withdrawals"
+            data={result.ageChart
+              .filter((row) => row.withdrawal > 0)
+              .map((row) => ({ category: String(row.age), corpus: row.corpus }))}
+            series={[{ key: "corpus", label: "Corpus", color: "var(--app-chart-gain)" }]}
+          />
+          <GrowthChart
+            title="Corpus over age"
+            data={result.schedule.map((row) => ({
+              year: row.age,
+              corpus: row.corpus,
+              withdrawal: row.withdrawal,
+            }))}
+            series={[
+              { key: "corpus", label: "Corpus", color: "var(--app-chart-gain)" },
+              { key: "withdrawal", label: "Withdrawal", color: "var(--app-chart-tax)" },
             ]}
           />
         </div>
-        <ScheduleTable
-          caption="Per withdrawal SIP"
-          columns={[
-            { key: "name", header: "Goal" },
-            { key: "atAge", header: "Age" },
-            { key: "monthlySip", header: "SIP", format: "inr", align: "right" },
-            { key: "invested", header: "Invested", format: "inr", align: "right" },
-          ]}
-          rows={result.rows}
-        />
+        <div className={RESULTS_RIGHT}>
+          <div className="shrink-0">
+            <ResultCard
+              title="Results"
+              items={[
+                { label: "Start SIP", value: result.startMonthlySip },
+                { label: "Invested", value: result.totalInvested },
+                { label: "Withdrawn", value: result.totalWithdrawn },
+                { label: "Tax", value: result.totalTax },
+              ]}
+            />
+          </div>
+        </div>
       </div>
+      <ScheduleTable
+        caption="Per withdrawal SIP"
+        columns={[
+          { key: "name", header: "Goal" },
+          { key: "atAge", header: "Age" },
+          { key: "monthlySip", header: "SIP", format: "inr", align: "right" },
+          { key: "invested", header: "Invested", format: "inr", align: "right" },
+        ]}
+        rows={result.rows}
+      />
     </div>
   );
 }

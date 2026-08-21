@@ -218,7 +218,7 @@ export function UnifiedGoalPlanner() {
         </div>
       }
       results={
-        <div className="flex min-h-0 flex-1 flex-col gap-3">
+        <div className="flex flex-col gap-4">
           {error ? <p className="text-sm text-[var(--app-danger)]">{error}</p> : null}
           {loading && !result ? (
             <p className="text-sm text-[var(--app-text-muted)]">Calculating…</p>
@@ -270,48 +270,56 @@ function GoalResults({ mode, result }: { mode: Mode; result: GoalPlannerResult }
   }
 
   return (
-    <div className={RESULTS_SPLIT}>
-      <div className={RESULTS_LEFT}>
-        <GoalHero mode={mode} result={result} />
-        {goalRequiredChart(mode, result)}
-        {goalExtraChart(mode, result)}
-      </div>
-      <div className={RESULTS_RIGHT}>
-        <div className="flex shrink-0 flex-col gap-3">
-          <ResultCard
-            title={result.overfunded ? "Results · already funded" : "Goal summary"}
-            items={summaryItems}
-          />
-          {result.standard ? (
-            <ResultCard
-              title={mode === "sip" ? "Standard SIP" : "Additional SIP"}
-              items={legItems(result.standard)}
-            />
-          ) : null}
-          {result.stepUp ? (
-            <ResultCard title={mode === "sip" ? "Step-up SIP" : "Additional step-up SIP"} items={legItems(result.stepUp)} />
-          ) : null}
-          {result.lumpsum?.lumpsum != null ? (
-            <ResultCard title="Additional lumpsum today" items={legItems(result.lumpsum)} />
-          ) : null}
+    <div className="flex flex-col gap-4 lg:gap-6">
+      <div className={RESULTS_SPLIT}>
+        <div className={RESULTS_LEFT}>
+          <GoalHero mode={mode} result={result} />
+          <div className="flex flex-1 flex-col gap-4">
+            {goalRequiredChart(mode, result)}
+            {goalExtraChart(mode, result)}
+          </div>
         </div>
-        <ScheduleTable
-          caption="Yearly schedule"
-          columns={scheduleColumns(mode)}
-          rows={result.schedule}
-        />
-        {result.delays && result.delays.length > 0 ? (
-          <ScheduleTable
-            caption="Cost of delay"
-            columns={[
-              { key: "months", header: "Delay (months)" },
-              { key: "sipRequired", header: "SIP required", format: "inr", align: "right" },
-              { key: "extraInvested", header: "Extra invested", format: "inr", align: "right" },
-            ]}
-            rows={result.delays}
-          />
-        ) : null}
+        <div className={RESULTS_RIGHT}>
+          <div className="flex flex-col gap-4">
+            <ResultCard
+              title={result.overfunded ? "Results · already funded" : "Goal summary"}
+              items={summaryItems}
+            />
+            {result.standard ? (
+              <ResultCard
+                title={mode === "sip" ? "Standard SIP" : "Additional SIP"}
+                items={legItems(result.standard)}
+              />
+            ) : null}
+            {result.stepUp ? (
+              <ResultCard
+                title={mode === "sip" ? "Step-up SIP" : "Additional step-up SIP"}
+                items={legItems(result.stepUp)}
+              />
+            ) : null}
+            {result.lumpsum?.lumpsum != null ? (
+              <ResultCard title="Additional lumpsum today" items={legItems(result.lumpsum)} />
+            ) : null}
+          </div>
+        </div>
       </div>
+      <ScheduleTable
+        caption="Yearly schedule"
+        columns={scheduleColumns(mode)}
+        rows={result.schedule}
+      />
+      {result.delays && result.delays.length > 0 ? (
+        <ScheduleTable
+          className="max-h-[160px] min-h-[120px] flex-none"
+          caption="Cost of delay"
+          columns={[
+            { key: "months", header: "Delay (months)" },
+            { key: "sipRequired", header: "SIP required", format: "inr", align: "right" },
+            { key: "extraInvested", header: "Extra invested", format: "inr", align: "right" },
+          ]}
+          rows={result.delays}
+        />
+      ) : null}
     </div>
   );
 }

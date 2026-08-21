@@ -14,7 +14,7 @@ export function ResultCard({
   items: ResultItem[];
 }) {
   return (
-    <div className="flex flex-col rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 sm:p-4">
+    <div className="flex shrink-0 flex-col rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 sm:p-4">
       <h3 className="text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
         {title}
       </h3>

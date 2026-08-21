@@ -10,7 +10,7 @@ export function ModeTabs({
   onChange: (id: string) => void;
 }) {
   return (
-    <div className="flex flex-wrap gap-2 mb-2" role="tablist">
+    <div className="flex flex-wrap gap-2" role="tablist">
       {tabs.map((tab) => {
         const active = tab.id === value;
         return (

@@ -325,89 +325,91 @@ function FireResults({
   const gain = Math.max(0, result.balanceCorpus - invested);
 
   return (
-    <div className={RESULTS_SPLIT}>
-      <div className={RESULTS_LEFT}>
-        <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
-          <StatCard title="Corpus at retirement" value={result.corpusRequired} />
-          <StatCard
-            title={result.excess ? "Surplus at retirement" : "Monthly SIP needed"}
-            value={result.excess ? result.currentAtRetirement - result.corpusRequired : result.monthlySip}
-            variant="soft"
-          />
-        </div>
-        <GrowthChart
-          title="Corpus vs age"
-          data={line}
-          series={[
-            { key: "corpus", label: "Corpus", color: "var(--app-chart-gain)" },
-            { key: "retirement", label: "At retirement", color: "var(--app-chart-tax)" },
-          ]}
-        />
-        <StackedAreaChart
-          title="Contributions vs withdrawals"
-          data={area}
-          series={[
-            { key: "contribution", label: "Contributions", color: "var(--app-chart-invested)" },
-            { key: "withdrawal", label: "Withdrawals", color: "var(--app-chart-tax)" },
-          ]}
-        />
-        <CompositionChart
-          title="Gap funding mix"
-          slices={[
-            { name: "Invested (SIP)", value: invested, color: "var(--app-chart-invested)" },
-            { name: "Gain", value: gain, color: "var(--app-chart-gain)" },
-          ]}
-          centerLabel="Gap"
-          centerValue={result.balanceCorpus}
-        />
-      </div>
-      <div className={RESULTS_RIGHT}>
-        <div className="flex shrink-0 flex-col gap-3">
-          <ResultCard
-            title={result.excess ? "Results · overfunded" : "FIRE summary"}
-            items={[
-              {
-                label: "Yearly exp. at ret.",
-                value: result.yearlyExpAtRet,
-                hint: `${result.activeYears} active · ${result.retiredYears} retired yrs`,
-              },
-              { label: "Corpus required", value: result.corpusRequired },
-              { label: "Current at retirement", value: result.currentAtRetirement },
-              { label: "Additional lumpsum", value: result.additionalLumpsum },
-              { label: "Monthly SIP", value: result.monthlySip },
-              { label: "Step-up SIP start", value: result.stepUpStartSip },
-              ...(result.delaySip > 0
-                ? [
-                    { label: "Delay lumpsum", value: result.delayLumpsum },
-                    { label: "Delay SIP", value: result.delaySip },
-                  ]
-                : []),
-            ]}
-          />
-          <CompareChart
-            title="Delay cost"
-            data={[
-              { category: "Lumpsum", now: result.additionalLumpsum, delayed: result.delayLumpsum || result.additionalLumpsum },
-              { category: "Monthly SIP", now: result.monthlySip, delayed: result.delaySip || result.monthlySip },
-            ]}
+    <div className="flex flex-col gap-4 lg:gap-6">
+      <div className={RESULTS_SPLIT}>
+        <div className={RESULTS_LEFT}>
+          <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
+            <StatCard title="Corpus at retirement" value={result.corpusRequired} />
+            <StatCard
+              title={result.excess ? "Surplus at retirement" : "Monthly SIP needed"}
+              value={result.excess ? result.currentAtRetirement - result.corpusRequired : result.monthlySip}
+              variant="soft"
+            />
+          </div>
+          <GrowthChart
+            title="Corpus vs age"
+            data={line}
             series={[
-              { key: "now", label: "Start now", color: "var(--app-chart-invested)" },
-              { key: "delayed", label: "Delayed", color: "var(--app-chart-tax)" },
+              { key: "corpus", label: "Corpus", color: "var(--app-chart-gain)" },
+              { key: "retirement", label: "At retirement", color: "var(--app-chart-tax)" },
             ]}
           />
+          <StackedAreaChart
+            title="Contributions vs withdrawals"
+            data={area}
+            series={[
+              { key: "contribution", label: "Contributions", color: "var(--app-chart-invested)" },
+              { key: "withdrawal", label: "Withdrawals", color: "var(--app-chart-tax)" },
+            ]}
+          />
+          <CompositionChart
+            title="Gap funding mix"
+            slices={[
+              { name: "Invested (SIP)", value: invested, color: "var(--app-chart-invested)" },
+              { name: "Gain", value: gain, color: "var(--app-chart-gain)" },
+            ]}
+            centerLabel="Gap"
+            centerValue={result.balanceCorpus}
+          />
         </div>
-        <ScheduleTable
-          caption="Age schedule"
-          columns={[
-            { key: "age", header: "Age" },
-            { key: "phase", header: "Phase", format: "text" },
-            { key: "contribution", header: "Contribution", format: "inr", align: "right" },
-            { key: "withdrawal", header: "Withdrawal", format: "inr", align: "right" },
-            { key: "corpus", header: "Corpus", format: "inr", align: "right" },
-          ]}
-          rows={result.schedule}
-        />
+        <div className={RESULTS_RIGHT}>
+          <div className="flex shrink-0 flex-col gap-3">
+            <ResultCard
+              title={result.excess ? "Results · overfunded" : "FIRE summary"}
+              items={[
+                {
+                  label: "Yearly exp. at ret.",
+                  value: result.yearlyExpAtRet,
+                  hint: `${result.activeYears} active · ${result.retiredYears} retired yrs`,
+                },
+                { label: "Corpus required", value: result.corpusRequired },
+                { label: "Current at retirement", value: result.currentAtRetirement },
+                { label: "Additional lumpsum", value: result.additionalLumpsum },
+                { label: "Monthly SIP", value: result.monthlySip },
+                { label: "Step-up SIP start", value: result.stepUpStartSip },
+                ...(result.delaySip > 0
+                  ? [
+                      { label: "Delay lumpsum", value: result.delayLumpsum },
+                      { label: "Delay SIP", value: result.delaySip },
+                    ]
+                  : []),
+              ]}
+            />
+            <CompareChart
+              title="Delay cost"
+              data={[
+                { category: "Lumpsum", now: result.additionalLumpsum, delayed: result.delayLumpsum || result.additionalLumpsum },
+                { category: "Monthly SIP", now: result.monthlySip, delayed: result.delaySip || result.monthlySip },
+              ]}
+              series={[
+                { key: "now", label: "Start now", color: "var(--app-chart-invested)" },
+                { key: "delayed", label: "Delayed", color: "var(--app-chart-tax)" },
+              ]}
+            />
+          </div>
+        </div>
       </div>
+      <ScheduleTable
+        caption="Age schedule"
+        columns={[
+          { key: "age", header: "Age" },
+          { key: "phase", header: "Phase", format: "text" },
+          { key: "contribution", header: "Contribution", format: "inr", align: "right" },
+          { key: "withdrawal", header: "Withdrawal", format: "inr", align: "right" },
+          { key: "corpus", header: "Corpus", format: "inr", align: "right" },
+        ]}
+        rows={result.schedule}
+      />
     </div>
   );
 }
@@ -420,76 +422,78 @@ function HealthResults({ result }: { result: HealthResult }) {
   }));
 
   return (
-    <div className={RESULTS_SPLIT}>
-      <div className={RESULTS_LEFT}>
-        <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
-          <StatCard title="Corpus at retirement" value={result.corpusAtRetirement} />
-          <StatCard
-            title={result.funded ? "Remaining at survival" : "Corpus when funds run out"}
-            value={result.funded ? result.remainingAtSurvival : 0}
-            variant="soft"
-            hint={
-              result.funded
-                ? `Lasts full ${result.retiredYears} yrs`
-                : `Lasts ~${result.yearsLasting} of ${result.retiredYears} yrs`
-            }
+    <div className="flex flex-col gap-4 lg:gap-6">
+      <div className={RESULTS_SPLIT}>
+        <div className={RESULTS_LEFT}>
+          <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
+            <StatCard title="Corpus at retirement" value={result.corpusAtRetirement} />
+            <StatCard
+              title={result.funded ? "Remaining at survival" : "Corpus when funds run out"}
+              value={result.funded ? result.remainingAtSurvival : 0}
+              variant="soft"
+              hint={
+                result.funded
+                  ? `Lasts full ${result.retiredYears} yrs`
+                  : `Lasts ~${result.yearsLasting} of ${result.retiredYears} yrs`
+              }
+            />
+          </div>
+          <ComboChart
+            title="Corpus and expenses vs age"
+            data={combo}
+            bars={[{ key: "corpus", label: "Corpus", color: "var(--app-chart-invested)" }]}
+            lines={[{ key: "expense", label: "Yearly expense", color: "var(--app-chart-tax)" }]}
           />
-        </div>
-        <ComboChart
-          title="Corpus and expenses vs age"
-          data={combo}
-          bars={[{ key: "corpus", label: "Corpus", color: "var(--app-chart-invested)" }]}
-          lines={[{ key: "expense", label: "Yearly expense", color: "var(--app-chart-tax)" }]}
-        />
-        <CompositionChart
-          title="Savings vs retirement gap"
-          slices={[
-            {
-              name: "Corpus at retirement",
-              value: result.corpusAtRetirement,
-              color: "var(--app-chart-invested)",
-            },
-            {
-              name: "Gap",
-              value: result.gapAtRetirement,
-              color: "var(--app-chart-tax)",
-            },
-          ]}
-          centerLabel={result.funded ? "Funded" : "Short"}
-          centerValue={result.corpusAtRetirement}
-        />
-      </div>
-      <div className={RESULTS_RIGHT}>
-        <div className="shrink-0">
-          <p className="mb-3 text-sm text-[var(--app-text-muted)]">{result.message}</p>
-          <ResultCard
-            title="Health summary"
-            items={[
-              { label: "Corpus at retirement", value: result.corpusAtRetirement },
+          <CompositionChart
+            title="Savings vs retirement gap"
+            slices={[
               {
-                label: "Remaining at survival",
-                value: result.remainingAtSurvival,
-                hint: `${result.monthsLasting} months lasting`,
+                name: "Corpus at retirement",
+                value: result.corpusAtRetirement,
+                color: "var(--app-chart-invested)",
               },
-              { label: "PV of remaining today", value: result.remainingPvToday },
-              { label: "Monthly exp. @ ret+1", value: result.monthlyExpAtRetPlus1 },
-              { label: "Lifestyle @ ret+1", value: result.lifestyleAtRetPlus1 },
-              { label: "Retirement gap", value: result.gapAtRetirement },
+              {
+                name: "Gap",
+                value: result.gapAtRetirement,
+                color: "var(--app-chart-tax)",
+              },
             ]}
+            centerLabel={result.funded ? "Funded" : "Short"}
+            centerValue={result.corpusAtRetirement}
           />
         </div>
-        <ScheduleTable
-          caption="Age path"
-          columns={[
-            { key: "age", header: "Age" },
-            { key: "phase", header: "Phase", format: "text" },
-            { key: "yearlyExpense", header: "Expense", format: "inr", align: "right" },
-            { key: "eventAmount", header: "Event", format: "inr", align: "right" },
-            { key: "corpus", header: "Corpus", format: "inr", align: "right" },
-          ]}
-          rows={result.schedule}
-        />
+        <div className={RESULTS_RIGHT}>
+          <div className="shrink-0">
+            <p className="mb-3 text-sm text-[var(--app-text-muted)]">{result.message}</p>
+            <ResultCard
+              title="Health summary"
+              items={[
+                { label: "Corpus at retirement", value: result.corpusAtRetirement },
+                {
+                  label: "Remaining at survival",
+                  value: result.remainingAtSurvival,
+                  hint: `${result.monthsLasting} months lasting`,
+                },
+                { label: "PV of remaining today", value: result.remainingPvToday },
+                { label: "Monthly exp. @ ret+1", value: result.monthlyExpAtRetPlus1 },
+                { label: "Lifestyle @ ret+1", value: result.lifestyleAtRetPlus1 },
+                { label: "Retirement gap", value: result.gapAtRetirement },
+              ]}
+            />
+          </div>
+        </div>
       </div>
+      <ScheduleTable
+        caption="Age path"
+        columns={[
+          { key: "age", header: "Age" },
+          { key: "phase", header: "Phase", format: "text" },
+          { key: "yearlyExpense", header: "Expense", format: "inr", align: "right" },
+          { key: "eventAmount", header: "Event", format: "inr", align: "right" },
+          { key: "corpus", header: "Corpus", format: "inr", align: "right" },
+        ]}
+        rows={result.schedule}
+      />
     </div>
   );
 }

@@ -260,7 +260,7 @@ export function InvestmentGrowth() {
         )
       }
       results={
-        <div className="flex min-h-0 flex-1 flex-col gap-3">
+        <div className="flex flex-col gap-4">
           {error ? <p className="text-sm text-[var(--app-danger)]">{error}</p> : null}
           {loading && !result ? (
             <p className="text-sm text-[var(--app-text-muted)]">Calculating…</p>
@@ -354,52 +354,56 @@ function GrowthResults({ mode, result }: { mode: Mode; result: GrowthResult }) {
     );
 
   return (
-    <div className={RESULTS_SPLIT}>
-      <div className={RESULTS_LEFT}>
-        <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
-          <StatCard title="Invested" value={result.totalInvested} />
-          <StatCard title="Maturity" value={result.maturity} variant="soft" />
+    <div className="flex flex-col gap-4 lg:gap-6">
+      <div className={RESULTS_SPLIT}>
+        <div className={RESULTS_LEFT}>
+          <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
+            <StatCard title="Invested" value={result.totalInvested} />
+            <StatCard title="Maturity" value={result.maturity} variant="soft" />
+          </div>
+          <div className="flex flex-1 flex-col gap-4">
+            {requiredChart}
+            {extraChart}
+          </div>
         </div>
-        {requiredChart}
-        {extraChart}
-      </div>
-      <div className={RESULTS_RIGHT}>
-        <div className="shrink-0">
-          <ResultCard title="Results" items={items} />
+        <div className={RESULTS_RIGHT}>
+          <div className="shrink-0">
+            <ResultCard title="Results" items={items} />
+          </div>
         </div>
-        {mode === "periodic" ? (
-          <ScheduleTable
-            caption="Contribution schedule"
-            columns={[
-              { key: "month", header: "Month", align: "right" },
-              { key: "contribution", header: "Contribution", format: "inr", align: "right" },
-              { key: "contributionFv", header: "FV at horizon", format: "inr", align: "right" },
-            ]}
-            rows={periodicRows}
-          />
-        ) : (
-          <ScheduleTable
-            caption="Yearly schedule"
-            columns={
-              mode === "lumpsum"
-                ? [
-                    { key: "year", header: "Year" },
-                    { key: "investedToDate", header: "Invested", format: "inr", align: "right" },
-                    { key: "yearEnd", header: "Year-end", format: "inr", align: "right" },
-                    { key: "inflationAdjusted", header: "Inflation-adj.", format: "inr", align: "right" },
-                  ]
-                : [
-                    { key: "year", header: "Year" },
-                    { key: "monthly", header: "Monthly SIP", format: "inr", align: "right" },
-                    { key: "investedToDate", header: "Invested", format: "inr", align: "right" },
-                    { key: "yearEnd", header: "Year-end", format: "inr", align: "right" },
-                    { key: "inflationAdjusted", header: "Inflation-adj.", format: "inr", align: "right" },
-                  ]
-            }
-            rows={yearRows}
-          />
-        )}
       </div>
+      {mode === "periodic" ? (
+        <ScheduleTable
+          caption="Contribution schedule"
+          columns={[
+            { key: "month", header: "Month", align: "right" },
+            { key: "contribution", header: "Contribution", format: "inr", align: "right" },
+            { key: "contributionFv", header: "FV at horizon", format: "inr", align: "right" },
+          ]}
+          rows={periodicRows}
+        />
+      ) : (
+        <ScheduleTable
+          caption="Yearly schedule"
+          columns={
+            mode === "lumpsum"
+              ? [
+                  { key: "year", header: "Year" },
+                  { key: "investedToDate", header: "Invested", format: "inr", align: "right" },
+                  { key: "yearEnd", header: "Year-end", format: "inr", align: "right" },
+                  { key: "inflationAdjusted", header: "Inflation-adj.", format: "inr", align: "right" },
+                ]
+              : [
+                  { key: "year", header: "Year" },
+                  { key: "monthly", header: "Monthly SIP", format: "inr", align: "right" },
+                  { key: "investedToDate", header: "Invested", format: "inr", align: "right" },
+                  { key: "yearEnd", header: "Year-end", format: "inr", align: "right" },
+                  { key: "inflationAdjusted", header: "Inflation-adj.", format: "inr", align: "right" },
+                ]
+          }
+          rows={yearRows}
+        />
+      )}
     </div>
   );
 }
