@@ -1,0 +1,65 @@
+{
+  "id": "goal-sip",
+  "scenarios": [
+    {
+      "name": "unprotected-sample",
+      "source": "Unprotected/Nivra Goal - Compute SIP_or_StepUP_SIP v3.xlsm",
+      "cells": {
+        "standard.monthlySip": "U27",
+        "stepUp.monthlySip": "SU_Amt"
+      },
+      "engineInput": {
+        "goalAmount": 10000000,
+        "tenureYears": 15,
+        "annualReturn": 0.12,
+        "inflationRate": 0.0525,
+        "taxRate": 0.125,
+        "stepUpRate": 0.1,
+        "useInflationAdjustedGoal": true
+      },
+      "apiInput": {
+        "goalAmount": 10000000,
+        "tenureYears": 15,
+        "returnPct": 12,
+        "inflationPct": 5.25,
+        "taxPct": 12.5,
+        "stepUpPct": 10,
+        "useInflationAdjustedGoal": true
+      },
+      "expect": {
+        "standard.monthlySip": 49082.47270047578,
+        "stepUp.monthlySip": 27918.04577208791,
+        "targetGoal": 21544259.307314847
+      }
+    },
+    {
+      "name": "hnw",
+      "source": "engine regression @ HNW ₹5Cr goal / 20y",
+      "engineInput": {
+        "goalAmount": 50000000,
+        "tenureYears": 20,
+        "annualReturn": 0.12,
+        "inflationRate": 0.0525,
+        "taxRate": 0.125,
+        "stepUpRate": 0.1,
+        "useInflationAdjustedGoal": true
+      },
+      "apiInput": {
+        "goalAmount": 50000000,
+        "tenureYears": 20,
+        "returnPct": 12,
+        "inflationPct": 5.25,
+        "taxPct": 12.5,
+        "stepUpPct": 10,
+        "useInflationAdjustedGoal": true
+      },
+      "expect": {
+        "targetGoal": 139127215.9061009,
+        "standard.monthlySip": 166644.3298254435,
+        "stepUp.monthlySip": 81068.97640446878,
+        "standard.netAfterTax": 139127215.9061009,
+        "stepUp.netAfterTax": 139127215.90610093
+      }
+    }
+  ]
+}

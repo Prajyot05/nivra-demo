@@ -1,0 +1,53 @@
+{
+  "id": "growth-lumpsum",
+  "scenarios": [
+    {
+      "name": "unprotected-sample",
+      "source": "Unprotected/Nivra One-Time Investment v2.xlsm",
+      "engineInput": {
+        "amount": 5000000,
+        "years": 16,
+        "annualReturn": 0.12,
+        "inflationRate": 0.0575,
+        "delayMonths": 6,
+        "taxRate": 0
+      },
+      "apiInput": {
+        "amount": 5000000,
+        "years": 16,
+        "returnPct": 12,
+        "inflationPct": 5.75,
+        "delayMonths": 6,
+        "taxPct": 0
+      },
+      "expect": {
+        "maturity": 30651968.25183946
+      }
+    },
+    {
+      "name": "hnw",
+      "source": "engine regression @ HNW",
+      "engineInput": {
+        "amount": 50000000,
+        "years": 20,
+        "annualReturn": 0.12,
+        "inflationRate": 0.0575,
+        "delayMonths": 6,
+        "taxRate": 0.125
+      },
+      "apiInput": {
+        "amount": 50000000,
+        "years": 20,
+        "returnPct": 12,
+        "inflationPct": 5.75,
+        "delayMonths": 6,
+        "taxPct": 12.5
+      },
+      "expect": {
+        "maturity": 482314654.6637476,
+        "tax": 54039331.83296845,
+        "netAfterTax": 428275322.83077914
+      }
+    }
+  ]
+}

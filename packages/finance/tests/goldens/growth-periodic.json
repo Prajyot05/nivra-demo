@@ -1,0 +1,52 @@
+{
+  "id": "growth-periodic",
+  "scenarios": [
+    {
+      "name": "unprotected-sample",
+      "source": "Unprotected/Nivra Periodic Investment v1.xlsm",
+      "engineInput": {
+        "amount": 100000,
+        "timesPerYear": 2,
+        "years": 1,
+        "annualReturn": 0.12,
+        "taxRate": 0.12
+      },
+      "apiInput": {
+        "amount": 100000,
+        "timesPerYear": 2,
+        "years": 1,
+        "returnPct": 12,
+        "taxPct": 12
+      },
+      "expect": {
+        "payments": 2,
+        "maturity": 217830.05244258378,
+        "tax": 2139.6062931100532
+      }
+    },
+    {
+      "name": "hnw",
+      "source": "engine regression @ HNW",
+      "engineInput": {
+        "amount": 2500000,
+        "timesPerYear": 4,
+        "years": 15,
+        "annualReturn": 0.12,
+        "taxRate": 0.125
+      },
+      "apiInput": {
+        "amount": 2500000,
+        "timesPerYear": 4,
+        "years": 15,
+        "returnPct": 12,
+        "taxPct": 12.5
+      },
+      "expect": {
+        "payments": 60,
+        "maturity": 400360941.9315721,
+        "tax": 31295117.74144651,
+        "netAfterTax": 369065824.1901256
+      }
+    }
+  ]
+}

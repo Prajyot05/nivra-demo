@@ -1,0 +1,54 @@
+{
+  "id": "loan-interest-recovery",
+  "scenarios": [
+    {
+      "name": "unprotected-sample",
+      "source": "Unprotected/Nivra Loan Interest Recovery v7.xlsm",
+      "engineInput": {
+        "principal": 20000000,
+        "years": 20,
+        "annualRate": 0.085,
+        "proposedYears": 15,
+        "sipReturn": 0.12
+      },
+      "apiInput": {
+        "principal": 20000000,
+        "years": 20,
+        "interestPct": 8.5,
+        "proposedYears": 15,
+        "sipReturnPct": 12
+      },
+      "expect": {
+        "baselineEmi": 173564.64667310682,
+        "proposedEmi": 196947.9115851187,
+        "proposedInterest": 15450624.085321333,
+        "monthlySip": 32463.972980333867,
+        "sipAtHorizon": 27229278.85701567
+      }
+    },
+    {
+      "name": "hnw",
+      "source": "engine regression @ HNW",
+      "engineInput": {
+        "principal": 75000000,
+        "years": 25,
+        "annualRate": 0.085,
+        "proposedYears": 15,
+        "sipReturn": 0.12
+      },
+      "apiInput": {
+        "principal": 75000000,
+        "years": 25,
+        "interestPct": 8.5,
+        "proposedYears": 15,
+        "sipReturnPct": 12
+      },
+      "expect": {
+        "baselineEmi": 603920.3125965985,
+        "proposedEmi": 738554.6684441951,
+        "monthlySip": 121739.8986762524,
+        "additionalWealth": 206275420.94678128
+      }
+    }
+  ]
+}

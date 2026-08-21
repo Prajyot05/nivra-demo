@@ -1,0 +1,65 @@
+{
+  "id": "goal-compounding",
+  "scenarios": [
+    {
+      "name": "unprotected-sample",
+      "source": "Unprotected/Nivra Goal with Power of Compounding - Growth Steps.xlsm",
+      "engineInput": {
+        "goalAmount": 10000000,
+        "tenureYears": 15,
+        "annualReturn": 0.12,
+        "inflationRate": 0.0525,
+        "taxRate": 0.125,
+        "stepUpRate": 0.1,
+        "useInflationAdjustedGoal": true,
+        "extraYears": 5
+      },
+      "apiInput": {
+        "goalAmount": 10000000,
+        "tenureYears": 15,
+        "returnPct": 12,
+        "inflationPct": 5.25,
+        "taxPct": 12.5,
+        "stepUpPct": 10,
+        "useInflationAdjustedGoal": true,
+        "extraYears": 5
+      },
+      "expect": {
+        "standard.monthlySip": 49082.47270047578,
+        "lumpsum.lumpsum": 4383931.029777476,
+        "sipAfterExtra": 41168107.70396868,
+        "lumpsumAfterExtra": 42288683.613936216
+      }
+    },
+    {
+      "name": "hnw",
+      "source": "engine regression @ HNW",
+      "engineInput": {
+        "goalAmount": 50000000,
+        "tenureYears": 20,
+        "annualReturn": 0.12,
+        "inflationRate": 0.0525,
+        "taxRate": 0.125,
+        "stepUpRate": 0.1,
+        "useInflationAdjustedGoal": true,
+        "extraYears": 10
+      },
+      "apiInput": {
+        "goalAmount": 50000000,
+        "tenureYears": 20,
+        "returnPct": 12,
+        "inflationPct": 5.25,
+        "taxPct": 12.5,
+        "stepUpPct": 10,
+        "useInflationAdjustedGoal": true,
+        "extraYears": 10
+      },
+      "expect": {
+        "standard.monthlySip": 166644.3298254435,
+        "lumpsum.lumpsum": 16242730.842686571,
+        "sipAfterExtra": 476092405.09406805,
+        "standard.netAfterTax": 139127215.9061009
+      }
+    }
+  ]
+}

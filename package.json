@@ -12,6 +12,7 @@
     "start": "next start",
     "lint": "eslint .",
     "test": "npm run test -w @nivra/finance && tsx --test src/lib/calculate-dispatch.test.ts",
+    "test:goldens": "tsx packages/finance/tests/goldens/generate.ts",
     "format": "prettier --write ."
   },
   "dependencies": {

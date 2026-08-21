@@ -33,10 +33,12 @@ End-to-end = engine + unit tests + Zod schema + `dispatch` + UI on a live route.
 | [x]  | 21  | SIP for Multiple Withdrawals v2                     | Prajyot | `/multi-goal` · `multi-withdrawals`            |
 | [x]  | 22  | FIRE Planner v10                                    | Yash    | `/fire` · `fire-planner`                       |
 | [x]  | 23  | Financial Health Analysis v4                        | Yash    | `/fire` · `financial-health`                   |
-| [ ]  | —   | Excel parity QA / review                            | Both    | Days 21–22                                     |
+| [x]  | —   | Excel parity QA / review                            | Both    | Days 21–22                                     |
 
 
-**Checked now: 24 / 24 product rows** (kit + all Excel calculators). Excel parity QA still open.
+**Checked now: 25 / 25 rows** (kit + all Excel calculators + Excel parity automation).
+
+Excel parity is automated via committed golden fixtures in [`packages/finance/tests/goldens/`](packages/finance/tests/goldens/) (Unprotected/Full Set samples + HNW scenarios), dual-layer finance + dispatch tests, and invariant checks. Run `npm test`. Regenerate HNW expects with `npx tsx packages/finance/tests/goldens/generate.ts` only when intentionally refreshing goldens.
 
 Charts are **not** one line chart for every product. Spec: `[docs/charts.md](docs/charts.md)` (from Unprotected / Full Set Excel). `AGENTS.md` requires that file for all future UI.
 
@@ -204,12 +206,16 @@ Combined existing + additional uses linear net-credit `(1 − t)×FV + t×invest
 
 ---
 
-## 10. Not done yet (later days)
+## 10. Excel parity automation (Days 21–22, done)
 
+Committed golden fixtures cover all **23** calculator ids:
 
-| When       | What                                               |
-| ---------- | -------------------------------------------------- |
-| Days 21–22 | Remaining Excel fixture tests + review             |
+- [`packages/finance/tests/goldens/*.json`](packages/finance/tests/goldens/) — `unprotected-sample` (Excel-locked) + `hnw` (affluent-scale regression on the same engine path)
+- [`packages/finance/tests/excel-parity.test.ts`](packages/finance/tests/excel-parity.test.ts) — finance layer
+- [`src/lib/calculate-dispatch.test.ts`](src/lib/calculate-dispatch.test.ts) — API percent → engine + every id
+- [`packages/finance/tests/invariants.test.ts`](packages/finance/tests/invariants.test.ts) — goal net≈target, tax identity, loan schedule integrity
+- Coverage matrix: [`packages/finance/tests/goldens/COVERAGE.md`](packages/finance/tests/goldens/COVERAGE.md)
+- Optional cached-cell reader: [`scripts/read-excel-cached.mjs`](scripts/read-excel-cached.mjs) (`npm i -D xlsx`)
 
 
 ---

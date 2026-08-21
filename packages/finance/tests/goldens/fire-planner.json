@@ -1,0 +1,128 @@
+{
+  "id": "fire-planner",
+  "scenarios": [
+    {
+      "name": "unprotected-sample",
+      "source": "Unprotected/Nivra FIRE Planner v10 - Unprotected.xlsm",
+      "engineInput": {
+        "age": 40,
+        "retirementAge": 55,
+        "survivingAge": 90,
+        "monthlyExpenses": 150000,
+        "lifestyleYearly": 1500000,
+        "inflationRate": 0.0575,
+        "annualReturn": 0.12,
+        "returnAfterRetirement": 0.08,
+        "taxRate": 0.125,
+        "corpusSlices": [
+          {
+            "rate": 0.09,
+            "amount": 5000000
+          },
+          {
+            "rate": 0.12,
+            "amount": 3500000
+          }
+        ],
+        "currentSipMonthly": 10000,
+        "currentSipReturn": 0.1,
+        "stepUpRate": 0.1,
+        "delayMonths": 3
+      },
+      "apiInput": {
+        "age": 40,
+        "retirementAge": 55,
+        "survivingAge": 90,
+        "monthlyExpenses": 150000,
+        "lifestyleYearly": 1500000,
+        "monthlyExpenseFactorPct": 100,
+        "lifestyleFactorPct": 100,
+        "inflationPct": 5.75,
+        "returnPct": 12,
+        "returnAfterPct": 8,
+        "taxPct": 12.5,
+        "corpusSlices": [
+          {
+            "returnPct": 9,
+            "amount": 5000000
+          },
+          {
+            "returnPct": 12,
+            "amount": 3500000
+          }
+        ],
+        "currentSipMonthly": 10000,
+        "currentSipReturnPct": 10,
+        "stepUpPct": 10,
+        "delayMonths": 3
+      },
+      "expect": {
+        "corpusRequired": 210442136.92288274,
+        "monthlySip": 355210.9244250518,
+        "additionalLumpsum": 30885905.04278836
+      }
+    },
+    {
+      "name": "hnw",
+      "source": "engine regression @ HNW FIRE",
+      "engineInput": {
+        "age": 35,
+        "retirementAge": 50,
+        "survivingAge": 95,
+        "monthlyExpenses": 500000,
+        "lifestyleYearly": 5000000,
+        "inflationRate": 0.0575,
+        "annualReturn": 0.12,
+        "returnAfterRetirement": 0.08,
+        "taxRate": 0.125,
+        "corpusSlices": [
+          {
+            "rate": 0.09,
+            "amount": 50000000
+          },
+          {
+            "rate": 0.12,
+            "amount": 80000000
+          }
+        ],
+        "currentSipMonthly": 200000,
+        "currentSipReturn": 0.12,
+        "stepUpRate": 0.1,
+        "delayMonths": 6
+      },
+      "apiInput": {
+        "age": 35,
+        "retirementAge": 50,
+        "survivingAge": 95,
+        "monthlyExpenses": 500000,
+        "lifestyleYearly": 5000000,
+        "monthlyExpenseFactorPct": 100,
+        "lifestyleFactorPct": 100,
+        "inflationPct": 5.75,
+        "returnPct": 12,
+        "returnAfterPct": 8,
+        "taxPct": 12.5,
+        "corpusSlices": [
+          {
+            "returnPct": 9,
+            "amount": 50000000
+          },
+          {
+            "returnPct": 12,
+            "amount": 80000000
+          }
+        ],
+        "currentSipMonthly": 200000,
+        "currentSipReturnPct": 12,
+        "stepUpPct": 10,
+        "delayMonths": 6
+      },
+      "expect": {
+        "corpusRequired": 823720658.7083153,
+        "monthlySip": 228026.5502758897,
+        "additionalLumpsum": 19827110.865059387,
+        "balanceCorpus": 108524995.1359824
+      }
+    }
+  ]
+}

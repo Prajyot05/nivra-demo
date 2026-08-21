@@ -1,0 +1,67 @@
+{
+  "id": "goal-periodic",
+  "scenarios": [
+    {
+      "name": "unprotected-sample",
+      "source": "Unprotected/Nivra Goal_Periodic_Lumpsum - Compute_SIP v2.xlsm",
+      "engineInput": {
+        "goalAmount": 10000000,
+        "tenureYears": 15,
+        "annualReturn": 0.12,
+        "inflationRate": 0.0525,
+        "taxRate": 0.125,
+        "stepUpRate": 0.1,
+        "useInflationAdjustedGoal": true,
+        "amount": 100000,
+        "timesPerYear": 2
+      },
+      "apiInput": {
+        "goalAmount": 10000000,
+        "tenureYears": 15,
+        "returnPct": 12,
+        "inflationPct": 5.25,
+        "taxPct": 12.5,
+        "stepUpPct": 10,
+        "useInflationAdjustedGoal": true,
+        "amount": 100000,
+        "timesPerYear": 2
+      },
+      "expect": {
+        "standard.monthlySip": 32040.138071527093,
+        "periodic.maturity": 8120642.199535959,
+        "periodic.netCredit": 7480561.924593965
+      }
+    },
+    {
+      "name": "hnw",
+      "source": "engine regression @ HNW",
+      "engineInput": {
+        "goalAmount": 50000000,
+        "tenureYears": 20,
+        "annualReturn": 0.12,
+        "inflationRate": 0.0525,
+        "taxRate": 0.125,
+        "stepUpRate": 0.1,
+        "useInflationAdjustedGoal": true,
+        "amount": 1000000,
+        "timesPerYear": 4
+      },
+      "apiInput": {
+        "goalAmount": 50000000,
+        "tenureYears": 20,
+        "returnPct": 12,
+        "inflationPct": 5.25,
+        "taxPct": 12.5,
+        "stepUpPct": 10,
+        "useInflationAdjustedGoal": true,
+        "amount": 1000000,
+        "timesPerYear": 4
+      },
+      "expect": {
+        "standard.monthlySip": 0,
+        "periodic.maturity": 309519361.8090382,
+        "periodic.payments": 80
+      }
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "id": "insurance-irr",
+  "scenarios": [
+    {
+      "name": "unprotected-sample",
+      "source": "Unprotected/Nivra Insurance IRR Calculator v1.xlsm",
+      "engineInput": {
+        "premium": 200000,
+        "payTerm": 5,
+        "corpusAtPayEnd": 1160000,
+        "policyTerm": 20,
+        "expectedReturn": 0.11,
+        "taxRate": 0.125
+      },
+      "apiInput": {
+        "premium": 200000,
+        "payTerm": 5,
+        "corpusAtPayEnd": 1160000,
+        "policyTerm": 20,
+        "returnPct": 11,
+        "taxPct": 12.5
+      },
+      "expect": {
+        "maturity": 5550123.806471712,
+        "tax": 568765.475808964,
+        "xirr": 0.09927543997764587
+      }
+    },
+    {
+      "name": "hnw",
+      "source": "engine regression @ HNW",
+      "engineInput": {
+        "premium": 2000000,
+        "payTerm": 10,
+        "corpusAtPayEnd": 25000000,
+        "policyTerm": 25,
+        "expectedReturn": 0.11,
+        "taxRate": 0.125
+      },
+      "apiInput": {
+        "premium": 2000000,
+        "payTerm": 10,
+        "corpusAtPayEnd": 25000000,
+        "policyTerm": 25,
+        "returnPct": 11,
+        "taxPct": 12.5
+      },
+      "expect": {
+        "maturity": 119614737.2084421,
+        "gain": 99614737.2084421,
+        "tax": 12451842.151055263,
+        "net": 107162895.05738685,
+        "xirr": 0.08949220816110488
+      }
+    }
+  ]
+}

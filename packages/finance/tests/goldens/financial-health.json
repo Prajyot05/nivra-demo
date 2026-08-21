@@ -1,0 +1,104 @@
+{
+  "id": "financial-health",
+  "scenarios": [
+    {
+      "name": "unprotected-sample",
+      "source": "Unprotected/Nivra Financial Health Analysis v4.xlsm",
+      "engineInput": {
+        "currentCorpus": 250000000,
+        "monthlyExpenses": 350000,
+        "monthlyInvestment": 100000,
+        "lifestyleYearly": 2500000,
+        "age": 59,
+        "retirementAge": 60,
+        "survivingAge": 90,
+        "inflationRate": 0.0575,
+        "annualReturn": 0.0975,
+        "returnAfterRetirement": 0.08,
+        "taxRate": 0.125,
+        "events": [
+          {
+            "age": 62,
+            "amount": 20000000,
+            "type": "Expense"
+          }
+        ]
+      },
+      "apiInput": {
+        "currentCorpus": 250000000,
+        "monthlyExpenses": 350000,
+        "monthlyInvestment": 100000,
+        "lifestyleYearly": 2500000,
+        "age": 59,
+        "retirementAge": 60,
+        "survivingAge": 90,
+        "inflationPct": 5.75,
+        "returnPct": 9.75,
+        "returnAfterPct": 8,
+        "taxPct": 12.5,
+        "events": [
+          {
+            "age": 62,
+            "amount": 20000000,
+            "type": "Expense"
+          }
+        ]
+      },
+      "expect": {
+        "corpusAtRetirement": 275637474.340114,
+        "remainingAtSurvival": 814285941.8433343,
+        "yearsLasting": 30
+      }
+    },
+    {
+      "name": "hnw",
+      "source": "engine regression @ HNW health",
+      "engineInput": {
+        "currentCorpus": 800000000,
+        "monthlyExpenses": 800000,
+        "monthlyInvestment": 500000,
+        "lifestyleYearly": 8000000,
+        "age": 45,
+        "retirementAge": 55,
+        "survivingAge": 95,
+        "inflationRate": 0.0575,
+        "annualReturn": 0.12,
+        "returnAfterRetirement": 0.08,
+        "taxRate": 0.125,
+        "events": [
+          {
+            "age": 60,
+            "amount": 50000000,
+            "type": "Expense"
+          }
+        ]
+      },
+      "apiInput": {
+        "currentCorpus": 800000000,
+        "monthlyExpenses": 800000,
+        "monthlyInvestment": 500000,
+        "lifestyleYearly": 8000000,
+        "age": 45,
+        "retirementAge": 55,
+        "survivingAge": 95,
+        "inflationPct": 5.75,
+        "returnPct": 12,
+        "returnAfterPct": 8,
+        "taxPct": 12.5,
+        "events": [
+          {
+            "age": 60,
+            "amount": 50000000,
+            "type": "Expense"
+          }
+        ]
+      },
+      "expect": {
+        "corpusAtRetirement": 2596696511.455102,
+        "remainingAtSurvival": 35452799074.02355,
+        "yearsLasting": 40,
+        "remainingPvToday": 2165866714.378664
+      }
+    }
+  ]
+}

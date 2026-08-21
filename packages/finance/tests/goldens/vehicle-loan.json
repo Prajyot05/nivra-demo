@@ -1,0 +1,88 @@
+{
+  "id": "vehicle-loan",
+  "scenarios": [
+    {
+      "name": "unprotected-sample",
+      "source": "Nivra Tools - Full Set/Nivra Vehicle Loan Benefit Analysis-v2.xlsx",
+      "engineInput": {
+        "onRoadCost": 3500000,
+        "loanAmount": 2800000,
+        "annualRate": 0.085,
+        "years": 5,
+        "incomeTaxRate": 0.2,
+        "depreciationRate": 0.15,
+        "fdRate": 0.07,
+        "debtRate": 0.08,
+        "conservativeRate": 0.09,
+        "equityRate": 0.12,
+        "fdTaxRate": 0.2,
+        "debtTaxRate": 0.25,
+        "conservativeTaxRate": 0.125,
+        "equityTaxRate": 0.125
+      },
+      "apiInput": {
+        "onRoadCost": 3500000,
+        "loanAmount": 2800000,
+        "interestPct": 8.5,
+        "years": 5,
+        "incomeTaxPct": 20,
+        "depreciationPct": 15,
+        "fdReturnPct": 7,
+        "debtReturnPct": 8,
+        "conservativeReturnPct": 9,
+        "equityReturnPct": 12,
+        "fdTaxPct": 20,
+        "debtTaxPct": 25,
+        "conservativeTaxPct": 12.5,
+        "equityTaxPct": 12.5
+      },
+      "expect": {
+        "emi": 57446.2877157435,
+        "totalDepreciation": 1947031.40625,
+        "totalTaxSaved": 518761.733838922
+      }
+    },
+    {
+      "name": "hnw",
+      "source": "engine regression @ HNW luxury vehicle",
+      "engineInput": {
+        "onRoadCost": 12000000,
+        "loanAmount": 9000000,
+        "annualRate": 0.085,
+        "years": 5,
+        "incomeTaxRate": 0.2,
+        "depreciationRate": 0.15,
+        "fdRate": 0.07,
+        "debtRate": 0.08,
+        "conservativeRate": 0.09,
+        "equityRate": 0.12,
+        "fdTaxRate": 0.2,
+        "debtTaxRate": 0.25,
+        "conservativeTaxRate": 0.125,
+        "equityTaxRate": 0.125
+      },
+      "apiInput": {
+        "onRoadCost": 12000000,
+        "loanAmount": 9000000,
+        "interestPct": 8.5,
+        "years": 5,
+        "incomeTaxPct": 20,
+        "depreciationPct": 15,
+        "fdReturnPct": 7,
+        "debtReturnPct": 8,
+        "conservativeReturnPct": 9,
+        "equityReturnPct": 12,
+        "fdTaxPct": 20,
+        "debtTaxPct": 25,
+        "conservativeTaxPct": 12.5,
+        "equityTaxPct": 12.5
+      },
+      "expect": {
+        "emi": 184648.78194346125,
+        "totalInterest": 2078926.916607674,
+        "totalTaxSaved": 1750892.6333215348,
+        "totalDepreciation": 6675536.25
+      }
+    }
+  ]
+}

@@ -1,0 +1,172 @@
+{
+  "id": "multi-withdrawals",
+  "scenarios": [
+    {
+      "name": "unprotected-sample",
+      "source": "Unprotected/Nivra SIP for Multiple Withdrawals v2.xlsm",
+      "engineInput": {
+        "age": 28,
+        "annualReturn": 0.12,
+        "taxRate": 0.125,
+        "withdrawals": [
+          {
+            "name": "Car",
+            "amount": 2000000,
+            "atAge": 33
+          },
+          {
+            "name": "Education 1",
+            "amount": 2000000,
+            "atAge": 41
+          },
+          {
+            "name": "Education 2",
+            "amount": 5000000,
+            "atAge": 54
+          },
+          {
+            "name": "Education 3",
+            "amount": 3500000,
+            "atAge": 54
+          },
+          {
+            "name": "Education 4",
+            "amount": 2000000,
+            "atAge": 41
+          },
+          {
+            "name": "Marriage",
+            "amount": 2000000,
+            "atAge": 58
+          },
+          {
+            "name": "OldAge Home",
+            "amount": 16000000,
+            "atAge": 60
+          }
+        ]
+      },
+      "apiInput": {
+        "age": 28,
+        "returnPct": 12,
+        "taxPct": 12.5,
+        "withdrawals": [
+          {
+            "name": "Car",
+            "amount": 2000000,
+            "atAge": 33
+          },
+          {
+            "name": "Education 1",
+            "amount": 2000000,
+            "atAge": 41
+          },
+          {
+            "name": "Education 2",
+            "amount": 5000000,
+            "atAge": 54
+          },
+          {
+            "name": "Education 3",
+            "amount": 3500000,
+            "atAge": 54
+          },
+          {
+            "name": "Education 4",
+            "amount": 2000000,
+            "atAge": 41
+          },
+          {
+            "name": "Marriage",
+            "amount": 2000000,
+            "atAge": 58
+          },
+          {
+            "name": "OldAge Home",
+            "amount": 16000000,
+            "atAge": 60
+          }
+        ]
+      },
+      "expect": {
+        "rows.0.monthlySip": 25488.856849689902,
+        "totalWithdrawn": 32500000,
+        "totalInvested": 6990620.323162692
+      }
+    },
+    {
+      "name": "hnw",
+      "source": "engine regression @ HNW",
+      "engineInput": {
+        "age": 30,
+        "annualReturn": 0.12,
+        "taxRate": 0.125,
+        "withdrawals": [
+          {
+            "name": "Car",
+            "amount": 8000000,
+            "atAge": 35
+          },
+          {
+            "name": "Education",
+            "amount": 40000000,
+            "atAge": 45
+          },
+          {
+            "name": "Wedding",
+            "amount": 25000000,
+            "atAge": 50
+          },
+          {
+            "name": "Second home",
+            "amount": 100000000,
+            "atAge": 55
+          },
+          {
+            "name": "Retirement boost",
+            "amount": 50000000,
+            "atAge": 60
+          }
+        ]
+      },
+      "apiInput": {
+        "age": 30,
+        "returnPct": 12,
+        "taxPct": 12.5,
+        "withdrawals": [
+          {
+            "name": "Car",
+            "amount": 8000000,
+            "atAge": 35
+          },
+          {
+            "name": "Education",
+            "amount": 40000000,
+            "atAge": 45
+          },
+          {
+            "name": "Wedding",
+            "amount": 25000000,
+            "atAge": 50
+          },
+          {
+            "name": "Second home",
+            "amount": 100000000,
+            "atAge": 55
+          },
+          {
+            "name": "Retirement boost",
+            "amount": 50000000,
+            "atAge": 60
+          }
+        ]
+      },
+      "expect": {
+        "startMonthlySip": 306762.01693368924,
+        "totalWithdrawn": 223000000,
+        "totalInvested": 55921741.08771836,
+        "totalTax": 23868322.701754518
+      }
+    }
+  ]
+}

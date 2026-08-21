@@ -1,0 +1,53 @@
+{
+  "id": "loan-prepay",
+  "scenarios": [
+    {
+      "name": "unprotected-sample",
+      "source": "Unprotected/Nivra Loan with Periodic Extra Payments - v1.xlsm",
+      "engineInput": {
+        "principal": 15000000,
+        "years": 5,
+        "annualRate": 0.1,
+        "yearlyExtra": 318705.67,
+        "recoverReturn": 0.12
+      },
+      "apiInput": {
+        "principal": 15000000,
+        "years": 5,
+        "interestPct": 10,
+        "yearlyExtra": 318705.67,
+        "recoverReturnPct": 12
+      },
+      "expect": {
+        "emi": 318705.6706690252,
+        "monthsPaid": 55,
+        "totalExtra": 1274822.68,
+        "recoverSip": 50828.07178826127
+      }
+    },
+    {
+      "name": "hnw",
+      "source": "engine regression @ HNW",
+      "engineInput": {
+        "principal": 50000000,
+        "years": 15,
+        "annualRate": 0.1,
+        "yearlyExtra": 1000000,
+        "recoverReturn": 0.12
+      },
+      "apiInput": {
+        "principal": 50000000,
+        "years": 15,
+        "interestPct": 10,
+        "yearlyExtra": 1000000,
+        "recoverReturnPct": 12
+      },
+      "expect": {
+        "emi": 537302.558854059,
+        "monthsPaid": 137,
+        "interestSaved": 12567770.781528145,
+        "totalExtra": 11000000
+      }
+    }
+  ]
+}

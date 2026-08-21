@@ -1,0 +1,64 @@
+{
+  "id": "growth-sip",
+  "scenarios": [
+    {
+      "name": "unprotected-sample",
+      "source": "Unprotected/Nivra SIP Calculator v3.xlsm",
+      "cells": {
+        "maturity": "sample maturity",
+        "totalInvested": "invested"
+      },
+      "engineInput": {
+        "monthlyInvestment": 1500,
+        "sipYears": 5,
+        "investYears": 5,
+        "annualReturn": 0.12,
+        "inflationRate": 0.0575,
+        "delayMonths": 6,
+        "taxRate": 0
+      },
+      "apiInput": {
+        "monthlyInvestment": 1500,
+        "sipYears": 5,
+        "investYears": 5,
+        "returnPct": 12,
+        "inflationPct": 5.75,
+        "delayMonths": 6,
+        "taxPct": 0
+      },
+      "expect": {
+        "totalInvested": 90000,
+        "maturity": 121655.41880029078,
+        "delayedMaturity": 106162.42472526057
+      }
+    },
+    {
+      "name": "hnw",
+      "source": "engine regression @ HNW (path verified by Unprotected SIP v3)",
+      "engineInput": {
+        "monthlyInvestment": 250000,
+        "sipYears": 20,
+        "investYears": 25,
+        "annualReturn": 0.12,
+        "inflationRate": 0.0575,
+        "delayMonths": 6,
+        "taxRate": 0.125
+      },
+      "apiInput": {
+        "monthlyInvestment": 250000,
+        "sipYears": 20,
+        "investYears": 25,
+        "returnPct": 12,
+        "inflationPct": 5.75,
+        "delayMonths": 6,
+        "taxPct": 12.5
+      },
+      "expect": {
+        "totalInvested": 60000000,
+        "maturity": 405275740.16020626,
+        "tax": 43159467.52002578,
+        "netAfterTax": 362116272.64018047
+      }
+    }
+  ]
+}

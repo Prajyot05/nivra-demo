@@ -1,0 +1,55 @@
+{
+  "id": "mf-fd",
+  "scenarios": [
+    {
+      "name": "unprotected-sample",
+      "source": "Unprotected/Nivra MF vs FD v1.xlsm",
+      "engineInput": {
+        "amount": 1000000000,
+        "days": 15,
+        "mfRate": 0.05,
+        "fdRate": 0.03,
+        "mfTaxRate": 0.2,
+        "fdTaxRate": 0.25
+      },
+      "apiInput": {
+        "amount": 1000000000,
+        "days": 15,
+        "mfReturnPct": 5,
+        "fdReturnPct": 3,
+        "mfTaxPct": 20,
+        "fdTaxPct": 25
+      },
+      "expect": {
+        "mf.postTax": 1643835.616438356,
+        "mfAdvantage": 719178.0821917807
+      }
+    },
+    {
+      "name": "hnw",
+      "source": "engine regression @ HNW ₹500Cr / 90d",
+      "engineInput": {
+        "amount": 5000000000,
+        "days": 90,
+        "mfRate": 0.08,
+        "fdRate": 0.065,
+        "mfTaxRate": 0.2,
+        "fdTaxRate": 0.3
+      },
+      "apiInput": {
+        "amount": 5000000000,
+        "days": 90,
+        "mfReturnPct": 8,
+        "fdReturnPct": 6.5,
+        "mfTaxPct": 20,
+        "fdTaxPct": 30
+      },
+      "expect": {
+        "mf.postTax": 78904109.58904108,
+        "fd.postTax": 56095890.4109589,
+        "mfAdvantage": 22808219.178082183,
+        "fdAdvantage": 0
+      }
+    }
+  ]
+}

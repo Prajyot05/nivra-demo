@@ -1,0 +1,42 @@
+{
+  "id": "loan-emi",
+  "scenarios": [
+    {
+      "name": "unprotected-sample",
+      "source": "Unprotected/Nivra Loan EMI Calculator v1.xlsm",
+      "engineInput": {
+        "principal": 7500000,
+        "years": 20,
+        "annualRate": 0.092
+      },
+      "apiInput": {
+        "principal": 7500000,
+        "years": 20,
+        "interestPct": 9.2
+      },
+      "expect": {
+        "emi": 68447.15332576867,
+        "totalPrincipal": 7500000
+      }
+    },
+    {
+      "name": "hnw",
+      "source": "engine regression @ HNW ₹5Cr / 20y",
+      "engineInput": {
+        "principal": 50000000,
+        "years": 20,
+        "annualRate": 0.092
+      },
+      "apiInput": {
+        "principal": 50000000,
+        "years": 20,
+        "interestPct": 9.2
+      },
+      "expect": {
+        "emi": 456314.35550512443,
+        "totalInterest": 59515445.321230516,
+        "totalPaid": 109515445.3212305
+      }
+    }
+  ]
+}

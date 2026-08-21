@@ -1,0 +1,68 @@
+{
+  "id": "goal-current",
+  "scenarios": [
+    {
+      "name": "unprotected-sample",
+      "source": "Unprotected/Nivra Goal with Current Investment - LS, SIP, SU_SIP.xlsm",
+      "engineInput": {
+        "goalAmount": 10000000,
+        "tenureYears": 15,
+        "annualReturn": 0.12,
+        "inflationRate": 0.0525,
+        "taxRate": 0.125,
+        "stepUpRate": 0.1,
+        "useInflationAdjustedGoal": true,
+        "currentCorpus": 500000,
+        "currentMonthlySip": 5000
+      },
+      "apiInput": {
+        "goalAmount": 10000000,
+        "tenureYears": 15,
+        "returnPct": 12,
+        "inflationPct": 5.25,
+        "taxPct": 12.5,
+        "stepUpPct": 10,
+        "useInflationAdjustedGoal": true,
+        "currentCorpus": 500000,
+        "currentMonthlySip": 5000
+      },
+      "expect": {
+        "shortfall": 16892374.415978163,
+        "standard.monthlySip": 38484.4748799025,
+        "stepUp.monthlySip": 21889.918598229673,
+        "lumpsum.lumpsum": 3437342.7887438303
+      }
+    },
+    {
+      "name": "hnw",
+      "source": "engine regression @ HNW",
+      "engineInput": {
+        "goalAmount": 50000000,
+        "tenureYears": 20,
+        "annualReturn": 0.12,
+        "inflationRate": 0.0525,
+        "taxRate": 0.125,
+        "stepUpRate": 0.1,
+        "useInflationAdjustedGoal": true,
+        "currentCorpus": 5000000,
+        "currentMonthlySip": 100000
+      },
+      "apiInput": {
+        "goalAmount": 50000000,
+        "tenureYears": 20,
+        "returnPct": 12,
+        "inflationPct": 5.25,
+        "taxPct": 12.5,
+        "stepUpPct": 10,
+        "useInflationAdjustedGoal": true,
+        "currentCorpus": 5000000,
+        "currentMonthlySip": 100000
+      },
+      "expect": {
+        "shortfall": 12812164.994676143,
+        "standard.monthlySip": 15346.204085560135,
+        "standard.netAfterTax": 12812164.994676143
+      }
+    }
+  ]
+}

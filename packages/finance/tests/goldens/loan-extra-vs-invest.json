@@ -1,0 +1,65 @@
+{
+  "id": "loan-extra-vs-invest",
+  "scenarios": [
+    {
+      "name": "unprotected-sample",
+      "source": "Unprotected/Nivra Loan Extra Payment vs Investment v2.xlsm",
+      "engineInput": {
+        "principal": 20000000,
+        "years": 20,
+        "annualRate": 0.085,
+        "extraAmount": 5000000,
+        "extraMonth": 49,
+        "investReturn": 0.09,
+        "taxRate": 0.125,
+        "incomeTaxRate": 0.2
+      },
+      "apiInput": {
+        "principal": 20000000,
+        "years": 20,
+        "interestPct": 8.5,
+        "extraAmount": 5000000,
+        "extraMonth": 49,
+        "investReturnPct": 9,
+        "taxPct": 12.5,
+        "incomeTaxPct": 20
+      },
+      "expect": {
+        "emi": 173564.64667310682,
+        "corpusAfterTax": 17870792.229196146,
+        "option1Saving": 7405652.702551594,
+        "option2Saving": 12870792.229196146
+      }
+    },
+    {
+      "name": "hnw",
+      "source": "engine regression @ HNW",
+      "engineInput": {
+        "principal": 80000000,
+        "years": 20,
+        "annualRate": 0.085,
+        "extraAmount": 20000000,
+        "extraMonth": 49,
+        "investReturn": 0.09,
+        "taxRate": 0.125,
+        "incomeTaxRate": 0.2
+      },
+      "apiInput": {
+        "principal": 80000000,
+        "years": 20,
+        "interestPct": 8.5,
+        "extraAmount": 20000000,
+        "extraMonth": 49,
+        "investReturnPct": 9,
+        "taxPct": 12.5,
+        "incomeTaxPct": 20
+      },
+      "expect": {
+        "emi": 694258.5866924273,
+        "corpusAfterTax": 71483168.91678458,
+        "option1Saving": 29622610.810206376,
+        "option2Saving": 51483168.916784585
+      }
+    }
+  ]
+}

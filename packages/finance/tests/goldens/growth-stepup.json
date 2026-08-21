@@ -1,0 +1,56 @@
+{
+  "id": "growth-stepup",
+  "scenarios": [
+    {
+      "name": "unprotected-sample",
+      "source": "Unprotected/Nivra SIP Step-Up Calculator v1.xlsm",
+      "engineInput": {
+        "startMonthly": 5000,
+        "sipYears": 10,
+        "annualReturn": 0.12,
+        "stepUpRate": 0.1,
+        "inflationRate": 0.0575,
+        "taxRate": 0
+      },
+      "apiInput": {
+        "startMonthly": 5000,
+        "sipYears": 10,
+        "returnPct": 12,
+        "stepUpPct": 10,
+        "inflationPct": 5.75,
+        "taxPct": 0
+      },
+      "expect": {
+        "totalInvested": 956245.4760600011,
+        "maturity": 1634449.2409538408,
+        "endMonthly": 11789.73845500001
+      }
+    },
+    {
+      "name": "hnw",
+      "source": "engine regression @ HNW",
+      "engineInput": {
+        "startMonthly": 150000,
+        "sipYears": 20,
+        "annualReturn": 0.12,
+        "stepUpRate": 0.1,
+        "inflationRate": 0.0575,
+        "taxRate": 0.125
+      },
+      "apiInput": {
+        "startMonthly": 150000,
+        "sipYears": 20,
+        "returnPct": 12,
+        "stepUpPct": 10,
+        "inflationPct": 5.75,
+        "taxPct": 12.5
+      },
+      "expect": {
+        "totalInvested": 103094999.08786067,
+        "maturity": 279470749.25358844,
+        "endMonthly": 917386.3567262196,
+        "netAfterTax": 257423780.48287246
+      }
+    }
+  ]
+}

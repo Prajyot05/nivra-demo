@@ -1,0 +1,436 @@
+{
+  "id": "education",
+  "scenarios": [
+    {
+      "name": "unprotected-sample",
+      "source": "Unprotected/Nivra Child Education Planner v4.xlsm",
+      "cells": {
+        "lumpsum.lumpsum": "Q10",
+        "totalWithdrawal": "P36"
+      },
+      "engineInput": {
+        "childAge": 5,
+        "annualReturn": 0.12,
+        "taxRate": 0.125,
+        "costs": [
+          {
+            "age": 3,
+            "classLabel": "Nursery",
+            "cost": 20000
+          },
+          {
+            "age": 4,
+            "classLabel": "LKG",
+            "cost": 21600
+          },
+          {
+            "age": 5,
+            "classLabel": "UKG",
+            "cost": 24000
+          },
+          {
+            "age": 6,
+            "classLabel": "Class 1",
+            "cost": 25000
+          },
+          {
+            "age": 7,
+            "classLabel": "Class 2",
+            "cost": 26200
+          },
+          {
+            "age": 8,
+            "classLabel": "Class 3",
+            "cost": 27400
+          },
+          {
+            "age": 9,
+            "classLabel": "Class 4",
+            "cost": 28700
+          },
+          {
+            "age": 10,
+            "classLabel": "Class 5",
+            "cost": 30000
+          },
+          {
+            "age": 11,
+            "classLabel": "Class 6",
+            "cost": 31400
+          },
+          {
+            "age": 12,
+            "classLabel": "Class 7",
+            "cost": 32900
+          },
+          {
+            "age": 13,
+            "classLabel": "Class 8",
+            "cost": 34400
+          },
+          {
+            "age": 14,
+            "classLabel": "Class 9",
+            "cost": 36000
+          },
+          {
+            "age": 15,
+            "classLabel": "Class 10",
+            "cost": 37700
+          },
+          {
+            "age": 16,
+            "classLabel": "Class 11",
+            "cost": 39400
+          },
+          {
+            "age": 17,
+            "classLabel": "Class 12",
+            "cost": 41200
+          },
+          {
+            "age": 18,
+            "classLabel": "College - 1",
+            "cost": 2500000
+          },
+          {
+            "age": 19,
+            "classLabel": "College - 2",
+            "cost": 2500000
+          },
+          {
+            "age": 20,
+            "classLabel": "College - 3",
+            "cost": 2500000
+          },
+          {
+            "age": 21,
+            "classLabel": "College - 4",
+            "cost": 7000000
+          }
+        ]
+      },
+      "apiInput": {
+        "childAge": 5,
+        "returnPct": 12,
+        "taxPct": 12.5,
+        "costs": [
+          {
+            "age": 3,
+            "classLabel": "Nursery",
+            "cost": 20000
+          },
+          {
+            "age": 4,
+            "classLabel": "LKG",
+            "cost": 21600
+          },
+          {
+            "age": 5,
+            "classLabel": "UKG",
+            "cost": 24000
+          },
+          {
+            "age": 6,
+            "classLabel": "Class 1",
+            "cost": 25000
+          },
+          {
+            "age": 7,
+            "classLabel": "Class 2",
+            "cost": 26200
+          },
+          {
+            "age": 8,
+            "classLabel": "Class 3",
+            "cost": 27400
+          },
+          {
+            "age": 9,
+            "classLabel": "Class 4",
+            "cost": 28700
+          },
+          {
+            "age": 10,
+            "classLabel": "Class 5",
+            "cost": 30000
+          },
+          {
+            "age": 11,
+            "classLabel": "Class 6",
+            "cost": 31400
+          },
+          {
+            "age": 12,
+            "classLabel": "Class 7",
+            "cost": 32900
+          },
+          {
+            "age": 13,
+            "classLabel": "Class 8",
+            "cost": 34400
+          },
+          {
+            "age": 14,
+            "classLabel": "Class 9",
+            "cost": 36000
+          },
+          {
+            "age": 15,
+            "classLabel": "Class 10",
+            "cost": 37700
+          },
+          {
+            "age": 16,
+            "classLabel": "Class 11",
+            "cost": 39400
+          },
+          {
+            "age": 17,
+            "classLabel": "Class 12",
+            "cost": 41200
+          },
+          {
+            "age": 18,
+            "classLabel": "College - 1",
+            "cost": 2500000
+          },
+          {
+            "age": 19,
+            "classLabel": "College - 2",
+            "cost": 2500000
+          },
+          {
+            "age": 20,
+            "classLabel": "College - 3",
+            "cost": 2500000
+          },
+          {
+            "age": 21,
+            "classLabel": "College - 4",
+            "cost": 7000000
+          }
+        ]
+      },
+      "expect": {
+        "lumpsum.lumpsum": 3231850.6890932065,
+        "totalWithdrawal": 16751587.5,
+        "lastFeeAge": 21
+      }
+    },
+    {
+      "name": "hnw",
+      "source": "engine regression @ HNW education costs",
+      "engineInput": {
+        "childAge": 3,
+        "annualReturn": 0.12,
+        "taxRate": 0.125,
+        "costs": [
+          {
+            "age": 3,
+            "classLabel": "Nursery",
+            "cost": 40000
+          },
+          {
+            "age": 4,
+            "classLabel": "LKG",
+            "cost": 43200
+          },
+          {
+            "age": 5,
+            "classLabel": "UKG",
+            "cost": 48000
+          },
+          {
+            "age": 6,
+            "classLabel": "Class 1",
+            "cost": 50000
+          },
+          {
+            "age": 7,
+            "classLabel": "Class 2",
+            "cost": 52400
+          },
+          {
+            "age": 8,
+            "classLabel": "Class 3",
+            "cost": 54800
+          },
+          {
+            "age": 9,
+            "classLabel": "Class 4",
+            "cost": 57400
+          },
+          {
+            "age": 10,
+            "classLabel": "Class 5",
+            "cost": 60000
+          },
+          {
+            "age": 11,
+            "classLabel": "Class 6",
+            "cost": 62800
+          },
+          {
+            "age": 12,
+            "classLabel": "Class 7",
+            "cost": 65800
+          },
+          {
+            "age": 13,
+            "classLabel": "Class 8",
+            "cost": 68800
+          },
+          {
+            "age": 14,
+            "classLabel": "Class 9",
+            "cost": 72000
+          },
+          {
+            "age": 15,
+            "classLabel": "Class 10",
+            "cost": 75400
+          },
+          {
+            "age": 16,
+            "classLabel": "Class 11",
+            "cost": 78800
+          },
+          {
+            "age": 17,
+            "classLabel": "Class 12",
+            "cost": 82400
+          },
+          {
+            "age": 18,
+            "classLabel": "College - 1",
+            "cost": 7500000
+          },
+          {
+            "age": 19,
+            "classLabel": "College - 2",
+            "cost": 7500000
+          },
+          {
+            "age": 20,
+            "classLabel": "College - 3",
+            "cost": 7500000
+          },
+          {
+            "age": 21,
+            "classLabel": "College - 4",
+            "cost": 21000000
+          }
+        ]
+      },
+      "apiInput": {
+        "childAge": 3,
+        "returnPct": 12,
+        "taxPct": 12.5,
+        "costs": [
+          {
+            "age": 3,
+            "classLabel": "Nursery",
+            "cost": 40000
+          },
+          {
+            "age": 4,
+            "classLabel": "LKG",
+            "cost": 43200
+          },
+          {
+            "age": 5,
+            "classLabel": "UKG",
+            "cost": 48000
+          },
+          {
+            "age": 6,
+            "classLabel": "Class 1",
+            "cost": 50000
+          },
+          {
+            "age": 7,
+            "classLabel": "Class 2",
+            "cost": 52400
+          },
+          {
+            "age": 8,
+            "classLabel": "Class 3",
+            "cost": 54800
+          },
+          {
+            "age": 9,
+            "classLabel": "Class 4",
+            "cost": 57400
+          },
+          {
+            "age": 10,
+            "classLabel": "Class 5",
+            "cost": 60000
+          },
+          {
+            "age": 11,
+            "classLabel": "Class 6",
+            "cost": 62800
+          },
+          {
+            "age": 12,
+            "classLabel": "Class 7",
+            "cost": 65800
+          },
+          {
+            "age": 13,
+            "classLabel": "Class 8",
+            "cost": 68800
+          },
+          {
+            "age": 14,
+            "classLabel": "Class 9",
+            "cost": 72000
+          },
+          {
+            "age": 15,
+            "classLabel": "Class 10",
+            "cost": 75400
+          },
+          {
+            "age": 16,
+            "classLabel": "Class 11",
+            "cost": 78800
+          },
+          {
+            "age": 17,
+            "classLabel": "Class 12",
+            "cost": 82400
+          },
+          {
+            "age": 18,
+            "classLabel": "College - 1",
+            "cost": 7500000
+          },
+          {
+            "age": 19,
+            "classLabel": "College - 2",
+            "cost": 7500000
+          },
+          {
+            "age": 20,
+            "classLabel": "College - 3",
+            "cost": 7500000
+          },
+          {
+            "age": 21,
+            "classLabel": "College - 4",
+            "cost": 21000000
+          }
+        ]
+      },
+      "expect": {
+        "lumpsum.lumpsum": 7645563.881320308,
+        "sip.monthlySip": 82607.50393824566,
+        "totalWithdrawal": 49918275,
+        "totalCost": 44371800
+      }
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "id": "insurance-tp",
+  "scenarios": [
+    {
+      "name": "unprotected-sample",
+      "source": "Unprotected/Nivra Insurance - Convert to TP and Investment Planner v3.xlsm",
+      "engineInput": {
+        "premium": 300000,
+        "payTerm": 5,
+        "yearsPaid": 3,
+        "policyTerm": 20,
+        "yearsToMaturity": 11,
+        "maturityValue": 5000000,
+        "taxRate": 0.2,
+        "surrenderValue": 3000000,
+        "termPremium": 10000,
+        "termYears": 11,
+        "expectedReturn": 0.1188
+      },
+      "apiInput": {
+        "premium": 300000,
+        "payTerm": 5,
+        "yearsPaid": 3,
+        "policyTerm": 20,
+        "yearsToMaturity": 11,
+        "maturityValue": 5000000,
+        "taxPct": 20,
+        "surrenderValue": 3000000,
+        "termPremium": 10000,
+        "termYears": 11,
+        "returnPct": 11.88
+      },
+      "expect": {
+        "keep.net": 4000000,
+        "keep.irr": 0.07307636524198391,
+        "switch.investMaturity": 10927767.16119045
+      }
+    },
+    {
+      "name": "hnw",
+      "source": "engine regression @ HNW",
+      "engineInput": {
+        "premium": 1500000,
+        "payTerm": 10,
+        "yearsPaid": 5,
+        "policyTerm": 25,
+        "yearsToMaturity": 15,
+        "maturityValue": 40000000,
+        "taxRate": 0.2,
+        "surrenderValue": 18000000,
+        "termPremium": 50000,
+        "termYears": 15,
+        "expectedReturn": 0.12
+      },
+      "apiInput": {
+        "premium": 1500000,
+        "payTerm": 10,
+        "yearsPaid": 5,
+        "policyTerm": 25,
+        "yearsToMaturity": 15,
+        "maturityValue": 40000000,
+        "taxPct": 20,
+        "surrenderValue": 18000000,
+        "termPremium": 50000,
+        "termYears": 15,
+        "returnPct": 12
+      },
+      "expect": {
+        "keep.net": 32000000,
+        "switch.investMaturity": 107735812.33862683,
+        "switch.termCost": 750000
+      }
+    }
+  ]
+}
