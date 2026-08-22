@@ -3,27 +3,28 @@ import { calculate } from "@/lib/calculate-client";
 
 export function useCalculate<T>(id: string, input: unknown) {
   const [result, setResult] = useState<T | null>(null);
+  const [resultId, setResultId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const serialized = JSON.stringify(input);
 
   useEffect(() => {
-    setResult(null);
-    setError(null);
-  }, [id]);
-
-  useEffect(() => {
     let cancelled = false;
+    setLoading(true);
+    setError(null);
+
     const handle = window.setTimeout(() => {
-      setLoading(true);
       calculate<T>(id, JSON.parse(serialized) as unknown)
         .then((payload) => {
           if (cancelled) return;
           setResult(payload.result);
+          setResultId(id);
           setError(null);
         })
         .catch((err: unknown) => {
           if (cancelled) return;
+          setResult(null);
+          setResultId(null);
           setError(err instanceof Error ? err.message : "Calculation failed");
         })
         .finally(() => {
@@ -37,5 +38,8 @@ export function useCalculate<T>(id: string, input: unknown) {
     };
   }, [id, serialized]);
 
-  return { result, error, loading };
+  // Drop stale results immediately on id change (effects run after paint).
+  const matched = resultId === id ? result : null;
+
+  return { result: matched, error, loading: loading || resultId !== id };
 }

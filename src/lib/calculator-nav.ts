@@ -12,6 +12,8 @@ export type NavItem = {
   label: string;
   owner: "Yash" | "Prajyot";
   ready?: boolean;
+  /** Set to false to hide and block this calculator. Defaults to true. */
+  enabled?: boolean;
 };
 
 export const CALCULATOR_NAV: NavItem[] = [
@@ -25,3 +27,18 @@ export const CALCULATOR_NAV: NavItem[] = [
   { to: "/insurance", label: "Insurance", owner: "Prajyot", ready: true },
   { to: "/multi-goal", label: "Multi-Goal", owner: "Prajyot", ready: true },
 ];
+
+export function getEnabledCalculators(): NavItem[] {
+  return CALCULATOR_NAV.filter((item) => item.enabled !== false);
+}
+
+export function isCalculatorEnabled(path: string): boolean {
+  return getEnabledCalculators().some((item) => item.to === path);
+}
+
+export function getFirstEnabledRoute(): string {
+  const first = getEnabledCalculators()[0];
+  return first?.to ?? "/";
+}
+
+export const CALCULATOR_ROUTES = CALCULATOR_NAV.map((item) => item.to);

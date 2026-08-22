@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import {
-  CalculatorPage,
   ClientHeader,
   GrowthChart,
   ModeTabs,
@@ -12,6 +11,7 @@ import {
   ScheduleTable,
   YearInput,
 } from "@nivra/ui";
+import { CalculatorPage } from "@/components/layout/calculator-page-with-nav";
 
 export function ComingSoonCalculator({
   title,

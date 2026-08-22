@@ -2,7 +2,6 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import {
-  CalculatorPage,
   ClientHeader,
   CompareChart,
   CompositionChart,
@@ -20,6 +19,7 @@ import {
   WaterfallChart,
   YearInput,
 } from "@nivra/ui";
+import { CalculatorPage } from "@/components/layout/calculator-page-with-nav";
 import { useCalculate } from "@/hooks/use-calculate";
 
 const MODES = [

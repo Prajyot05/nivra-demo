@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import {
-  CalculatorPage,
   ClientHeader,
   CompareChart,
   CompositionChart,
@@ -20,6 +19,7 @@ import {
   StatCard,
   YearInput,
 } from "@nivra/ui";
+import { CalculatorPage } from "@/components/layout/calculator-page-with-nav";
 import { useCalculate } from "@/hooks/use-calculate";
 
 const FORM_GRID =
@@ -284,11 +284,21 @@ export function LoansCalculator() {
         <div className="flex min-h-0 flex-1 flex-col gap-3">
           {error ? <p className="text-sm text-[var(--app-danger)]">{error}</p> : null}
           {loading && !result ? <p className="text-sm text-[var(--app-text-muted)]">Calculating…</p> : null}
-          {result && mode === "emi" ? <EmiResults result={result} /> : null}
-          {result && mode === "prepay" ? <PrepayResults result={result as PrepayResult} /> : null}
-          {result && mode === "extra-vs-invest" ? <ExtraVsInvestResults result={result as ExtraVsInvestResult} /> : null}
-          {result && mode === "recovery" ? <RecoveryResults result={result as RecoveryResult} /> : null}
-          {result && mode === "vehicle" ? <VehicleResults result={result as VehicleResult} /> : null}
+          {result && mode === "emi" && Array.isArray(result.schedule) ? (
+            <EmiResults result={result} />
+          ) : null}
+          {result && mode === "prepay" && Array.isArray(result.originalSchedule) ? (
+            <PrepayResults result={result as PrepayResult} />
+          ) : null}
+          {result && mode === "extra-vs-invest" && Array.isArray(result.path) ? (
+            <ExtraVsInvestResults result={result as ExtraVsInvestResult} />
+          ) : null}
+          {result && mode === "recovery" && result.baselineEmi != null ? (
+            <RecoveryResults result={result as RecoveryResult} />
+          ) : null}
+          {result && mode === "vehicle" && Array.isArray(result.depreciation) ? (
+            <VehicleResults result={result as VehicleResult} />
+          ) : null}
         </div>
       }
     />

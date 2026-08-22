@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import {
-  CalculatorPage,
   ClientHeader,
   CompareChart,
   CompositionChart,
@@ -12,6 +11,7 @@ import {
   StatCard,
   YearInput,
 } from "@nivra/ui";
+import { CalculatorPage } from "@/components/layout/calculator-page-with-nav";
 import { useCalculate } from "@/hooks/use-calculate";
 
 const FORM_GRID =

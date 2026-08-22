@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import {
-  CalculatorPage,
   ClientHeader,
   CompareChart,
   Field,
@@ -19,6 +18,7 @@ import {
   TextInput,
   YearInput,
 } from "@nivra/ui";
+import { CalculatorPage } from "@/components/layout/calculator-page-with-nav";
 import { useCalculate } from "@/hooks/use-calculate";
 
 const DEFAULT_COSTS = [

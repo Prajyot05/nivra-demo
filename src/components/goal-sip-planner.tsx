@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/table";
 import { ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { downloadSipPdf } from "@/lib/download-sip-pdf";
+import { NavToggleButton } from "@/components/layout/sidebar-context";
 import {
   COLOR_THEMES,
   getColorTheme,
@@ -168,20 +169,25 @@ export function GoalSipPlanner() {
     >
       <div className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col gap-3">
         <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-          <div className="min-w-0">
-            <h1 className="text-xl font-bold tracking-tight text-[var(--app-text)] sm:text-2xl lg:text-3xl">
-              Goal SIP Planner
-            </h1>
-            {error ? (
-              <p className="mt-1 text-xs text-[var(--app-danger)]">
-                {error}. Start the app with <code>npm run dev</code>.
-              </p>
-            ) : loading && !result ? (
-              <p className="mt-1 text-xs text-[var(--app-text-muted)]">Calculating…</p>
-            ) : null}
-            {/* <p className="mt-0.5 text-xs text-[var(--app-text-muted)] sm:text-sm">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start gap-2">
+              <NavToggleButton />
+              <div className="min-w-0">
+                <h1 className="text-xl font-bold tracking-tight text-[var(--app-text)] sm:text-2xl lg:text-3xl">
+                  Goal SIP Planner
+                </h1>
+                {error ? (
+                  <p className="mt-1 text-xs text-[var(--app-danger)]">
+                    {error}. Start the app with <code>npm run dev</code>.
+                  </p>
+                ) : loading && !result ? (
+                  <p className="mt-1 text-xs text-[var(--app-text-muted)]">Calculating…</p>
+                ) : null}
+                {/* <p className="mt-0.5 text-xs text-[var(--app-text-muted)] sm:text-sm">
               Compare Standard and Step-Up SIP requirements side-by-side.
             </p> */}
+              </div>
+            </div>
           </div>
           <div className="grid w-full shrink-0 grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center">
             <div className="flex min-w-0 items-center gap-2">

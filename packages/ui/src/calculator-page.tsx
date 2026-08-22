@@ -9,6 +9,7 @@ export function CalculatorPage({
   title,
   description,
   header,
+  leading,
   modes,
   form,
   results,
@@ -17,6 +18,7 @@ export function CalculatorPage({
   title: string;
   description?: string;
   header?: ReactNode;
+  leading?: ReactNode;
   modes?: ReactNode;
   form: ReactNode;
   results: ReactNode;
@@ -32,15 +34,20 @@ export function CalculatorPage({
     >
       <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-4">
         <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-          <div className="min-w-0">
-            <h1 className="text-xl font-bold tracking-tight text-[var(--app-text)] sm:text-2xl lg:text-3xl">
-              {title}
-            </h1>
-            {description ? (
-              <p className="mt-0.5 text-xs text-[var(--app-text-muted)] sm:text-sm">
-                {description}
-              </p>
-            ) : null}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start gap-2">
+              {leading}
+              <div className="min-w-0">
+                <h1 className="text-xl font-bold tracking-tight text-[var(--app-text)] sm:text-2xl lg:text-3xl">
+                  {title}
+                </h1>
+                {description ? (
+                  <p className="mt-0.5 text-xs text-[var(--app-text-muted)] sm:text-sm">
+                    {description}
+                  </p>
+                ) : null}
+              </div>
+            </div>
           </div>
           <div className="flex min-w-0 items-center gap-2 sm:w-auto">
             <Palette className="hidden h-4 w-4 shrink-0 text-[var(--app-text-muted)] sm:block" />
