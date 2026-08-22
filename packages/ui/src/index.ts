@@ -29,5 +29,6 @@ export { ComboChart } from "./combo-chart";
 export type { ComboPoint } from "./combo-chart";
 export { Disclaimer } from "./disclaimer";
 export { CalculatorPage } from "./calculator-page";
+export { CalculatorPageHeader } from "./calculator-page-header";
 export { COLOR_THEMES, getColorTheme } from "./color-themes";
 export type { ColorTheme, ColorThemeId } from "./color-themes";

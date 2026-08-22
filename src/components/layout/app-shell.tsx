@@ -55,11 +55,7 @@ function NavLinks({
                 : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60",
             )}
           >
-            <div>{item.label}</div>
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-              {item.owner}
-              {item.ready ? " · live" : " · soon"}
-            </div>
+            {item.label}
           </Link>
         );
       })}
@@ -95,7 +91,6 @@ function AppShellInner({ children }: { children: ReactNode }) {
               <div className="text-sm font-semibold tracking-tight text-sidebar-foreground">
                 Nivra Calculators
               </div>
-              <p className="mt-0.5 text-[11px] text-muted-foreground">Next.js · shared kit</p>
             </div>
             <Button
               variant="ghost"

@@ -89,11 +89,11 @@ export function NavToggleButton() {
     <Button
       variant="outline"
       size="icon"
-      className="mt-0.5 hidden shrink-0 shadow-sm md:inline-flex"
+      className="mt-0.5 hidden size-8 shrink-0 shadow-sm md:inline-flex"
       onClick={openOverlay}
       aria-label="Open navigation"
     >
-      <Menu />
+      <Menu className="size-4" />
     </Button>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
-import { Download, Calendar, Clock, Palette } from "lucide-react";
+import { Download, Calendar, Clock } from "lucide-react";
 import { useGoalSip } from "@/hooks/use-goal-sip";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,7 +27,7 @@ import { ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { downloadSipPdf } from "@/lib/download-sip-pdf";
 import { NavToggleButton } from "@/components/layout/sidebar-context";
 import {
-  COLOR_THEMES,
+  CalculatorPageHeader,
   getColorTheme,
   type ColorThemeId,
 } from "@nivra/ui";
@@ -164,64 +164,38 @@ export function GoalSipPlanner() {
 
   return (
     <div
-      className="custom-scrollbar flex h-full min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto bg-[var(--app-bg)] pt-[max(0.75rem,env(safe-area-inset-top))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] sm:px-6 md:px-8 lg:px-10"
+      className="custom-scrollbar flex h-full min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto bg-[var(--app-bg)] pt-[max(0.5rem,env(safe-area-inset-top))] pr-[max(0.75rem,env(safe-area-inset-right))] pb-[max(0.5rem,env(safe-area-inset-bottom))] pl-[max(0.75rem,env(safe-area-inset-left))] sm:px-5 md:px-6 lg:px-8"
       style={theme.vars as CSSProperties}
     >
       <div className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col gap-3">
-        <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-start gap-2">
-              <NavToggleButton />
-              <div className="min-w-0">
-                <h1 className="text-xl font-bold tracking-tight text-[var(--app-text)] sm:text-2xl lg:text-3xl">
-                  Goal SIP Planner
-                </h1>
-                {error ? (
-                  <p className="mt-1 text-xs text-[var(--app-danger)]">
-                    {error}. Start the app with <code>npm run dev</code>.
-                  </p>
-                ) : loading && !result ? (
-                  <p className="mt-1 text-xs text-[var(--app-text-muted)]">Calculating…</p>
-                ) : null}
-                {/* <p className="mt-0.5 text-xs text-[var(--app-text-muted)] sm:text-sm">
-              Compare Standard and Step-Up SIP requirements side-by-side.
-            </p> */}
-              </div>
-            </div>
-          </div>
-          <div className="grid w-full shrink-0 grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center">
-            <div className="flex min-w-0 items-center gap-2">
-              <Palette className="hidden h-4 w-4 shrink-0 text-[var(--app-text-muted)] sm:block" />
-              <Select
-                value={themeId}
-                onValueChange={(v) => setThemeId(v as ColorThemeId)}
-              >
-                <SelectTrigger className="w-full sm:w-36">
-                  <SelectValue placeholder="Theme" />
-                </SelectTrigger>
-                <SelectContent>
-                  {COLOR_THEMES.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+        <CalculatorPageHeader
+          title="Goal SIP Planner"
+          leading={<NavToggleButton />}
+          themeId={themeId}
+          onThemeChange={setThemeId}
+          meta={
+            error ? (
+              <p className="mt-0.5 text-[11px] text-[var(--app-danger)]">
+                {error}. Start the app with <code>npm run dev</code>.
+              </p>
+            ) : loading && !result ? (
+              <p className="mt-0.5 text-[11px] text-[var(--app-text-muted)]">Calculating…</p>
+            ) : null
+          }
+          actions={
             <Button
-              className="w-full bg-[var(--app-primary)] text-[var(--app-primary-fg)] hover:bg-[var(--app-primary-hover)] sm:w-auto"
+              size="sm"
+              className="h-8 bg-[var(--app-primary)] px-3 text-xs font-semibold text-[var(--app-primary-fg)] hover:bg-[var(--app-primary-hover)]"
               onClick={handleDownload}
             >
-              <Download className="mr-2 h-4 w-4" />
+              <Download className="size-3.5" />
               Download
             </Button>
-          </div>
-        </div>
+          }
+        />
 
-        <div className="shrink-0 border-t border-[var(--app-border)]" />
-
-        <div className="flex shrink-0 flex-col justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-4 sm:px-5 sm:py-5 lg:px-6 lg:py-5">
-          <div className="mb-3 sm:mb-4 lg:mb-5">
+        <div className="flex shrink-0 flex-col justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-2.5 sm:px-4 sm:py-3 lg:px-5">
+          <div className="mb-2 sm:mb-2.5">
             <span className="text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
               Financial Assumptions
             </span>

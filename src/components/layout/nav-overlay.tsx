@@ -80,11 +80,7 @@ export function NavOverlay({
                     : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60",
                 )}
               >
-                <div>{item.label}</div>
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                  {item.owner}
-                  {item.ready ? " · live" : " · soon"}
-                </div>
+                {item.label}
               </Link>
             );
           })}
