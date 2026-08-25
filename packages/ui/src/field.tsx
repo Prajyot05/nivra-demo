@@ -10,16 +10,16 @@ export function Field({
   children: ReactNode;
 }) {
   return (
-    <label className="flex min-w-0 flex-col gap-1.5">
+    <label className="flex min-w-0 flex-col gap-1">
       <span
-        className="block h-4 truncate text-[10px] font-semibold uppercase tracking-wide text-[var(--app-text-subtle)]"
+        className="block truncate text-[9px] font-semibold uppercase tracking-wide text-[var(--app-text-subtle)]"
         title={label}
       >
         {label}
       </span>
       {children}
       {hint ? (
-        <span className="truncate text-[11px] leading-4 text-[var(--app-text-muted)]" title={hint}>
+        <span className="truncate text-[10px] leading-tight text-[var(--app-text-muted)]" title={hint}>
           {hint}
         </span>
       ) : null}
@@ -28,10 +28,11 @@ export function Field({
 }
 
 const inputClass =
-  "flex h-10 w-full rounded-md border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-1 text-sm tabular-nums text-[var(--app-text)] shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--app-primary)] disabled:cursor-not-allowed disabled:opacity-50 sm:h-11";
+  "flex h-8 w-full rounded-md border border-[var(--app-border)] bg-[var(--app-surface)] px-2 py-0.5 text-xs tabular-nums text-[var(--app-text)] shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--app-primary)] disabled:cursor-not-allowed disabled:opacity-50 sm:h-8";
 
 export function TextInput(props: InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...props} className={`${inputClass} ${props.className ?? ""}`} />;
+  const { className, ...rest } = props;
+  return <input {...rest} className={className ? `${inputClass} ${className}` : inputClass} />;
 }
 
 export function SelectInput({

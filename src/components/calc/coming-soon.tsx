@@ -40,7 +40,7 @@ export function ComingSoonCalculator({
       }
       modes={<ModeTabs tabs={modes} value={mode} onChange={setMode} />}
       form={
-        <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 sm:gap-4">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(6.75rem,1fr))] items-start gap-x-2 gap-y-2">
           <ClientHeader name={name} age={age} onNameChange={setName} onAgeChange={setAge} />
           <MoneyInput label="Amount" value={amount} onChange={setAmount} />
           <YearInput value={years} onChange={setYears} />

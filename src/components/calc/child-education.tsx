@@ -112,7 +112,7 @@ export function ChildEducationPlanner() {
       description="Fund future school and college fees with a lumpsum today or a monthly SIP."
       form={
         <div className="flex flex-col gap-3">
-          <div className="grid grid-cols-1 items-start gap-3 min-[400px]:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 sm:gap-4 lg:gap-3 xl:gap-5">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(6.75rem,1fr))] items-start gap-x-2 gap-y-2">
             <ClientHeader name={name} age={age} onNameChange={setName} onAgeChange={setAge} />
             <Field label="Child name">
               <TextInput
@@ -162,31 +162,29 @@ function CostGrid({
 }) {
   return (
     <div>
-      <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
+      <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
         Education cost by class
       </div>
-      <div className="max-h-36 overflow-y-auto pr-1 lg:max-h-32">
-        <div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
-          {costs.map((row, index) => (
-            <label key={`${row.age}-${row.classLabel}`} className="block min-w-0">
-              <span
-                className="mb-1.5 block h-4 truncate text-[10px] font-semibold uppercase tracking-wide text-[var(--app-text-subtle)]"
-                title={row.classLabel}
-              >
-                {row.classLabel}
-              </span>
-              <TextInput
-                inputMode="numeric"
-                aria-label={`${row.classLabel} cost`}
-                className="h-8 text-right"
-                value={formatINR(row.cost)}
-                onChange={(e) =>
-                  onCostChange(index, parseDigits(e.target.value.replace(/,/g, "")))
-                }
-              />
-            </label>
-          ))}
-        </div>
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))] gap-x-2 gap-y-1.5">
+        {costs.map((row, index) => (
+          <label key={`${row.age}-${row.classLabel}`} className="block min-w-0">
+            <span
+              className="mb-0.5 block truncate text-[9px] font-semibold uppercase tracking-wide text-[var(--app-text-subtle)]"
+              title={row.classLabel}
+            >
+              {row.classLabel}
+            </span>
+            <TextInput
+              inputMode="numeric"
+              aria-label={`${row.classLabel} cost`}
+              className="!h-7 px-1.5 text-right text-[11px]"
+              value={formatINR(row.cost)}
+              onChange={(e) =>
+                onCostChange(index, parseDigits(e.target.value.replace(/,/g, "")))
+              }
+            />
+          </label>
+        ))}
       </div>
     </div>
   );

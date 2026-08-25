@@ -201,17 +201,17 @@ export function GoalSipPlanner() {
             </span>
           </div>
 
-          <div className="grid grid-cols-1 items-start gap-3 min-[400px]:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 sm:gap-4 lg:gap-3 xl:gap-5">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(6.75rem,1fr))] items-start gap-x-2 gap-y-2">
             <Field label="Client Name">
               <Input
-                className="h-10 sm:h-11"
+                className="h-8 text-xs"
                 value={clientName}
                 onChange={(e) => setClientName(e.target.value)}
               />
             </Field>
             <Field label="Age">
               <Input
-                className="h-10 sm:h-11"
+                className="h-8 text-xs"
                 type="number"
                 value={age}
                 onChange={(e) => setAge(+e.target.value)}
@@ -219,7 +219,7 @@ export function GoalSipPlanner() {
             </Field>
             <Field label="Goal amount">
               <Input
-                className="h-10 sm:h-11"
+                className="h-8 text-xs"
                 inputMode="numeric"
                 value={fmtINR(goal)}
                 onChange={(e) => {
@@ -230,7 +230,7 @@ export function GoalSipPlanner() {
             </Field>
             <Field label="Tenure (yrs)">
               <Input
-                className="h-10 sm:h-11"
+                className="h-8 text-xs"
                 type="number"
                 value={tenure}
                 onChange={(e) => setTenure(+e.target.value)}
@@ -238,7 +238,7 @@ export function GoalSipPlanner() {
             </Field>
             <Field label="Return (%)">
               <Input
-                className="h-10 sm:h-11"
+                className="h-8 text-xs"
                 type="number"
                 value={returnPct}
                 onChange={(e) => setReturnPct(+e.target.value)}
@@ -246,7 +246,7 @@ export function GoalSipPlanner() {
             </Field>
             <Field label="Inflation (%)">
               <Input
-                className="h-10 sm:h-11"
+                className="h-8 text-xs"
                 type="number"
                 value={inflation}
                 onChange={(e) => setInflation(+e.target.value)}
@@ -254,7 +254,7 @@ export function GoalSipPlanner() {
             </Field>
             <Field label="Tax (%)">
               <Input
-                className="h-10 sm:h-11"
+                className="h-8 text-xs"
                 type="number"
                 value={tax}
                 onChange={(e) => setTax(+e.target.value)}
@@ -262,7 +262,7 @@ export function GoalSipPlanner() {
             </Field>
             <Field label="Step-Up (%)">
               <Input
-                className="h-10 sm:h-11"
+                className="h-8 text-xs"
                 type="number"
                 value={stepUp}
                 onChange={(e) => setStepUp(+e.target.value)}
@@ -554,11 +554,11 @@ function SipCard({
   accent: string;
 }) {
   return (
-    <div className={`rounded-lg ${accent} px-3 py-2.5 text-center sm:px-4 sm:py-3`}>
-      <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-primary-fg-muted)] sm:text-xs">
+    <div className={`rounded-lg ${accent} px-2.5 py-2 text-center sm:px-3 sm:py-2.5`}>
+      <div className="text-[9px] font-semibold uppercase tracking-wider text-[var(--app-primary-fg-muted)] sm:text-[10px]">
         {title} · Monthly SIP
       </div>
-      <div className="mt-1 truncate text-lg font-semibold tabular-nums text-[var(--app-primary-fg)] sm:mt-1.5 sm:text-2xl lg:text-2xl">
+      <div className="mt-0.5 truncate text-sm font-semibold tabular-nums text-[var(--app-primary-fg)] sm:mt-1 sm:text-base">
         Rs. {fmtINR(amount)}
       </div>
     </div>
@@ -587,12 +587,12 @@ function DonutPanel({
   // Larger by default; shrinks by screen size and by digit length for huge amounts
   const corpusFont =
     len > 14
-      ? "text-[10px] sm:text-xs md:text-[11px] lg:text-xs xl:text-sm"
+      ? "text-[9px] sm:text-[10px] md:text-[10px] lg:text-[10px] xl:text-xs"
       : len > 11
-        ? "text-xs sm:text-sm md:text-sm lg:text-sm xl:text-base"
+        ? "text-[10px] sm:text-xs md:text-xs lg:text-xs xl:text-sm"
         : len > 8
-          ? "text-sm sm:text-base md:text-[15px] lg:text-base xl:text-lg"
-          : "text-base sm:text-lg md:text-lg lg:text-xl xl:text-2xl";
+          ? "text-xs sm:text-sm md:text-sm lg:text-sm xl:text-base"
+          : "text-sm sm:text-base md:text-base lg:text-lg xl:text-lg";
 
   return (
     <div className="flex min-h-0 flex-col overflow-y-auto overflow-x-hidden custom-scrollbar rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-muted)] p-2 sm:p-3">

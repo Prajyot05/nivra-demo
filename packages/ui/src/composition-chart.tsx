@@ -13,12 +13,15 @@ export function CompositionChart({
   centerLabel = "Total",
   centerValue,
   className,
+  compact = false,
 }: {
   title?: string;
   slices: CompositionSlice[];
   centerLabel?: string;
   centerValue?: number;
   className?: string;
+  /** Tighter vertical footprint — less empty space above/below the donut. */
+  compact?: boolean;
 }) {
   const data = slices.filter((s) => s.value > 0);
   const total = centerValue ?? data.reduce((sum, s) => sum + s.value, 0);
@@ -26,23 +29,33 @@ export function CompositionChart({
   const len = label.length;
   const corpusFont =
     len > 14
-      ? "text-[10px] sm:text-xs"
+      ? "text-[9px] sm:text-[10px]"
       : len > 11
-        ? "text-xs sm:text-sm"
+        ? "text-[10px] sm:text-xs"
         : len > 8
-          ? "text-sm sm:text-base"
-          : "text-base sm:text-lg";
+          ? "text-xs sm:text-sm"
+          : "text-sm sm:text-base";
 
   return (
     <div
-      className={`flex min-h-[320px] flex-1 flex-col rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 sm:p-4 ${className ?? ""}`}
+      className={
+        compact
+          ? `flex min-h-[210px] flex-none flex-col justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-4 ${className ?? ""}`
+          : `flex min-h-[220px] flex-1 flex-col rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-2.5 sm:p-3 ${className ?? ""}`
+      }
     >
-      <div className="mb-3 shrink-0 text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
+      <div className="mb-2.5 shrink-0 text-[10px] font-semibold uppercase tracking-widest text-[var(--app-text-muted)] sm:text-xs">
         {title}
       </div>
-      <div className="flex flex-1 flex-col gap-4 sm:flex-row sm:items-center">
-        <div className="flex shrink-0 items-center justify-center py-1 sm:w-[44%] sm:flex-none sm:self-stretch">
-          <div className="relative aspect-square h-full max-h-[220px] w-full max-w-[220px]">
+      <div className="flex min-h-0 flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-3">
+        <div className="flex shrink-0 items-center justify-center sm:w-[42%] sm:flex-none">
+          <div
+            className={
+              compact
+                ? "relative aspect-square h-[170px] w-[170px] max-w-full"
+                : "relative aspect-square w-full max-h-[180px] max-w-[180px]"
+            }
+          >
             <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100}>
               <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
                 <Pie
@@ -77,7 +90,13 @@ export function CompositionChart({
             </div>
           </div>
         </div>
-        <div className="custom-scrollbar min-w-0 flex-1 space-y-2 overflow-y-auto max-h-[220px]">
+        <div
+          className={
+            compact
+              ? "min-w-0 flex-1 space-y-1.5 sm:pt-0.5"
+              : "custom-scrollbar min-w-0 flex-1 space-y-1.5 overflow-y-auto sm:max-h-[180px] sm:pt-0.5"
+          }
+        >
           {slices.map((s) => (
             <div key={s.name} className="flex items-center justify-between gap-2 text-sm">
               <div className="flex min-w-0 items-center gap-2 text-[var(--app-text-muted)]">
@@ -89,7 +108,7 @@ export function CompositionChart({
                   {s.name}
                 </span>
               </div>
-              <span className="shrink-0 text-right text-xs font-medium tabular-nums text-[var(--app-text)] sm:text-sm">
+              <span className="shrink-0 text-right text-[11px] font-medium tabular-nums text-[var(--app-text)] sm:text-xs">
                 {formatINRCurrency(s.value)}
               </span>
             </div>

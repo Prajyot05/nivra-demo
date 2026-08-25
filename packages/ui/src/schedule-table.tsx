@@ -39,13 +39,13 @@ export function ScheduleTable<T extends Record<string, unknown>>({
         </div>
       ) : null}
       <div className="custom-scrollbar overflow-auto rounded-md border border-[var(--app-border)]">
-        <table className="w-full text-sm">
+        <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-[var(--app-border)] text-left text-[10px] uppercase tracking-widest text-[var(--app-text-subtle)]">
+            <tr className="border-b border-[var(--app-border)] text-left text-[9px] uppercase tracking-widest text-[var(--app-text-subtle)]">
               {columns.map((col) => (
                 <th
                   key={String(col.key)}
-                  className={`sticky top-0 z-10 bg-[var(--app-surface-muted)] px-3 py-2 ${col.align === "right" ? "text-right" : ""}`}
+                  className={`sticky top-0 z-10 bg-[var(--app-surface-muted)] px-2 py-1.5 ${col.align === "right" ? "text-right" : ""}`}
                 >
                   {col.header}
                 </th>
@@ -71,7 +71,7 @@ export function ScheduleTable<T extends Record<string, unknown>>({
                   return (
                     <td
                       key={String(col.key)}
-                      className={`px-3 py-2 tabular-nums text-[var(--app-text)] ${col.align === "right" ? "text-right" : ""}`}
+                      className={`px-2 py-1.5 tabular-nums text-[var(--app-text)] ${col.align === "right" ? "text-right" : ""}`}
                     >
                       {text}
                     </td>

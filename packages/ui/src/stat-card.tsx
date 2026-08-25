@@ -16,11 +16,11 @@ export function StatCard({
       ? "bg-[var(--app-primary)]"
       : "bg-[var(--app-primary-soft)]";
   return (
-    <div className={`rounded-lg ${box} px-3 py-2.5 text-center sm:px-4 sm:py-3`}>
-      <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-primary-fg-muted)] sm:text-xs">
+    <div className={`rounded-lg ${box} px-2.5 py-2 text-center sm:px-3 sm:py-2.5`}>
+      <div className="text-[9px] font-semibold uppercase tracking-wider text-[var(--app-primary-fg-muted)] sm:text-[10px]">
         {title}
       </div>
-      <div className="mt-1 truncate text-lg font-semibold tabular-nums text-[var(--app-primary-fg)] sm:mt-1.5 sm:text-2xl">
+      <div className="mt-0.5 truncate text-sm font-semibold tabular-nums text-[var(--app-primary-fg)] sm:mt-1 sm:text-base">
         {formatINRCurrency(value)}
       </div>
       {hint ? (
