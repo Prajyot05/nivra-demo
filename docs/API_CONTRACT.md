@@ -325,7 +325,7 @@ Sample: ₹2 L × 5y, corpus ₹11.6 L, 20y, 11%, 12.5% tax → maturity **55,50
 
 ## `fire-planner`
 
-**Input:** `age`, `retirementAge`, `survivingAge`, `monthlyExpenses`, `lifestyleYearly`, `monthlyExpenseFactorPct` / `lifestyleFactorPct` (100 = same as current), `inflationPct`, `returnPct`, `returnAfterPct`, `taxPct`, optional `corpusSlices[]` of `{ returnPct, amount }` (max 3), `currentSipMonthly`, `currentSipReturnPct`, `limitSipYears`, `stepUpPct`, `delayMonths`.
+**Input:** `age`, `retirementAge`, `survivingAge`, `monthlyExpenses`, `lifestyleYearly`, `monthlyExpenseFactorPct` / `lifestyleFactorPct` (100 = same as current; allowed 0–200 for UI options like 150%/200%), `inflationPct`, `returnPct`, `returnAfterPct`, `taxPct`, optional `corpusSlices[]` of `{ returnPct, amount }` (max 3), `currentSipMonthly`, `currentSipReturnPct`, `limitSipYears`, `stepUpPct`, `delayMonths`.
 
 **Output:** inflated expenses at retirement, `corpusRequired` (backward PV of taxed withdrawals), `currentAtRetirement`, `balanceCorpus`, `additionalLumpsum`, flat `monthlySip` / `stepUpStartSip`, delay SIP/lumpsum, age `schedule[]` (`corpus`, `contribution`, `withdrawal`, `phase`).
 

@@ -1,6 +1,8 @@
 import { z } from "zod";
 
 const pct = z.number().min(0).max(100);
+/** Expense/lifestyle multipliers at retirement (100 = same as current; UI allows up to 200%). */
+const factorPct = z.number().min(0).max(200);
 const money = z.number().min(0);
 const years = z.number().positive().max(100);
 const age = z.number().int().min(0).max(120);
@@ -278,8 +280,8 @@ export const firePlannerSchema = z
     survivingAge: age,
     monthlyExpenses: money,
     lifestyleYearly: money,
-    monthlyExpenseFactorPct: pct.optional().default(100),
-    lifestyleFactorPct: pct.optional().default(100),
+    monthlyExpenseFactorPct: factorPct.optional().default(100),
+    lifestyleFactorPct: factorPct.optional().default(100),
     inflationPct: pct,
     returnPct: pct,
     returnAfterPct: pct,
@@ -323,8 +325,8 @@ export const financialHealthSchema = z
     returnPct: pct,
     returnAfterPct: pct,
     taxPct: pct,
-    monthlyExpenseFactorPct: pct.optional().default(100),
-    lifestyleFactorPct: pct.optional().default(100),
+    monthlyExpenseFactorPct: factorPct.optional().default(100),
+    lifestyleFactorPct: factorPct.optional().default(100),
     retirementBenefit: money.optional().default(0),
     savingsGrowthPct: pct.optional().default(0),
     events: z
