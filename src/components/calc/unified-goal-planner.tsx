@@ -31,6 +31,8 @@ const MODES = [
   { id: "compounding", label: "Growth steps" },
 ] as const;
 
+const VISIBLE_MODES = MODES.filter((mode) => mode.id === "current" || mode.id === "compounding");
+
 type Mode = (typeof MODES)[number]["id"];
 
 const FREQUENCY_OPTIONS = [
@@ -104,7 +106,7 @@ type GoalPlannerResult = {
 };
 
 export function UnifiedGoalPlanner() {
-  const [mode, setMode] = useState<Mode>("sip");
+  const [mode, setMode] = useState<Mode>("current");
   const [name, setName] = useState("Mr. John Doe");
   const [age, setAge] = useState(30);
   const [goalAmount, setGoalAmount] = useState(10_000_000);
@@ -171,7 +173,7 @@ export function UnifiedGoalPlanner() {
     <CalculatorPage
       title="Unified Goal Planner"
       description="Six Unprotected goal modes. Additional SIP / lumpsum / step-up are solved so net after tax hits the goal."
-      modes={<ModeTabs tabs={[...MODES]} value={mode} onChange={(id) => setMode(id as Mode)} />}
+      modes={<ModeTabs tabs={VISIBLE_MODES} value={mode} onChange={(id) => setMode(id as Mode)} />}
       form={
         <div className={FORM_GRID}>
           <ClientHeader name={name} age={age} onNameChange={setName} onAgeChange={setAge} />

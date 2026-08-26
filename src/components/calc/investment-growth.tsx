@@ -27,6 +27,8 @@ const MODES = [
   { id: "periodic", label: "Periodic" },
 ] as const;
 
+const VISIBLE_MODES = MODES.filter((mode) => mode.id === "lumpsum");
+
 type Mode = (typeof MODES)[number]["id"];
 
 const FREQUENCY_OPTIONS = [
@@ -79,7 +81,7 @@ const CALCULATOR_ID: Record<Mode, string> = {
 };
 
 export function InvestmentGrowth() {
-  const [mode, setMode] = useState<Mode>("sip");
+  const [mode, setMode] = useState<Mode>("lumpsum");
   const [name, setName] = useState("Mr. Anshu Kaul");
   const [age, setAge] = useState(30);
 
@@ -194,7 +196,7 @@ export function InvestmentGrowth() {
     <CalculatorPage
       title="Investment Growth"
       description="SIP, step-up, lumpsum, and periodic. Unprotected Excel rates and beginning-of-period SIP."
-      modes={<ModeTabs tabs={[...MODES]} value={mode} onChange={(id) => setMode(id as Mode)} />}
+      modes={<ModeTabs tabs={VISIBLE_MODES} value={mode} onChange={(id) => setMode(id as Mode)} />}
       form={
         mode === "sip" ? (
           <div className={FORM_GRID}>

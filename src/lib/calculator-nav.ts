@@ -18,12 +18,12 @@ export const CALCULATOR_NAV: NavItem[] = [
   { to: "/", label: "Goal SIP Planner" },
   { to: "/goals", label: "Unified Goal Planner" },
   { to: "/growth", label: "Investment Growth" },
-  { to: "/education", label: "Child Education" },
-  { to: "/fire", label: "FIRE / Health" },
-  { to: "/mf-fd", label: "MF vs FD" },
-  { to: "/loans", label: "Loans" },
-  { to: "/insurance", label: "Insurance" },
-  { to: "/multi-goal", label: "Multi-Goal" },
+  { to: "/education", label: "Child Education", enabled: false },
+  { to: "/fire", label: "FIRE / Health", enabled: false },
+  { to: "/mf-fd", label: "MF vs FD", enabled: false },
+  { to: "/loans", label: "Loans", enabled: false },
+  { to: "/insurance", label: "Insurance", enabled: false },
+  { to: "/multi-goal", label: "Multi-Goal", enabled: false },
 ];
 
 export function getEnabledCalculators(): NavItem[] {
