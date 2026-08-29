@@ -33,6 +33,9 @@ const MODES = [
   { id: "vehicle", label: "Vehicle" },
 ] as const;
 
+/** Demo showcase: EMI only (simplest loan calculator). */
+const VISIBLE_MODES = MODES.filter((mode) => mode.id === "emi");
+
 type Mode = (typeof MODES)[number]["id"];
 
 const CALCULATOR_ID: Record<Mode, string> = {
@@ -219,9 +222,9 @@ export function LoansCalculator() {
 
   return (
     <CalculatorPage
-      title="Loans"
-      description="EMI, yearly prepay, extra vs invest (v2), interest recovery, and vehicle loan benefit."
-      modes={<ModeTabs tabs={[...MODES]} value={mode} onChange={(id) => setMode(id as Mode)} />}
+      title="Loan EMI"
+      description="Monthly EMI for a home or personal loan — principal, tenure, and interest rate."
+      modes={<ModeTabs tabs={VISIBLE_MODES} value={mode} onChange={(id) => setMode(id as Mode)} />}
       form={
         mode === "emi" ? (
           <div className={FORM_GRID}>

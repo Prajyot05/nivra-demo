@@ -27,7 +27,8 @@ const MODES = [
   { id: "periodic", label: "Periodic" },
 ] as const;
 
-const VISIBLE_MODES = MODES.filter((mode) => mode.id === "lumpsum");
+/** Demo showcase: lumpsum + flat SIP only (simplest forward-growth calculators). */
+const VISIBLE_MODES = MODES.filter((mode) => mode.id === "lumpsum" || mode.id === "sip");
 
 type Mode = (typeof MODES)[number]["id"];
 
@@ -195,7 +196,7 @@ export function InvestmentGrowth() {
   return (
     <CalculatorPage
       title="Investment Growth"
-      description="SIP, step-up, lumpsum, and periodic. Unprotected Excel rates and beginning-of-period SIP."
+      description="Lumpsum and monthly SIP — see how savings grow over time."
       modes={<ModeTabs tabs={VISIBLE_MODES} value={mode} onChange={(id) => setMode(id as Mode)} />}
       form={
         mode === "sip" ? (
