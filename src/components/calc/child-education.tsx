@@ -1,6 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { generateCalculatorReport } from "@/lib/pdf-generator";
+import { playbookForPdf } from "@/lib/report-playbooks";
 import {
   ClientHeader,
   CompareChart,
@@ -106,10 +110,77 @@ export function ChildEducationPlanner() {
 
   const { result, error, loading } = useCalculate<EducationResult>("education", input);
 
+  const handleDownload = () => {
+    if (!result) return;
+    generateCalculatorReport({
+      title: "Child Education Funding Dossier",
+      subtitle: `Fee trajectory for ${childName}`,
+      clientName: name,
+      age,
+      meta: [{ label: "CHILD", value: childName }, { label: "CHILD AGE", value: String(childAge) }],
+      status: "Validated Model",
+      filename: `child-education-${name}`,
+      headlines: [
+        { label: "Lumpsum Required Today", value: result.lumpsum.lumpsum, highlight: true, hint: `Peak corpus ${formatINR(result.lumpsum.peakCorpus)}` },
+        { label: "Monthly SIP Required", value: result.sip.monthlySip, hint: `${result.sipYears} years of SIP funding` },
+      ],
+      metrics: [
+        { label: "Total Education Cost", value: result.totalCost },
+        { label: "Total Tax Drag", value: result.totalTax },
+        { label: "Total Withdrawals", value: result.totalWithdrawal },
+        { label: "SIP Remaining", value: result.sip.remaining },
+      ],
+      assumptions: [
+        ["Parent", name],
+        ["Child", childName],
+        ["Child Age", childAge],
+        ["Last Fee Age", result.lastFeeAge],
+        ["Expected Return", `${returnPct}%`],
+        ["Fee Tax", `${taxPct}%`],
+        ["SIP Years", result.sipYears],
+      ],
+      tables: result.schedule
+        ? [
+            {
+              title: "Age / Class Funding Schedule",
+              head: ["Age", "Class", "Cost", "Tax", "Withdrawal", "SIP Corpus", "SIP Bal.", "LS Bal."],
+              body: result.schedule.map((row) => [
+                row.age,
+                row.classLabel,
+                row.cost,
+                row.tax,
+                row.withdrawal,
+                row.sipCorpus,
+                row.sipBalance,
+                row.lumpsumBalance,
+              ]),
+              columnAlignments: ["left", "left", "right", "right", "right", "right", "right", "right"],
+              currencyColumns: [2, 3, 4, 5, 6, 7],
+              highlightRows: result.schedule
+                .map((row, i) => (row.cost >= 1_000_000 ? i : -1))
+                .filter((i) => i >= 0)
+                .slice(0, 3),
+            },
+          ]
+        : [],
+      playbook: playbookForPdf("child-education"),
+    });
+  };
+
   return (
     <CalculatorPage
       title="Child Education Planner"
       description="Fund future school and college fees with a lumpsum today or a monthly SIP."
+      actions={
+        <Button
+          size="icon"
+          className="h-8 w-8 shrink-0 bg-[var(--app-primary)] text-[var(--app-primary-fg)] hover:bg-[var(--app-primary-hover)] transition-colors"
+          onClick={handleDownload}
+          title="Download Report"
+        >
+          <Download className="size-4" />
+        </Button>
+      }
       form={
         <div className="flex flex-col gap-3">
           <div className="grid grid-cols-[repeat(auto-fill,minmax(6.75rem,1fr))] items-start gap-x-2 gap-y-2">

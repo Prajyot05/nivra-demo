@@ -1,6 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { generateCalculatorReport, type PdfTableData } from "@/lib/pdf-generator";
+import { playbookForPdf } from "@/lib/report-playbooks";
 import {
   ClientHeader,
   CompareChart,
@@ -220,11 +224,189 @@ export function LoansCalculator() {
 
   const { result, error, loading } = useCalculate<LoanResult>(CALCULATOR_ID[mode], input);
 
+  const handleDownload = () => {
+    if (!result) return;
+    const tables: PdfTableData[] = [];
+    const modeLabel =
+      VISIBLE_MODES.find((m) => m.id === mode)?.label ??
+      MODES.find((m) => m.id === mode)?.label ??
+      String(mode);
+
+    let headlines = [
+      { label: "Monthly EMI", value: result.emi ?? 0, highlight: true as const, hint: modeLabel },
+      { label: "Total Interest", value: result.totalInterest ?? result.originalInterest ?? 0, hint: "Lifetime interest cost" },
+    ];
+    let metrics: Array<{ label: string; value: string | number; currency?: boolean; danger?: boolean }> = [
+      { label: "Principal", value: result.totalPrincipal ?? principal },
+      { label: "Tenure", value: `${years} yrs`, currency: false },
+      { label: "Rate", value: `${interest}%`, currency: false },
+      { label: "Total Paid", value: result.totalPaid ?? 0 },
+    ];
+    const assumptions: Array<[string, string | number, boolean?]> = [
+      ["Mode", modeLabel],
+    ];
+
+    if (mode === "emi") {
+      assumptions.push(
+        ["Principal", principal, true],
+        ["Years", years],
+        ["Interest", `${interest}%`],
+      );
+      if (result.schedule && Array.isArray(result.schedule)) {
+        const rows = result.schedule as Array<Record<string, number>>;
+        const keys = Object.keys(rows[0] || {});
+        tables.push({
+          title: "Amortisation Schedule",
+          head: keys.map((k) => k.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase())),
+          body: rows.map((row) => keys.map((k) => row[k])),
+          columnAlignments: keys.map((_, i) => (i === 0 ? "left" : "right")),
+          currencyColumns: keys.map((k, i) => (k === "month" || k === "year" ? -1 : i)).filter((i) => i >= 0),
+        });
+      }
+    } else if (mode === "prepay" && result.schedule) {
+      headlines = [
+        { label: "Interest Saved", value: result.interestSaved ?? 0, highlight: true, hint: `${result.monthsSaved ?? 0} months saved` },
+        { label: "Total Extra Paid", value: result.totalExtra ?? 0, hint: "Prepayment outlay" },
+      ];
+      metrics = [
+        { label: "Original Interest", value: result.originalInterest ?? 0 },
+        { label: "Recover SIP", value: result.recoverSip ?? 0 },
+        { label: "Months Paid", value: String(result.monthsPaid ?? 0), currency: false },
+        { label: "EMI", value: result.emi ?? 0 },
+      ];
+      assumptions.push(
+        ["Principal", prepayPrincipal, true],
+        ["Years", prepayYears],
+        ["Rate", `${prepayRate}%`],
+        ["Yearly Extra", yearlyExtra, true],
+      );
+      tables.push({
+        title: "Prepaid Schedule",
+        head: ["Month", "EMI", "Extra", "Interest", "Balance"],
+        body: result.schedule.map((row: { month: number; emi: number; extra?: number; interest: number; balance: number }) => [
+          row.month,
+          row.emi,
+          row.extra ?? 0,
+          row.interest,
+          row.balance,
+        ]),
+        columnAlignments: ["left", "right", "right", "right", "right"],
+        currencyColumns: [1, 2, 3, 4],
+      });
+    } else if (mode === "extra-vs-invest") {
+      headlines = [
+        { label: "Prepay Saving", value: result.option1Saving ?? 0, highlight: true, hint: "Pay down loan early" },
+        { label: "Invest Saving", value: result.option2Saving ?? 0, hint: "Deploy surplus instead" },
+      ];
+      metrics = [
+        { label: "EMI", value: result.emi ?? 0 },
+        { label: "Original Interest", value: result.originalInterest ?? 0 },
+        { label: "Corpus After Tax", value: result.corpusAfterTax ?? 0 },
+        { label: "Remaining Months", value: String(result.remainingMonths ?? 0), currency: false },
+      ];
+      assumptions.push(
+        ["Principal", vsPrincipal, true],
+        ["Years", vsYears],
+        ["Rate", `${vsRate}%`],
+        ["Extra Amount", extraAmount, true],
+      );
+    } else if (mode === "recovery") {
+      headlines = [
+        { label: "Proposed EMI", value: result.proposedEmi ?? 0, highlight: true, hint: `${proposedYears} year tenure` },
+        { label: "Monthly SIP", value: result.monthlySip ?? 0, hint: "Parallel wealth build" },
+      ];
+      metrics = [
+        { label: "Baseline EMI", value: result.baselineEmi ?? 0 },
+        { label: "Wealth Created", value: result.wealthCreated ?? 0 },
+        { label: "Additional Wealth", value: result.additionalWealth ?? 0 },
+        { label: "Savings vs Baseline", value: result.savingsVsBaselinePaid ?? 0 },
+      ];
+      assumptions.push(
+        ["Principal", recPrincipal, true],
+        ["Baseline Years", recYears],
+        ["Proposed Years", proposedYears],
+        ["Rate", `${recRate}%`],
+      );
+      if (result.schedule) {
+        const recoveryRows = result.schedule as Array<{
+          year: number;
+          baseline: number;
+          proposed: number;
+          sip: number;
+          loanPlusSip: number;
+        }>;
+        tables.push({
+          title: "Recovery Path",
+          head: ["Year", "Baseline", "Proposed", "SIP", "Loan+SIP"],
+          body: recoveryRows.map((row) => [
+            row.year,
+            row.baseline,
+            row.proposed,
+            row.sip,
+            row.loanPlusSip,
+          ]),
+          columnAlignments: ["left", "right", "right", "right", "right"],
+          currencyColumns: [1, 2, 3, 4],
+        });
+      }
+    } else if (mode === "vehicle" && result.depreciation) {
+      headlines = [
+        { label: "EMI", value: result.emi ?? 0, highlight: true, hint: "Vehicle loan EMI" },
+        { label: "Tax Saved", value: result.totalTaxSaved ?? 0, hint: "Depreciation shield" },
+      ];
+      metrics = [
+        { label: "Total Interest", value: result.totalInterest ?? 0 },
+        { label: "Total Depreciation", value: result.totalDepreciation ?? 0 },
+        { label: "On-Road Price", value: onRoad },
+        { label: "Loan Amount", value: vehLoan },
+      ];
+      assumptions.push(
+        ["On-Road", onRoad, true],
+        ["Loan", vehLoan, true],
+        ["Rate", `${vehRate}%`],
+        ["Years", vehYears],
+      );
+      tables.push({
+        title: "Depreciation Schedule",
+        head: ["Year", "Value", "Depreciation", "Balance"],
+        body: result.depreciation.map((row) => [row.year, row.value, row.depreciation, row.balance]),
+        columnAlignments: ["left", "right", "right", "right"],
+        currencyColumns: [1, 2, 3],
+      });
+    }
+
+    generateCalculatorReport({
+      title: "Loan Analysis Dossier",
+      subtitle: `${modeLabel} · ${name}`,
+      clientName: name,
+      age,
+      status: "Validated Model",
+      filename: `loans-${name}`,
+      headlines,
+      metrics,
+      assumptions,
+      tables,
+      playbook: playbookForPdf(
+        mode === "prepay" || mode === "extra-vs-invest" ? "loan-extra" : "loan-emi",
+      ),
+    });
+  };
+
   return (
     <CalculatorPage
       title="Loan EMI"
       description="Monthly EMI for a home or personal loan — principal, tenure, and interest rate."
       modes={<ModeTabs tabs={VISIBLE_MODES} value={mode} onChange={(id) => setMode(id as Mode)} />}
+      actions={
+        <Button
+          size="icon"
+          className="h-8 w-8 shrink-0 bg-[var(--app-primary)] text-[var(--app-primary-fg)] hover:bg-[var(--app-primary-hover)] transition-colors"
+          onClick={handleDownload}
+          title="Download Report"
+        >
+          <Download className="size-4" />
+        </Button>
+      }
       form={
         mode === "emi" ? (
           <div className={FORM_GRID}>

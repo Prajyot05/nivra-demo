@@ -10,6 +10,7 @@ export function CalculatorPage({
   description,
   header,
   leading,
+  actions,
   modes,
   form,
   results,
@@ -19,6 +20,7 @@ export function CalculatorPage({
   description?: string;
   header?: ReactNode;
   leading?: ReactNode;
+  actions?: ReactNode;
   modes?: ReactNode;
   form: ReactNode;
   results: ReactNode;
@@ -37,6 +39,7 @@ export function CalculatorPage({
           title={title}
           description={description}
           leading={leading}
+          actions={actions}
           themeId={themeId}
           onThemeChange={setThemeId}
         />

@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  .test { color: oklch(0.5 0.1 200); background: oklch(0.9 0.05 200); }
+</style>
+</head>
+<body>
+  <div id="target" class="test" style="width: 100px; height: 100px; color: rgb(255,0,0); background-color: rgb(0,255,0);">Hello</div>
+  <script type="module">
+    import html2canvas from "https://esm.sh/html2canvas";
+    html2canvas(document.getElementById("target"), {
+      onclone: (doc) => {
+        doc.querySelectorAll("style").forEach(s => {
+          s.innerHTML = s.innerHTML.replace(/oklch\([^)]+\)/g, "rgb(0,0,0)");
+        });
+      }
+    }).then(canvas => console.log("SUCCESS")).catch(e => console.error("ERROR", e));
+  </script>
+</body>
+</html>

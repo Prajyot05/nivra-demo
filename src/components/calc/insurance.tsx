@@ -1,6 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { generateCalculatorReport, type PdfTableData } from "@/lib/pdf-generator";
+import { playbookForPdf } from "@/lib/report-playbooks";
 import {
   ClientHeader,
   CompareChart,
@@ -105,11 +109,112 @@ export function InsuranceCalculator() {
   const calculatorId = mode === "irr" ? "insurance-irr" : "insurance-tp";
   const { result, error, loading } = useCalculate<IrrResult & Partial<TpResult>>(calculatorId, input);
 
+  const handleDownload = () => {
+    if (!result) return;
+    const client = mode === "irr" ? name : tpName;
+    const clientAge = mode === "irr" ? age : tpAge;
+    const tables: PdfTableData[] = [];
+
+    if (mode === "irr") {
+      const res = result as IrrResult;
+      tables.push({
+        title: "Policy Return Summary",
+        head: ["Premiums Paid", "Maturity", "Gain", "Tax", "Net After Tax", "XIRR"],
+        body: [[res.totalPremium, res.maturity, res.gain, res.tax, res.net, `${(res.xirr * 100).toFixed(2)}%`]],
+        columnAlignments: ["right", "right", "right", "right", "right", "right"],
+        currencyColumns: [0, 1, 2, 3, 4],
+      });
+      generateCalculatorReport({
+        title: "Insurance Return Dossier",
+        subtitle: `Policy IRR analysis for ${client}`,
+        clientName: client,
+        age: clientAge,
+        status: "Validated Model",
+        filename: `insurance-${client}`,
+        headlines: [
+          { label: "Maturity Value", value: res.maturity, highlight: true, hint: `${policyTerm} year policy term` },
+          { label: "Net After Tax", value: res.net, hint: `XIRR ${(res.xirr * 100).toFixed(2)}%` },
+        ],
+        metrics: [
+          { label: "Total Premiums", value: res.totalPremium },
+          { label: "Pre-Tax Gain", value: res.gain },
+          { label: "Tax", value: res.tax },
+          { label: "Pay-Term Rate", value: `${(res.payTermRate * 100).toFixed(2)}%`, currency: false },
+        ],
+        assumptions: [
+          ["Mode", "Policy IRR"],
+          ["Annual Premium", premium, true],
+          ["Pay Term", `${payTerm} yrs`],
+          ["Policy Term", `${policyTerm} yrs`],
+          ["Corpus at Pay End", corpusAtPayEnd, true],
+          ["Assumed Return", `${ret}%`],
+          ["Tax", `${tax}%`],
+        ],
+        tables,
+        playbook: playbookForPdf("insurance"),
+      });
+      return;
+    }
+
+    const res = result as TpResult;
+    tables.push({
+      title: "Keep vs Switch Summary",
+      head: ["Option", "Maturity / Corpus", "Term Cost", "Tax", "Net"],
+      body: [
+        ["Keep", res.keep.maturity, 0, res.keep.tax, res.keep.net],
+        ["Switch", res.switch.investMaturity, res.switch.termCost, 0, res.switch.investMaturity],
+      ],
+      columnAlignments: ["left", "right", "right", "right", "right"],
+      currencyColumns: [1, 2, 3, 4],
+      highlightRows: [res.switch.investMaturity >= res.keep.net ? 1 : 0],
+    });
+
+    generateCalculatorReport({
+      title: "Insurance Keep vs Switch Dossier",
+      subtitle: `Surrender → term + invest analysis for ${client}`,
+      clientName: client,
+      age: clientAge,
+      status: "Validated Model",
+      filename: `insurance-${client}`,
+      headlines: [
+        { label: "Keep (Net)", value: res.keep.net, highlight: true, hint: `IRR ${(res.keep.irr * 100).toFixed(2)}%` },
+        { label: "Switch Corpus", value: res.switch.investMaturity, hint: `Term cost ${Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(Math.round(res.switch.termCost))}` },
+      ],
+      metrics: [
+        { label: "Surrender Value", value: res.switch.surrenderValue },
+        { label: "Remaining Premiums", value: res.remainingPremiums },
+        { label: "Keep Tax", value: res.keep.tax },
+        { label: "Paid to Date", value: res.switch.totalPaidToDate },
+      ],
+      assumptions: [
+        ["Mode", "Keep vs Switch"],
+        ["Premium", tpPremium, true],
+        ["Years Paid", yearsPaid],
+        ["Years to Maturity", yearsLeft],
+        ["Maturity Value", maturity, true],
+        ["Surrender", surrender, true],
+        ["Invest Return", `${tpRet}%`],
+      ],
+      tables,
+      playbook: playbookForPdf("insurance"),
+    });
+  };
+
   return (
     <CalculatorPage
       title="Insurance Return & Switch"
       description="Policy IRR and surrender → term + invest from Unprotected insurance sheets."
       modes={<ModeTabs tabs={[...MODES]} value={mode} onChange={(id) => setMode(id as Mode)} />}
+      actions={
+        <Button
+          size="icon"
+          className="h-8 w-8 shrink-0 bg-[var(--app-primary)] text-[var(--app-primary-fg)] hover:bg-[var(--app-primary-hover)] transition-colors"
+          onClick={handleDownload}
+          title="Download Report"
+        >
+          <Download className="size-4" />
+        </Button>
+      }
       form={
         mode === "irr" ? (
           <div className={FORM_GRID}>

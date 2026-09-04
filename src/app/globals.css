@@ -157,3 +157,49 @@
   scrollbar-width: thin;
   scrollbar-color: var(--color-border) transparent;
 }
+
+/* Executive dossier print / Export to PDF */
+@media print {
+  body.dossier-printing {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  body.dossier-printing * {
+    visibility: hidden;
+  }
+
+  body.dossier-printing .dossier-print-root,
+  body.dossier-printing .dossier-print-root * {
+    visibility: visible;
+  }
+
+  body.dossier-printing .dossier-print-root {
+    position: absolute !important;
+    inset: 0 auto auto 0 !important;
+    z-index: auto !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    min-height: 0 !important;
+    width: 100% !important;
+  }
+
+  body.dossier-printing .no-print {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  body.dossier-printing .dossier-page {
+    margin: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 12mm !important;
+  }
+
+  body.dossier-printing .dossier-print-root > div {
+    padding: 0 !important;
+  }
+}

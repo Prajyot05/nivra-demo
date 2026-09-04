@@ -1,6 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { generateCalculatorReport } from "@/lib/pdf-generator";
+import { playbookForPdf } from "@/lib/report-playbooks";
 import {
   ClientHeader,
   CompareChart,
@@ -61,10 +65,65 @@ export function MfVsFd() {
 
   const { result, error, loading } = useCalculate<MfFdResult>("mf-fd", input);
 
+  const handleDownload = () => {
+    if (!result) return;
+    const winner = result.mfAdvantage >= result.fdAdvantage ? "MF" : "FD";
+    generateCalculatorReport({
+      title: "MF vs FD Comparison Dossier",
+      subtitle: `Short-horizon post-tax analysis · ${days} day holding`,
+      clientName: name,
+      age,
+      status: `${winner} Preferred`,
+      filename: `mf-vs-fd-${name}`,
+      headlines: [
+        { label: "MF Post-Tax Value", value: result.mf.postTax, highlight: true, hint: "Mutual fund after tax" },
+        { label: "FD Post-Tax Value", value: result.fd.postTax, hint: "Fixed deposit after tax" },
+      ],
+      metrics: [
+        { label: "Principal", value: amount },
+        { label: "MF Net Gain", value: result.mf.net },
+        { label: "FD Net Gain", value: result.fd.net },
+        { label: "MF Advantage", value: result.difference, danger: result.difference < 0 },
+      ],
+      assumptions: [
+        ["Amount", amount, true],
+        ["Holding Period", `${days} days`],
+        ["MF Return", `${mfReturn}%`],
+        ["FD Return", `${fdReturn}%`],
+        ["MF Tax", `${mfTax}%`],
+        ["FD Tax", `${fdTax}%`],
+      ],
+      tables: [
+        {
+          title: "Post-Tax Return Breakdown",
+          head: ["Category", "Pre-Tax", "Tax", "Net", "Post-Tax Value"],
+          body: [
+            ["Mutual Fund", result.mf.preTax, result.mf.tax, result.mf.net, result.mf.postTax],
+            ["Fixed Deposit", result.fd.preTax, result.fd.tax, result.fd.net, result.fd.postTax],
+          ],
+          columnAlignments: ["left", "right", "right", "right", "right"],
+          currencyColumns: [1, 2, 3, 4],
+          highlightRows: [result.mfAdvantage >= result.fdAdvantage ? 0 : 1],
+        },
+      ],
+      playbook: playbookForPdf("mf-vs-fd"),
+    });
+  };
+
   return (
     <CalculatorPage
       title="MF vs FD"
       description="Short-horizon post-tax compare from Unprotected MF vs FD v1."
+      actions={
+        <Button
+          size="icon"
+          className="h-8 w-8 shrink-0 bg-[var(--app-primary)] text-[var(--app-primary-fg)] hover:bg-[var(--app-primary-hover)] transition-colors"
+          onClick={handleDownload}
+          title="Download Report"
+        >
+          <Download className="size-4" />
+        </Button>
+      }
       form={
         <div className={FORM_GRID}>
           <ClientHeader name={name} age={age} onNameChange={setName} onAgeChange={setAge} />
