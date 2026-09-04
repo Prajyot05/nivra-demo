@@ -1,6 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { generateCalculatorReport, type PdfTableData } from "@/lib/pdf-generator";
+import { playbookForPdf } from "@/lib/report-playbooks";
 import {
   ClientHeader,
   CompareChart,
@@ -128,11 +132,119 @@ export function MultiGoalCalculator() {
   const id = mode === "assign" ? "multi-goal-assign" : "multi-withdrawals";
   const { result, error, loading } = useCalculate<AssignResult & Partial<WithdrawResult>>(id, input);
 
+  const handleDownload = () => {
+    if (!result) return;
+    const tables: PdfTableData[] = [];
+    if (mode === "assign" && "goals" in result) {
+      const res = result as AssignResult;
+      tables.push({
+        title: "Goal Corpus Assignment",
+        head: ["Goal", "Years", "Infl-Adj Goal", "Monthly SIP", "Lumpsum", "Assigned"],
+        body: res.goals.map((row) => [
+          row.name,
+          row.years,
+          row.inflAdjGoal,
+          row.monthlySip,
+          row.lumpsum,
+          row.assigned,
+        ]),
+        columnAlignments: ["left", "right", "right", "right", "right", "right"],
+        currencyColumns: [2, 3, 4, 5],
+      });
+      generateCalculatorReport({
+        title: "Multi-Goal Assignment Dossier",
+        subtitle: `Corpus allocation for ${name}`,
+        clientName: name,
+        age,
+        status: "Validated Model",
+        filename: `multi-goal-${name}`,
+        headlines: [
+          { label: "Total Monthly SIP", value: res.totalMonthlySip, highlight: true, hint: "Across all goals" },
+          { label: "Total Lumpsum", value: res.totalLumpsum, hint: "Upfront alternative" },
+        ],
+        metrics: [
+          { label: "Total Assigned", value: res.totalAssigned },
+          { label: "Unassigned Corpus", value: res.unassignedCorpus },
+          { label: "Goals", value: res.goals.length, currency: false },
+          { label: "Current Corpus", value: corpus },
+        ],
+        assumptions: [
+          ["Mode", "Corpus Assignment"],
+          ["Short-Term Years", stYears],
+          ["ST Return", `${stRet}%`],
+          ["LT Return", `${ltRet}%`],
+          ["Inflation", `${infl}%`],
+          ["Tax", `${tax}%`],
+          ["Delay (months)", delay],
+        ],
+        tables,
+        playbook: playbookForPdf("multi-goal"),
+      });
+      return;
+    }
+
+    if (mode === "withdrawals" && "rows" in result) {
+      const res = result as WithdrawResult;
+      tables.push({
+        title: "Per Withdrawal SIP",
+        head: ["Goal", "Age", "Amount", "Monthly SIP", "Invested"],
+        body: res.rows.map((row) => [row.name, row.atAge, row.amount, row.monthlySip, row.invested]),
+        columnAlignments: ["left", "right", "right", "right", "right"],
+        currencyColumns: [2, 3, 4],
+      });
+      if (res.schedule?.length) {
+        tables.push({
+          title: "Age Path",
+          head: ["Age", "Corpus", "Withdrawal", "Monthly SIP"],
+          body: res.schedule.map((row) => [row.age, row.corpus, row.withdrawal, row.monthlySip]),
+          columnAlignments: ["left", "right", "right", "right"],
+          currencyColumns: [1, 2, 3],
+        });
+      }
+      generateCalculatorReport({
+        title: "Multi-Withdrawal SIP Dossier",
+        subtitle: `Timed withdrawals for ${wName}`,
+        clientName: wName,
+        age: wAge,
+        status: "Validated Model",
+        filename: `multi-goal-${wName}`,
+        headlines: [
+          { label: "Start Monthly SIP", value: res.startMonthlySip, highlight: true, hint: "Opening systematic flow" },
+          { label: "Total Withdrawn", value: res.totalWithdrawn, hint: "Lifetime goal payouts" },
+        ],
+        metrics: [
+          { label: "Total Invested", value: res.totalInvested },
+          { label: "Total Tax", value: res.totalTax },
+          { label: "Withdrawals", value: res.rows.length, currency: false },
+          { label: "Return", value: `${wRet}%`, currency: false },
+        ],
+        assumptions: [
+          ["Mode", "Multiple Withdrawals"],
+          ["Return", `${wRet}%`],
+          ["Tax", `${wTax}%`],
+          ["Client Age", wAge],
+        ],
+        tables,
+        playbook: playbookForPdf("multi-goal"),
+      });
+    }
+  };
+
   return (
     <CalculatorPage
       title="Multi-Goal & Withdrawals"
       description="Corpus assignment (Full Set) and SIP for timed withdrawals (Unprotected v2)."
       modes={<ModeTabs tabs={[...MODES]} value={mode} onChange={(m) => setMode(m as Mode)} />}
+      actions={
+        <Button
+          size="icon"
+          className="h-8 w-8 shrink-0 bg-[var(--app-primary)] text-[var(--app-primary-fg)] hover:bg-[var(--app-primary-hover)] transition-colors"
+          onClick={handleDownload}
+          title="Download Report"
+        >
+          <Download className="size-4" />
+        </Button>
+      }
       form={
         mode === "assign" ? (
           <div className="flex flex-col gap-3">

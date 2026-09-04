@@ -1,6 +1,10 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
+import { Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { generateCalculatorReport } from "@/lib/pdf-generator";
+import { playbookForPdf } from "@/lib/report-playbooks";
 import {
   ClientHeader,
   CompareChart,
@@ -169,11 +173,98 @@ export function UnifiedGoalPlanner() {
 
   const { result, error, loading } = useCalculate<GoalPlannerResult>(CALCULATOR_ID[mode], input);
 
+  const handleDownload = () => {
+    if (!result) return;
+
+    const modeLabel =
+      VISIBLE_MODES.find((m) => m.id === mode)?.label ??
+      MODES.find((m) => m.id === mode)?.label ??
+      String(mode);
+
+    const headlines = [
+      { label: "Target Goal", value: result.targetGoal, highlight: true as const, hint: useInflAdj ? "Inflation-adjusted goal used" : "Nominal goal used" },
+      {
+        label: result.standard
+          ? "Standard SIP / Month"
+          : result.shortfall != null
+            ? "Shortfall"
+            : "Inflation-Adj Goal",
+        value: result.standard?.monthlySip ?? result.shortfall ?? result.inflAdjGoal,
+        hint: result.stepUp ? `Step-up SIP ${Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(Math.round(result.stepUp.monthlySip))} /mo` : undefined,
+      },
+    ];
+
+    generateCalculatorReport({
+      title: "Unified Goal Planner Dossier",
+      subtitle: `${modeLabel} · analysis for ${name}`,
+      clientName: name,
+      age,
+      status: result.overfunded ? "Overfunded" : "Validated Model",
+      filename: `unified-goal-${name}`,
+      headlines,
+      metrics: [
+        { label: "Inflation-Adj Goal", value: result.inflAdjGoal },
+        { label: "Tenure", value: `${tenureYears} yrs`, currency: false },
+        { label: "Expected Return", value: `${returnPct}%`, currency: false },
+        {
+          label: result.shortfall != null && result.shortfall > 0 ? "Shortfall" : "Tax Drag",
+          value: result.shortfall != null && result.shortfall > 0 ? result.shortfall : (result.standard?.tax ?? result.lumpsum?.tax ?? 0),
+          danger: (result.shortfall ?? 0) > 0,
+        },
+      ],
+      assumptions: [
+        ["Mode", modeLabel],
+        ["Goal Amount", goalAmount, true],
+        ["Tenure", `${tenureYears} Years`],
+        ["Expected Return", `${returnPct}%`],
+        ["Inflation", `${inflationPct}%`],
+        ["Tax", `${taxPct}%`],
+        ...(mode === "current"
+          ? ([
+              ["Current Corpus", currentCorpus, true],
+              ["Current Monthly SIP", currentMonthlySip, true],
+            ] as Array<[string, string | number, boolean?]>)
+          : []),
+        ...(mode === "compounding"
+          ? ([["Extra Years", extraYears]] as Array<[string, string | number, boolean?]>)
+          : []),
+      ],
+      tables: result.schedule
+        ? [
+            {
+              title: "Yearly Schedule",
+              head: scheduleColumns(mode).map((c) => c.header),
+              body: result.schedule.map((row) =>
+                scheduleColumns(mode).map((c) => (row as Record<string, number>)[c.key] ?? 0),
+              ),
+              columnAlignments: scheduleColumns(mode).map((c) =>
+                c.align === "right" ? "right" : "left",
+              ),
+              currencyColumns: scheduleColumns(mode)
+                .map((c, idx) => (c.format === "inr" ? idx : -1))
+                .filter((x) => x !== -1),
+            },
+          ]
+        : [],
+      playbook: playbookForPdf("unified-goal"),
+    });
+  };
+
   return (
     <CalculatorPage
       title="Unified Goal Planner"
       description="Six Unprotected goal modes. Additional SIP / lumpsum / step-up are solved so net after tax hits the goal."
       modes={<ModeTabs tabs={VISIBLE_MODES} value={mode} onChange={(id) => setMode(id as Mode)} />}
+      actions={
+        <Button
+          size="icon"
+          className="h-8 w-8 shrink-0 bg-[var(--app-primary)] text-[var(--app-primary-fg)] hover:bg-[var(--app-primary-hover)] transition-colors"
+          onClick={handleDownload}
+          title="Download Report"
+        >
+          <Download className="size-4" />
+        </Button>
+      }
       form={
         <div className={FORM_GRID}>
           <ClientHeader name={name} age={age} onNameChange={setName} onAgeChange={setAge} />

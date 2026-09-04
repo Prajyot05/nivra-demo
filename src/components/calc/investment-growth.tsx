@@ -1,6 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { generateCalculatorReport } from "@/lib/pdf-generator";
+import { playbookForPdf } from "@/lib/report-playbooks";
 import {
   ClientHeader,
   CompositionChart,
@@ -193,11 +197,113 @@ export function InvestmentGrowth() {
 
   const { result, error, loading } = useCalculate<GrowthResult>(CALCULATOR_ID[mode], input);
 
+  const handleDownload = () => {
+    if (!result) return;
+    const modeLabel = mode === "sip" ? "SIP" : mode === "lumpsum" ? "Lumpsum" : mode === "stepup" ? "Step-up SIP" : "Periodic";
+    const assumptions: Array<[string, string | number, boolean?]> = [["Mode", modeLabel]];
+    if (mode === "sip") {
+      assumptions.push(
+        ["Monthly SIP", sipMonthly, true],
+        ["SIP Years", sipYears],
+        ["Invest Years", investYears],
+        ["Return", `${sipReturn}%`],
+        ["Inflation", `${sipInflation}%`],
+        ["Tax", `${sipTax}%`],
+        ["Delay (months)", sipDelay],
+      );
+    } else if (mode === "lumpsum") {
+      assumptions.push(
+        ["Amount", lumpAmount, true],
+        ["Years", lumpYears],
+        ["Return", `${lumpReturn}%`],
+        ["Inflation", `${lumpInflation}%`],
+        ["Tax", `${lumpTax}%`],
+        ["Delay (months)", lumpDelay],
+      );
+    } else if (mode === "stepup") {
+      assumptions.push(
+        ["Start Monthly", stepStart, true],
+        ["Years", stepYears],
+        ["Return", `${stepReturn}%`],
+        ["Step-up", `${stepUpPct}%`],
+        ["Inflation", `${stepInflation}%`],
+        ["Tax", `${stepTax}%`],
+      );
+    } else {
+      assumptions.push(
+        ["Amount / payment", periodicAmount, true],
+        ["Times / year", timesPerYear],
+        ["Years", periodicYears],
+        ["Return", `${periodicReturn}%`],
+        ["Tax", `${periodicTax}%`],
+      );
+    }
+
+    generateCalculatorReport({
+      title: "Investment Growth Dossier",
+      subtitle: `${modeLabel} forward projection for ${name}`,
+      clientName: name,
+      age,
+      status: "Validated Model",
+      filename: `investment-growth-${name}`,
+      headlines: [
+        { label: "Maturity Value", value: result.maturity, highlight: true, hint: "Gross corpus at horizon" },
+        { label: "Net After Tax", value: result.netAfterTax, hint: `Gain ${Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(Math.round(result.gain))}` },
+      ],
+      metrics: [
+        { label: "Total Invested", value: result.totalInvested },
+        { label: "Pre-Tax Gain", value: result.gain },
+        { label: "Tax Liability", value: result.tax },
+        {
+          label: result.costOfDelay != null ? "Cost of Delay" : "Inflation-Adj.",
+          value: result.costOfDelay ?? result.inflationAdjusted ?? 0,
+          danger: (result.costOfDelay ?? 0) > 0,
+        },
+      ],
+      assumptions,
+      tables: result.schedule
+        ? [
+            {
+              title: `${modeLabel} Schedule`,
+              head:
+                mode === "periodic"
+                  ? ["Month", "Contribution", "FV"]
+                  : ["Year", "Invested", "Year End", "Inflation Adj"],
+              body: result.schedule.map((row: YearRow | PeriodicRow) => {
+                if (mode === "periodic") {
+                  const r = row as PeriodicRow;
+                  return [r.month, r.contribution, r.contributionFv];
+                }
+                const r = row as YearRow;
+                return [r.year, r.investedToDate, r.yearEnd, r.inflationAdjusted ?? 0];
+              }),
+              columnAlignments:
+                mode === "periodic"
+                  ? ["left", "right", "right"]
+                  : ["left", "right", "right", "right"],
+              currencyColumns: mode === "periodic" ? [1, 2] : [1, 2, 3],
+            },
+          ]
+        : [],
+      playbook: playbookForPdf("investment-growth"),
+    });
+  };
+
   return (
     <CalculatorPage
       title="Investment Growth"
       description="Lumpsum and monthly SIP — see how savings grow over time."
       modes={<ModeTabs tabs={VISIBLE_MODES} value={mode} onChange={(id) => setMode(id as Mode)} />}
+      actions={
+        <Button
+          size="icon"
+          className="h-8 w-8 shrink-0 bg-[var(--app-primary)] text-[var(--app-primary-fg)] hover:bg-[var(--app-primary-hover)] transition-colors"
+          onClick={handleDownload}
+          title="Download Report"
+        >
+          <Download className="size-4" />
+        </Button>
+      }
       form={
         mode === "sip" ? (
           <div className={FORM_GRID}>

@@ -15,19 +15,18 @@ export type NavItem = {
 };
 
 /**
- * Demo showcase: keep only the simplest calculators visible.
- * Full list stays here; set `enabled: false` to hide + block via middleware.
+ * Side-nav calculator list. Set `enabled: false` to hide + block via middleware.
  */
 export const CALCULATOR_NAV: NavItem[] = [
-  { to: "/growth", label: "Investment Growth" },
   { to: "/", label: "Goal SIP Planner" },
-  { to: "/loans", label: "Loan EMI" },
-  { to: "/goals", label: "Unified Goal Planner", enabled: false },
-  { to: "/education", label: "Child Education", enabled: false },
-  { to: "/fire", label: "FIRE / Health", enabled: false },
-  { to: "/mf-fd", label: "MF vs FD", enabled: false },
-  { to: "/insurance", label: "Insurance", enabled: false },
-  { to: "/multi-goal", label: "Multi-Goal", enabled: false },
+  { to: "/goals", label: "Unified Goal Planner" },
+  { to: "/growth", label: "Investment Growth" },
+  { to: "/education", label: "Child Education" },
+  { to: "/fire", label: "FIRE / Health" },
+  { to: "/mf-fd", label: "MF vs FD" },
+  { to: "/loans", label: "Loans" },
+  { to: "/insurance", label: "Insurance" },
+  { to: "/multi-goal", label: "Multi-Goal" },
 ];
 
 export function getEnabledCalculators(): NavItem[] {

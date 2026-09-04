@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
-import { Download, Calendar, Clock } from "lucide-react";
+import { Download, Calendar, Clock, Loader2 } from "lucide-react";
 import { useGoalSip } from "@/hooks/use-goal-sip";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,7 +24,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { downloadSipPdf } from "@/lib/download-sip-pdf";
+import { GoalSipDossier, GOAL_SIP_REPORT_ID } from "@/components/reports/goal-sip-dossier";
+import { generatePdfFromElement } from "@/lib/pdf-generator";
 import { NavToggleButton } from "@/components/layout/sidebar-context";
 import {
   CalculatorPageHeader,
@@ -73,6 +74,7 @@ export function GoalSipPlanner() {
   const [useInflAdj, setUseInflAdj] = useState(false);
   const [chartType, setChartType] = useState<"pie" | "bar">("pie");
   const [themeId, setThemeId] = useState<ColorThemeId>("classic");
+  const [isDownloading, setIsDownloading] = useState(false);
   const theme = useMemo(() => getColorTheme(themeId), [themeId]);
 
   const { result, error, loading } = useGoalSip({
@@ -129,40 +131,28 @@ export function GoalSipPlanner() {
     { name: "Tax", value: stepTax, color: theme.chart.tax },
   ];
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
+    if (!result || isDownloading) return;
+    setIsDownloading(true);
     try {
-      downloadSipPdf({
-        clientName,
-        age,
-        goal,
-        inflAdjGoal,
-        useInflAdj,
-        targetGoal,
-        tenure,
-        returnPct,
-        inflation,
-        tax,
-        stepUp,
-        standardSIP,
-        stepUpSIP,
-        stdInvested,
-        stepInvested,
-        stdGain,
-        stepGain,
-        stdTax,
-        stepTax,
-        stdCorpus,
-        stepCorpus,
-        stdSchedule,
-        stepSchedule,
-        delays,
-      });
+      const safe = (clientName || "client")
+        .replace(/[^a-zA-Z0-9-_ ]/g, "")
+        .trim()
+        .replace(/\s+/g, "-")
+        .toLowerCase();
+      await generatePdfFromElement(
+        GOAL_SIP_REPORT_ID,
+        `goal-sip-planner-${safe || "report"}`,
+      );
     } catch (err) {
       console.error("PDF download failed:", err);
+    } finally {
+      setIsDownloading(false);
     }
   };
 
   return (
+    <>
     <div
       className="custom-scrollbar flex h-full min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto bg-[var(--app-bg)] pt-[max(0.5rem,env(safe-area-inset-top))] pr-[max(0.75rem,env(safe-area-inset-right))] pb-[max(0.5rem,env(safe-area-inset-bottom))] pl-[max(0.75rem,env(safe-area-inset-left))] sm:px-5 md:px-6 lg:px-8"
       style={theme.vars as CSSProperties}
@@ -184,12 +174,17 @@ export function GoalSipPlanner() {
           }
           actions={
             <Button
-              size="sm"
-              className="h-8 bg-[var(--app-primary)] px-3 text-xs font-semibold text-[var(--app-primary-fg)] hover:bg-[var(--app-primary-hover)]"
+              size="icon"
+              className="h-8 w-8 shrink-0 bg-[var(--app-primary)] text-[var(--app-primary-fg)] hover:bg-[var(--app-primary-hover)] transition-colors disabled:opacity-50"
               onClick={handleDownload}
+              disabled={!result || isDownloading}
+              title={isDownloading ? "Preparing PDF…" : "Download Report"}
             >
-              <Download className="size-3.5" />
-              Download
+              {isDownloading ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Download className="size-4" />
+              )}
             </Button>
           }
         />
@@ -524,6 +519,37 @@ export function GoalSipPlanner() {
         </div>
       </div>
     </div>
+    {result ? (
+      <GoalSipDossier
+        data={{
+          clientName,
+          age,
+          goal,
+          inflAdjGoal,
+          useInflAdj,
+          targetGoal,
+          tenure,
+          returnPct,
+          inflation,
+          tax,
+          stepUp,
+          standardSIP,
+          stepUpSIP,
+          stdInvested,
+          stepInvested,
+          stdGain,
+          stepGain,
+          stdTax,
+          stepTax,
+          stdCorpus,
+          stepCorpus,
+          stdSchedule,
+          stepSchedule,
+          delays,
+        }}
+      />
+    ) : null}
+    </>
   );
 }
 

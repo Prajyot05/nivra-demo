@@ -1,6 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Download, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { generateCalculatorReport } from "@/lib/pdf-generator";
+import { playbookForPdf } from "@/lib/report-playbooks";
 import {
   ClientHeader,
   ComboChart,
@@ -223,11 +227,202 @@ export function FireHealthCalculator() {
   const fire = mode === "fire" ? (result as FireResult | null) : null;
   const health = mode === "health" ? (result as HealthResult | null) : null;
 
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownload = () => {
+    if (!result) return;
+    setIsDownloading(true);
+    try {
+      if (mode === "fire") {
+        const r = result as FireResult;
+        const existingCorpus = c1Amt + c2Amt;
+        const delayCost = Math.max(0, (r.delayLumpsum || 0) - r.additionalLumpsum);
+        const retireIdx = r.schedule.findIndex((row) => row.age === retAge);
+
+        generateCalculatorReport({
+          title: "Executive FIRE & Retirement Dossier",
+          subtitle: "Institutional Wealth Advisory Desk · Comprehensive Architecture",
+          clientName: fireName,
+          age,
+          meta: [
+            { label: "RETIRE", value: String(retAge) },
+            { label: "SURVIVE", value: String(survAge) },
+          ],
+          status: r.excess ? "Fully Funded" : "Validated Model",
+          filename: `fire-health-${fireName}`,
+          headlines: [
+            {
+              label: `Corpus Required at Retirement (Age ${retAge})`,
+              value: r.corpusRequired,
+              highlight: true,
+              hint: `Active ${r.activeYears} yrs · Retired ${r.retiredYears} yrs`,
+            },
+            {
+              label: "Monthly SIP Needed",
+              value: r.monthlySip,
+              hint: `Alt. lumpsum today Rs. ${Math.round(r.additionalLumpsum).toLocaleString("en-IN")}`,
+            },
+          ],
+          metrics: [
+            { label: "Existing Corpus", value: existingCorpus },
+            { label: "Current @ Retirement", value: r.currentAtRetirement },
+            {
+              label: "Net Gap at Retirement",
+              value: r.balanceCorpus,
+              danger: !r.excess && r.balanceCorpus > 0,
+            },
+            {
+              label: `Cost of ${delay}-mo Delay`,
+              value: delayCost,
+              danger: delayCost > 0,
+            },
+          ],
+          assumptions: [
+            ["Current Age", age],
+            ["Retirement Age", retAge],
+            ["Surviving Age", survAge],
+            ["Monthly Expenses", monthlyExp, true],
+            ["Lifestyle Yearly", lifestyle, true],
+            ["Pre-Ret Return", `${ret}%`],
+            ["Post-Ret Return", `${retAfter}%`],
+            ["Inflation", `${infl}%`],
+            ["Tax on Gains", `${tax}%`],
+            ["Current SIP", curSip, true],
+            ["Step-up", `${stepUp}%`],
+            ["Delay Months", delay],
+          ],
+          tables: [
+            {
+              title: "Cost of Delay",
+              head: ["Route", "Start Now", "Delayed", "Extra Cost"],
+              body: [
+                [
+                  "Lumpsum",
+                  r.additionalLumpsum,
+                  r.delayLumpsum || r.additionalLumpsum,
+                  Math.max(0, (r.delayLumpsum || 0) - r.additionalLumpsum),
+                ],
+                [
+                  "Monthly SIP",
+                  r.monthlySip,
+                  r.delaySip || r.monthlySip,
+                  Math.max(0, (r.delaySip || 0) - r.monthlySip),
+                ],
+              ],
+              columnAlignments: ["left", "right", "right", "right"],
+              currencyColumns: [1, 2, 3],
+            },
+            {
+              title: "Age Schedule & Year-End Portfolio",
+              head: ["Age", "Phase", "Contribution", "Withdrawal", "Corpus"],
+              body: r.schedule.map((row) => [
+                row.age,
+                row.phase,
+                row.contribution,
+                row.withdrawal,
+                row.corpus,
+              ]),
+              columnAlignments: ["left", "left", "right", "right", "right"],
+              currencyColumns: [2, 3, 4],
+              highlightRows: retireIdx >= 0 ? [retireIdx] : [],
+            },
+          ],
+          playbook: playbookForPdf("fire"),
+        });
+      } else {
+        const hr = result as HealthResult;
+        const retireIdx = hr.schedule.findIndex((row) => row.age === hRet);
+
+        generateCalculatorReport({
+          title: "Financial Health & Longevity Dossier",
+          subtitle: "Projected capital required vs longevity",
+          clientName: hName,
+          age: hAge,
+          meta: [
+            { label: "RETIRE", value: String(hRet) },
+            { label: "SURVIVE", value: String(hSurv) },
+          ],
+          status: hr.funded ? "Funded" : "Action Needed",
+          filename: `fire-health-${hName}`,
+          headlines: [
+            {
+              label: "Corpus at Retirement",
+              value: hr.corpusAtRetirement,
+              highlight: true,
+              hint: `Active ${hr.activeYears} yrs · Retired ${hr.retiredYears} yrs`,
+            },
+            {
+              label: "Funding Gap @ Retirement",
+              value: hr.gapAtRetirement,
+              hint: hr.funded ? "Fully funded" : "Cashflow deficit identified",
+            },
+          ],
+          metrics: [
+            { label: "Surviving Corpus", value: hr.remainingAtSurvival },
+            {
+              label: "Months Lasting",
+              value: hr.funded ? "Fully Survives" : `${hr.monthsLasting} mos`,
+              currency: false,
+            },
+            { label: "PV Remaining", value: hr.remainingPvToday },
+            { label: "Exp @ Ret+1", value: hr.monthlyExpAtRetPlus1 },
+          ],
+          assumptions: [
+            ["Current Age", hAge],
+            ["Retirement Age", hRet],
+            ["Surviving Age", hSurv],
+            ["Current Corpus", hCorpus, true],
+            ["Monthly Expenses", hExp, true],
+            ["Monthly Investment", hSav, true],
+            ["Lifestyle Yearly", hLife, true],
+            ["Pre-Ret Return", `${hReturn}%`],
+            ["Post-Ret Return", `${hAfter}%`],
+            ["Inflation", `${hInfl}%`],
+            ["Tax", `${hTax}%`],
+            ["Ret. Benefit", hBenefit, true],
+          ],
+          tables: [
+            {
+              title: "Age Path",
+              head: ["Age", "Phase", "Yearly Expense", "Event", "Corpus"],
+              body: hr.schedule.map((row) => [
+                row.age,
+                row.phase,
+                row.yearlyExpense,
+                row.eventAmount,
+                row.corpus,
+              ]),
+              columnAlignments: ["left", "left", "right", "right", "right"],
+              currencyColumns: [2, 3, 4],
+              highlightRows: retireIdx >= 0 ? [retireIdx] : [],
+            },
+          ],
+          playbook: playbookForPdf("health"),
+        });
+      }
+    } catch (err) {
+      console.error("PDF download failed:", err);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   return (
     <CalculatorPage
       title="FIRE / Financial Health"
       description="FIRE corpus / SIP planner and long-term financial health from Unprotected Excel."
       modes={<ModeTabs tabs={[...MODES]} value={mode} onChange={(id) => setMode(id as Mode)} />}
+      actions={
+        <Button
+          size="icon"
+          className="h-8 w-8 shrink-0 bg-[var(--app-primary)] text-[var(--app-primary-fg)] hover:bg-[var(--app-primary-hover)] transition-colors disabled:opacity-50"
+          onClick={handleDownload}
+          disabled={isDownloading || !result}
+          title="Download Executive Dossier"
+        >
+          {isDownloading ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
+        </Button>
+      }
       form={
         mode === "fire" ? (
           <div className={FORM_GRID}>
@@ -388,8 +583,16 @@ function FireResults({
             <CompareChart
               title="Delay cost"
               data={[
-                { category: "Lumpsum", now: result.additionalLumpsum, delayed: result.delayLumpsum || result.additionalLumpsum },
-                { category: "Monthly SIP", now: result.monthlySip, delayed: result.delaySip || result.monthlySip },
+                {
+                  category: "Lumpsum",
+                  now: result.additionalLumpsum,
+                  delayed: result.delayLumpsum || result.additionalLumpsum,
+                },
+                {
+                  category: "Monthly SIP",
+                  now: result.monthlySip,
+                  delayed: result.delaySip || result.monthlySip,
+                },
               ]}
               series={[
                 { key: "now", label: "Start now", color: "var(--app-chart-invested)" },
