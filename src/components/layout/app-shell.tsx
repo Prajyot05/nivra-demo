@@ -6,6 +6,7 @@ import { LogOut, PanelLeftClose } from "lucide-react";
 import { useCallback, type ReactNode } from "react";
 import { NavOverlay } from "@/components/layout/nav-overlay";
 import { SidebarProvider, useSidebar } from "@/components/layout/sidebar-context";
+import { NivraMark, PoweredByNivra } from "@/components/admin/branding";
 import { Button } from "@/components/ui/button";
 import { getEnabledCalculators } from "@/lib/calculator-nav";
 import { cn } from "@/lib/utils";
@@ -76,7 +77,11 @@ function AppShellInner({ children }: { children: ReactNode }) {
     router.refresh();
   }, [router, closeOverlay]);
 
-  if (pathname === "/login") {
+  if (
+    pathname === "/login" ||
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/company")
+  ) {
     return <>{children}</>;
   }
 
@@ -88,9 +93,8 @@ function AppShellInner({ children }: { children: ReactNode }) {
         <aside className="hidden w-56 shrink-0 border-r border-border bg-sidebar md:flex md:flex-col">
           <div className="flex items-start justify-between border-b border-sidebar-border px-4 py-4">
             <div>
-              <div className="text-sm font-semibold tracking-tight text-sidebar-foreground">
-                Nivra Calculators
-              </div>
+              <NivraMark />
+              <p className="mt-1 text-[11px] text-muted-foreground">Calculators</p>
             </div>
             <Button
               variant="ghost"
@@ -105,7 +109,7 @@ function AppShellInner({ children }: { children: ReactNode }) {
           <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-2">
             <NavLinks pathname={pathname} items={enabledCalculators} variant="sidebar" />
           </nav>
-          <div className="border-t border-sidebar-border p-2">
+          <div className="space-y-2 border-t border-sidebar-border p-2">
             <Button
               variant="ghost"
               size="sm"
@@ -115,6 +119,7 @@ function AppShellInner({ children }: { children: ReactNode }) {
               <LogOut />
               Sign out
             </Button>
+            <PoweredByNivra />
           </div>
         </aside>
       ) : null}

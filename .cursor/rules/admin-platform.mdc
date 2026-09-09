@@ -1,0 +1,29 @@
+---
+description: Confirmed multi-tenant admin product rules + platform tech stack
+alwaysApply: true
+---
+
+# Admin platform (confirmed)
+
+Two dashboards: **Nivra admin** (`/admin`) and **Company admin** (`/company`). Auth provider TBD (Better Auth vs Clerk — Sasmith). Use dummy data until auth/DB land. Tiers TBD (Sasmith).
+
+## Product rules
+
+- **Tenancy:** shared app `nivra.app`; company branding after login. No custom subdomain/domain at launch. One org per user. Advisors only — no client logins.
+- **Nivra admin roles:** Main admin · Support staff (advisor generating reports). Nivra logo on chrome. Sees all companies (active / inactive / suspended / trial), users, logos, reports count, subscription tier.
+- **Company admin roles:** Admin (Owner) · Advisor · Viewer. Subscriber is initial Owner. Seat limits from plan. Owner manages users. Sees plan, seats used/left, renewal/status. Calculator access by plan. Branding editables (Admin/Advisor): disclaimer, logos, company name, phone, email. Usage read-only: reports this month, active advisors. Default theme.
+- **Lock:** soft-lock expired/suspended for a few days (view-only), then hard lock.
+- **Branding:** Nivra logo on app chrome; company branding on PDF reports. **"Powered by Nivra"** on every footer + report.
+
+## Tech stack
+
+| Concern | Choice | Notes |
+| --- | --- | --- |
+| Hosting | Vercel | Free → Pro ~$20/mo |
+| DB | Neon | Free 0.5 GB → usage paid |
+| Email | Brevo | Free ~300/day → Starter ₹562.50 / 5k |
+| Images | ImageKit | Free 20 GB bw / 3 GB storage |
+| Auth | TBD | Better Auth (self) vs Clerk (hosted, branding) |
+| Logs | Better Stack | Free 3 GB / 3 days |
+
+Do not invent auth/billing APIs yet. Keep admin UI on shadcn shell tokens; reuse calculator kit only for calc pages.
