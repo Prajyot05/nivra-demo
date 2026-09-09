@@ -449,6 +449,11 @@ function drawFooter(doc: jsPDF) {
     doc.setFontSize(5.5);
     doc.setTextColor(...MUTED);
     doc.text(`Page ${i} of ${pages}`, pageW - 14, pageH - 8, { align: "right" });
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(5.5);
+    doc.setTextColor(...SUBTLE);
+    doc.text("Powered by Nivra", pageW / 2, pageH - 4, { align: "center" });
   }
 }
 

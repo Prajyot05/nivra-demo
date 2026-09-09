@@ -108,6 +108,9 @@ export function ExecutiveDossierSheet({
             Disclaimer
           </span>
           <p>{disclaimer}</p>
+          <p className="mt-3 text-center text-[10px] text-slate-400">
+            Powered by <span className="font-medium text-slate-600">Nivra</span>
+          </p>
         </footer>
       </div>
     </div>

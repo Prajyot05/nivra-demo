@@ -25,6 +25,10 @@ npm run dev       # http://localhost:3000
 
 Contract: [`docs/API_CONTRACT.md`](docs/API_CONTRACT.md). Progress / handoff: [`PROGRESS.md`](PROGRESS.md). Charts: [`docs/charts.md`](docs/charts.md).
 
+**Admin / multi-tenant (confirmed product + stack):** [`.cursor/rules/admin-platform.mdc`](.cursor/rules/admin-platform.mdc). Dummy UIs: `/admin` (Nivra platform) · `/company` (tenant). Auth provider and launch tiers still TBD.
+
+Docs: [`docs/ADMIN_PLATFORM.md`](docs/ADMIN_PLATFORM.md).
+
 ---
 
 ## Repo map

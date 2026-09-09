@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PanelLeft, X } from "lucide-react";
 import { useEffect } from "react";
+import { NivraMark, PoweredByNivra } from "@/components/admin/branding";
 import type { NavItem } from "@/lib/calculator-nav";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -56,9 +57,7 @@ export function NavOverlay({
       <aside className="relative flex h-full w-72 max-w-[85vw] flex-col border-r border-sidebar-border bg-sidebar shadow-xl">
         <div className="flex items-center justify-between border-b border-sidebar-border px-4 py-4">
           <div>
-            <div className="text-sm font-semibold tracking-tight text-sidebar-foreground">
-              Nivra Calculators
-            </div>
+            <NivraMark />
             <p className="mt-0.5 text-[11px] text-muted-foreground">Navigation</p>
           </div>
           <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close">
@@ -93,6 +92,7 @@ export function NavOverlay({
           <Button variant="ghost" size="sm" onClick={onLogout} className="justify-start">
             Sign out
           </Button>
+          <PoweredByNivra />
         </div>
       </aside>
     </div>

@@ -231,4 +231,17 @@ Committed golden fixtures cover all **23** calculator ids:
 
 Charts: FIRE line + stacked area + donut; Health `ComboChart` + donut. `ComboChart` lives in `@nivra/ui`.
 
+---
+
+## 12. Admin dashboards (dummy UI)
+
+Confirmed product + stack: [`.cursor/rules/admin-platform.mdc`](.cursor/rules/admin-platform.mdc) · [`docs/ADMIN_PLATFORM.md`](docs/ADMIN_PLATFORM.md).
+
+| Route | Audience | Notes |
+| --- | --- | --- |
+| `/admin` | Nivra platform | Companies, staff roles, report totals — dummy data |
+| `/company` | Tenant (Acme demo) | Users/seats, branding, calculators, settings — dummy data |
+
+Auth provider (Better Auth vs Clerk) and launch tiers still TBD (Sasmith). No Neon wiring yet.
+
 

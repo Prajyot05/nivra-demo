@@ -125,6 +125,9 @@ export function ReportDossierLayout({
           <div className="mt-2 font-mono text-[9px] uppercase text-[#94a3b8]">Hash: {hash}</div>
         </div>
       </div>
+      <p className="mt-4 text-center text-[10px] text-[#94a3b8]">
+        Powered by <span className="font-medium text-[#64748b]">Nivra</span>
+      </p>
     </div>
   );
 }
