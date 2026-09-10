@@ -106,7 +106,7 @@ export const CALCULATOR_CATEGORIES: NavCategory[] = [
         label: "Goal with Current Lumpsum",
         shortLabel: "Goal LS + SIP",
         excelFile:
-          "Unprotected/Nivra Goal w Current Investment, LS - SIP Options v3.xlsm",
+          "calculator-tests/Nivra Goal w Current Investment, LS - SIP Options v3.xlsm",
       },
       {
         id: "goal-current",
@@ -115,7 +115,7 @@ export const CALCULATOR_CATEGORIES: NavCategory[] = [
         label: "Goal with Current Investments",
         shortLabel: "Goal Current",
         excelFile:
-          "Unprotected/Nivra Goal with Current Investment - LS, SIP, SU_SIP.xlsm",
+          "calculator-tests/Nivra Goal with Current Investment - LS, SIP, SU_SIP.xlsm",
       },
       {
         id: "multi-goal-assign",
@@ -124,7 +124,7 @@ export const CALCULATOR_CATEGORIES: NavCategory[] = [
         label: "Multiple Goals – Corpus Assignment",
         shortLabel: "Multi-Goal",
         excelFile:
-          "Nivra Tools - Full Set/Nivra Multiple Goals with Corpus Assignment v2.xlsm",
+          "calculator-tests/Nivra Multiple Goals with Corpus Assignment v2.xlsm",
       },
       {
         id: "goal-periodic",

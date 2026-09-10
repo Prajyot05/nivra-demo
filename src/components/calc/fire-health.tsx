@@ -11,7 +11,6 @@ import {
   CompareChart,
   CompositionChart,
   GrowthChart,
-  ModeTabs,
   MoneyInput,
   PercentInput,
   ResultCard,
@@ -96,7 +95,7 @@ type HealthResult = {
 };
 
 export function FireHealthCalculator() {
-  const [mode, setMode] = useCalculatorMode(MODE_IDS, "fire");
+  const [mode] = useCalculatorMode(MODE_IDS, "fire");
 
   const [fireName, setFireName] = useState("Sanjay Gupta");
   const [age, setAge] = useState(40);
@@ -413,7 +412,6 @@ export function FireHealthCalculator() {
     <CalculatorPage
       title={getCalculatorPageTitle("/fire", mode)}
       description="FIRE corpus / SIP planner and long-term financial health from Unprotected Excel."
-      modes={<ModeTabs tabs={[...MODES]} value={mode} onChange={(id) => setMode(id as Mode)} />}
       actions={
         <Button
           size="icon"
@@ -606,12 +604,25 @@ function FireResults({
       </div>
       <ScheduleTable
         caption="Age schedule"
+        zebra
         columns={[
-          { key: "age", header: "Age" },
+          { key: "age", header: "Age", sticky: true },
           { key: "phase", header: "Phase", format: "text" },
-          { key: "contribution", header: "Contribution", format: "inr", align: "right" },
-          { key: "withdrawal", header: "Withdrawal", format: "inr", align: "right" },
-          { key: "corpus", header: "Corpus", format: "inr", align: "right" },
+          {
+            key: "contribution",
+            header: "Contribution",
+            format: "inr",
+            align: "right",
+            tone: "std",
+          },
+          {
+            key: "withdrawal",
+            header: "Withdrawal",
+            format: "inr",
+            align: "right",
+            tone: "warn",
+          },
+          { key: "corpus", header: "Corpus", format: "inr", align: "right", tone: "step" },
         ]}
         rows={result.schedule}
       />
@@ -690,12 +701,19 @@ function HealthResults({ result }: { result: HealthResult }) {
       </div>
       <ScheduleTable
         caption="Age path"
+        zebra
         columns={[
-          { key: "age", header: "Age" },
+          { key: "age", header: "Age", sticky: true },
           { key: "phase", header: "Phase", format: "text" },
-          { key: "yearlyExpense", header: "Expense", format: "inr", align: "right" },
-          { key: "eventAmount", header: "Event", format: "inr", align: "right" },
-          { key: "corpus", header: "Corpus", format: "inr", align: "right" },
+          {
+            key: "yearlyExpense",
+            header: "Expense",
+            format: "inr",
+            align: "right",
+            tone: "warn",
+          },
+          { key: "eventAmount", header: "Event", format: "inr", align: "right", tone: "warn" },
+          { key: "corpus", header: "Corpus", format: "inr", align: "right", tone: "step" },
         ]}
         rows={result.schedule}
       />

@@ -54,7 +54,7 @@ function interestError(value: number, label: string): string | undefined {
   return undefined;
 }
 
-function legItems(leg: Leg, advantage: number, side: "MF" | "FD") {
+function legItems(leg: Leg, advantage: number) {
   return [
     {
       label: "Annualized return",
@@ -79,12 +79,10 @@ function legItems(leg: Leg, advantage: number, side: "MF" | "FD") {
     {
       label: "Difference in return",
       value: advantage,
-      hint: advantage > 0 ? `${side} ahead` : undefined,
     },
     {
       label: "Final maturity amount",
       value: leg.net,
-      hint: "Investment + post-tax gains",
       highlight: true,
     },
   ];
@@ -336,8 +334,8 @@ export function MfVsFd() {
                 </div>
               </div>
               <div className="flex flex-col gap-3 lg:col-span-5">
-                <ResultCard title="Mutual funds" items={legItems(result.mf, result.mfAdvantage, "MF")} />
-                <ResultCard title="Fixed deposit" items={legItems(result.fd, result.fdAdvantage, "FD")} />
+                <ResultCard title="Mutual funds" items={legItems(result.mf, result.mfAdvantage)} />
+                <ResultCard title="Fixed deposit" items={legItems(result.fd, result.fdAdvantage)} />
               </div>
               <div className="rounded-xl border border-[var(--app-warn-border)] bg-[var(--app-warn-bg)] p-3 sm:p-4 lg:col-span-12">
                 <div className="text-[10px] font-semibold uppercase tracking-widest text-[var(--app-warn-text-strong)]">

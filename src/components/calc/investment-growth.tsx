@@ -854,18 +854,21 @@ function GrowthResults({
             header: "Invested",
             format: "inr" as const,
             align: "right" as const,
+            tone: "std" as const,
           },
           {
             key: "yearEnd",
             header: "Year-end",
             format: "inr" as const,
             align: "right" as const,
+            tone: "step" as const,
           },
           {
             key: "inflationAdjusted",
             header: "Inflation-adj.",
             format: "inr" as const,
             align: "right" as const,
+            tone: "warn" as const,
           },
         ]
       : [
@@ -875,24 +878,28 @@ function GrowthResults({
             header: "Monthly SIP",
             format: "inr" as const,
             align: "right" as const,
+            tone: "std" as const,
           },
           {
             key: "investedToDate",
             header: "Invested",
             format: "inr" as const,
             align: "right" as const,
+            tone: "std" as const,
           },
           {
             key: "yearEnd",
             header: "Year-end",
             format: "inr" as const,
             align: "right" as const,
+            tone: "step" as const,
           },
           {
             key: "inflationAdjusted",
             header: "Inflation-adj.",
             format: "inr" as const,
             align: "right" as const,
+            tone: "warn" as const,
           },
         ];
 
@@ -913,7 +920,6 @@ function GrowthResults({
         <ScheduleTable
           caption="Yearly schedule"
           zebra
-          highlightLastRow
           columns={yearlyColumns}
           rows={yearRows}
         />
@@ -938,7 +944,6 @@ function GrowthResults({
         <ScheduleTable
           caption="Yearly schedule"
           zebra
-          highlightLastRow
           columns={yearlyColumns}
           rows={yearRows}
         />
@@ -961,7 +966,6 @@ function GrowthResults({
       <ScheduleTable
         caption="Contribution schedule"
         zebra
-        highlightLastRow
         columns={[
           { key: "month", header: "Month", align: "right", sticky: true },
           {
@@ -969,12 +973,14 @@ function GrowthResults({
             header: "Contribution",
             format: "inr",
             align: "right",
+            tone: "std",
           },
           {
             key: "contributionFv",
             header: "FV at horizon",
             format: "inr",
             align: "right",
+            tone: "step",
           },
         ]}
         rows={periodicRows}

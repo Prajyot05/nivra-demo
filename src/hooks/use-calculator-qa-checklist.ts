@@ -17,7 +17,7 @@ function readChecked(): Record<string, boolean> {
   }
 }
 
-/** Dev-only Excel QA ticks — persisted in localStorage. */
+/** Excel QA ticks — persisted in this browser's localStorage (not in git). */
 export function useCalculatorQaChecklist() {
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [ready, setReady] = useState(false);

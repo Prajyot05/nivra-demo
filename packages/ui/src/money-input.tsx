@@ -7,18 +7,20 @@ export function MoneyInput({
   onChange,
   hint,
   error,
+  align = "left",
 }: {
   label: string;
   value: number;
   onChange: (value: number) => void;
   hint?: string;
   error?: string;
+  align?: "left" | "right";
 }) {
   return (
     <Field label={label} hint={hint} error={error}>
       <TextInput
         inputMode="numeric"
-        className={error ? inputErrorClass : undefined}
+        className={`${error ? inputErrorClass : ""} ${align === "right" ? "text-right" : ""}`.trim()}
         value={formatINR(value)}
         onChange={(e) => onChange(parseDigits(e.target.value.replace(/,/g, "")))}
       />

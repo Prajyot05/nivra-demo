@@ -19,15 +19,12 @@ import {
 } from "@/lib/calculator-nav";
 import { cn } from "@/lib/utils";
 
-const SHOW_QA_CHECKLIST = process.env.NODE_ENV === "development";
-
 function NavLinks({
   pathname,
   mode,
   items,
   categories,
   variant,
-  showQaChecklist,
   checked,
   onToggle,
 }: {
@@ -36,7 +33,6 @@ function NavLinks({
   items: NavItem[];
   categories: ReturnType<typeof getEnabledCategories>;
   variant: "sidebar" | "mobile";
-  showQaChecklist: boolean;
   checked: Record<string, boolean>;
   onToggle: (id: string) => void;
 }) {
@@ -54,11 +50,11 @@ function NavLinks({
                 active
                   ? "border-primary bg-primary text-primary-foreground"
                   : "border-border text-muted-foreground",
-                showQaChecklist && checked[item.id] && "ring-1 ring-emerald-500/50",
+                checked[item.id] && "ring-1 ring-emerald-500/50",
               )}
-              title={showQaChecklist ? item.excelFile : undefined}
+              title={item.excelFile}
             >
-              {showQaChecklist && checked[item.id] ? "✓ " : ""}
+              {checked[item.id] ? "✓ " : ""}
               {item.shortLabel}
             </Link>
           );
@@ -82,7 +78,7 @@ function NavLinks({
                   key={item.id}
                   item={item}
                   active={active}
-                  showQaChecklist={showQaChecklist}
+                  showQaChecklist
                   checked={checked[item.id]}
                   onToggle={() => onToggle(item.id)}
                 />
@@ -136,7 +132,7 @@ function AppShellInner({ children }: { children: ReactNode }) {
         className={cn(
           "shrink-0 border-r border-border bg-sidebar",
           "hidden md:flex md:flex-col",
-          showSidebar ? (SHOW_QA_CHECKLIST ? "w-80" : "w-72") : "md:hidden",
+          showSidebar ? "w-80" : "md:hidden",
         )}
         aria-hidden={!showSidebar}
       >
@@ -144,11 +140,9 @@ function AppShellInner({ children }: { children: ReactNode }) {
           <div>
             <NivraMark />
             <p className="mt-1 text-[11px] text-muted-foreground">Calculators</p>
-            {SHOW_QA_CHECKLIST ? (
-              <p className="mt-1 text-[10px] font-medium text-muted-foreground">
-                Excel QA · {checkedCount}/{totalCount}
-              </p>
-            ) : null}
+            <p className="mt-1 text-[10px] font-medium text-muted-foreground">
+              Excel QA · {checkedCount}/{totalCount}
+            </p>
           </div>
           <Button
             variant="ghost"
@@ -167,22 +161,19 @@ function AppShellInner({ children }: { children: ReactNode }) {
             items={enabledCalculators}
             categories={enabledCategories}
             variant="sidebar"
-            showQaChecklist={SHOW_QA_CHECKLIST}
             checked={checked}
             onToggle={toggle}
           />
         </nav>
         <div className="space-y-2 border-t border-sidebar-border p-2">
-          {SHOW_QA_CHECKLIST ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start text-muted-foreground"
-              onClick={clearAll}
-            >
-              Clear Excel QA ticks
-            </Button>
-          ) : null}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start text-muted-foreground"
+            onClick={clearAll}
+          >
+            Clear Excel QA ticks
+          </Button>
           <Button
             variant="ghost"
             size="sm"
@@ -203,7 +194,7 @@ function AppShellInner({ children }: { children: ReactNode }) {
         mode={mode}
         onExpandSidebar={expand}
         onLogout={handleLogout}
-        showQaChecklist={SHOW_QA_CHECKLIST}
+        showQaChecklist
         checked={checked}
         onToggle={toggle}
       />
@@ -216,7 +207,6 @@ function AppShellInner({ children }: { children: ReactNode }) {
             items={enabledCalculators}
             categories={enabledCategories}
             variant="mobile"
-            showQaChecklist={SHOW_QA_CHECKLIST}
             checked={checked}
             onToggle={toggle}
           />

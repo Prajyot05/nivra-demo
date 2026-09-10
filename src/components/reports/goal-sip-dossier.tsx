@@ -132,7 +132,7 @@ export function GoalSipDossier({ id = GOAL_SIP_REPORT_ID, data }: GoalSipDossier
     <ExecutiveDossierSheet
       id={id}
       title="Goal SIP Investment Planner"
-      subtitle="Institutional Wealth Advisory Desk • Goal Wealth Modeling & Sensitivity Architecture"
+      subtitle="Goal funding comparison"
       contact={contact}
       meta={[
         { label: "Client Name", value: data.clientName || "Client" },
@@ -147,7 +147,7 @@ export function GoalSipDossier({ id = GOAL_SIP_REPORT_ID, data }: GoalSipDossier
         <ExecutiveSectionHeading
           variant="square"
           title="Primary Goal & Accumulation Milestones"
-          hint={`All figures modeled over ${data.tenure}-year accumulation horizon (${formatPercent(data.returnPct)} CAGR baseline)`}
+          hint={`All figures modeled over ${data.tenure}-year tenure (${formatPercent(data.returnPct)} CAGR baseline)`}
         />
 
         <div className="flex gap-4">
@@ -157,7 +157,7 @@ export function GoalSipDossier({ id = GOAL_SIP_REPORT_ID, data }: GoalSipDossier
                 <span className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                   Fixed Monthly Allocation
                 </span>
-                <h3 className="text-sm font-bold text-slate-100">Standard Systematic Plan</h3>
+                <h3 className="text-sm font-bold text-slate-100">Standard SIP plan</h3>
               </div>
               <span className="inline-flex shrink-0 items-center self-start whitespace-nowrap rounded-full border border-slate-700 bg-slate-800 px-2.5 py-1 text-[10px] font-semibold leading-none text-slate-300">
                 Flat SIP
@@ -238,7 +238,7 @@ export function GoalSipDossier({ id = GOAL_SIP_REPORT_ID, data }: GoalSipDossier
           <div className="flex items-center space-x-2">
             <span className="h-2 w-2 rounded-full bg-emerald-500" />
             <span className="text-slate-700">
-              <strong>Key Advisory Insight:</strong> Step-Up SIP initiates at a{" "}
+              <strong>Note:</strong> Step-Up SIP initiates at a{" "}
               <strong>{savingsPct.toFixed(1)}% lower commitment</strong> (
               {formatINRCurrency(data.stepUpSIP)} vs. {formatINRCurrency(data.standardSIP)}/mo),
               substantially reducing initial liquidity strain while fully delivering the required
@@ -252,7 +252,7 @@ export function GoalSipDossier({ id = GOAL_SIP_REPORT_ID, data }: GoalSipDossier
       </section>
 
       <section className="space-y-3" data-purpose="assumptions-grid">
-        <ExecutiveSectionHeading title="Actuarial & Financial Parameters Baseline" />
+        <ExecutiveSectionHeading title="Assumptions" />
         <div className="flex flex-wrap gap-4 rounded-xl border border-slate-200 bg-white p-4 text-center">
           <Param label="Client Age" value={`${data.age} Yrs`} />
           <Param label="Goal Amount" value={formatINRCurrency(data.goal)} />
@@ -294,7 +294,7 @@ export function GoalSipDossier({ id = GOAL_SIP_REPORT_ID, data }: GoalSipDossier
         <div className="flex gap-4">
           <div className="flex-1">
             <ReportCompositionDonut
-              title="Standard SIP Architecture"
+              title="Standard SIP mix"
               centerLabel="Net Corpus"
               centerValue={data.stdCorpus}
               invested={data.stdInvested}
@@ -305,7 +305,7 @@ export function GoalSipDossier({ id = GOAL_SIP_REPORT_ID, data }: GoalSipDossier
           </div>
           <div className="flex-1">
             <ReportCompositionDonut
-              title="Step-Up SIP Architecture"
+              title="Step-Up SIP mix"
               centerLabel="Net Corpus"
               centerValue={data.stepCorpus}
               invested={data.stepInvested}
@@ -329,7 +329,7 @@ export function GoalSipDossier({ id = GOAL_SIP_REPORT_ID, data }: GoalSipDossier
               !
             </span>
             <h3 className="text-xs font-bold uppercase tracking-wider text-rose-950">
-              Actuarial Cost of Inaction / Procrastination Delay
+              Cost of delay
             </h3>
           </div>
           <span className="self-start rounded-full border border-rose-200 bg-rose-100 px-2.5 py-0.5 text-xs font-bold text-rose-700 sm:self-auto">
@@ -357,7 +357,7 @@ export function GoalSipDossier({ id = GOAL_SIP_REPORT_ID, data }: GoalSipDossier
                     severe ? "font-bold text-rose-800" : "text-slate-500"
                   }`}
                 >
-                  <span>Delay Horizon</span>
+                  <span>Delay</span>
                   <span className={severe ? "text-rose-950" : "font-bold text-slate-800"}>
                     {d.mo} Months
                   </span>

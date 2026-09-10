@@ -4,7 +4,6 @@ import { useState } from "react";
 import {
   ClientHeader,
   GrowthChart,
-  ModeTabs,
   MoneyInput,
   PercentInput,
   ResultCard,
@@ -16,15 +15,12 @@ import { CalculatorPage } from "@/components/layout/calculator-page-with-nav";
 export function ComingSoonCalculator({
   title,
   calculatorId,
-  modes,
   description,
 }: {
   title: string;
   calculatorId: string;
-  modes: Array<{ id: string; label: string }>;
   description?: string;
 }) {
-  const [mode, setMode] = useState(modes[0]?.id ?? "");
   const [name, setName] = useState("");
   const [age, setAge] = useState(30);
   const [amount, setAmount] = useState(10_000);
@@ -38,7 +34,6 @@ export function ComingSoonCalculator({
         description ??
         `Clone this page. Keep these inputs/results. Copy /growth for a live example. Call POST /api/calculate/${calculatorId} — do not add math in the UI.`
       }
-      modes={<ModeTabs tabs={modes} value={mode} onChange={setMode} />}
       form={
         <div className="grid grid-cols-[repeat(auto-fill,minmax(7.5rem,1fr))] items-start gap-x-3 gap-y-3">
           <ClientHeader name={name} age={age} onNameChange={setName} onAgeChange={setAge} />
@@ -66,9 +61,9 @@ export function ComingSoonCalculator({
             <ScheduleTable
               caption="Yearly schedule"
               columns={[
-                { key: "year", header: "Year" },
-                { key: "monthly", header: "SIP", format: "inr", align: "right" },
-                { key: "yearEnd", header: "Year-end", format: "inr", align: "right" },
+                { key: "year", header: "Year", sticky: true },
+                { key: "monthly", header: "SIP", format: "inr", align: "right", tone: "std" },
+                { key: "yearEnd", header: "Year-end", format: "inr", align: "right", tone: "step" },
               ]}
               rows={[]}
             />

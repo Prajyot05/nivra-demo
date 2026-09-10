@@ -88,7 +88,7 @@ export function PeriodicInvestmentDossier({
     <ExecutiveDossierSheet
       id={id}
       title="Periodic Lumpsum Investment"
-      subtitle="Institutional Wealth Advisory Desk • Contribution Schedule & Terminal Corpus"
+      subtitle="Periodic investment summary"
       contact={contact}
       meta={[
         { label: "Client Name", value: data.clientName || "Client" },
@@ -184,7 +184,7 @@ export function PeriodicInvestmentDossier({
           <div className="flex min-w-0 items-center space-x-2">
             <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
             <span className="text-slate-700">
-              <strong>Key Advisory Insight:</strong> {data.payments} contributions of{" "}
+              <strong>Note:</strong> {data.payments} contributions of{" "}
               {formatINRCurrency(data.amount)} ({data.frequencyLabel.toLowerCase()}) grow to{" "}
               <strong>{formatINRCurrency(data.maturity)}</strong> nominally and{" "}
               <strong>{formatINRCurrency(data.netAfterTax)}</strong> after tax (
@@ -192,13 +192,13 @@ export function PeriodicInvestmentDossier({
             </span>
           </div>
           <span className="shrink-0 whitespace-nowrap pl-4 text-[11px] font-semibold text-emerald-700">
-            Horizon: {data.years} Yrs
+            Tenure: {data.years} Yrs
           </span>
         </div>
       </section>
 
       <section className="space-y-3" data-purpose="assumptions-grid">
-        <ExecutiveSectionHeading title="Actuarial & Financial Parameters Baseline" />
+        <ExecutiveSectionHeading title="Assumptions" />
         <div className="grid grid-cols-7 gap-3 rounded-xl border border-slate-200 bg-white p-4 text-center">
           <Param label="Client Age" value={`${data.age} Yrs`} />
           <Param label="Amount Each" value={formatINRCurrency(data.amount)} />
@@ -228,7 +228,7 @@ export function PeriodicInvestmentDossier({
         />
         <div className="mx-auto w-full max-w-lg">
           <ReportCompositionDonut
-            title="Periodic Mix Architecture"
+            title="Periodic mix"
             centerLabel="Maturity"
             centerValue={data.maturity}
             invested={data.totalInvested}
@@ -252,7 +252,7 @@ export function PeriodicInvestmentDossier({
               Contribution
             </span>
             <span className="inline-flex items-center rounded bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-800">
-              FV at Horizon
+              FV at end
             </span>
             <span className="text-slate-400">• {data.payments} Rows</span>
           </div>
@@ -278,7 +278,7 @@ export function PeriodicInvestmentDossier({
                   className="bg-slate-800/80 px-4 py-2.5 text-right font-semibold text-emerald-300"
                   scope="col"
                 >
-                  FV at Horizon
+                  FV at end
                 </th>
                 <th className="px-3 py-2.5 text-right font-semibold" scope="col">
                   Note

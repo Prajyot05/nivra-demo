@@ -66,7 +66,7 @@ export function OneTimeInvestmentDossier({
     p.id === "01"
       ? {
           ...p,
-          title: "Deploy Lumpsum Without Drift",
+          title: "Invest Lumpsum Without Drift",
           description: `Park the ${formatINRCurrency(data.amount)} principal on the agreed start date. Unplanned delay of even a few months permanently compresses the ${data.years}-year compounding runway under the same return path.`,
         }
       : p.id === "02"
@@ -88,7 +88,7 @@ export function OneTimeInvestmentDossier({
     <ExecutiveDossierSheet
       id={id}
       title="One-Time Investment"
-      subtitle="Institutional Wealth Advisory Desk • Lumpsum Growth & Inflation Sensitivity"
+      subtitle="Lumpsum growth summary"
       contact={contact}
       meta={[
         { label: "Client Name", value: data.clientName || "Client" },
@@ -97,7 +97,7 @@ export function OneTimeInvestmentDossier({
           value: `Age ${data.age} to ${endAge} (${data.years} Yrs)`,
         },
         {
-          label: "Principal Deployed",
+          label: "Principal",
           value: formatINRCurrency(data.amount),
           emphasize: "emerald",
         },
@@ -189,21 +189,21 @@ export function OneTimeInvestmentDossier({
           <div className="flex items-center space-x-2">
             <span className="h-2 w-2 rounded-full bg-emerald-500" />
             <span className="text-slate-700">
-              <strong>Key Advisory Insight:</strong> A single{" "}
-              {formatINRCurrency(data.amount)} deployment grows to{" "}
+              <strong>Note:</strong> A single{" "}
+              {formatINRCurrency(data.amount)} investment grows to{" "}
               <strong>{formatINRCurrency(data.maturity)}</strong> nominally, but only{" "}
               <strong>{formatINRCurrency(data.inflationAdjusted)}</strong> in today rupees after{" "}
               {formatPercent(data.inflationPct)} inflation over {data.years} years.
             </span>
           </div>
           <span className="whitespace-nowrap pl-4 text-[11px] font-semibold text-emerald-700">
-            Horizon: {data.years} Yrs
+            Tenure: {data.years} Yrs
           </span>
         </div>
       </section>
 
       <section className="space-y-3" data-purpose="assumptions-grid">
-        <ExecutiveSectionHeading title="Actuarial & Financial Parameters Baseline" />
+        <ExecutiveSectionHeading title="Assumptions" />
         <div className="grid grid-cols-7 gap-3 rounded-xl border border-slate-200 bg-white p-4 text-center">
           <Param label="Client Age" value={`${data.age} Yrs`} />
           <Param label="Principal" value={formatINRCurrency(data.amount)} />
@@ -234,7 +234,7 @@ export function OneTimeInvestmentDossier({
         <div className="flex gap-4">
           <div className="flex-1">
             <ReportCompositionDonut
-              title="Nominal Architecture"
+              title="Nominal mix"
               centerLabel="Maturity"
               centerValue={data.maturity}
               invested={data.totalInvested}
@@ -270,7 +270,7 @@ export function OneTimeInvestmentDossier({
                 !
               </span>
               <h3 className="text-xs font-bold uppercase tracking-wider text-rose-950">
-                Actuarial Cost of Inaction / Deployment Delay
+                Cost of delay
               </h3>
             </div>
             <span className="self-start rounded-full border border-rose-200 bg-rose-100 px-2.5 py-0.5 text-xs font-bold text-rose-700 sm:self-auto">
@@ -371,7 +371,7 @@ export function OneTimeInvestmentDossier({
                         {formatINRCurrency(infl)}
                       </td>
                       <td className="px-3 py-3 text-right text-xs font-black text-emerald-800">
-                        Horizon Close
+                        Final year
                       </td>
                     </tr>
                   );

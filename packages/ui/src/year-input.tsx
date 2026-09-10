@@ -46,11 +46,21 @@ export function YearInput({
 export function AgeInput({
   value,
   onChange,
+  error,
 }: {
   value: number;
   onChange: (age: number) => void;
+  error?: string;
 }) {
   return (
-    <YearInput label="Age" value={value} onChange={onChange} min={0} max={120} suffix="Years" />
+    <YearInput
+      label="Age"
+      value={value}
+      onChange={onChange}
+      min={0}
+      max={120}
+      suffix="Years"
+      error={error}
+    />
   );
 }

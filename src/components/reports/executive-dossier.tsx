@@ -42,7 +42,7 @@ export function ExecutiveDossierSheet({
   id,
   title,
   brandLine = "Finoptic Capital Services",
-  subtitle = "Institutional Wealth Advisory Desk • Goal Wealth Modeling & Sensitivity Architecture",
+  subtitle = "Financial planning report",
   meta,
   contact = DUMMY_REPORT_CONTACT,
   children,
@@ -176,7 +176,7 @@ export function ExecutivePlaybook({
 }) {
   return (
     <section className="flex flex-col gap-3" data-purpose="execution-playbook">
-      <ExecutiveSectionHeading title="Advisor Strategic Mandate & Execution Playbook" />
+      <ExecutiveSectionHeading title="Next steps" />
       <div className="flex gap-4">
         {pillars.map((p) => (
           <div

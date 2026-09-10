@@ -309,15 +309,34 @@ function EducationResults({ result }: { result: EducationResult }) {
       </div>
       <ScheduleTable
         caption="Education investment and withdrawal plan"
+        zebra
         columns={[
-          { key: "age", header: "Age" },
+          { key: "age", header: "Age", sticky: true },
           { key: "classLabel", header: "Class", format: "text" },
-          { key: "cost", header: "Edu. cost", format: "inr", align: "right" },
-          { key: "tax", header: "Cap. gains", format: "inr", align: "right" },
-          { key: "withdrawal", header: "Withdrawal", format: "inr", align: "right" },
-          { key: "sipCorpus", header: "SIP corpus", format: "inr", align: "right" },
-          { key: "sipBalance", header: "SIP balance", format: "inr", align: "right" },
-          { key: "lumpsumBalance", header: "Lumpsum balance", format: "inr", align: "right" },
+          { key: "cost", header: "Edu. cost", format: "inr", align: "right", tone: "warn" },
+          { key: "tax", header: "Cap. gains", format: "inr", align: "right", tone: "warn" },
+          {
+            key: "withdrawal",
+            header: "Withdrawal",
+            format: "inr",
+            align: "right",
+            tone: "warn",
+          },
+          { key: "sipCorpus", header: "SIP corpus", format: "inr", align: "right", tone: "std" },
+          {
+            key: "sipBalance",
+            header: "SIP balance",
+            format: "inr",
+            align: "right",
+            tone: "std",
+          },
+          {
+            key: "lumpsumBalance",
+            header: "Lumpsum balance",
+            format: "inr",
+            align: "right",
+            tone: "step",
+          },
         ]}
         rows={result.schedule}
       />

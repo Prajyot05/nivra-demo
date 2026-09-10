@@ -68,7 +68,7 @@ export function NavOverlay({
             <p className="mt-0.5 text-[11px] text-muted-foreground">Navigation</p>
             {showQaChecklist ? (
               <p className="mt-1 text-[10px] font-medium text-muted-foreground">
-                Excel QA checklist (dev)
+                Excel QA checklist
               </p>
             ) : null}
           </div>

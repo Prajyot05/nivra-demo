@@ -70,7 +70,7 @@ export function SipCalculatorDossier({
     p.id === "01"
       ? {
           ...p,
-          title: "Automate the Monthly Mandate",
+          title: "Automate the Monthly SIP",
           description: `Lock ${formatINRCurrency(data.monthlyInvestment)}/mo on ECS / OTM for ${data.sipYears} contribution years. Missed months permanently reduce the ${data.investYears}-year terminal corpus under the same return path.`,
         }
       : p.id === "02"
@@ -92,7 +92,7 @@ export function SipCalculatorDossier({
     <ExecutiveDossierSheet
       id={id}
       title="SIP Calculator"
-      subtitle="Institutional Wealth Advisory Desk • Systematic Investment Growth & Inflation Sensitivity"
+      subtitle="SIP growth summary"
       contact={contact}
       meta={[
         { label: "Client Name", value: data.clientName || "Client" },
@@ -111,7 +111,7 @@ export function SipCalculatorDossier({
         <ExecutiveSectionHeading
           variant="square"
           title="Primary Corpus & Purchasing-Power Milestones"
-          hint={`SIP ${data.sipYears} yrs · Horizon ${data.investYears} yrs · ${formatPercent(data.returnPct)} CAGR`}
+          hint={`SIP ${data.sipYears} yrs · Tenure ${data.investYears} yrs · ${formatPercent(data.returnPct)} CAGR`}
         />
 
         <div className="flex gap-4">
@@ -191,26 +191,26 @@ export function SipCalculatorDossier({
           <div className="flex min-w-0 items-center space-x-2">
             <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
             <span className="text-slate-700">
-              <strong>Key Advisory Insight:</strong>{" "}
+              <strong>Note:</strong>{" "}
               {formatINRCurrency(data.monthlyInvestment)}/mo for {data.sipYears} years grows to{" "}
               <strong>{formatINRCurrency(data.maturity)}</strong> nominally, but only{" "}
               <strong>{formatINRCurrency(data.inflationAdjusted)}</strong> in today rupees after{" "}
-              {formatPercent(data.inflationPct)} inflation over the {data.investYears}-year horizon.
+              {formatPercent(data.inflationPct)} inflation over the {data.investYears}-year tenure.
             </span>
           </div>
           <span className="shrink-0 whitespace-nowrap pl-4 text-[11px] font-semibold text-emerald-700">
-            Horizon: {data.investYears} Yrs
+            Tenure: {data.investYears} Yrs
           </span>
         </div>
       </section>
 
       <section className="space-y-3" data-purpose="assumptions-grid">
-        <ExecutiveSectionHeading title="Actuarial & Financial Parameters Baseline" />
+        <ExecutiveSectionHeading title="Assumptions" />
         <div className="grid grid-cols-8 gap-2 rounded-xl border border-slate-200 bg-white p-4 text-center">
           <Param label="Client Age" value={`${data.age} Yrs`} />
           <Param label="Monthly SIP" value={formatINRCurrency(data.monthlyInvestment)} />
           <Param label="SIP Years" value={`${data.sipYears} Yrs`} />
-          <Param label="Horizon" value={`${data.investYears} Yrs`} />
+          <Param label="Tenure" value={`${data.investYears} Yrs`} />
           <Param
             label="Return CAGR"
             value={formatPercent(data.returnPct)}
@@ -237,7 +237,7 @@ export function SipCalculatorDossier({
         <div className="flex gap-4">
           <div className="min-w-0 flex-1">
             <ReportCompositionDonut
-              title="Nominal Architecture"
+              title="Nominal mix"
               centerLabel="Maturity"
               centerValue={data.maturity}
               invested={data.totalInvested}
@@ -273,7 +273,7 @@ export function SipCalculatorDossier({
                 !
               </span>
               <h3 className="text-xs font-bold uppercase tracking-wider text-rose-950">
-                Actuarial Cost of Inaction / SIP Delay
+                Cost of delay
               </h3>
             </div>
             <span className="self-start rounded-full border border-rose-200 bg-rose-100 px-2.5 py-0.5 text-xs font-bold text-rose-700 sm:self-auto">
@@ -380,7 +380,7 @@ export function SipCalculatorDossier({
                         {formatINRCurrency(infl)}
                       </td>
                       <td className="px-3 py-3 text-right text-xs font-black text-emerald-800">
-                        Horizon Close
+                        Final year
                       </td>
                     </tr>
                   );

@@ -69,7 +69,7 @@ export function SipStepUpCalculatorDossier({
       ? {
           ...p,
           title: "Start SIP at Comfortable Base",
-          description: `Begin at ${formatINRCurrency(data.startMonthly)}/mo so the mandate clears without lifestyle strain. The modeled +${formatPercent(data.stepUpPct, 0)} annual step-up scales commitment to ${formatINRCurrency(data.endMonthly)}/mo by year ${data.sipYears}.`,
+          description: `Begin at ${formatINRCurrency(data.startMonthly)}/mo so the monthly SIP fits without lifestyle strain. The modeled +${formatPercent(data.stepUpPct, 0)} annual step-up scales commitment to ${formatINRCurrency(data.endMonthly)}/mo by year ${data.sipYears}.`,
         }
       : p.id === "02"
         ? {
@@ -90,7 +90,7 @@ export function SipStepUpCalculatorDossier({
     <ExecutiveDossierSheet
       id={id}
       title="SIP Step-Up Calculator"
-      subtitle="Institutional Wealth Advisory Desk • Escalating SIP Growth & Inflation Sensitivity"
+      subtitle="Step-up SIP growth summary"
       contact={contact}
       meta={[
         { label: "Client Name", value: data.clientName || "Client" },
@@ -189,7 +189,7 @@ export function SipStepUpCalculatorDossier({
           <div className="flex min-w-0 items-center space-x-2">
             <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
             <span className="text-slate-700">
-              <strong>Key Advisory Insight:</strong> Starting at{" "}
+              <strong>Note:</strong> Starting at{" "}
               {formatINRCurrency(data.startMonthly)}/mo with +{formatPercent(data.stepUpPct, 0)}{" "}
               annual escalation reaches {formatINRCurrency(data.endMonthly)}/mo by year{" "}
               {data.sipYears}, delivering <strong>{formatINRCurrency(data.maturity)}</strong>{" "}
@@ -198,13 +198,13 @@ export function SipStepUpCalculatorDossier({
             </span>
           </div>
           <span className="shrink-0 whitespace-nowrap pl-4 text-[11px] font-semibold text-emerald-700">
-            Horizon: {data.sipYears} Yrs
+            Tenure: {data.sipYears} Yrs
           </span>
         </div>
       </section>
 
       <section className="space-y-3" data-purpose="assumptions-grid">
-        <ExecutiveSectionHeading title="Actuarial & Financial Parameters Baseline" />
+        <ExecutiveSectionHeading title="Assumptions" />
         <div className="grid grid-cols-8 gap-2 rounded-xl border border-slate-200 bg-white p-4 text-center">
           <Param label="Client Age" value={`${data.age} Yrs`} />
           <Param label="Start SIP" value={formatINRCurrency(data.startMonthly)} />
@@ -233,7 +233,7 @@ export function SipStepUpCalculatorDossier({
         <div className="flex gap-4">
           <div className="min-w-0 flex-1">
             <ReportCompositionDonut
-              title="Nominal Architecture"
+              title="Nominal mix"
               centerLabel="Maturity"
               centerValue={data.maturity}
               invested={data.totalInvested}
@@ -329,7 +329,7 @@ export function SipStepUpCalculatorDossier({
                         {formatINRCurrency(infl)}
                       </td>
                       <td className="px-3 py-3 text-right text-xs font-black text-emerald-800">
-                        Horizon Close
+                        Final year
                       </td>
                     </tr>
                   );

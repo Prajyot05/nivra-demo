@@ -134,7 +134,12 @@ export function CompareChart({
                 bottom: useAngled ? 4 : showAxisSublabels ? 8 : 4,
               }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--app-border)" vertical={false} />
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="var(--app-border)"
+                strokeOpacity={0.7}
+                vertical={false}
+              />
               <XAxis
                 dataKey="category"
                 tick={
@@ -196,8 +201,8 @@ export function CompareChart({
                   dataKey={s.key}
                   name={s.label}
                   fill={s.color}
-                  radius={[4, 4, 0, 0]}
-                  maxBarSize={dense ? 40 : 64}
+                  radius={[6, 6, 0, 0]}
+                  maxBarSize={dense ? 44 : 72}
                 >
                   {useCells
                     ? data.map((d, i) => (

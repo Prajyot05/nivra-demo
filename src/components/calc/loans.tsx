@@ -10,7 +10,6 @@ import {
   CompareChart,
   CompositionChart,
   GrowthChart,
-  ModeTabs,
   MoneyInput,
   PercentInput,
   ResultCard,
@@ -116,7 +115,7 @@ type VehicleResult = {
 type LoanResult = EmiResult & Partial<PrepayResult> & Partial<ExtraVsInvestResult> & Partial<RecoveryResult> & Partial<VehicleResult>;
 
 export function LoansCalculator() {
-  const [mode, setMode] = useCalculatorMode(MODE_IDS, "emi");
+  const [mode] = useCalculatorMode(MODE_IDS, "emi");
   const [name, setName] = useState("Mr. Anshu Kaul");
   const [age, setAge] = useState(40);
 
@@ -395,7 +394,6 @@ export function LoansCalculator() {
     <CalculatorPage
       title={getCalculatorPageTitle("/loans", mode)}
       description="Monthly EMI for a home or personal loan — principal, tenure, and interest rate."
-      modes={<ModeTabs tabs={[...MODES]} value={mode} onChange={(id) => setMode(id as Mode)} />}
       actions={
         <Button
           size="icon"
@@ -549,12 +547,13 @@ function EmiResults({ result }: { result: EmiResult }) {
       </div>
       <ScheduleTable
         caption="Amortisation"
+        zebra
         columns={[
-          { key: "month", header: "Month" },
-          { key: "emi", header: "EMI", format: "inr", align: "right" },
-          { key: "principal", header: "Principal", format: "inr", align: "right" },
-          { key: "interest", header: "Interest", format: "inr", align: "right" },
-          { key: "balance", header: "Balance", format: "inr", align: "right" },
+          { key: "month", header: "Month", sticky: true },
+          { key: "emi", header: "EMI", format: "inr", align: "right", tone: "std" },
+          { key: "principal", header: "Principal", format: "inr", align: "right", tone: "std" },
+          { key: "interest", header: "Interest", format: "inr", align: "right", tone: "warn" },
+          { key: "balance", header: "Balance", format: "inr", align: "right", tone: "step" },
         ]}
         rows={result.schedule}
       />
@@ -618,12 +617,13 @@ function PrepayResults({ result }: { result: PrepayResult }) {
       </div>
       <ScheduleTable
         caption="Prepaid schedule"
+        zebra
         columns={[
-          { key: "month", header: "Month" },
-          { key: "emi", header: "EMI", format: "inr", align: "right" },
-          { key: "extra", header: "Extra", format: "inr", align: "right" },
-          { key: "interest", header: "Interest", format: "inr", align: "right" },
-          { key: "balance", header: "Balance", format: "inr", align: "right" },
+          { key: "month", header: "Month", sticky: true },
+          { key: "emi", header: "EMI", format: "inr", align: "right", tone: "std" },
+          { key: "extra", header: "Extra", format: "inr", align: "right", tone: "warn" },
+          { key: "interest", header: "Interest", format: "inr", align: "right", tone: "warn" },
+          { key: "balance", header: "Balance", format: "inr", align: "right", tone: "step" },
         ]}
         rows={result.schedule}
       />
@@ -781,11 +781,18 @@ function VehicleResults({ result }: { result: VehicleResult }) {
       </div>
       <ScheduleTable
         caption="Depreciation"
+        zebra
         columns={[
-          { key: "year", header: "Year" },
-          { key: "value", header: "Value", format: "inr", align: "right" },
-          { key: "depreciation", header: "Depreciation", format: "inr", align: "right" },
-          { key: "balance", header: "Balance", format: "inr", align: "right" },
+          { key: "year", header: "Year", sticky: true },
+          { key: "value", header: "Value", format: "inr", align: "right", tone: "std" },
+          {
+            key: "depreciation",
+            header: "Depreciation",
+            format: "inr",
+            align: "right",
+            tone: "warn",
+          },
+          { key: "balance", header: "Balance", format: "inr", align: "right", tone: "step" },
         ]}
         rows={result.depreciation}
       />

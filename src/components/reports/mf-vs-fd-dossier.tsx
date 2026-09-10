@@ -188,10 +188,10 @@ export function MfVsFdDossier({ id = MF_VS_FD_REPORT_ID, data }: MfVsFdDossierPr
           ...p,
           title: tied
             ? "Confirm Tax Treatment Parity"
-            : `Deploy via ${mfWins ? "MF" : "FD"} on Post-Tax Merit`,
+            : `Choose ${mfWins ? "MF" : "FD"} on Post-Tax Merit`,
           description: tied
             ? `Under the stated slab rates, MF and FD land at the same post-tax outcome for this ${periodLabel(data.days).toLowerCase()} window. Decide on liquidity and certainty, not yield.`
-            : `${winnerLabel} delivers ${formatINRCurrency(advantage)} more post-tax return (${formatPercent(relativePct, 1)} relative edge) after applying ${mfWins ? formatPercent(data.mfTaxPct, 0) : formatPercent(data.fdTaxPct, 0)} tax. Use this as the deployment default unless liquidity constraints reverse the call.`,
+            : `${winnerLabel} delivers ${formatINRCurrency(advantage)} more post-tax return (${formatPercent(relativePct, 1)} relative edge) after applying ${mfWins ? formatPercent(data.mfTaxPct, 0) : formatPercent(data.fdTaxPct, 0)} tax. Use this as the default unless liquidity constraints reverse the call.`,
         }
       : p.id === "02"
         ? {
@@ -253,7 +253,7 @@ export function MfVsFdDossier({ id = MF_VS_FD_REPORT_ID, data }: MfVsFdDossierPr
     <ExecutiveDossierSheet
       id={id}
       title="MF vs FD Comparison"
-      subtitle="Institutional Wealth Advisory Desk • Short-Horizon Post-Tax Vehicle Selection"
+      subtitle="MF vs FD comparison"
       contact={contact}
       disclaimer="This report is for illustrative planning only. Assumed interest and tax rates are inputs, not guarantees. Fixed deposits may levy premature withdrawal penalties. Mutual fund investments are subject to market risks. Please read all scheme-related documents carefully before investing."
       meta={[
@@ -263,12 +263,12 @@ export function MfVsFdDossier({ id = MF_VS_FD_REPORT_ID, data }: MfVsFdDossierPr
           value: `${periodLabel(data.days)} · Age ${data.age}`,
         },
         {
-          label: "Principal Deployed",
+          label: "Principal",
           value: formatINRCurrency(data.amount),
           emphasize: "emerald",
         },
         {
-          label: "Advisory Status",
+          label: "Status",
           value: statusValue,
           emphasize: "status",
         },
@@ -310,18 +310,18 @@ export function MfVsFdDossier({ id = MF_VS_FD_REPORT_ID, data }: MfVsFdDossierPr
             <span className="text-slate-700">
               {tied ? (
                 <>
-                  <strong>Key Advisory Insight:</strong> Both vehicles deliver the same post-tax
-                  return for this horizon. Choose FD when the cash date is fixed; choose MF when
+                  <strong>Note:</strong> Both vehicles deliver the same post-tax
+                  return for this period. Choose FD when the cash date is fixed; choose MF when
                   exit flexibility outweighs rate certainty.
                 </>
               ) : (
                 <>
-                  <strong>Key Advisory Insight:</strong> {winnerLabel} earns{" "}
+                  <strong>Note:</strong> {winnerLabel} earns{" "}
                   <strong>
                     {formatINRCurrency(advantage)} ({formatPercent(relativePct, 1)} more)
                   </strong>{" "}
                   post-tax than the alternate for this {periodLabel(data.days).toLowerCase()}{" "}
-                  deployment. Ranking is driven by tax drag, not headline coupon alone.
+                  hold. Ranking is driven by tax drag, not headline coupon alone.
                 </>
               )}
             </span>
@@ -333,7 +333,7 @@ export function MfVsFdDossier({ id = MF_VS_FD_REPORT_ID, data }: MfVsFdDossierPr
       </section>
 
       <section className="space-y-3" data-purpose="assumptions-grid">
-        <ExecutiveSectionHeading title="Actuarial & Financial Parameters Baseline" />
+        <ExecutiveSectionHeading title="Assumptions" />
         <div className="flex flex-wrap gap-4 rounded-xl border border-slate-200 bg-white p-4 text-center">
           <Param label="Client Age" value={`${data.age} Yrs`} />
           <Param label="Principal" value={formatINRCurrency(data.amount)} />
@@ -365,7 +365,7 @@ export function MfVsFdDossier({ id = MF_VS_FD_REPORT_ID, data }: MfVsFdDossierPr
         <div className="flex gap-4">
           <div className="flex-1">
             <ReportCompositionDonut
-              title="Mutual Fund Architecture"
+              title="Mutual Fund mix"
               centerLabel="Maturity"
               centerValue={data.mf.net}
               invested={data.mf.invested}
@@ -377,7 +377,7 @@ export function MfVsFdDossier({ id = MF_VS_FD_REPORT_ID, data }: MfVsFdDossierPr
           </div>
           <div className="flex-1">
             <ReportCompositionDonut
-              title="Fixed Deposit Architecture"
+              title="Fixed Deposit mix"
               centerLabel="Maturity"
               centerValue={data.fd.net}
               invested={data.fd.invested}
@@ -534,7 +534,7 @@ export function MfVsFdDossier({ id = MF_VS_FD_REPORT_ID, data }: MfVsFdDossierPr
                       <td className="px-4 py-3 text-right text-xs font-black text-emerald-800">
                         <span className="inline-flex items-center gap-1">
                           <CheckIcon />
-                          Horizon Close
+                          Final year
                         </span>
                       </td>
                     </tr>

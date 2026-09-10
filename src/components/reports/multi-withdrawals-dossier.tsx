@@ -87,7 +87,7 @@ export function MultiWithdrawalsDossier({
       : p.id === "02"
         ? {
             ...p,
-            description: `Mandate steps down across ${data.phases.length} funding phases as goals hit. After the final payout at age ${lastAge}, the systematic flow can stop.`,
+            description: `Monthly SIP steps down across ${data.phases.length} funding phases as goals hit. After the final payout at age ${lastAge}, the SIP can stop.`,
           }
         : p,
   );
@@ -116,7 +116,7 @@ export function MultiWithdrawalsDossier({
     <ExecutiveDossierSheet
       id={id}
       title="SIP for Multiple Withdrawals"
-      subtitle="Institutional Wealth Advisory Desk • Timed Goal Funding & SIP Step-Down Architecture"
+      subtitle="Timed goal funding · SIP step-down"
       contact={contact}
       meta={[
         { label: "Client Name", value: data.clientName || "Client" },
@@ -142,7 +142,7 @@ export function MultiWithdrawalsDossier({
           <div className="relative flex flex-1 flex-col justify-between overflow-hidden rounded-xl border border-slate-900 bg-slate-950 p-4 text-white shadow-sm">
             <div className="border-b border-slate-800 pb-2">
               <span className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                Opening Systematic Flow
+                Monthly SIP
               </span>
               <h3 className="text-sm font-bold text-slate-100">Start Monthly SIP</h3>
             </div>
@@ -177,7 +177,7 @@ export function MultiWithdrawalsDossier({
           <div className="relative flex flex-1 flex-col justify-between overflow-hidden rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 shadow-sm">
             <div className="border-b border-emerald-200/60 pb-2">
               <span className="block text-[10px] font-bold uppercase tracking-wider text-emerald-800">
-                Lifetime Goal Payouts
+                Total withdrawn
               </span>
               <h3 className="text-sm font-bold text-emerald-950">Total Withdrawn</h3>
             </div>
@@ -213,11 +213,11 @@ export function MultiWithdrawalsDossier({
           <div className="flex min-w-0 items-center space-x-2">
             <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
             <span className="text-slate-700">
-              <strong>Key Advisory Insight:</strong> An opening SIP of{" "}
+              <strong>Note:</strong> An opening SIP of{" "}
               <strong>{formatINRCurrency(data.startMonthlySip)}</strong>/mo funds{" "}
               {data.rows.length} timed withdrawals totaling{" "}
-              <strong>{formatINRCurrency(data.totalWithdrawn)}</strong>, with the mandate stepping
-              down after each payout through age {lastAge}.
+              <strong>{formatINRCurrency(data.totalWithdrawn)}</strong>, with the monthly SIP
+              stepping down after each payout through age {lastAge}.
             </span>
           </div>
           <span className="shrink-0 whitespace-nowrap pl-4 text-[11px] font-semibold text-emerald-700">
@@ -227,7 +227,7 @@ export function MultiWithdrawalsDossier({
       </section>
 
       <section className="space-y-2" data-purpose="assumptions-grid">
-        <ExecutiveSectionHeading title="Actuarial & Financial Parameters Baseline" />
+        <ExecutiveSectionHeading title="Assumptions" />
         <div className="grid grid-cols-6 gap-2 rounded-xl border border-slate-200 bg-white p-3 text-center">
           <Param label="Client Age" value={`${data.age} Yrs`} />
           <Param
@@ -240,7 +240,7 @@ export function MultiWithdrawalsDossier({
           <Param label="Opening SIP" value={formatINRCurrency(data.startMonthlySip)} />
           <div className="min-w-0">
             <span className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-              Horizon
+              End age
             </span>
             <span className="mt-1 inline-flex items-center rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-bold tabular-nums text-emerald-800">
               AGE {lastAge}
@@ -474,7 +474,7 @@ function AgePathRows({
                 : "text-slate-400"
           }`}
         >
-          {isPayout ? "Payout" : isStart ? "Start" : isEnd ? "Horizon" : ""}
+          {isPayout ? "Payout" : isStart ? "Start" : isEnd ? "End" : ""}
         </td>
       </tr>
     </>

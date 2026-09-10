@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { formatINRCurrency } from "./format";
 
 export type ScheduleColumnTone = "default" | "std" | "step" | "warn";
@@ -11,6 +12,8 @@ export type ScheduleColumn<T> = {
   tone?: ScheduleColumnTone;
   /** Pin this column on the left while the table scrolls horizontally. */
   sticky?: boolean;
+  /** Custom cell content (e.g. status badges). Overrides format when set. */
+  render?: (value: unknown, row: T, index: number) => ReactNode;
 };
 
 /**
@@ -22,9 +25,9 @@ export const RESULTS_LEFT = "flex flex-col gap-4 lg:col-span-7";
 export const RESULTS_RIGHT = "flex flex-col gap-4 lg:col-span-5";
 
 const HEAD_TONE: Record<ScheduleColumnTone, string> = {
-  default: "bg-[var(--app-surface-muted)] text-[var(--app-text-subtle)]",
-  std: "bg-[var(--app-std-bg-soft)] text-[var(--app-std-text)]",
-  step: "bg-[var(--app-step-bg-soft)] text-[var(--app-step-text)]",
+  default: "bg-[var(--app-surface)] text-[var(--app-text-subtle)]",
+  std: "bg-[var(--app-std-bg)] text-[var(--app-std-text)]",
+  step: "bg-[var(--app-step-bg)] text-[var(--app-step-text)]",
   warn: "bg-[var(--app-warn-bg)] text-[var(--app-warn-text)]",
 };
 
@@ -104,14 +107,6 @@ export function ScheduleTable<T extends Record<string, unknown>>({
                 >
                   {columns.map((col) => {
                     const raw = row[col.key as keyof T];
-                    let text: string;
-                    if (col.format === "inr" && typeof raw === "number") {
-                      text = formatINRCurrency(raw);
-                    } else if (typeof raw === "number") {
-                      text = String(raw);
-                    } else {
-                      text = raw == null ? "" : String(raw);
-                    }
                     const tone = col.tone ?? "default";
                     const stickyBg = col.sticky
                       ? isLast
@@ -122,18 +117,31 @@ export function ScheduleTable<T extends Record<string, unknown>>({
                             ? "bg-[var(--app-surface-muted)]"
                             : "bg-[var(--app-surface)]"
                       : "";
+                    const content = col.render
+                      ? col.render(raw, row, i)
+                      : (() => {
+                          if (col.format === "inr" && typeof raw === "number") {
+                            return formatINRCurrency(raw);
+                          }
+                          if (typeof raw === "number") {
+                            return String(raw);
+                          }
+                          return raw == null ? "" : String(raw);
+                        })();
                     return (
                       <td
                         key={String(col.key)}
-                        className={`px-2.5 py-2 text-xs tabular-nums whitespace-nowrap sm:text-sm ${
-                          col.sticky ? "" : CELL_TONE[tone]
-                        } ${col.align === "right" ? "text-right" : ""} ${
+                        className={`px-2.5 py-2 text-xs tabular-nums sm:text-sm ${
+                          col.render ? "whitespace-normal" : "whitespace-nowrap"
+                        } ${col.sticky ? "" : CELL_TONE[tone]} ${
+                          col.align === "right" ? "text-right" : ""
+                        } ${
                           col.sticky
                             ? `sticky left-0 z-[5] shadow-[1px_0_0_var(--app-border)] ${stickyBg}`
                             : ""
                         }`}
                       >
-                        {text}
+                        {content}
                       </td>
                     );
                   })}

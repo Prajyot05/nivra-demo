@@ -33,6 +33,28 @@ const VALUE_TONE: Record<ResultTone, string> = {
   net: "font-bold text-[var(--app-step-text-strong)]",
 };
 
+const HIGHLIGHT_ROW: Record<ResultTone, string> = {
+  default: "rounded-md border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-2.5 py-2 last:pb-2",
+  maturity:
+    "rounded-md border border-[var(--app-step-text)]/20 bg-[var(--app-step-bg)] px-2.5 py-2 last:pb-2",
+  gain: "rounded-md border border-[var(--app-step-text)]/20 bg-[var(--app-step-bg)] px-2.5 py-2 last:pb-2",
+  inflation:
+    "rounded-md border border-[var(--app-std-text)]/20 bg-[var(--app-std-bg)] px-2.5 py-2 last:pb-2",
+  delay: "rounded-md border border-[var(--app-warn-text)]/25 bg-[var(--app-warn-bg)] px-2.5 py-2 last:pb-2",
+  tax: "rounded-md border border-[var(--app-danger)]/20 bg-[var(--app-danger)]/5 px-2.5 py-2 last:pb-2",
+  net: "rounded-md border border-[var(--app-step-text)]/20 bg-[var(--app-step-bg)] px-2.5 py-2 last:pb-2",
+};
+
+const HIGHLIGHT_LABEL: Record<ResultTone, string> = {
+  default: "text-[var(--app-text)]",
+  maturity: "text-[var(--app-step-text-strong)]",
+  gain: "text-[var(--app-step-text-strong)]",
+  inflation: "text-[var(--app-std-text)]",
+  delay: "text-[var(--app-warn-text-strong)]",
+  tax: "text-[var(--app-danger)]",
+  net: "text-[var(--app-step-text-strong)]",
+};
+
 export function ResultCard({
   title,
   items,
@@ -52,14 +74,12 @@ export function ResultCard({
             <div
               key={item.label}
               className={`flex items-start justify-between gap-3 border-b border-[var(--app-border)] border-dashed pb-2 last:border-0 last:pb-0 ${
-                item.highlight
-                  ? "rounded-md border border-[var(--app-step-text)]/20 bg-[var(--app-step-bg)] px-2.5 py-2 last:pb-2"
-                  : ""
+                item.highlight ? HIGHLIGHT_ROW[tone] : ""
               }`}
             >
               <dt
                 className={`min-w-0 flex-1 pt-0.5 text-xs font-medium leading-snug ${
-                  item.highlight ? "text-[var(--app-step-text-strong)]" : "text-[var(--app-text-muted)]"
+                  item.highlight ? HIGHLIGHT_LABEL[tone] : "text-[var(--app-text-muted)]"
                 }`}
               >
                 {item.label}

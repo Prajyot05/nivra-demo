@@ -10,7 +10,6 @@ import {
   CompareChart,
   CompositionChart,
   GrowthChart,
-  ModeTabs,
   MoneyInput,
   PercentInput,
   ResultCard,
@@ -50,7 +49,7 @@ type TpResult = {
 };
 
 export function InsuranceCalculator() {
-  const [mode, setMode] = useCalculatorMode(MODE_IDS, "irr");
+  const [mode] = useCalculatorMode(MODE_IDS, "irr");
   const [name, setName] = useState("Mr. John Doe");
   const [age, setAge] = useState(42);
 
@@ -206,7 +205,6 @@ export function InsuranceCalculator() {
     <CalculatorPage
       title={getCalculatorPageTitle("/insurance", mode)}
       description="Policy IRR and surrender → term + invest from Unprotected insurance sheets."
-      modes={<ModeTabs tabs={[...MODES]} value={mode} onChange={(id) => setMode(id as Mode)} />}
       actions={
         <Button
           size="icon"

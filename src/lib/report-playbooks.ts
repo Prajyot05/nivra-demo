@@ -13,6 +13,8 @@ export type PlaybookPillar = {
 
 export type CalculatorReportId =
   | "goal-sip"
+  | "goal-ls-sip"
+  | "goal-current"
   | "unified-goal"
   | "investment-growth"
   | "child-education"
@@ -45,6 +47,48 @@ const PLAYBOOKS: Record<CalculatorReportId, PlaybookPillar[]> = {
       title: "Glidepath De-risking Near Goal",
       description:
         "Transition accumulated equity exposure to short-duration debt or ultra-short hybrid instruments via STP in the final 2 to 3 years to lock in the target corpus safely.",
+    },
+  ],
+  "goal-ls-sip": [
+    {
+      id: "01",
+      title: "Deploy Extra Lumpsum + Mix SIP",
+      description:
+        "Park the extra lumpsum immediately and start the remaining mix SIP so current corpus credit and new capital compound together toward the goal date.",
+    },
+    {
+      id: "02",
+      title: "Choose the Cashflow-Fit Option",
+      accent: true,
+      description:
+        "Compare all-lumpsum, all-SIP, and mix paths. Select the structure that clears the shortfall without straining monthly cashflow or delaying inception.",
+    },
+    {
+      id: "03",
+      title: "Review Corpus Credit Annually",
+      description:
+        "Re-mark current investments each year. If corpus credit rises faster than assumed, reduce the mix SIP rather than overfunding the same goal.",
+    },
+  ],
+  "goal-current": [
+    {
+      id: "01",
+      title: "Protect Existing Mandates",
+      description:
+        "Do not pause the current corpus or SIP while adding the residual path. Existing credit is already priced into the shortfall.",
+    },
+    {
+      id: "02",
+      title: "Pick One Additional Path",
+      accent: true,
+      description:
+        "Fund the shortfall with extra lumpsum, flat SIP, or step-up SIP. Mixing all three without a plan usually overfunds and complicates tracking.",
+    },
+    {
+      id: "03",
+      title: "Re-run After Corpus Changes",
+      description:
+        "Whenever the current corpus or SIP changes, recalculate the residual so additional contributions stay matched to the remaining gap.",
     },
   ],
   "unified-goal": [
