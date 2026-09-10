@@ -46,9 +46,9 @@ export function CalculatorPage({
 
         {modes ? <div className="shrink-0">{modes}</div> : null}
 
-        <div className="flex shrink-0 flex-col justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-2.5 sm:px-4 sm:py-3 lg:px-5">
-          <div className="mb-2 sm:mb-2.5">
-            <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--app-text-muted)]">
+        <div className="flex shrink-0 flex-col justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-4 py-3.5 sm:px-5 sm:py-4 lg:px-6">
+          <div className="mb-3 sm:mb-3.5">
+            <span className="text-sm font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
               Financial Assumptions
             </span>
           </div>

@@ -11,7 +11,6 @@ const NAV: AdminNavItem[] = [
   { href: "/admin/companies", label: "Companies", icon: "building-2" },
   { href: "/admin/staff", label: "Staff & roles", icon: "shield-check" },
   { href: "/admin/reports", label: "Reports", icon: "file-bar-chart" },
-  { href: "/admin/layouts", label: "Layouts", icon: "layout-template" },
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {

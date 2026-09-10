@@ -69,6 +69,9 @@ export type CalculatorReportData = {
   subtitle?: string;
   clientName: string;
   age?: number;
+  /** Dummy until CRM wiring; shown in header meta */
+  email?: string;
+  phone?: string;
   meta?: Array<{ label: string; value: string }>;
   status?: string;
   filename: string;
@@ -78,6 +81,9 @@ export type CalculatorReportData = {
   tables?: PdfTableData[];
   playbook?: PdfPlaybookItem[];
 };
+
+const DUMMY_PDF_EMAIL = "client@email.com";
+const DUMMY_PDF_PHONE = "+91 98765 43210";
 
 function lastY(doc: jsPDF) {
   return (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable
@@ -138,49 +144,51 @@ function drawHeader(doc: jsPDF, data: CalculatorReportData) {
     y + 13.5,
   );
 
-  // Client meta card (right) — not a website navbar
-  const metaX = pageW - 78;
-  const metaW = 64;
+  // Client meta card (right), not a website navbar
+  const metaX = pageW - 86;
+  const metaW = 72;
   doc.setDrawColor(...LINE);
   doc.setFillColor(...SURFACE);
   doc.setLineWidth(0.4);
-  doc.roundedRect(metaX, y - 1, metaW, 18, 1.5, 1.5, "FD");
+  doc.roundedRect(metaX, y - 1, metaW, 22, 1.5, 1.5, "FD");
 
   const metaRows: Array<{ label: string; value: string }> = [
     { label: "CLIENT", value: data.clientName || "Client" },
     ...(data.age != null
       ? [{ label: "AGE", value: String(data.age) }]
       : []),
-    ...(data.meta ?? []).slice(0, 2),
+    { label: "EMAIL", value: data.email || DUMMY_PDF_EMAIL },
+    { label: "PHONE", value: data.phone || DUMMY_PDF_PHONE },
+    ...(data.meta ?? []).slice(0, 1),
   ];
 
-  const my = y + 3;
-  metaRows.slice(0, 3).forEach((row, i) => {
+  const my = y + 2.5;
+  metaRows.slice(0, 4).forEach((row, i) => {
     const col = i % 2;
     const rowIdx = Math.floor(i / 2);
-    const cx = metaX + 3 + col * 30;
-    const cy = my + rowIdx * 7;
+    const cx = metaX + 3 + col * 34;
+    const cy = my + rowIdx * 6.5;
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(5.5);
+    doc.setFontSize(5);
     doc.setTextColor(...SUBTLE);
     doc.text(row.label, cx, cy);
-    doc.setFontSize(7.5);
+    doc.setFontSize(6.5);
     doc.setTextColor(...INK);
-    doc.text(String(row.value).slice(0, 18), cx, cy + 3.5);
+    doc.text(String(row.value).slice(0, 20), cx, cy + 3.2);
   });
 
   if (data.status) {
     doc.setFillColor(...GAIN_SOFT);
-    doc.roundedRect(metaX + 32, y + 11.5, 28, 4.2, 1, 1, "F");
+    doc.roundedRect(metaX + 36, y + 15.5, 32, 4.2, 1, 1, "F");
     doc.setTextColor(...GAIN);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(5.5);
-    doc.text(data.status.toUpperCase().slice(0, 16), metaX + 46, y + 14.3, {
+    doc.text(data.status.toUpperCase().slice(0, 16), metaX + 52, y + 18.3, {
       align: "center",
     });
   }
 
-  y = 36;
+  y = 40;
   doc.setDrawColor(...LINE);
   doc.setLineWidth(0.8);
   doc.line(14, y, pageW - 14, y);
@@ -497,6 +505,44 @@ export function generateCalculatorReport(data: CalculatorReportData) {
   doc.save(`${safeName || "report"}.pdf`);
 }
 
+/** A4 page height in CSS px for a 900px-wide dossier sheet (210mm × 297mm). */
+const DOSSIER_WIDTH_PX = 900;
+const A4_PAGE_HEIGHT_PX = (297 / 210) * DOSSIER_WIDTH_PX;
+
+/**
+ * Push `[data-pdf-keep-together]` blocks that would be sliced by a page boundary
+ * onto the next page by inserting temporary spacers before capture.
+ */
+function padKeepTogetherSections(element: HTMLElement) {
+  element.querySelectorAll("[data-pdf-spacer]").forEach((n) => n.remove());
+
+  const keepers = Array.from(
+    element.querySelectorAll<HTMLElement>("[data-pdf-keep-together]"),
+  );
+
+  for (const el of keepers) {
+    const parentRect = element.getBoundingClientRect();
+    const rect = el.getBoundingClientRect();
+    const top = rect.top - parentRect.top + element.scrollTop;
+    const height = el.offsetHeight;
+    const pageIndex = Math.floor(top / A4_PAGE_HEIGHT_PX);
+    const pageEnd = (pageIndex + 1) * A4_PAGE_HEIGHT_PX;
+
+    // Block starts on this page but would finish past the cut line
+    if (top < pageEnd - 4 && top + height > pageEnd + 2) {
+      const pad = Math.ceil(pageEnd - top + 12);
+      const spacer = document.createElement("div");
+      spacer.setAttribute("data-pdf-spacer", "true");
+      spacer.style.cssText = `height:${pad}px;width:100%;flex-shrink:0;`;
+      el.parentElement?.insertBefore(spacer, el);
+    }
+  }
+}
+
+function clearPdfSpacers(element: HTMLElement) {
+  element.querySelectorAll("[data-pdf-spacer]").forEach((n) => n.remove());
+}
+
 /**
  * Capture an off-screen HTML dossier element to a multi-page A4 PDF.
  */
@@ -542,7 +588,12 @@ export async function generatePdfFromElement(elementId: string, filename: string
     );
     await new Promise((resolve) => setTimeout(resolve, 150));
 
-    const w = 900;
+    padKeepTogetherSections(element);
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    );
+
+    const w = DOSSIER_WIDTH_PX;
     const h = Math.max(element.scrollHeight, element.offsetHeight, 1);
     if (h < 40) {
       throw new Error("PDF element has no measurable height");
@@ -590,6 +641,7 @@ export async function generatePdfFromElement(elementId: string, filename: string
 
     pdf.save(`${safeName}.pdf`);
   } finally {
+    clearPdfSpacers(element);
     element.style.cssText = prevCss;
   }
 }

@@ -159,7 +159,7 @@ export function GoalSipPlanner() {
     >
       <div className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col gap-3">
         <CalculatorPageHeader
-          title="Goal SIP Planner"
+          title="Goal – SIP & Step-Up SIP"
           leading={<NavToggleButton />}
           themeId={themeId}
           onThemeChange={setThemeId}
@@ -189,24 +189,24 @@ export function GoalSipPlanner() {
           }
         />
 
-        <div className="flex shrink-0 flex-col justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-2.5 sm:px-4 sm:py-3 lg:px-5">
-          <div className="mb-2 sm:mb-2.5">
-            <span className="text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
+        <div className="flex shrink-0 flex-col justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-4 py-3.5 sm:px-5 sm:py-4 lg:px-6">
+          <div className="mb-3 sm:mb-3.5">
+            <span className="text-sm font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
               Financial Assumptions
             </span>
           </div>
 
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(6.75rem,1fr))] items-start gap-x-2 gap-y-2">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(7.5rem,1fr))] items-start gap-x-3 gap-y-3">
             <Field label="Client Name">
               <Input
-                className="h-8 text-xs"
+                className="h-9 text-sm sm:h-10"
                 value={clientName}
                 onChange={(e) => setClientName(e.target.value)}
               />
             </Field>
             <Field label="Age">
               <Input
-                className="h-8 text-xs"
+                className="h-9 text-sm sm:h-10"
                 type="number"
                 value={age}
                 onChange={(e) => setAge(+e.target.value)}
@@ -214,7 +214,7 @@ export function GoalSipPlanner() {
             </Field>
             <Field label="Goal amount">
               <Input
-                className="h-8 text-xs"
+                className="h-9 text-sm sm:h-10"
                 inputMode="numeric"
                 value={fmtINR(goal)}
                 onChange={(e) => {
@@ -225,7 +225,7 @@ export function GoalSipPlanner() {
             </Field>
             <Field label="Tenure (yrs)">
               <Input
-                className="h-8 text-xs"
+                className="h-9 text-sm sm:h-10"
                 type="number"
                 value={tenure}
                 onChange={(e) => setTenure(+e.target.value)}
@@ -233,7 +233,7 @@ export function GoalSipPlanner() {
             </Field>
             <Field label="Return (%)">
               <Input
-                className="h-8 text-xs"
+                className="h-9 text-sm sm:h-10"
                 type="number"
                 value={returnPct}
                 onChange={(e) => setReturnPct(+e.target.value)}
@@ -241,7 +241,7 @@ export function GoalSipPlanner() {
             </Field>
             <Field label="Inflation (%)">
               <Input
-                className="h-8 text-xs"
+                className="h-9 text-sm sm:h-10"
                 type="number"
                 value={inflation}
                 onChange={(e) => setInflation(+e.target.value)}
@@ -249,7 +249,7 @@ export function GoalSipPlanner() {
             </Field>
             <Field label="Tax (%)">
               <Input
-                className="h-8 text-xs"
+                className="h-9 text-sm sm:h-10"
                 type="number"
                 value={tax}
                 onChange={(e) => setTax(+e.target.value)}
@@ -257,7 +257,7 @@ export function GoalSipPlanner() {
             </Field>
             <Field label="Step-Up (%)">
               <Input
-                className="h-8 text-xs"
+                className="h-9 text-sm sm:h-10"
                 type="number"
                 value={stepUp}
                 onChange={(e) => setStepUp(+e.target.value)}

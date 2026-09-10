@@ -17,3 +17,4 @@ Next.js App Router app. Shared math is `@nivra/finance`. Shared UI is `@nivra/ui
 - New formulas: add to `packages/finance` + tests, then schema + `dispatch`. Prajyot should not invent formulas in the UI — ask Yash if blocked.
 - Unprotected Excel is source of truth except Vehicle Loan and Multi-Goal corpus assignment (Full Set). Skip those two unless explicitly unblocked.
 - After `packages/finance` edits, run `npm test`.
+- **PDF reports:** always follow [`.cursor/rules/executive-reports.mdc`](.cursor/rules/executive-reports.mdc). Clone Goal SIP / MF vs FD HTML dossiers. Never put Excel filenames or em dashes in client PDFs.

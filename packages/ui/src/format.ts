@@ -24,9 +24,22 @@ export function parseDigits(raw: string): number {
 
 export function formatCompactINR(value: number): string {
   if (!Number.isFinite(value)) return "—";
+  const sign = value < 0 ? "-" : "";
   const abs = Math.abs(value);
-  if (abs >= 10_000_000) return `${(value / 10_000_000).toFixed(1)}Cr`;
-  if (abs >= 100_000) return `${(value / 100_000).toFixed(1)}L`;
-  if (abs >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
-  return String(Math.round(value));
+  if (abs >= 10_000_000) {
+    const n = abs / 10_000_000;
+    return `${sign}${n.toFixed(2).replace(/\.?0+$/, "")}Cr`;
+  }
+  if (abs >= 100_000) {
+    // Keep two decimals for Lakh ticks (₹1.05L, ₹1.40L).
+    return `${sign}${(abs / 100_000).toFixed(2)}L`;
+  }
+  if (abs >= 1_000) {
+    const k = abs / 1_000;
+    if (Number.isInteger(k) || Math.abs(k - Math.round(k)) < 1e-9) {
+      return `${sign}${Math.round(k)}K`;
+    }
+    return `${sign}${k.toFixed(1).replace(/\.0$/, "")}K`;
+  }
+  return `${sign}${Math.round(abs)}`;
 }

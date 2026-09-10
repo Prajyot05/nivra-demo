@@ -8,6 +8,17 @@ export type ExecutiveMetaCell = {
   emphasize?: "emerald" | "status";
 };
 
+export type ExecutiveContact = {
+  email?: string;
+  phone?: string;
+};
+
+/** Dummy client contact until CRM / client profile is wired. */
+export const DUMMY_REPORT_CONTACT: Required<ExecutiveContact> = {
+  email: "client@email.com",
+  phone: "+91 98765 43210",
+};
+
 type ExecutiveDossierSheetProps = {
   /** DOM id used by `generatePdfFromElement` */
   id: string;
@@ -15,6 +26,8 @@ type ExecutiveDossierSheetProps = {
   brandLine?: string;
   subtitle?: string;
   meta: ExecutiveMetaCell[];
+  /** Client email / phone shown in the header meta card */
+  contact?: ExecutiveContact;
   children: ReactNode;
   disclaimer?: string;
 };
@@ -23,7 +36,7 @@ const DEFAULT_DISCLAIMER =
   "This report is for illustrative planning only. Return and inflation assumptions are not guaranteed. Mutual fund investments are subject to market risks. Please read all scheme-related documents carefully before investing.";
 
 /**
- * Off-screen executive white dossier sheet — captured to PDF via html-to-image.
+ * Off-screen executive white dossier sheet, captured to PDF via html-to-image.
  */
 export function ExecutiveDossierSheet({
   id,
@@ -31,9 +44,19 @@ export function ExecutiveDossierSheet({
   brandLine = "Finoptic Capital Services",
   subtitle = "Institutional Wealth Advisory Desk • Goal Wealth Modeling & Sensitivity Architecture",
   meta,
+  contact = DUMMY_REPORT_CONTACT,
   children,
   disclaimer = DEFAULT_DISCLAIMER,
 }: ExecutiveDossierSheetProps) {
+  const email = contact.email?.trim() || DUMMY_REPORT_CONTACT.email;
+  const phone = contact.phone?.trim() || DUMMY_REPORT_CONTACT.phone;
+
+  const metaWithContact: ExecutiveMetaCell[] = [
+    ...meta,
+    { label: "Email", value: email },
+    { label: "Phone", value: phone },
+  ];
+
   return (
     <div
       id={id}
@@ -73,10 +96,10 @@ export function ExecutiveDossierSheet({
               </div>
             </div>
 
-            {meta.length > 0 ? (
-              <div className="flex flex-wrap gap-x-6 gap-y-4 rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-xs">
-                {meta.map((cell) => (
-                  <div key={cell.label} className="min-w-[120px]">
+            {metaWithContact.length > 0 ? (
+              <div className="flex max-w-[420px] flex-wrap gap-x-5 gap-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-xs">
+                {metaWithContact.map((cell) => (
+                  <div key={cell.label} className="min-w-[110px]">
                     <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
                       {cell.label}
                     </span>
@@ -86,13 +109,9 @@ export function ExecutiveDossierSheet({
                         {cell.value}
                       </span>
                     ) : cell.emphasize === "emerald" ? (
-                      <span className="font-semibold text-emerald-800">
-                        {cell.value}
-                      </span>
+                      <span className="font-semibold text-emerald-800">{cell.value}</span>
                     ) : (
-                      <span className="font-bold text-slate-900">
-                        {cell.value}
-                      </span>
+                      <span className="break-all font-bold text-slate-900">{cell.value}</span>
                     )}
                   </div>
                 ))}

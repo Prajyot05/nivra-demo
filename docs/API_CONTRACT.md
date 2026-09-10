@@ -247,9 +247,11 @@ Lumpsum is a backward PV of later withdrawals (Excel type=0). SIP uses effective
 
 **Input:** `amount`, `days`, `mfReturnPct`, `fdReturnPct`, `mfTaxPct`, `fdTaxPct`.
 
-**Output:** `mf` / `fd` legs (`annualizedReturn`, `preTax`, `tax`, `postTax`, `invested`, `gain`, `net`), `mfAdvantage`, `fdAdvantage`, `compare[]`.
+UI tax selects match Excel ActiveX lists: MF `10 | 12.5 | 20 | 30`, FD `20 | 25 | 30`. Period and amount are shared (FD mirrors MF).
 
-Annualized return = amount × rate. Per-day = annualized / 365. Pre-tax = per-day × days. Post-tax = pre-tax × (1 − tax). Sample: ₹100 Cr / 15 days / 5% vs 3% / 20% vs 25% tax → MF post-tax **16,43,835.62**.
+**Output:** `mf` / `fd` legs (`annualizedReturn`, `returnPerDay`, `preTax`, `tax`, `postTax`, `invested`, `gain`, `net`), `mfAdvantage`, `fdAdvantage`, `difference`, `compare[]`.
+
+Annualized return = amount × rate. Per-day = annualized / 365. Pre-tax = per-day × days. Post-tax = pre-tax − pre-tax × tax. Advantage cells are `max(0, side − other)` like Excel C15/F15. Sample: ₹100 Cr / 15 days / 5% vs 3% / 20% vs 25% tax → MF post-tax **16,43,835.62**.
 
 ---
 
@@ -317,7 +319,7 @@ Sample: ₹2 L × 5y, corpus ₹11.6 L, 20y, 11%, 12.5% tax → maturity **55,50
 
 ## `multi-withdrawals`
 
-**Input:** `age`, `returnPct`, `taxPct`, `withdrawals[]` of `{ name, amount, atAge }`.
+**Input:** `age`, `returnPct`, `taxPct`, `withdrawals[]` of `{ name, amount, atAge }` (1–20 goals).
 
 **Output:** independent required SIP per withdrawal, `startMonthlySip`, totals, `ageChart` / `schedule`.
 

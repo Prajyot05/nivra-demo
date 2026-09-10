@@ -26,9 +26,11 @@ import {
 } from "@nivra/ui";
 import { CalculatorPage } from "@/components/layout/calculator-page-with-nav";
 import { useCalculate } from "@/hooks/use-calculate";
+import { useCalculatorMode } from "@/hooks/use-calculator-mode";
+import { getCalculatorPageTitle } from "@/lib/calculator-nav";
 
 const FORM_GRID =
-  "grid grid-cols-[repeat(auto-fill,minmax(6.75rem,1fr))] items-start gap-x-2 gap-y-2";
+  "grid grid-cols-[repeat(auto-fill,minmax(7.5rem,1fr))] items-start gap-x-3 gap-y-3";
 
 const MODES = [
   { id: "fire", label: "FIRE" },
@@ -36,7 +38,7 @@ const MODES = [
 ] as const;
 
 type Mode = (typeof MODES)[number]["id"];
-
+const MODE_IDS = MODES.map((m) => m.id);
 const FACTOR_OPTIONS = [
   { value: "200", label: "200% of current" },
   { value: "150", label: "150% of current" },
@@ -94,7 +96,7 @@ type HealthResult = {
 };
 
 export function FireHealthCalculator() {
-  const [mode, setMode] = useState<Mode>("fire");
+  const [mode, setMode] = useCalculatorMode(MODE_IDS, "fire");
 
   const [fireName, setFireName] = useState("Sanjay Gupta");
   const [age, setAge] = useState(40);
@@ -409,7 +411,7 @@ export function FireHealthCalculator() {
 
   return (
     <CalculatorPage
-      title="FIRE / Financial Health"
+      title={getCalculatorPageTitle("/fire", mode)}
       description="FIRE corpus / SIP planner and long-term financial health from Unprotected Excel."
       modes={<ModeTabs tabs={[...MODES]} value={mode} onChange={(id) => setMode(id as Mode)} />}
       actions={

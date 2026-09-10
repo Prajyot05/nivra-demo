@@ -25,9 +25,11 @@ import {
 } from "@nivra/ui";
 import { CalculatorPage } from "@/components/layout/calculator-page-with-nav";
 import { useCalculate } from "@/hooks/use-calculate";
+import { useCalculatorMode } from "@/hooks/use-calculator-mode";
+import { getCalculatorPageTitle } from "@/lib/calculator-nav";
 
 const FORM_GRID =
-  "grid grid-cols-[repeat(auto-fill,minmax(6.75rem,1fr))] items-start gap-x-2 gap-y-2";
+  "grid grid-cols-[repeat(auto-fill,minmax(7.5rem,1fr))] items-start gap-x-3 gap-y-3";
 
 const MODES = [
   { id: "emi", label: "EMI" },
@@ -37,11 +39,8 @@ const MODES = [
   { id: "vehicle", label: "Vehicle" },
 ] as const;
 
-/** Demo showcase: EMI only (simplest loan calculator). */
-const VISIBLE_MODES = MODES.filter((mode) => mode.id === "emi");
-
 type Mode = (typeof MODES)[number]["id"];
-
+const MODE_IDS = MODES.map((m) => m.id);
 const CALCULATOR_ID: Record<Mode, string> = {
   emi: "loan-emi",
   prepay: "loan-prepay",
@@ -117,7 +116,7 @@ type VehicleResult = {
 type LoanResult = EmiResult & Partial<PrepayResult> & Partial<ExtraVsInvestResult> & Partial<RecoveryResult> & Partial<VehicleResult>;
 
 export function LoansCalculator() {
-  const [mode, setMode] = useState<Mode>("emi");
+  const [mode, setMode] = useCalculatorMode(MODE_IDS, "emi");
   const [name, setName] = useState("Mr. Anshu Kaul");
   const [age, setAge] = useState(40);
 
@@ -228,7 +227,7 @@ export function LoansCalculator() {
     if (!result) return;
     const tables: PdfTableData[] = [];
     const modeLabel =
-      VISIBLE_MODES.find((m) => m.id === mode)?.label ??
+      MODES.find((m) => m.id === mode)?.label ??
       MODES.find((m) => m.id === mode)?.label ??
       String(mode);
 
@@ -394,9 +393,9 @@ export function LoansCalculator() {
 
   return (
     <CalculatorPage
-      title="Loan EMI"
+      title={getCalculatorPageTitle("/loans", mode)}
       description="Monthly EMI for a home or personal loan — principal, tenure, and interest rate."
-      modes={<ModeTabs tabs={VISIBLE_MODES} value={mode} onChange={(id) => setMode(id as Mode)} />}
+      modes={<ModeTabs tabs={[...MODES]} value={mode} onChange={(id) => setMode(id as Mode)} />}
       actions={
         <Button
           size="icon"

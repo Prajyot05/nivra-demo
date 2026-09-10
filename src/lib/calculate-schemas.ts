@@ -251,7 +251,7 @@ export const multiWithdrawalsSchema = z.object({
       }),
     )
     .min(1)
-    .max(10),
+    .max(20),
 }).refine((d) => d.age != null, { message: "age is required", path: ["age"] });
 
 export const educationSchema = z.object({

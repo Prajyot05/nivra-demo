@@ -8,9 +8,11 @@ import {
   useEffect,
   useMemo,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const SIDEBAR_COLLAPSED_KEY = "nivra-sidebar-collapsed";
 
@@ -26,29 +28,49 @@ type SidebarContextValue = {
 
 const SidebarContext = createContext<SidebarContextValue | null>(null);
 
+function subscribeCollapsed(onStoreChange: () => void) {
+  window.addEventListener("storage", onStoreChange);
+  window.addEventListener("nivra-sidebar-collapsed", onStoreChange);
+  return () => {
+    window.removeEventListener("storage", onStoreChange);
+    window.removeEventListener("nivra-sidebar-collapsed", onStoreChange);
+  };
+}
+
+function getCollapsedSnapshot(): boolean {
+  return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true";
+}
+
+/** Must match SSR — never read localStorage during hydration. */
+function getCollapsedServerSnapshot(): boolean {
+  return false;
+}
+
+function setCollapsedPreference(collapsed: boolean) {
+  localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(collapsed));
+  window.dispatchEvent(new Event("nivra-sidebar-collapsed"));
+}
+
 export function SidebarProvider({ children }: { children: ReactNode }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const collapsed = useSyncExternalStore(
+    subscribeCollapsed,
+    getCollapsedSnapshot,
+    getCollapsedServerSnapshot,
+  );
+  const hydrated = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
   const [overlayOpen, setOverlayOpen] = useState(false);
-  const [hydrated, setHydrated] = useState(false);
-
-  useEffect(() => {
-    const stored = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
-    if (stored === "true") setCollapsed(true);
-    setHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    if (!hydrated) return;
-    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(collapsed));
-  }, [collapsed, hydrated]);
 
   const collapse = useCallback(() => {
-    setCollapsed(true);
+    setCollapsedPreference(true);
     setOverlayOpen(false);
   }, []);
 
   const expand = useCallback(() => {
-    setCollapsed(false);
+    setCollapsedPreference(false);
     setOverlayOpen(false);
   }, []);
 
@@ -79,21 +101,37 @@ export function useSidebar() {
   return ctx;
 }
 
-/** Shown to the left of page titles when the sidebar is collapsed (desktop). */
+/**
+ * Shown to the left of page titles when the sidebar is collapsed (desktop).
+ * Always renders a stable wrapper so SSR / hydration markup matches.
+ */
 export function NavToggleButton() {
-  const { collapsed, hydrated, openOverlay } = useSidebar();
-
-  if (!hydrated || !collapsed) return null;
+  const { collapsed, openOverlay } = useSidebar();
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    setReady(true);
+  }, []);
+  const showToggle = ready && collapsed;
 
   return (
-    <Button
-      variant="outline"
-      size="icon"
-      className="mt-0.5 hidden size-8 shrink-0 shadow-sm md:inline-flex"
-      onClick={openOverlay}
-      aria-label="Open navigation"
+    <div
+      className={cn(
+        "mt-0.5 hidden shrink-0 md:block",
+        showToggle ? "size-8" : "size-0 overflow-hidden",
+      )}
+      aria-hidden={!showToggle}
     >
-      <Menu className="size-4" />
-    </Button>
+      {showToggle ? (
+        <Button
+          variant="outline"
+          size="icon"
+          className="size-8 shadow-sm"
+          onClick={openOverlay}
+          aria-label="Open navigation"
+        >
+          <Menu className="size-4" />
+        </Button>
+      ) : null}
+    </div>
   );
 }

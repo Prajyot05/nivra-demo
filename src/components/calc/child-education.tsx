@@ -183,7 +183,7 @@ export function ChildEducationPlanner() {
       }
       form={
         <div className="flex flex-col gap-3">
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(6.75rem,1fr))] items-start gap-x-2 gap-y-2">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(7.5rem,1fr))] items-start gap-x-3 gap-y-3">
             <ClientHeader name={name} age={age} onNameChange={setName} onAgeChange={setAge} />
             <Field label="Child name">
               <TextInput

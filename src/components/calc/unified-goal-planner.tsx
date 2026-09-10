@@ -25,6 +25,8 @@ import {
 } from "@nivra/ui";
 import { CalculatorPage } from "@/components/layout/calculator-page-with-nav";
 import { useCalculate } from "@/hooks/use-calculate";
+import { useCalculatorMode } from "@/hooks/use-calculator-mode";
+import { getCalculatorPageTitle } from "@/lib/calculator-nav";
 
 const MODES = [
   { id: "sip", label: "SIP vs Step-up" },
@@ -35,10 +37,8 @@ const MODES = [
   { id: "compounding", label: "Growth steps" },
 ] as const;
 
-const VISIBLE_MODES = MODES.filter((mode) => mode.id === "current" || mode.id === "compounding");
-
 type Mode = (typeof MODES)[number]["id"];
-
+const MODE_IDS = MODES.map((m) => m.id);
 const FREQUENCY_OPTIONS = [
   { value: "1", label: "1 · Yearly" },
   { value: "2", label: "2 · Half-yearly" },
@@ -49,7 +49,7 @@ const FREQUENCY_OPTIONS = [
 ];
 
 const FORM_GRID =
-  "grid grid-cols-[repeat(auto-fill,minmax(6.75rem,1fr))] items-start gap-x-2 gap-y-2";
+  "grid grid-cols-[repeat(auto-fill,minmax(7.5rem,1fr))] items-start gap-x-3 gap-y-3";
 
 const CALCULATOR_ID: Record<Mode, string> = {
   sip: "goal-sip",
@@ -110,7 +110,7 @@ type GoalPlannerResult = {
 };
 
 export function UnifiedGoalPlanner() {
-  const [mode, setMode] = useState<Mode>("current");
+  const [mode, setMode] = useCalculatorMode(MODE_IDS, "current");
   const [name, setName] = useState("Mr. John Doe");
   const [age, setAge] = useState(30);
   const [goalAmount, setGoalAmount] = useState(10_000_000);
@@ -177,8 +177,7 @@ export function UnifiedGoalPlanner() {
     if (!result) return;
 
     const modeLabel =
-      VISIBLE_MODES.find((m) => m.id === mode)?.label ??
-      MODES.find((m) => m.id === mode)?.label ??
+      MODES.find((m) => m.id === mode)?.label ??      MODES.find((m) => m.id === mode)?.label ??
       String(mode);
 
     const headlines = [
@@ -252,9 +251,9 @@ export function UnifiedGoalPlanner() {
 
   return (
     <CalculatorPage
-      title="Unified Goal Planner"
+      title={getCalculatorPageTitle("/goals", mode)}
       description="Six Unprotected goal modes. Additional SIP / lumpsum / step-up are solved so net after tax hits the goal."
-      modes={<ModeTabs tabs={VISIBLE_MODES} value={mode} onChange={(id) => setMode(id as Mode)} />}
+      modes={<ModeTabs tabs={[...MODES]} value={mode} onChange={(id) => setMode(id as Mode)} />}
       actions={
         <Button
           size="icon"
@@ -300,7 +299,7 @@ export function UnifiedGoalPlanner() {
             <>
               <MoneyInput label="Periodic amt" value={periodicAmount} onChange={setPeriodicAmount} />
               <SelectInput
-                label="Times / year"
+                label="Freq / yr"
                 value={String(timesPerYear)}
                 onChange={(value) => setTimesPerYear(Number(value))}
                 options={FREQUENCY_OPTIONS}

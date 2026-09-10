@@ -2,15 +2,20 @@
 
 import { formatINRCurrency, formatPercent } from "@nivra/ui";
 import {
+  DUMMY_REPORT_CONTACT,
   ExecutiveDossierSheet,
   ExecutivePlaybook,
   ExecutiveSectionHeading,
+  type ExecutiveContact,
 } from "@/components/reports/executive-dossier";
+import { ReportCompositionDonut } from "@/components/reports/report-composition-donut";
 import { getReportPlaybook } from "@/lib/report-playbooks";
 
 export type GoalSipReportData = {
   clientName: string;
   age: number;
+  email?: string;
+  phone?: string;
   goal: number;
   inflAdjGoal: number;
   useInflAdj: boolean;
@@ -42,21 +47,6 @@ type GoalSipDossierProps = {
 
 export const GOAL_SIP_REPORT_ID = "goal-sip-report";
 
-const CIRC = 2 * Math.PI * 38; // ≈ 238.76
-
-
-function donutSegments(invested: number, gain: number, tax: number) {
-  const total = Math.max(invested + gain + tax, 1);
-  const investedLen = (invested / total) * CIRC;
-  const gainLen = (gain / total) * CIRC;
-  const taxLen = (tax / total) * CIRC;
-  return {
-    invested: { dash: investedLen, offset: 0 },
-    gain: { dash: gainLen, offset: -investedLen },
-    tax: { dash: taxLen, offset: -(investedLen + gainLen) },
-  };
-}
-
 function milestoneForYear(
   year: number,
   tenure: number,
@@ -77,10 +67,10 @@ function milestoneForYear(
     return { label: `> ${formatINRCurrency(half)} Step-Up`, row: "normal" };
   }
   if (stdCorpus >= 100_000 && prevStd < 100_000) {
-    return { label: "> ₹1.0L Std", row: "normal" };
+    return { label: "> Rs.1.0L Std", row: "normal" };
   }
   if (stepCorpus >= 100_000 && prevStep < 100_000) {
-    return { label: "> ₹1.0L Step-Up", row: "normal" };
+    return { label: "> Rs.1.0L Step-Up", row: "normal" };
   }
   if (stdCorpus >= targetGoal * 0.8 && prevStd < targetGoal * 0.8) {
     return { label: `> ${formatINRCurrency(targetGoal * 0.8)} Std`, row: "normal" };
@@ -93,130 +83,8 @@ function milestoneForYear(
   return { label: "Compounding", row: "normal" };
 }
 
-function CorpusDonutCard({
-  title,
-  invested,
-  gain,
-  tax,
-  corpus,
-}: {
-  title: string;
-  invested: number;
-  gain: number;
-  tax: number;
-  corpus: number;
-}) {
-  const gross = invested + gain;
-  const segs = donutSegments(invested, gain, tax);
-  const multiplier = invested > 0 ? corpus / invested : 0;
-
-  return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50/40 p-5">
-      <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-        <h4 className="text-xs font-bold uppercase tracking-wide text-slate-900">{title}</h4>
-        <span className="text-[11px] font-bold tabular-nums text-slate-700">
-          Gross: {formatINRCurrency(gross)}
-        </span>
-      </div>
-      <div className="flex flex-col items-center justify-around gap-6 py-5 sm:flex-row">
-        <div className="relative h-44 w-44 flex-shrink-0">
-          <svg className="h-full w-full -rotate-90 transform" viewBox="0 0 100 100">
-            <circle
-              cx="50"
-              cy="50"
-              fill="transparent"
-              r="38"
-              stroke="#f1f5f9"
-              strokeWidth="15"
-            />
-            <circle
-              cx="50"
-              cy="50"
-              fill="transparent"
-              r="38"
-              stroke="#1E293B"
-              strokeDasharray={`${segs.invested.dash} ${CIRC}`}
-              strokeDashoffset={segs.invested.offset}
-              strokeWidth="15"
-            />
-            <circle
-              cx="50"
-              cy="50"
-              fill="transparent"
-              r="38"
-              stroke="#10B981"
-              strokeDasharray={`${segs.gain.dash} ${CIRC}`}
-              strokeDashoffset={segs.gain.offset}
-              strokeWidth="15"
-            />
-            <circle
-              cx="50"
-              cy="50"
-              fill="transparent"
-              r="38"
-              stroke="#EF4444"
-              strokeDasharray={`${segs.tax.dash} ${CIRC}`}
-              strokeDashoffset={segs.tax.offset}
-              strokeWidth="15"
-            />
-          </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-            <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
-              Net Corpus
-            </span>
-            <span className="text-sm font-black tabular-nums text-slate-900">
-              {formatINRCurrency(corpus)}
-            </span>
-          </div>
-        </div>
-        <div className="w-full max-w-[200px] space-y-2.5 text-xs">
-          <LegendRow color="#1E293B" label="Invested" value={formatINRCurrency(invested)} />
-          <LegendRow
-            color="#10B981"
-            label="Gain (Pre-tax)"
-            value={formatINRCurrency(gain)}
-            valueClass="text-emerald-600"
-          />
-          <LegendRow
-            color="#EF4444"
-            label="Capital Tax"
-            value={formatINRCurrency(tax)}
-            valueClass="text-rose-600"
-          />
-          <div className="flex items-center justify-between border-t border-slate-200 pt-2 text-[11px] font-bold">
-            <span className="text-slate-500">Wealth Multiplier:</span>
-            <span className="text-slate-900">{multiplier.toFixed(2)}x</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function LegendRow({
-  color,
-  label,
-  value,
-  valueClass = "text-slate-900",
-}: {
-  color: string;
-  label: string;
-  value: string;
-  valueClass?: string;
-}) {
-  return (
-    <div className="flex items-center justify-between">
-      <span className="flex items-center space-x-2 text-slate-600">
-        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
-        <span>{label}</span>
-      </span>
-      <span className={`font-bold tabular-nums ${valueClass}`}>{value}</span>
-    </div>
-  );
-}
-
 /**
- * Goal SIP Investment Planner — off-screen dossier for direct PDF download.
+ * Goal SIP Investment Planner off-screen dossier for direct PDF download.
  */
 export function GoalSipDossier({ id = GOAL_SIP_REPORT_ID, data }: GoalSipDossierProps) {
   const endAge = data.age + data.tenure;
@@ -224,6 +92,10 @@ export function GoalSipDossier({ id = GOAL_SIP_REPORT_ID, data }: GoalSipDossier
     data.standardSIP > 0
       ? ((data.standardSIP - data.stepUpSIP) / data.standardSIP) * 100
       : 0;
+  const contact: ExecutiveContact = {
+    email: data.email || DUMMY_REPORT_CONTACT.email,
+    phone: data.phone || DUMMY_REPORT_CONTACT.phone,
+  };
   const playbook = getReportPlaybook("goal-sip").map((p) =>
     p.id === "02"
       ? {
@@ -235,7 +107,7 @@ export function GoalSipDossier({ id = GOAL_SIP_REPORT_ID, data }: GoalSipDossier
         ? {
             ...p,
             title: `Glidepath De-risking at Yr ${Math.max(1, data.tenure - 2)}`,
-            description: `Transition accumulated equity exposure to short-duration debt or ultra-short hybrid instruments via Systematic Transfer Plan (STP) during years ${Math.max(1, data.tenure - 2)}–${data.tenure} to lock in the target corpus safely.`,
+            description: `Transition accumulated equity exposure to short-duration debt or ultra-short hybrid instruments via Systematic Transfer Plan (STP) during years ${Math.max(1, data.tenure - 2)} to ${data.tenure} to lock in the target corpus safely.`,
           }
         : p,
   );
@@ -261,16 +133,16 @@ export function GoalSipDossier({ id = GOAL_SIP_REPORT_ID, data }: GoalSipDossier
       id={id}
       title="Goal SIP Investment Planner"
       subtitle="Institutional Wealth Advisory Desk • Goal Wealth Modeling & Sensitivity Architecture"
+      contact={contact}
       meta={[
         { label: "Client Name", value: data.clientName || "Client" },
         {
           label: "Timeline Window",
-          value: `Age ${data.age} → ${endAge} (${data.tenure} Yrs)`,
+          value: `Age ${data.age} to ${endAge} (${data.tenure} Yrs)`,
         },
         { label: "Target Goal", value: formatINRCurrency(data.targetGoal) },
       ]}
     >
-      {/* Primary milestones */}
       <section className="space-y-4" data-purpose="primary-milestones">
         <ExecutiveSectionHeading
           variant="square"
@@ -279,7 +151,6 @@ export function GoalSipDossier({ id = GOAL_SIP_REPORT_ID, data }: GoalSipDossier
         />
 
         <div className="flex gap-4">
-          {/* Standard */}
           <div className="relative flex flex-1 flex-col justify-between overflow-hidden rounded-xl border border-slate-900 bg-slate-950 p-5 text-white shadow-sm">
             <div className="flex items-start justify-between gap-3 border-b border-slate-800 pb-3">
               <div className="min-w-0 flex-1">
@@ -320,7 +191,6 @@ export function GoalSipDossier({ id = GOAL_SIP_REPORT_ID, data }: GoalSipDossier
             </div>
           </div>
 
-          {/* Step-up */}
           <div className="relative flex flex-1 flex-col justify-between overflow-hidden rounded-xl border border-emerald-200 bg-emerald-50/50 p-5 shadow-sm">
             <div className="flex items-start justify-between gap-3 border-b border-emerald-200/60 pb-3">
               <div className="min-w-0 flex-1">
@@ -381,7 +251,6 @@ export function GoalSipDossier({ id = GOAL_SIP_REPORT_ID, data }: GoalSipDossier
         </div>
       </section>
 
-      {/* Assumptions */}
       <section className="space-y-3" data-purpose="assumptions-grid">
         <ExecutiveSectionHeading title="Actuarial & Financial Parameters Baseline" />
         <div className="flex flex-wrap gap-4 rounded-xl border border-slate-200 bg-white p-4 text-center">
@@ -417,7 +286,6 @@ export function GoalSipDossier({ id = GOAL_SIP_REPORT_ID, data }: GoalSipDossier
         </div>
       </section>
 
-      {/* Donuts */}
       <section className="space-y-4" data-purpose="corpus-visual-analytics">
         <ExecutiveSectionHeading
           title="Corpus Composition & Capital Gains Breakdown"
@@ -425,30 +293,35 @@ export function GoalSipDossier({ id = GOAL_SIP_REPORT_ID, data }: GoalSipDossier
         />
         <div className="flex gap-4">
           <div className="flex-1">
-            <CorpusDonutCard
+            <ReportCompositionDonut
               title="Standard SIP Architecture"
+              centerLabel="Net Corpus"
+              centerValue={data.stdCorpus}
               invested={data.stdInvested}
               gain={data.stdGain}
               tax={data.stdTax}
-              corpus={data.stdCorpus}
+              taxLabel="Capital Tax"
             />
           </div>
           <div className="flex-1">
-            <CorpusDonutCard
+            <ReportCompositionDonut
               title="Step-Up SIP Architecture"
+              centerLabel="Net Corpus"
+              centerValue={data.stepCorpus}
               invested={data.stepInvested}
               gain={data.stepGain}
               tax={data.stepTax}
-              corpus={data.stepCorpus}
+              taxLabel="Capital Tax"
+              accent
             />
           </div>
         </div>
       </section>
 
-      {/* Cost of delay — slight pull-up so the block doesn't orphan across PDF pages */}
       <section
         className="-mt-1 space-y-3 rounded-xl border border-rose-200 bg-rose-50/30 p-4"
         data-purpose="cost-of-delay"
+        data-pdf-keep-together
       >
         <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
           <div className="flex items-center space-x-2">
@@ -519,7 +392,6 @@ export function GoalSipDossier({ id = GOAL_SIP_REPORT_ID, data }: GoalSipDossier
         </div>
       </section>
 
-      {/* Schedule — slight push-down so it doesn't sit tight against the delay block */}
       <section className="mt-9 space-y-3" data-purpose="yearly-schedule">
         <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
           <ExecutiveSectionHeading title="Yearly Accumulation & Portfolio Growth Schedule" />
@@ -622,7 +494,7 @@ export function GoalSipDossier({ id = GOAL_SIP_REPORT_ID, data }: GoalSipDossier
                     );
                   }
                   return (
-                    <tr key={std.year} className="hover:bg-slate-50">
+                    <tr key={std.year}>
                       <td className="px-3 py-2 text-center font-bold text-slate-900">
                         {std.year}
                       </td>
@@ -654,7 +526,9 @@ export function GoalSipDossier({ id = GOAL_SIP_REPORT_ID, data }: GoalSipDossier
         </div>
       </section>
 
-      <ExecutivePlaybook pillars={playbook} />
+      <div data-pdf-keep-together>
+        <ExecutivePlaybook pillars={playbook} />
+      </div>
     </ExecutiveDossierSheet>
   );
 }

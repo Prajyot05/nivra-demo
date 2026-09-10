@@ -1,15 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Download } from "lucide-react";
+import { Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { generateCalculatorReport } from "@/lib/pdf-generator";
-import { playbookForPdf } from "@/lib/report-playbooks";
+import { generatePdfFromElement } from "@/lib/pdf-generator";
 import {
   ClientHeader,
   CompositionChart,
   GrowthChart,
-  ModeTabs,
   MoneyInput,
   PercentInput,
   ResultCard,
@@ -22,7 +20,25 @@ import {
   YearInput,
 } from "@nivra/ui";
 import { CalculatorPage } from "@/components/layout/calculator-page-with-nav";
+import {
+  OneTimeInvestmentDossier,
+  ONE_TIME_INVESTMENT_REPORT_ID,
+} from "@/components/reports/one-time-investment-dossier";
+import {
+  PeriodicInvestmentDossier,
+  PERIODIC_INVESTMENT_REPORT_ID,
+} from "@/components/reports/periodic-investment-dossier";
+import {
+  SipCalculatorDossier,
+  SIP_CALCULATOR_REPORT_ID,
+} from "@/components/reports/sip-calculator-dossier";
+import {
+  SipStepUpCalculatorDossier,
+  SIP_STEPUP_CALCULATOR_REPORT_ID,
+} from "@/components/reports/sip-stepup-calculator-dossier";
 import { useCalculate } from "@/hooks/use-calculate";
+import { useCalculatorMode } from "@/hooks/use-calculator-mode";
+import { getCalculatorPageTitle } from "@/lib/calculator-nav";
 
 const MODES = [
   { id: "sip", label: "SIP" },
@@ -31,22 +47,45 @@ const MODES = [
   { id: "periodic", label: "Periodic" },
 ] as const;
 
-/** Demo showcase: lumpsum + flat SIP only (simplest forward-growth calculators). */
-const VISIBLE_MODES = MODES.filter((mode) => mode.id === "lumpsum" || mode.id === "sip");
-
 type Mode = (typeof MODES)[number]["id"];
+const MODE_IDS = MODES.map((m) => m.id);
 
 const FREQUENCY_OPTIONS = [
-  { value: "1", label: "1 · Yearly" },
-  { value: "2", label: "2 · Half-yearly" },
-  { value: "3", label: "3 · Every 4 months" },
-  { value: "4", label: "4 · Quarterly" },
-  { value: "6", label: "6 · Every 2 months" },
-  { value: "12", label: "12 · Monthly" },
+  { value: "12", label: "Monthly" },
+  { value: "4", label: "Quarterly" },
+  { value: "2", label: "Half-Yearly" },
+  { value: "1", label: "Yearly" },
+  { value: "6", label: "Every 2 months" },
+  { value: "3", label: "Every 4 months" },
 ];
 
+const VALID_TIMES_PER_YEAR = new Set([1, 2, 3, 4, 6, 12]);
+
+function frequencyLabel(timesPerYear: number): string {
+  return FREQUENCY_OPTIONS.find((o) => o.value === String(timesPerYear))?.label ?? "Unknown";
+}
+
+function frequencyHint(timesPerYear: number): string {
+  switch (timesPerYear) {
+    case 12:
+      return "12 contributions per year";
+    case 6:
+      return "6 contributions per year";
+    case 4:
+      return "4 contributions per year";
+    case 3:
+      return "3 contributions per year";
+    case 2:
+      return "2 contributions per year";
+    case 1:
+      return "1 contribution per year";
+    default:
+      return "Select a contribution frequency";
+  }
+}
+
 const FORM_GRID =
-  "grid grid-cols-[repeat(auto-fill,minmax(6.75rem,1fr))] items-start gap-x-2 gap-y-2";
+  "grid grid-cols-[repeat(auto-fill,minmax(7.5rem,1fr))] items-start gap-x-3 gap-y-3";
 
 type YearRow = {
   year: number;
@@ -86,7 +125,7 @@ const CALCULATOR_ID: Record<Mode, string> = {
 };
 
 export function InvestmentGrowth() {
-  const [mode, setMode] = useState<Mode>("lumpsum");
+  const [mode] = useCalculatorMode(MODE_IDS, "lumpsum");
   const [name, setName] = useState("Mr. Anshu Kaul");
   const [age, setAge] = useState(30);
 
@@ -98,12 +137,63 @@ export function InvestmentGrowth() {
   const [sipDelay, setSipDelay] = useState(6);
   const [sipTax, setSipTax] = useState(0);
 
+  const sipMonthlyError =
+    sipMonthly <= 0 ? "Monthly SIP is required." : undefined;
+  const sipYearsError = sipYears < 1 ? "SIP years must be at least 1." : undefined;
+  const sipHorizonError =
+    investYears < 1
+      ? "Horizon must be at least 1 year."
+      : sipYears > investYears
+        ? "SIP duration cannot be greater than investment horizon."
+        : undefined;
+  const sipReturnError =
+    sipReturn < 0
+      ? "Return cannot be negative."
+      : sipReturn > 100
+        ? "Return cannot exceed 100%."
+        : undefined;
+  const sipInflationError =
+    sipInflation < 0
+      ? "Inflation cannot be negative."
+      : sipInflation > 100
+        ? "Inflation cannot exceed 100%."
+        : undefined;
+  const sipDelayError =
+    sipDelay > investYears * 12
+      ? "Delay cannot exceed the investment horizon."
+      : undefined;
+  const sipTaxError =
+    sipTax < 0 ? "Tax cannot be negative." : sipTax > 100 ? "Tax cannot exceed 100%." : undefined;
+
   const [stepStart, setStepStart] = useState(5_000);
   const [stepYears, setStepYears] = useState(10);
   const [stepReturn, setStepReturn] = useState(12);
   const [stepUpPct, setStepUpPct] = useState(10);
   const [stepInflation, setStepInflation] = useState(5.75);
   const [stepTax, setStepTax] = useState(0);
+
+  const stepStartError = stepStart <= 0 ? "Start SIP is required." : undefined;
+  const stepYearsError = stepYears < 1 ? "SIP years must be at least 1." : undefined;
+  const stepReturnError =
+    stepReturn < 0
+      ? "Return cannot be negative."
+      : stepReturn > 100
+        ? "Return cannot exceed 100%."
+        : undefined;
+  const stepUpPctError =
+    stepUpPct < 0
+      ? "Step-up cannot be negative."
+      : stepUpPct > 100
+        ? "Step-up cannot exceed 100%."
+        : undefined;
+  const stepInflationError =
+    stepInflation < 0
+      ? "Inflation cannot be negative."
+      : stepInflation > 100
+        ? "Inflation cannot exceed 100%."
+        : undefined;
+  const stepTaxError =
+    stepTax < 0 ? "Tax cannot be negative." : stepTax > 100 ? "Tax cannot exceed 100%." : undefined;
 
   const [lumpAmount, setLumpAmount] = useState(5_000_000);
   const [lumpYears, setLumpYears] = useState(16);
@@ -112,11 +202,81 @@ export function InvestmentGrowth() {
   const [lumpDelay, setLumpDelay] = useState(6);
   const [lumpTax, setLumpTax] = useState(0);
 
+  const lumpAmountError =
+    lumpAmount < 1
+      ? lumpAmount <= 0
+        ? "Investment amount is required."
+        : "Amount must be at least ₹1."
+      : undefined;
+  const lumpYearsError = lumpYears < 1 ? "Tenure must be at least 1 year." : undefined;
+  const lumpReturnError =
+    lumpReturn < 0 ? "Return cannot be negative." : lumpReturn > 100 ? "Return cannot exceed 100%." : undefined;
+  const lumpInflationError =
+    lumpInflation < 0
+      ? "Inflation cannot be negative."
+      : lumpInflation > 100
+        ? "Inflation cannot exceed 100%."
+        : undefined;
+  const lumpDelayError =
+    lumpDelay > lumpYears * 12 ? "Delay cannot exceed the investment tenure." : undefined;
+  const lumpTaxError =
+    lumpTax < 0 ? "Tax cannot be negative." : lumpTax > 100 ? "Tax cannot exceed 100%." : undefined;
+
   const [periodicAmount, setPeriodicAmount] = useState(100_000);
   const [timesPerYear, setTimesPerYear] = useState(2);
   const [periodicYears, setPeriodicYears] = useState(1);
   const [periodicReturn, setPeriodicReturn] = useState(12);
   const [periodicTax, setPeriodicTax] = useState(12);
+
+  const periodicAmountError =
+    periodicAmount <= 0 ? "Amount each is required." : undefined;
+  const periodicYearsError = periodicYears < 1 ? "Tenure must be at least 1 year." : undefined;
+  const periodicReturnError =
+    periodicReturn < 0
+      ? "Return cannot be negative."
+      : periodicReturn > 100
+        ? "Return cannot exceed 100%."
+        : undefined;
+  const periodicTaxError =
+    periodicTax < 0
+      ? "Tax cannot be negative."
+      : periodicTax > 100
+        ? "Tax cannot exceed 100%."
+        : undefined;
+  const periodicFreqError = !VALID_TIMES_PER_YEAR.has(timesPerYear)
+    ? "Select a contribution frequency."
+    : undefined;
+
+  const canCalculate =
+    mode === "lumpsum"
+      ? !lumpAmountError &&
+        !lumpYearsError &&
+        !lumpReturnError &&
+        !lumpInflationError &&
+        !lumpDelayError &&
+        !lumpTaxError
+      : mode === "periodic"
+        ? !periodicAmountError &&
+          !periodicYearsError &&
+          !periodicReturnError &&
+          !periodicTaxError &&
+          !periodicFreqError
+        : mode === "sip"
+          ? !sipMonthlyError &&
+            !sipYearsError &&
+            !sipHorizonError &&
+            !sipReturnError &&
+            !sipInflationError &&
+            !sipDelayError &&
+            !sipTaxError
+          : mode === "stepup"
+            ? !stepStartError &&
+              !stepYearsError &&
+              !stepReturnError &&
+              !stepUpPctError &&
+              !stepInflationError &&
+              !stepTaxError
+            : true;
 
   const input = useMemo(() => {
     switch (mode) {
@@ -195,189 +355,365 @@ export function InvestmentGrowth() {
     periodicTax,
   ]);
 
-  const { result, error, loading } = useCalculate<GrowthResult>(CALCULATOR_ID[mode], input);
+  const { result, error, loading } = useCalculate<GrowthResult>(
+    CALCULATOR_ID[mode],
+    input,
+    canCalculate,
+  );
+  const [isDownloading, setIsDownloading] = useState(false);
 
-  const handleDownload = () => {
-    if (!result) return;
-    const modeLabel = mode === "sip" ? "SIP" : mode === "lumpsum" ? "Lumpsum" : mode === "stepup" ? "Step-up SIP" : "Periodic";
-    const assumptions: Array<[string, string | number, boolean?]> = [["Mode", modeLabel]];
-    if (mode === "sip") {
-      assumptions.push(
-        ["Monthly SIP", sipMonthly, true],
-        ["SIP Years", sipYears],
-        ["Invest Years", investYears],
-        ["Return", `${sipReturn}%`],
-        ["Inflation", `${sipInflation}%`],
-        ["Tax", `${sipTax}%`],
-        ["Delay (months)", sipDelay],
-      );
-    } else if (mode === "lumpsum") {
-      assumptions.push(
-        ["Amount", lumpAmount, true],
-        ["Years", lumpYears],
-        ["Return", `${lumpReturn}%`],
-        ["Inflation", `${lumpInflation}%`],
-        ["Tax", `${lumpTax}%`],
-        ["Delay (months)", lumpDelay],
-      );
-    } else if (mode === "stepup") {
-      assumptions.push(
-        ["Start Monthly", stepStart, true],
-        ["Years", stepYears],
-        ["Return", `${stepReturn}%`],
-        ["Step-up", `${stepUpPct}%`],
-        ["Inflation", `${stepInflation}%`],
-        ["Tax", `${stepTax}%`],
-      );
-    } else {
-      assumptions.push(
-        ["Amount / payment", periodicAmount, true],
-        ["Times / year", timesPerYear],
-        ["Years", periodicYears],
-        ["Return", `${periodicReturn}%`],
-        ["Tax", `${periodicTax}%`],
-      );
+  const handleDownload = async () => {
+    if (!result || isDownloading) return;
+
+    const safeName = (name || "client")
+      .replace(/[^a-zA-Z0-9-_ ]/g, "")
+      .trim()
+      .replace(/\s+/g, "-")
+      .toLowerCase();
+
+    const reportByMode: Partial<Record<Mode, { id: string; filename: string }>> = {
+      sip: { id: SIP_CALCULATOR_REPORT_ID, filename: `sip-calculator-${safeName || "report"}` },
+      stepup: {
+        id: SIP_STEPUP_CALCULATOR_REPORT_ID,
+        filename: `sip-stepup-calculator-${safeName || "report"}`,
+      },
+      lumpsum: {
+        id: ONE_TIME_INVESTMENT_REPORT_ID,
+        filename: `one-time-investment-${safeName || "report"}`,
+      },
+      periodic: {
+        id: PERIODIC_INVESTMENT_REPORT_ID,
+        filename: `periodic-investment-${safeName || "report"}`,
+      },
+    };
+
+    const report = reportByMode[mode];
+    if (!report) return;
+
+    setIsDownloading(true);
+    try {
+      await generatePdfFromElement(report.id, report.filename);
+    } catch (err) {
+      console.error("PDF download failed:", err);
+    } finally {
+      setIsDownloading(false);
     }
-
-    generateCalculatorReport({
-      title: "Investment Growth Dossier",
-      subtitle: `${modeLabel} forward projection for ${name}`,
-      clientName: name,
-      age,
-      status: "Validated Model",
-      filename: `investment-growth-${name}`,
-      headlines: [
-        { label: "Maturity Value", value: result.maturity, highlight: true, hint: "Gross corpus at horizon" },
-        { label: "Net After Tax", value: result.netAfterTax, hint: `Gain ${Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(Math.round(result.gain))}` },
-      ],
-      metrics: [
-        { label: "Total Invested", value: result.totalInvested },
-        { label: "Pre-Tax Gain", value: result.gain },
-        { label: "Tax Liability", value: result.tax },
-        {
-          label: result.costOfDelay != null ? "Cost of Delay" : "Inflation-Adj.",
-          value: result.costOfDelay ?? result.inflationAdjusted ?? 0,
-          danger: (result.costOfDelay ?? 0) > 0,
-        },
-      ],
-      assumptions,
-      tables: result.schedule
-        ? [
-            {
-              title: `${modeLabel} Schedule`,
-              head:
-                mode === "periodic"
-                  ? ["Month", "Contribution", "FV"]
-                  : ["Year", "Invested", "Year End", "Inflation Adj"],
-              body: result.schedule.map((row: YearRow | PeriodicRow) => {
-                if (mode === "periodic") {
-                  const r = row as PeriodicRow;
-                  return [r.month, r.contribution, r.contributionFv];
-                }
-                const r = row as YearRow;
-                return [r.year, r.investedToDate, r.yearEnd, r.inflationAdjusted ?? 0];
-              }),
-              columnAlignments:
-                mode === "periodic"
-                  ? ["left", "right", "right"]
-                  : ["left", "right", "right", "right"],
-              currencyColumns: mode === "periodic" ? [1, 2] : [1, 2, 3],
-            },
-          ]
-        : [],
-      playbook: playbookForPdf("investment-growth"),
-    });
   };
 
   return (
+    <>
     <CalculatorPage
-      title="Investment Growth"
-      description="Lumpsum and monthly SIP — see how savings grow over time."
-      modes={<ModeTabs tabs={VISIBLE_MODES} value={mode} onChange={(id) => setMode(id as Mode)} />}
+      title={getCalculatorPageTitle("/growth", mode)}
+      description="Lumpsum and monthly SIP. See how savings grow over time."
       actions={
         <Button
           size="icon"
           className="h-8 w-8 shrink-0 bg-[var(--app-primary)] text-[var(--app-primary-fg)] hover:bg-[var(--app-primary-hover)] transition-colors"
           onClick={handleDownload}
-          title="Download Report"
+          title={isDownloading ? "Preparing PDF…" : "Download Report"}
+          disabled={!result || isDownloading}
         >
-          <Download className="size-4" />
+          {isDownloading ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <Download className="size-4" />
+          )}
         </Button>
       }
       form={
         mode === "sip" ? (
           <div className={FORM_GRID}>
             <ClientHeader name={name} age={age} onNameChange={setName} onAgeChange={setAge} />
-            <MoneyInput label="Monthly SIP" value={sipMonthly} onChange={setSipMonthly} />
+            <MoneyInput
+              label="Monthly SIP"
+              value={sipMonthly}
+              onChange={setSipMonthly}
+              error={sipMonthlyError}
+            />
             <YearInput
               label="SIP years"
               value={sipYears}
               min={1}
               max={100}
-              onChange={(years) => {
-                setSipYears(years);
-                setInvestYears((horizon) => Math.max(horizon, years));
-              }}
+              onChange={setSipYears}
+              error={sipYearsError ?? (sipYears > investYears ? sipHorizonError : undefined)}
             />
             <YearInput
               label="Horizon (yrs)"
               value={investYears}
-              min={sipYears}
+              min={1}
               max={100}
-              onChange={(years) => setInvestYears(Math.max(years, sipYears))}
+              onChange={setInvestYears}
+              error={sipHorizonError}
             />
-            <PercentInput label="Return (%)" value={sipReturn} onChange={setSipReturn} />
-            <PercentInput label="Inflation (%)" value={sipInflation} onChange={setSipInflation} />
-            <YearInput label="Delay (mos)" value={sipDelay} min={0} max={1200} onChange={setSipDelay} />
-            <PercentInput label="Tax (%)" value={sipTax} onChange={setSipTax} />
+            <PercentInput
+              label="Return"
+              value={sipReturn}
+              onChange={(v) => setSipReturn(Math.min(100, Math.max(0, v)))}
+              error={sipReturnError}
+            />
+            <PercentInput
+              label="Inflation"
+              value={sipInflation}
+              onChange={(v) => setSipInflation(Math.min(100, Math.max(0, v)))}
+              error={sipInflationError}
+            />
+            <YearInput
+              label="Delay (mos)"
+              value={sipDelay}
+              min={0}
+              max={1200}
+              onChange={(v) => setSipDelay(Math.max(0, v))}
+              error={sipDelayError}
+            />
+            <PercentInput
+              label="Tax"
+              value={sipTax}
+              onChange={(v) => setSipTax(Math.min(100, Math.max(0, v)))}
+              error={sipTaxError}
+            />
           </div>
         ) : mode === "stepup" ? (
           <div className={FORM_GRID}>
             <ClientHeader name={name} age={age} onNameChange={setName} onAgeChange={setAge} />
-            <MoneyInput label="Start SIP" value={stepStart} onChange={setStepStart} />
-            <YearInput label="SIP years" value={stepYears} min={1} max={100} onChange={setStepYears} />
-            <PercentInput label="Return (%)" value={stepReturn} onChange={setStepReturn} />
-            <PercentInput label="Step-up (%)" value={stepUpPct} onChange={setStepUpPct} />
-            <PercentInput label="Inflation (%)" value={stepInflation} onChange={setStepInflation} />
-            <PercentInput label="Tax (%)" value={stepTax} onChange={setStepTax} />
+            <MoneyInput
+              label="Start SIP"
+              value={stepStart}
+              onChange={setStepStart}
+              error={stepStartError}
+            />
+            <YearInput
+              label="SIP years"
+              value={stepYears}
+              min={1}
+              max={100}
+              onChange={setStepYears}
+              error={stepYearsError}
+            />
+            <PercentInput
+              label="Return"
+              value={stepReturn}
+              onChange={(v) => setStepReturn(Math.min(100, Math.max(0, v)))}
+              error={stepReturnError}
+            />
+            <PercentInput
+              label="Step-up"
+              value={stepUpPct}
+              onChange={(v) => setStepUpPct(Math.min(100, Math.max(0, v)))}
+              error={stepUpPctError}
+            />
+            <PercentInput
+              label="Inflation"
+              value={stepInflation}
+              onChange={(v) => setStepInflation(Math.min(100, Math.max(0, v)))}
+              error={stepInflationError}
+            />
+            <PercentInput
+              label="Tax"
+              value={stepTax}
+              onChange={(v) => setStepTax(Math.min(100, Math.max(0, v)))}
+              error={stepTaxError}
+            />
           </div>
-        ) : mode === "lumpsum" ? (
-          <div className={FORM_GRID}>
+        ) : mode === "lumpsum" ? (          <div className={FORM_GRID}>
             <ClientHeader name={name} age={age} onNameChange={setName} onAgeChange={setAge} />
-            <MoneyInput label="Amount" value={lumpAmount} onChange={setLumpAmount} />
-            <YearInput value={lumpYears} min={1} max={100} onChange={setLumpYears} />
-            <PercentInput label="Return (%)" value={lumpReturn} onChange={setLumpReturn} />
-            <PercentInput label="Inflation (%)" value={lumpInflation} onChange={setLumpInflation} />
-            <YearInput label="Delay (mos)" value={lumpDelay} min={0} max={1200} onChange={setLumpDelay} />
-            <PercentInput label="Tax (%)" value={lumpTax} onChange={setLumpTax} />
+            <MoneyInput
+              label="Investment amount"
+              value={lumpAmount}
+              onChange={setLumpAmount}
+              error={lumpAmountError}
+            />
+            <YearInput
+              label="Term"
+              value={lumpYears}
+              min={1}
+              max={100}
+              suffix="Years"
+              onChange={setLumpYears}
+              error={lumpYearsError}
+            />
+            <PercentInput
+              label="Expected return"
+              value={lumpReturn}
+              onChange={(v) => setLumpReturn(Math.max(0, v))}
+              error={lumpReturnError}
+            />
+            <PercentInput
+              label="Inflation"
+              value={lumpInflation}
+              onChange={(v) => setLumpInflation(Math.max(0, v))}
+              error={lumpInflationError}
+            />
+            <YearInput
+              label="Delay"
+              value={lumpDelay}
+              min={0}
+              max={1200}
+              suffix="Months"
+              onChange={(v) => setLumpDelay(Math.max(0, v))}
+              error={lumpDelayError}
+            />
+            <PercentInput
+              label="Tax"
+              value={lumpTax}
+              onChange={(v) => setLumpTax(Math.max(0, v))}
+              error={lumpTaxError}
+            />
           </div>
         ) : (
-          <div className={FORM_GRID}>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] items-start gap-x-3 gap-y-3">
             <ClientHeader name={name} age={age} onNameChange={setName} onAgeChange={setAge} />
-            <MoneyInput label="Amount each" value={periodicAmount} onChange={setPeriodicAmount} />
+            <MoneyInput
+              label="Amount each"
+              value={periodicAmount}
+              onChange={setPeriodicAmount}
+              error={periodicAmountError}
+            />
             <SelectInput
-              label="Times / year"
+              label="Freq / yr"
               value={String(timesPerYear)}
               onChange={(value) => setTimesPerYear(Number(value))}
               options={FREQUENCY_OPTIONS}
-              hint="Must divide 12"
+              hint={frequencyHint(timesPerYear)}
+              className="min-w-0 text-[13px]"
             />
-            <YearInput label="Tenure (yrs)" value={periodicYears} min={1} max={50} onChange={setPeriodicYears} />
-            <PercentInput label="Return (%)" value={periodicReturn} onChange={setPeriodicReturn} />
-            <PercentInput label="Tax (%)" value={periodicTax} onChange={setPeriodicTax} />
+            <YearInput
+              label="Tenure (yrs)"
+              value={periodicYears}
+              min={1}
+              max={50}
+              onChange={setPeriodicYears}
+              error={periodicYearsError}
+            />
+            <PercentInput
+              label="Return"
+              value={periodicReturn}
+              onChange={(v) => setPeriodicReturn(Math.min(100, Math.max(0, v)))}
+              error={periodicReturnError}
+            />
+            <PercentInput
+              label="Tax"
+              value={periodicTax}
+              onChange={(v) => setPeriodicTax(Math.min(100, Math.max(0, v)))}
+              error={periodicTaxError}
+            />
           </div>
         )
       }
       results={
         <div className="flex flex-col gap-4">
           {error ? <p className="text-sm text-[var(--app-danger)]">{error}</p> : null}
-          {loading && !result ? (
+          {!canCalculate ? (
+            <div className="rounded-lg border border-[var(--app-danger)]/30 bg-red-50 px-3 py-2 text-sm text-[var(--app-danger)]">
+              Fix the inputs above to refresh the calculation. Showing the last valid result.
+            </div>
+          ) : null}
+          {loading && !result && canCalculate ? (
             <p className="text-sm text-[var(--app-text-muted)]">Calculating…</p>
           ) : null}
-          {result ? <GrowthResults mode={mode} result={result} /> : null}
+          {result ? (
+            <GrowthResults mode={mode} result={result} timesPerYear={timesPerYear} />
+          ) : null}
         </div>
       }
     />
+    {mode === "sip" && result && result.inflationAdjusted != null ? (
+      <SipCalculatorDossier
+        data={{
+          clientName: name,
+          age,
+          monthlyInvestment: sipMonthly,
+          sipYears,
+          investYears,
+          returnPct: sipReturn,
+          inflationPct: sipInflation,
+          taxPct: sipTax,
+          delayMonths: sipDelay,
+          maturity: result.maturity,
+          totalInvested: result.totalInvested,
+          gain: result.gain,
+          tax: result.tax,
+          netAfterTax: result.netAfterTax,
+          inflationAdjusted: result.inflationAdjusted,
+          inflationAdjustedGain: result.inflationAdjustedGain,
+          delayedMaturity: result.delayedMaturity ?? null,
+          costOfDelay: result.costOfDelay ?? null,
+          schedule: result.schedule.filter(isYearRow),
+        }}
+      />
+    ) : null}
+    {mode === "stepup" &&
+    result &&
+    result.inflationAdjusted != null &&
+    result.startMonthly != null &&
+    result.endMonthly != null ? (
+      <SipStepUpCalculatorDossier
+        data={{
+          clientName: name,
+          age,
+          startMonthly: result.startMonthly,
+          endMonthly: result.endMonthly,
+          sipYears: stepYears,
+          returnPct: stepReturn,
+          stepUpPct,
+          inflationPct: stepInflation,
+          taxPct: stepTax,
+          maturity: result.maturity,
+          totalInvested: result.totalInvested,
+          gain: result.gain,
+          tax: result.tax,
+          netAfterTax: result.netAfterTax,
+          inflationAdjusted: result.inflationAdjusted,
+          schedule: result.schedule.filter(isYearRow),
+        }}
+      />
+    ) : null}
+    {mode === "lumpsum" && result && result.inflationAdjusted != null ? (
+      <OneTimeInvestmentDossier
+        data={{
+          clientName: name,
+          age,
+          amount: lumpAmount,
+          years: lumpYears,
+          returnPct: lumpReturn,
+          inflationPct: lumpInflation,
+          taxPct: lumpTax,
+          delayMonths: lumpDelay,
+          maturity: result.maturity,
+          totalInvested: result.totalInvested,
+          gain: result.gain,
+          tax: result.tax,
+          netAfterTax: result.netAfterTax,
+          inflationAdjusted: result.inflationAdjusted,
+          inflationAdjustedGain: result.inflationAdjustedGain ?? result.inflationAdjusted - result.totalInvested,
+          delayedMaturity: result.delayedMaturity ?? null,
+          costOfDelay: result.costOfDelay ?? null,
+          schedule: result.schedule.filter(isYearRow),
+        }}
+      />
+    ) : null}
+    {mode === "periodic" && result && result.payments != null ? (
+      <PeriodicInvestmentDossier
+        data={{
+          clientName: name,
+          age,
+          amount: periodicAmount,
+          timesPerYear,
+          frequencyLabel: frequencyLabel(timesPerYear),
+          years: periodicYears,
+          returnPct: periodicReturn,
+          taxPct: periodicTax,
+          maturity: result.maturity,
+          totalInvested: result.totalInvested,
+          gain: result.gain,
+          tax: result.tax,
+          netAfterTax: result.netAfterTax,
+          payments: result.payments,
+          schedule: result.schedule.filter((row): row is PeriodicRow => "contributionFv" in row),
+        }}
+      />
+    ) : null}
+    </>
   );
 }
 
@@ -393,30 +729,35 @@ function mixSlices(result: GrowthResult) {
   ];
 }
 
-function GrowthResults({ mode, result }: { mode: Mode; result: GrowthResult }) {
-  const items = resultItems(mode, result);
+function GrowthResults({
+  mode,
+  result,
+  timesPerYear,
+}: {
+  mode: Mode;
+  result: GrowthResult;
+  timesPerYear: number;
+}) {
+  const items = resultItems(mode, result, timesPerYear);
   const yearRows = result.schedule.filter(isYearRow);
   const periodicRows = result.schedule.filter((row): row is PeriodicRow => "contributionFv" in row);
   const donut = (
     <CompositionChart
       title="Invested / gain / tax"
+      showPercentages
+      size="lg"
       slices={mixSlices(result)}
       centerLabel="Maturity"
       centerValue={result.maturity}
     />
   );
 
-  const requiredChart =
-    mode === "periodic" ? (
-      <CompositionChart
-        title="Periodic mix"
-        slices={mixSlices(result)}
-        centerLabel="Maturity"
-        centerValue={result.maturity}
-      />
-    ) : mode === "lumpsum" ? (
+  const lineChart =
+    mode === "periodic" ? null : mode === "lumpsum" ? (
       <GrowthChart
         title="Full return vs inflation-adjusted"
+        showEndLabels
+        endpointDots
         data={yearRows.map((row) => ({
           year: row.year,
           corpus: row.yearEnd,
@@ -430,6 +771,12 @@ function GrowthResults({ mode, result }: { mode: Mode; result: GrowthResult }) {
     ) : (
       <GrowthChart
         title="Investment vs corpus"
+        showEndLabels
+        endpointDots
+        strokeWidth={4}
+        className={
+          mode === "sip" || mode === "stepup" ? "min-h-[280px] lg:min-h-[300px]" : undefined
+        }
         data={yearRows.map((row) => ({
           year: row.year,
           invested: row.investedToDate,
@@ -444,12 +791,28 @@ function GrowthResults({ mode, result }: { mode: Mode; result: GrowthResult }) {
       />
     );
 
-  const extraChart =
+  const periodicChart = mode === "periodic" ? (
+    <CompositionChart
+      title="Periodic mix"
+      showPercentages
+      size="lg"
+      slices={mixSlices(result)}
+      centerLabel="Maturity"
+      centerValue={result.maturity}
+    />
+  ) : null;
+
+  const contributionChart =
     mode === "periodic" ? (
       <GrowthChart
         title="FV of each contribution"
-        data={periodicRows.map((row, index) => ({
-          year: index + 1,
+        showEndLabels
+        markers
+        endLabelFull
+        className="min-h-[320px] sm:min-h-[380px] lg:min-h-[420px]"
+        xTickFormatter={(month) => `Month ${month}`}
+        data={periodicRows.map((row) => ({
+          year: row.month,
           fv: row.contributionFv,
           contribution: row.contribution,
         }))}
@@ -458,75 +821,206 @@ function GrowthResults({ mode, result }: { mode: Mode; result: GrowthResult }) {
           { key: "contribution", label: "Contribution", color: "var(--app-chart-invested)" },
         ]}
       />
-    ) : (
-      donut
+    ) : null;
+
+  const statGrid = (
+    <div
+      className={`grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2 ${
+        mode === "periodic" ||
+        mode === "sip" ||
+        mode === "stepup" ||
+        (mode === "lumpsum" && result.inflationAdjusted != null)
+          ? "xl:grid-cols-3"
+          : ""
+      }`}
+    >
+      <StatCard title="Invested" value={result.totalInvested} size="lg" />
+      <StatCard title="Maturity" value={result.maturity} variant="soft" size="lg" />
+      {mode === "periodic" || mode === "sip" || mode === "stepup" ? (
+        <StatCard title="Net after tax" value={result.netAfterTax} size="lg" />
+      ) : null}
+      {mode === "lumpsum" && result.inflationAdjusted != null ? (
+        <StatCard title="Inflation adjusted" value={result.inflationAdjusted} size="lg" />
+      ) : null}
+    </div>
+  );
+
+  const yearlyColumns =
+    mode === "lumpsum"
+      ? [
+          { key: "year", header: "Year", sticky: true },
+          {
+            key: "investedToDate",
+            header: "Invested",
+            format: "inr" as const,
+            align: "right" as const,
+          },
+          {
+            key: "yearEnd",
+            header: "Year-end",
+            format: "inr" as const,
+            align: "right" as const,
+          },
+          {
+            key: "inflationAdjusted",
+            header: "Inflation-adj.",
+            format: "inr" as const,
+            align: "right" as const,
+          },
+        ]
+      : [
+          { key: "year", header: "Year", sticky: true },
+          {
+            key: "monthly",
+            header: "Monthly SIP",
+            format: "inr" as const,
+            align: "right" as const,
+          },
+          {
+            key: "investedToDate",
+            header: "Invested",
+            format: "inr" as const,
+            align: "right" as const,
+          },
+          {
+            key: "yearEnd",
+            header: "Year-end",
+            format: "inr" as const,
+            align: "right" as const,
+          },
+          {
+            key: "inflationAdjusted",
+            header: "Inflation-adj.",
+            format: "inr" as const,
+            align: "right" as const,
+          },
+        ];
+
+  // SIP / Step-up mobile: summary → results → donut → full-width line → schedule.
+  if (mode === "sip" || mode === "stepup") {
+    return (
+      <div className="flex flex-col gap-4 lg:gap-6">
+        {statGrid}
+        <div className={`${RESULTS_SPLIT} lg:items-stretch`}>
+          <div className={`${RESULTS_RIGHT} order-1 min-h-0 lg:order-2`}>
+            <ResultCard title="Results" items={items} />
+            <div className="flex min-h-[220px] flex-1 flex-col">{donut}</div>
+          </div>
+          <div className={`${RESULTS_LEFT} order-2 min-h-0 lg:order-1`}>
+            <div className="flex min-h-[280px] flex-1 flex-col lg:min-h-[300px]">{lineChart}</div>
+          </div>
+        </div>
+        <ScheduleTable
+          caption="Yearly schedule"
+          zebra
+          highlightLastRow
+          columns={yearlyColumns}
+          rows={yearRows}
+        />
+      </div>
     );
+  }
+
+  // Single split: stats+growth left, results+mix right — bottoms align, no gap under stats.
+  if (mode !== "periodic") {
+    return (
+      <div className="flex flex-col gap-4 lg:gap-6">
+        <div className={`${RESULTS_SPLIT} lg:items-stretch`}>
+          <div className={`${RESULTS_LEFT} min-h-0`}>
+            {statGrid}
+            <div className="flex min-h-[240px] flex-1 flex-col lg:min-h-[260px]">{lineChart}</div>
+          </div>
+          <div className={`${RESULTS_RIGHT} min-h-0`}>
+            <ResultCard title="Results" items={items} />
+            <div className="flex min-h-[220px] flex-1 flex-col">{donut}</div>
+          </div>
+        </div>
+        <ScheduleTable
+          caption="Yearly schedule"
+          zebra
+          highlightLastRow
+          columns={yearlyColumns}
+          rows={yearRows}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4 lg:gap-6">
-      <div className={RESULTS_SPLIT}>
-        <div className={RESULTS_LEFT}>
-          <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
-            <StatCard title="Invested" value={result.totalInvested} />
-            <StatCard title="Maturity" value={result.maturity} variant="soft" />
-          </div>
-          <div className="flex flex-1 flex-col gap-4">
-            {requiredChart}
-            {extraChart}
-          </div>
+      <div className={`${RESULTS_SPLIT} lg:items-stretch`}>
+        <div className={`${RESULTS_LEFT} order-2 min-h-0 lg:order-1`}>
+          {statGrid}
+          <div className="flex min-h-0 flex-1 flex-col">{contributionChart}</div>
         </div>
-        <div className={RESULTS_RIGHT}>
-          <div className="shrink-0">
-            <ResultCard title="Results" items={items} />
-          </div>
+        <div className={`${RESULTS_RIGHT} order-1 min-h-0 lg:order-2`}>
+          <ResultCard title="Results" items={items} />
+          <div className="flex min-h-[220px] flex-1 flex-col">{periodicChart}</div>
         </div>
       </div>
-      {mode === "periodic" ? (
-        <ScheduleTable
-          caption="Contribution schedule"
-          columns={[
-            { key: "month", header: "Month", align: "right" },
-            { key: "contribution", header: "Contribution", format: "inr", align: "right" },
-            { key: "contributionFv", header: "FV at horizon", format: "inr", align: "right" },
-          ]}
-          rows={periodicRows}
-        />
-      ) : (
-        <ScheduleTable
-          caption="Yearly schedule"
-          columns={
-            mode === "lumpsum"
-              ? [
-                  { key: "year", header: "Year" },
-                  { key: "investedToDate", header: "Invested", format: "inr", align: "right" },
-                  { key: "yearEnd", header: "Year-end", format: "inr", align: "right" },
-                  { key: "inflationAdjusted", header: "Inflation-adj.", format: "inr", align: "right" },
-                ]
-              : [
-                  { key: "year", header: "Year" },
-                  { key: "monthly", header: "Monthly SIP", format: "inr", align: "right" },
-                  { key: "investedToDate", header: "Invested", format: "inr", align: "right" },
-                  { key: "yearEnd", header: "Year-end", format: "inr", align: "right" },
-                  { key: "inflationAdjusted", header: "Inflation-adj.", format: "inr", align: "right" },
-                ]
-          }
-          rows={yearRows}
-        />
-      )}
+      <ScheduleTable
+        caption="Contribution schedule"
+        zebra
+        highlightLastRow
+        columns={[
+          { key: "month", header: "Month", align: "right", sticky: true },
+          {
+            key: "contribution",
+            header: "Contribution",
+            format: "inr",
+            align: "right",
+          },
+          {
+            key: "contributionFv",
+            header: "FV at horizon",
+            format: "inr",
+            align: "right",
+          },
+        ]}
+        rows={periodicRows}
+      />
     </div>
   );
 }
 
-function resultItems(mode: Mode, result: GrowthResult) {
-  const core = [
-    {
-      label: "Invested",
-      value: result.totalInvested,
-      hint: result.payments != null ? `${result.payments} payments` : undefined,
-    },
-    { label: "Maturity", value: result.maturity },
-    { label: "Gain", value: result.gain },
-  ];
+function resultItems(mode: Mode, result: GrowthResult, timesPerYear: number) {
+  const core: Array<{
+    label: string;
+    value?: number;
+    displayValue?: string;
+    hint?: string;
+    tone?: "maturity" | "gain" | "inflation" | "delay" | "tax" | "net";
+    highlight?: boolean;
+  }> = [];
+
+  if (mode === "periodic") {
+    core.push(
+      { label: "Invested", value: result.totalInvested },
+      {
+        label: "Total Contributions",
+        displayValue: `${result.payments ?? 0} Payments`,
+        value: result.payments ?? 0,
+      },
+      {
+        label: "Contribution Frequency",
+        displayValue: frequencyLabel(timesPerYear),
+        value: timesPerYear,
+      },
+      { label: "Maturity", value: result.maturity, tone: "maturity", highlight: true },
+      { label: "Gain", value: result.gain, tone: "gain" },
+      { label: "Tax", value: result.tax, tone: "tax" },
+      { label: "Net after tax", value: result.netAfterTax, tone: "net" },
+    );
+    return core;
+  }
+
+  core.push({
+    label: "Invested",
+    value: result.totalInvested,
+    hint: result.payments != null ? `${result.payments} payments` : undefined,
+  });
+  core.push({ label: "Maturity", value: result.maturity, tone: "maturity", highlight: true });
+  core.push({ label: "Gain", value: result.gain, tone: "gain" });
 
   if (mode === "stepup" && result.startMonthly != null && result.endMonthly != null) {
     core.unshift(
@@ -535,19 +1029,26 @@ function resultItems(mode: Mode, result: GrowthResult) {
     );
   }
 
-  if (result.inflationAdjusted != null && mode !== "periodic") {
-    core.push({ label: "Inflation-adjusted", value: result.inflationAdjusted });
+  if (result.inflationAdjusted != null) {
+    core.push({ label: "Inflation-adjusted", value: result.inflationAdjusted, tone: "inflation" });
   }
   if (result.inflationAdjustedGain != null) {
-    core.push({ label: "Inflation-adjusted gain", value: result.inflationAdjustedGain });
+    core.push({
+      label: "Inflation-adjusted gain",
+      value: result.inflationAdjustedGain,
+      tone: "inflation",
+    });
   }
   if (result.delayedMaturity != null && result.costOfDelay != null) {
     core.push(
       { label: "Delayed maturity", value: result.delayedMaturity },
-      { label: "Cost of delay", value: result.costOfDelay },
+      { label: "Cost of delay", value: result.costOfDelay, tone: "delay" },
     );
   }
 
-  core.push({ label: "Tax", value: result.tax }, { label: "Net after tax", value: result.netAfterTax });
+  core.push(
+    { label: "Tax", value: result.tax, tone: "tax" },
+    { label: "Net after tax", value: result.netAfterTax, tone: "net" },
+  );
   return core;
 }

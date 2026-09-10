@@ -12,7 +12,6 @@ const NAV: AdminNavItem[] = [
   { href: "/company/branding", label: "Branding", icon: "image" },
   { href: "/company/calculators", label: "Calculators", icon: "calculator" },
   { href: "/company/settings", label: "Settings", icon: "settings" },
-  { href: "/company/layouts", label: "Layouts", icon: "layout-template" },
 ];
 
 export default function CompanyAdminLayout({ children }: { children: ReactNode }) {

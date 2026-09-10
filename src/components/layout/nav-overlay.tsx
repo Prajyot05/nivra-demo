@@ -1,28 +1,35 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PanelLeft, X } from "lucide-react";
 import { useEffect } from "react";
 import { NivraMark, PoweredByNivra } from "@/components/admin/branding";
-import type { NavItem } from "@/lib/calculator-nav";
-import { cn } from "@/lib/utils";
+import { CalculatorNavRow } from "@/components/layout/calculator-nav-row";
+import { isNavItemActive, type NavCategory } from "@/lib/calculator-nav";
 import { Button } from "@/components/ui/button";
 
 type NavOverlayProps = {
   open: boolean;
   onClose: () => void;
-  items: NavItem[];
+  categories: NavCategory[];
+  mode: string | null;
   onExpandSidebar: () => void;
   onLogout: () => void;
+  showQaChecklist?: boolean;
+  checked?: Record<string, boolean>;
+  onToggle?: (id: string) => void;
 };
 
 export function NavOverlay({
   open,
   onClose,
-  items,
+  categories,
+  mode,
   onExpandSidebar,
   onLogout,
+  showQaChecklist = false,
+  checked = {},
+  onToggle,
 }: NavOverlayProps) {
   const pathname = usePathname();
 
@@ -54,35 +61,45 @@ export function NavOverlay({
         className="absolute inset-0 bg-black/40"
         onClick={onClose}
       />
-      <aside className="relative flex h-full w-72 max-w-[85vw] flex-col border-r border-sidebar-border bg-sidebar shadow-xl">
+      <aside className="relative flex h-full w-80 max-w-[85vw] flex-col border-r border-sidebar-border bg-sidebar shadow-xl">
         <div className="flex items-center justify-between border-b border-sidebar-border px-4 py-4">
           <div>
             <NivraMark />
             <p className="mt-0.5 text-[11px] text-muted-foreground">Navigation</p>
+            {showQaChecklist ? (
+              <p className="mt-1 text-[10px] font-medium text-muted-foreground">
+                Excel QA checklist (dev)
+              </p>
+            ) : null}
           </div>
           <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close">
             <X />
           </Button>
         </div>
-        <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-2">
-          {items.map((item) => {
-            const active = pathname === item.to;
-            return (
-              <Link
-                key={item.to}
-                href={item.to}
-                onClick={onClose}
-                className={cn(
-                  "rounded-md px-3 py-2 text-sm",
-                  active
-                    ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60",
-                )}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
+        <nav className="flex flex-1 flex-col overflow-y-auto p-2">
+          {categories.map((category) => (
+            <div key={category.id} className="mb-3">
+              <p className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {category.label}
+              </p>
+              <div className="flex flex-col gap-0.5">
+                {category.items.map((item) => {
+                  const active = isNavItemActive(item, pathname, mode);
+                  return (
+                    <CalculatorNavRow
+                      key={item.id}
+                      item={item}
+                      active={active}
+                      showQaChecklist={showQaChecklist}
+                      checked={checked[item.id]}
+                      onToggle={onToggle ? () => onToggle(item.id) : undefined}
+                      onNavigate={onClose}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
         <div className="flex flex-col gap-2 border-t border-sidebar-border p-3">
           <Button variant="outline" size="sm" onClick={onExpandSidebar} className="justify-start">

@@ -22,7 +22,8 @@ export type CalculatorReportId =
   | "loan-emi"
   | "loan-extra"
   | "insurance"
-  | "multi-goal";
+  | "multi-goal"
+  | "multi-withdrawals";
 
 const PLAYBOOKS: Record<CalculatorReportId, PlaybookPillar[]> = {
   "goal-sip": [
@@ -43,7 +44,7 @@ const PLAYBOOKS: Record<CalculatorReportId, PlaybookPillar[]> = {
       id: "03",
       title: "Glidepath De-risking Near Goal",
       description:
-        "Transition accumulated equity exposure to short-duration debt or ultra-short hybrid instruments via STP in the final 2–3 years to lock in the target corpus safely.",
+        "Transition accumulated equity exposure to short-duration debt or ultra-short hybrid instruments via STP in the final 2 to 3 years to lock in the target corpus safely.",
     },
   ],
   "unified-goal": [
@@ -64,7 +65,7 @@ const PLAYBOOKS: Record<CalculatorReportId, PlaybookPillar[]> = {
       id: "03",
       title: "Cross-Goal Contingency Buffer",
       description:
-        "Maintain a 3–6 month emergency reserve outside goal SIPs so one-time shocks do not force premature redemption of earmarked goal corpuses.",
+        "Maintain a 3 to 6 month emergency reserve outside goal SIPs so one-time shocks do not force premature redemption of earmarked goal corpuses.",
     },
   ],
   "investment-growth": [
@@ -93,7 +94,7 @@ const PLAYBOOKS: Record<CalculatorReportId, PlaybookPillar[]> = {
       id: "01",
       title: "Inflation-Indexed Corpus Target",
       description:
-        "Re-price the education goal every 12–18 months against current fee inflation so the required SIP does not silently fall behind real costs.",
+        "Re-price the education goal every 12 to 18 months against current fee inflation so the required SIP does not silently fall behind real costs.",
     },
     {
       id: "02",
@@ -106,7 +107,7 @@ const PLAYBOOKS: Record<CalculatorReportId, PlaybookPillar[]> = {
       id: "03",
       title: "Pre-Admission De-risking Window",
       description:
-        "From 24–36 months before the first major fee, shift a rising share of the corpus into debt / hybrid instruments to protect purchasing power at need.",
+        "From 24 to 36 months before the first major fee, shift a rising share of the corpus into debt / hybrid instruments to protect purchasing power at need.",
     },
   ],
   fire: [
@@ -156,7 +157,7 @@ const PLAYBOOKS: Record<CalculatorReportId, PlaybookPillar[]> = {
       id: "01",
       title: "Tax-Aware Vehicle Selection",
       description:
-        "Compare post-tax MF and FD outcomes under the client's slab / LTCG regime — headline pre-tax yields often reverse ranking after tax.",
+        "Compare post-tax MF and FD outcomes under the client's slab / LTCG regime. Headline pre-tax yields often reverse ranking after tax.",
     },
     {
       id: "02",
@@ -184,7 +185,7 @@ const PLAYBOOKS: Record<CalculatorReportId, PlaybookPillar[]> = {
       title: "Rate & Tenure Sensitivity Review",
       accent: true,
       description:
-        "Stress-test EMI under +1–2% rate shocks and shorter/longer tenures before locking the sanction — small rate moves change lifetime interest sharply.",
+        "Stress-test EMI under +1 to 2% rate shocks and shorter/longer tenures before locking the sanction. Small rate moves change lifetime interest sharply.",
     },
     {
       id: "03",
@@ -205,7 +206,7 @@ const PLAYBOOKS: Record<CalculatorReportId, PlaybookPillar[]> = {
       title: "Interest Saved vs Opportunity Cost",
       accent: true,
       description:
-        "Compare interest saved from prepayment against expected post-tax return on investing the same cash — prepay when the loan rate dominates.",
+        "Compare interest saved from prepayment against expected post-tax return on investing the same cash. Prepay when the loan rate dominates.",
     },
     {
       id: "03",
@@ -226,7 +227,7 @@ const PLAYBOOKS: Record<CalculatorReportId, PlaybookPillar[]> = {
       title: "Premium Sustainability Check",
       accent: true,
       description:
-        "Confirm premiums remain affordable under income stress for the full policy term — lapses destroy both cover and projected returns.",
+        "Confirm premiums remain affordable under income stress for the full policy term. Lapses destroy both cover and projected returns.",
     },
     {
       id: "03",
@@ -254,6 +255,27 @@ const PLAYBOOKS: Record<CalculatorReportId, PlaybookPillar[]> = {
       title: "Annual Reallocation Review",
       description:
         "Re-run multi-goal allocation yearly after bonus / appraisal cycles so surplus capital is reassigned before lifestyle inflation absorbs it.",
+    },
+  ],
+  "multi-withdrawals": [
+    {
+      id: "01",
+      title: "Start Full SIP Stack Immediately",
+      description:
+        "Begin the combined opening SIP so every timed withdrawal has its own funding path compounding from day one.",
+    },
+    {
+      id: "02",
+      title: "Step Down After Each Payout",
+      accent: true,
+      description:
+        "Reduce the mandate when a goal is funded. Continuing the full stack after a withdrawal overfunds later goals unnecessarily.",
+    },
+    {
+      id: "03",
+      title: "Protect Near-Term Buckets",
+      description:
+        "Keep goals within 3 to 5 years in lower-volatility debt or hybrid sleeves so a late drawdown does not force a forced redemption.",
     },
   ],
 };
