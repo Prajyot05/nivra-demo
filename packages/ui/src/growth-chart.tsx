@@ -9,16 +9,13 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { formatCompactINR, formatINRCurrency } from "./format";
+import { formatAxisINR, formatCompactINR, formatINRCurrency } from "./format";
+import { CARD, CARD_PAD, SECTION_TITLE } from "./tokens";
 
 export type GrowthPoint = {
   year: number;
   [series: string]: number;
 };
-
-function axisTick(value: number) {
-  return `₹${formatCompactINR(value)}`;
-}
 
 /** Label only the last point of a series. */
 function EndLabel(props: {
@@ -91,9 +88,9 @@ export function GrowthChart({
   const n = data.length;
   return (
     <div
-      className={`flex min-h-[220px] flex-1 flex-col rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 sm:min-h-[240px] sm:p-3.5 ${className ?? ""}`}
+      className={`flex min-h-[220px] flex-1 flex-col ${CARD} ${CARD_PAD} sm:min-h-[240px] ${className ?? ""}`}
     >
-      <div className="mb-3 shrink-0 text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
+      <div className={`mb-2.5 shrink-0 ${SECTION_TITLE}`}>
         {title}
       </div>
       <div className="relative flex-1">
@@ -117,7 +114,7 @@ export function GrowthChart({
                 interval={n <= 16 ? 0 : "preserveStartEnd"}
               />
               <YAxis
-                tickFormatter={axisTick}
+                tickFormatter={formatAxisINR}
                 tick={{ fontSize: 11, fill: "var(--app-text-muted)" }}
                 width={58}
                 stroke="transparent"

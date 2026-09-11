@@ -10,7 +10,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { formatCompactINR, formatINRCurrency } from "./format";
+import { formatAxisINR, formatCompactINR, formatINRCurrency } from "./format";
+import { CARD, CARD_PAD, SECTION_TITLE } from "./tokens";
 
 export type ComparePoint = {
   category: string;
@@ -108,11 +109,11 @@ export function CompareChart({
 
   return (
     <div
-      className={`flex w-full flex-col rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 sm:p-4 ${
+      className={`flex w-full flex-col ${CARD} ${CARD_PAD} ${
         hasFixedHeight ? "" : "min-h-[320px] sm:min-h-[340px]"
       } ${className ?? ""}`}
     >
-      <div className="mb-2.5 shrink-0 text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
+      <div className={`mb-2.5 shrink-0 ${SECTION_TITLE}`}>
         {title}
       </div>
       {dense && hasSublabels ? (
@@ -155,7 +156,7 @@ export function CompareChart({
                 minTickGap={dense ? 2 : 8}
               />
               <YAxis
-                tickFormatter={(v) => `₹${formatCompactINR(Number(v))}`}
+                tickFormatter={formatAxisINR}
                 tick={{ fontSize: 11, fill: "var(--app-text-muted)" }}
                 width={52}
                 stroke="transparent"

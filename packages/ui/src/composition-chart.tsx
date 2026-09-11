@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Sector, Tooltip } from "recharts";
 import { formatINRCurrency, formatPercent } from "./format";
+import { CARD, CARD_PAD, SECTION_TITLE } from "./tokens";
 
 export type CompositionSlice = {
   name: string;
@@ -82,11 +83,13 @@ export function CompositionChart({
           ? "text-sm sm:text-base"
           : "text-base sm:text-lg";
 
+  // Donut + legend sit side by side only when the card itself is wide enough.
+  // Viewport breakpoints lie here: these cards are often in a narrow column.
   const shell = large
-    ? `flex h-full min-h-0 flex-1 flex-col rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 sm:p-3.5 ${className ?? ""}`
+    ? `@container flex h-full min-h-0 flex-1 flex-col ${CARD} ${CARD_PAD} ${className ?? ""}`
     : compact
-      ? `flex min-h-[230px] flex-none flex-col justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-4 ${className ?? ""}`
-      : `flex min-h-[260px] flex-1 flex-col rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 sm:p-3.5 ${className ?? ""}`;
+      ? `@container flex min-h-[230px] flex-none flex-col justify-center ${CARD} ${CARD_PAD} ${className ?? ""}`
+      : `@container flex min-h-[260px] flex-1 flex-col ${CARD} ${CARD_PAD} ${className ?? ""}`;
 
   const donutBox = large
     ? "relative aspect-square h-[168px] w-[168px] max-w-full shrink-0 sm:h-[184px] sm:w-[184px]"
@@ -99,14 +102,8 @@ export function CompositionChart({
 
   return (
     <div className={shell}>
-      <div
-        className={`shrink-0 font-semibold uppercase tracking-widest text-[var(--app-text-muted)] ${
-          large ? "mb-2.5 text-[10px] sm:text-xs" : "mb-2.5 text-[10px] sm:text-xs"
-        }`}
-      >
-        {title}
-      </div>
-      <div className="flex min-h-0 flex-1 flex-col items-center gap-5 sm:flex-row sm:items-center sm:gap-6">
+      <div className={`mb-2.5 shrink-0 ${SECTION_TITLE}`}>{title}</div>
+      <div className="flex min-h-0 flex-1 flex-col items-center gap-4 @sm:flex-row @sm:items-center @sm:gap-5">
         <div className="flex shrink-0 items-center justify-center overflow-visible">
           <div className={`${donutBox} overflow-visible`}>
             <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100}>
@@ -163,7 +160,12 @@ export function CompositionChart({
                 activeIndex != null ? "opacity-0" : "opacity-100"
               }`}
             >
-              <div className="flex w-[78%] flex-col items-center justify-center overflow-hidden text-center">
+              {/* Keep the centre label inside the ring hole (innerRadius above). */}
+              <div
+                className={`flex flex-col items-center justify-center overflow-hidden text-center ${
+                  thinRing ? "w-[68%]" : "w-[54%]"
+                }`}
+              >
                 <div
                   className={`w-full font-bold leading-tight tabular-nums text-[var(--app-text)] ${corpusFont}`}
                   style={{ wordBreak: "break-all" }}
@@ -196,7 +198,7 @@ export function CompositionChart({
                     style={{ backgroundColor: s.color }}
                   />
                   <span
-                    className={`truncate font-medium ${
+                    className={`min-w-0 font-medium leading-tight ${
                       large ? "text-xs sm:text-sm" : "text-[11px] sm:text-xs"
                     }`}
                   >
@@ -204,7 +206,7 @@ export function CompositionChart({
                   </span>
                 </div>
                 <div
-                  className={`text-right tabular-nums font-semibold text-[var(--app-text)] ${
+                  className={`whitespace-nowrap text-right tabular-nums font-semibold text-[var(--app-text)] ${
                     large ? "text-xs sm:text-sm" : "text-[11px] sm:text-xs"
                   }`}
                 >

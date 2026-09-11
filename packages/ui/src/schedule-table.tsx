@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Card, SectionHeader } from "./card";
 import { formatINRCurrency } from "./format";
 
 export type ScheduleColumnTone = "default" | "std" | "step" | "warn";
@@ -16,32 +17,25 @@ export type ScheduleColumn<T> = {
   render?: (value: unknown, row: T, index: number) => ReactNode;
 };
 
-/**
- * Two-column results: fills remaining CalculatorPage height on lg.
- * Left charts grow; right column matches height and scrolls when needed.
- */
-export const RESULTS_SPLIT = "grid grid-cols-1 gap-4 lg:grid-cols-12";
-export const RESULTS_LEFT = "flex flex-col gap-4 lg:col-span-7";
-export const RESULTS_RIGHT = "flex flex-col gap-4 lg:col-span-5";
-
 const HEAD_TONE: Record<ScheduleColumnTone, string> = {
-  default: "bg-[var(--app-surface)] text-[var(--app-text-subtle)]",
-  std: "bg-[var(--app-std-bg)] text-[var(--app-std-text)]",
-  step: "bg-[var(--app-step-bg)] text-[var(--app-step-text)]",
-  warn: "bg-[var(--app-warn-bg)] text-[var(--app-warn-text)]",
+  default: "text-[var(--app-text)]",
+  std: "text-[var(--app-std-text)]",
+  step: "text-[var(--app-step-text)]",
+  warn: "text-[var(--app-warn-text)]",
 };
 
 const CELL_TONE: Record<ScheduleColumnTone, string> = {
   default: "text-[var(--app-text)]",
-  std: "bg-[var(--app-std-bg-soft)] text-[var(--app-std-text-strong)]",
-  step: "bg-[var(--app-step-bg-soft)] text-[var(--app-step-text-strong)]",
-  warn: "bg-[var(--app-warn-bg)] text-[var(--app-warn-text-strong)]",
+  std: "text-[var(--app-std-text)]",
+  step: "text-[var(--app-step-text)]",
+  warn: "text-[var(--app-warn-text)]",
 };
 
 export function ScheduleTable<T extends Record<string, unknown>>({
   columns,
   rows,
   caption,
+  meta,
   className,
   zebra = false,
   highlightLastRow = false,
@@ -50,6 +44,8 @@ export function ScheduleTable<T extends Record<string, unknown>>({
   columns: ScheduleColumn<T>[];
   rows: T[];
   caption?: string;
+  /** Right-aligned summary beside the caption (totals, row counts). */
+  meta?: ReactNode;
   className?: string;
   /** Alternate row backgrounds for long schedules. */
   zebra?: boolean;
@@ -58,27 +54,28 @@ export function ScheduleTable<T extends Record<string, unknown>>({
   /** Highlight specific rows (e.g. highest SIP). */
   emphasizeRow?: (row: T, index: number) => boolean;
 }) {
+  // Narrow schedules should fit a phone instead of forcing a horizontal scroll.
+  const minWidth = `${Math.max(18, columns.length * 6.5)}rem`;
+
   return (
-    <div
-      className={`custom-scrollbar flex max-h-[600px] flex-col rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 sm:p-4 ${className ?? ""}`}
-    >
-      {caption ? (
-        <div className="mb-3 shrink-0 text-sm font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
-          {caption}
-        </div>
+    <Card className={`custom-scrollbar max-h-[540px] ${className ?? ""}`}>
+      {caption || meta ? (
+        <SectionHeader title={caption} meta={meta} className="mb-2.5 shrink-0" />
       ) : null}
-      <div className="custom-scrollbar overflow-auto rounded-md border border-[var(--app-border)]">
-        <table className="w-full min-w-[28rem] text-xs">
+      <div className="custom-scrollbar overflow-auto rounded-lg border border-[var(--app-border)]">
+        <table className="w-full text-xs" style={{ minWidth }}>
           <thead>
-            <tr className="border-b border-[var(--app-border)] text-left text-[10px] uppercase tracking-widest sm:text-xs">
+            <tr className="text-left text-[10px] font-semibold uppercase tracking-wider sm:text-[11px]">
               {columns.map((col) => {
                 const tone = col.tone ?? "default";
                 return (
                   <th
                     key={String(col.key)}
-                    className={`sticky top-0 z-10 px-2.5 py-2 ${HEAD_TONE[tone]} ${
-                      col.align === "right" ? "text-right" : ""
-                    } ${col.sticky ? "left-0 z-20 shadow-[1px_0_0_var(--app-border)]" : ""}`}
+                    className={`sticky top-0 z-10 border-b border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-2 whitespace-nowrap ${
+                      HEAD_TONE[tone]
+                    } ${col.align === "right" ? "text-right" : ""} ${
+                      col.sticky ? "left-0 z-20 shadow-[1px_0_0_var(--app-border)]" : ""
+                    }`}
                   >
                     {col.header}
                   </th>
@@ -92,18 +89,19 @@ export function ScheduleTable<T extends Record<string, unknown>>({
               const isEmphasized = emphasizeRow?.(row, i) ?? false;
               const zebraBg =
                 zebra && !isLast && !isEmphasized && i % 2 === 1
-                  ? "bg-[var(--app-surface-muted)]/70"
+                  ? "bg-[var(--app-surface-muted)]/50"
                   : "";
               const lastBg = isLast
-                ? "bg-[var(--app-step-bg)] font-semibold ring-1 ring-inset ring-[var(--app-step-text)]/25"
+                ? "border-y border-[var(--app-step-text)]/35 bg-[var(--app-step-bg)] font-semibold"
                 : "";
-              const emphBg = isEmphasized && !isLast
-                ? "bg-[var(--app-warn-bg)] font-semibold ring-1 ring-inset ring-[var(--app-warn-text)]/30"
-                : "";
+              const emphBg =
+                isEmphasized && !isLast ? "bg-[var(--app-warn-bg)] font-semibold" : "";
               return (
                 <tr
                   key={i}
-                  className={`border-b border-[var(--app-border)]/60 transition-colors hover:bg-[var(--app-surface-muted)] ${zebraBg} ${lastBg} ${emphBg}`}
+                  className={`${
+                    isLast ? "" : "border-b border-[var(--app-border)]"
+                  } transition-colors hover:bg-[var(--app-surface-muted)]/60 ${zebraBg} ${lastBg} ${emphBg}`}
                 >
                   {columns.map((col) => {
                     const raw = row[col.key as keyof T];
@@ -131,7 +129,7 @@ export function ScheduleTable<T extends Record<string, unknown>>({
                     return (
                       <td
                         key={String(col.key)}
-                        className={`px-2.5 py-2 text-xs tabular-nums sm:text-sm ${
+                        className={`px-3 py-2 text-[11px] font-medium tabular-nums sm:text-xs ${
                           col.render ? "whitespace-normal" : "whitespace-nowrap"
                         } ${col.sticky ? "" : CELL_TONE[tone]} ${
                           col.align === "right" ? "text-right" : ""
@@ -151,6 +149,6 @@ export function ScheduleTable<T extends Record<string, unknown>>({
           </tbody>
         </table>
       </div>
-    </div>
+    </Card>
   );
 }

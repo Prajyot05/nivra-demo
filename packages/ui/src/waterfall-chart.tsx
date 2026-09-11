@@ -8,7 +8,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { formatCompactINR, formatINRCurrency } from "./format";
+import { formatAxisINR, formatINRCurrency } from "./format";
+import { CARD, CARD_PAD, SECTION_TITLE } from "./tokens";
 
 export type WaterfallStep = {
   label: string;
@@ -57,12 +58,12 @@ export function WaterfallChart({
 
   return (
     <div
-      className={`flex w-full flex-col overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 sm:p-4 ${
+      className={`flex w-full flex-col overflow-hidden ${CARD} ${CARD_PAD} ${
         hasFixedHeight ? "" : "min-h-[320px] flex-1 sm:min-h-[340px]"
       } ${className ?? ""}`}
     >
       <div className="mb-2 flex shrink-0 items-center justify-between gap-3">
-        <div className="text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
+        <div className={SECTION_TITLE}>
           {title}
         </div>
         {hasVoid ? (
@@ -109,7 +110,7 @@ export function WaterfallChart({
                 stroke="var(--app-border)"
               />
               <YAxis
-                tickFormatter={formatCompactINR}
+                tickFormatter={formatAxisINR}
                 tick={{ fontSize: 11, fill: "var(--app-text-muted)" }}
                 width={48}
                 stroke="transparent"

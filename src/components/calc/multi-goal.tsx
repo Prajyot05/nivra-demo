@@ -3,8 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Copy,
-  Download,
-  Loader2,
   Plus,
   RotateCcw,
   Trash2,
@@ -19,29 +17,38 @@ import {
   Check,
   ChevronRight,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { generatePdfFromElement } from "@/lib/pdf-generator";
 import {
+  BUTTON_DANGER,
+  BUTTON_PRIMARY,
+  BUTTON_SECONDARY,
+  Card,
   ClientHeader,
   CompareChart,
   CompositionChart,
   Field,
   formatINRCurrency,
+  FormGrid,
+  META_TEXT,
   MoneyInput,
   PercentInput,
+  PILL,
   ResultCard,
-  RESULTS_LEFT,
-  RESULTS_RIGHT,
-  RESULTS_SPLIT,
+  ResultsSplit,
   ScheduleTable,
+  SectionTitle,
   SelectInput,
   StackedBarChart,
+  Stack,
   StatCard,
+  StatGrid,
+  StatusNote,
   TextInput,
   WithdrawalPathChart,
   YearInput,
 } from "@nivra/ui";
 import { CalculatorPage } from "@/components/layout/calculator-page-with-nav";
+import { ReportDownloadButton } from "@/components/calc/report-download-button";
 import {
   MultiWithdrawalsDossier,
   MULTI_WITHDRAWALS_REPORT_ID,
@@ -53,9 +60,6 @@ import {
 import { useCalculate } from "@/hooks/use-calculate";
 import { useCalculatorMode } from "@/hooks/use-calculator-mode";
 import { getCalculatorPageTitle } from "@/lib/calculator-nav";
-
-const FORM_GRID =
-  "grid grid-cols-[repeat(auto-fill,minmax(7.5rem,1fr))] items-start gap-x-3 gap-y-3";
 
 const MODES = [
   { id: "assign", label: "Corpus assign" },
@@ -254,48 +258,34 @@ function ConfirmResetDialog({
         aria-modal="true"
         aria-labelledby="reset-goals-title"
         aria-describedby="reset-goals-desc"
-        className="relative z-[1] w-full max-w-md rounded-xl border border-[var(--app-border,#e2e8f0)] bg-[var(--app-surface,#ffffff)] p-5 shadow-2xl sm:p-6"
+        className="relative z-[1] w-full max-w-md rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-5 shadow-2xl sm:p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-[var(--app-warn-border,#fde68a)] bg-[var(--app-warn-bg,#fffbeb)] text-[var(--app-warn-text-strong,#451a03)]">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-[var(--app-warn-border)] bg-[var(--app-warn-bg)] text-[var(--app-warn-text-strong)]">
             <RotateCcw className="size-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <h3
-              id="reset-goals-title"
-              className="text-sm font-semibold uppercase tracking-widest text-[var(--app-text,#0f172a)]"
-            >
-              Reset goals
-            </h3>
+            <SectionTitle as="h3" strong className="pt-0.5">
+              <span id="reset-goals-title">Reset goals</span>
+            </SectionTitle>
             <p
               id="reset-goals-desc"
-              className="mt-2 text-sm leading-relaxed text-[var(--app-text-muted,#64748b)]"
+              className="mt-2 text-[13px] leading-relaxed text-[var(--app-text-muted)]"
             >
               Restore the default sample goals and clear your current timeline. Your edits will be
               lost.
             </p>
           </div>
         </div>
-        <div className="mt-5 flex flex-wrap justify-end gap-2 border-t border-[var(--app-border,#e2e8f0)] pt-4">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="h-9 border-[var(--app-border,#e2e8f0)] bg-[var(--app-surface,#ffffff)] text-[var(--app-text,#0f172a)] hover:bg-[var(--app-surface-muted,#f8fafc)]"
-            onClick={onCancel}
-          >
+        <div className="mt-5 flex flex-wrap justify-end gap-2 border-t border-[var(--app-border)] pt-4">
+          <button type="button" className={BUTTON_SECONDARY} onClick={onCancel}>
             Cancel
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            className="h-9 bg-[var(--app-primary,#0f172a)] text-[var(--app-primary-fg,#ffffff)] hover:bg-[var(--app-primary-hover,#1e293b)]"
-            onClick={onConfirm}
-          >
-            <RotateCcw className="mr-1.5 size-3.5" />
+          </button>
+          <button type="button" className={BUTTON_PRIMARY} onClick={onConfirm}>
+            <RotateCcw className="size-3.5" />
             Reset goals
-          </Button>
+          </button>
         </div>
       </div>
     </div>
@@ -629,25 +619,16 @@ export function MultiGoalCalculator() {
       title={getCalculatorPageTitle("/multi-goal", mode)}
       description="Corpus assignment and SIP required for timed withdrawals across multiple goals."
       actions={
-        <Button
-          type="button"
-          size="icon"
-          className="h-8 w-8 shrink-0 bg-[var(--app-primary)] text-[var(--app-primary-fg)] hover:bg-[var(--app-primary-hover)] transition-colors"
+        <ReportDownloadButton
           onClick={handleDownload}
-          disabled={!result || isDownloading}
-          title={isDownloading ? "Preparing PDF…" : "Download Report"}
-        >
-          {isDownloading ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <Download className="size-4" />
-          )}
-        </Button>
+          disabled={!result}
+          loading={isDownloading}
+        />
       }
       form={
         mode === "assign" ? (
           <div className="flex flex-col gap-3">
-            <div className={FORM_GRID}>
+            <FormGrid>
               <ClientHeader name={name} age={age} onNameChange={setName} onAgeChange={setAge} />
               <YearInput
                 label="ST years"
@@ -705,14 +686,14 @@ export function MultiGoalCalculator() {
                 onChange={setCorpusRet}
                 error={corpusRetError}
               />
-            </div>
+            </FormGrid>
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            <p className="text-xs text-[var(--app-text-muted)]">
+            <p className={META_TEXT}>
               All returns compounded annualised. Tax evaluated at withdrawal.
             </p>
-            <div className={FORM_GRID}>
+            <FormGrid>
               <ClientHeader name={wName} age={wAge} onNameChange={setWName} onAgeChange={setWAge} />
               <PercentInput
                 label="Expected return (%)"
@@ -726,44 +707,44 @@ export function MultiGoalCalculator() {
                 onChange={(v) => setWTax(Math.min(100, Math.max(0, v)))}
                 error={taxError}
               />
-            </div>
+            </FormGrid>
           </div>
         )
       }
       results={
-        <div className="flex flex-col gap-4 lg:gap-6">
-          {error ? <p className="text-sm text-[var(--app-danger)]">{error}</p> : null}
-          {loading && !result ? <p className="text-sm text-[var(--app-text-muted)]">Calculating…</p> : null}
+        <>
+          {error ? <StatusNote tone="error">{error}</StatusNote> : null}
+          {loading && !result ? <StatusNote tone="pending">Calculating…</StatusNote> : null}
           {mode === "assign" && assignAssumptionError ? (
-            <p className="text-sm text-[var(--app-danger)]">
+            <StatusNote tone="error">
               Fix the highlighted assumption fields before calculating.
-            </p>
+            </StatusNote>
           ) : null}
           {mode === "assign" && !assignAssumptionError && goals.length > 0 && validAssignGoals.length === 0 ? (
-            <p className="text-sm text-[var(--app-danger)]">
+            <StatusNote tone="error">
               Every goal needs a name, amount &gt; ₹0, and years &gt; 0.
-            </p>
+            </StatusNote>
           ) : null}
           {mode === "assign" && assignGoalErrors.size > 0 && validAssignGoals.length > 0 ? (
-            <p className="text-sm text-[var(--app-warn-text)]">
+            <StatusNote tone="warn">
               Some goals are incomplete or duplicated and are skipped until fixed.
-            </p>
+            </StatusNote>
           ) : null}
           {mode === "withdrawals" && !canCalculate && withdrawalGoals.length === 0 ? (
-            <p className="text-sm text-[var(--app-text-muted)]">Add at least one goal to calculate.</p>
+            <StatusNote tone="info">Add at least one goal to calculate.</StatusNote>
           ) : null}
           {mode === "withdrawals" && taxError ? (
-            <p className="text-sm text-[var(--app-danger)]">{taxError}</p>
+            <StatusNote tone="error">{taxError}</StatusNote>
           ) : null}
           {mode === "withdrawals" && !taxError && withdrawalGoals.length > 0 && validWithdrawalGoals.length === 0 ? (
-            <p className="text-sm text-[var(--app-danger)]">
+            <StatusNote tone="error">
               Every goal needs amount &gt; 0 and withdrawal age greater than current age ({wAge}).
-            </p>
+            </StatusNote>
           ) : null}
           {mode === "withdrawals" && hasInvalidGoals && validWithdrawalGoals.length > 0 ? (
-            <p className="text-sm text-[var(--app-warn-text)]">
+            <StatusNote tone="warn">
               Some goals are incomplete and are skipped until amount and age are fixed.
-            </p>
+            </StatusNote>
           ) : null}
           {mode === "assign" ? (
             <>
@@ -823,7 +804,7 @@ export function MultiGoalCalculator() {
               />
             </>
           ) : null}
-        </div>
+        </>
       }
     />
     {mode === "withdrawals" && withdrawResult ? (
@@ -980,7 +961,6 @@ function AssignDashboard({
     goalAmount: g.amount,
     years: g.years,
     bucket: g.bucket,
-    fill: g.bucket === "ST" ? "var(--app-std-text)" : "var(--app-chart-gain)",
   }));
 
   const tableRows = active.map((g) => {
@@ -1018,18 +998,13 @@ function AssignDashboard({
   ].filter((s) => s.value > 0);
 
   return (
-    <div className="flex flex-col gap-4 lg:gap-6">
+    <Stack>
       {result ? (
         <>
-          <div
-            className={`grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2 ${
-              hasUnassigned ? "xl:grid-cols-3 2xl:grid-cols-5" : "xl:grid-cols-4"
-            }`}
-          >
+          <StatGrid>
             <StatCard
               title="Total Investment Per Month"
               value={result.totalMonthlySip}
-              size="lg"
               hint={
                 highestSip
                   ? `Highest: ${formatINRCurrency(highestSip.monthlySip)}/mo (${highestSip.name})`
@@ -1040,19 +1015,16 @@ function AssignDashboard({
               title="Total Investment (One-Time)"
               value={result.totalLumpsum}
               variant="soft"
-              size="lg"
               hint={largest ? `Largest goal · ${largest.name}` : "One-time investment alternative"}
             />
             <StatCard
               title="Total Investment (SIP)"
               value={result.totalSipInvested}
-              size="lg"
               hint="Total SIP capital over the horizon"
             />
             <StatCard
               title="Corpus Assigned"
               value={result.totalAssigned}
-              size="lg"
               hint="Amount of current corpus allocated to goals."
             />
             {hasUnassigned ? (
@@ -1060,13 +1032,12 @@ function AssignDashboard({
                 title="Unused Corpus Remaining"
                 value={result.unassignedCorpus}
                 variant="soft"
-                size="lg"
                 hint="Corpus not yet allocated to a goal"
               />
             ) : null}
-          </div>
+          </StatGrid>
 
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
             <QuickStat
               icon={soonest ? (CATEGORY_META[inferCategory(soonest.name)] || CATEGORY_META.custom).icon : Target}
               label="Soonest"
@@ -1100,20 +1071,20 @@ function AssignDashboard({
 
       {result ? (
         <>
-          <div className={`${RESULTS_SPLIT} lg:items-stretch`}>
-            <div className={`${RESULTS_LEFT} min-h-0`}>
-              <div className="flex h-full flex-col gap-4">
+          <ResultsSplit
+            left={
+              <>
                 <CompareChart
                   title="Monthly SIP by goal"
                   data={sipCompare}
-                  series={[{ key: "amount", label: "Monthly SIP", color: "var(--app-chart-gain)" }]}
+                  series={[{ key: "amount", label: "Monthly SIP", color: "var(--app-chart-invested)" }]}
                   showBarLabels
                   showLegend={false}
-                  className="h-[300px] w-full shrink-0 sm:h-[320px]"
+                  className="min-h-[290px] w-full flex-1 sm:min-h-[310px]"
                 />
                 <StackedBarChart
                   title="Corpus assigned vs remaining lumpsum"
-                  className="h-[300px] w-full shrink-0 sm:h-[320px]"
+                  className="min-h-[290px] w-full flex-1 sm:min-h-[310px]"
                   data={result.compare.map((row) => ({
                     category: row.category,
                     assigned: row.assigned,
@@ -1121,13 +1092,13 @@ function AssignDashboard({
                   }))}
                   series={[
                     { key: "assigned", label: "Assigned", color: "var(--app-chart-invested)" },
-                    { key: "remaining", label: "Remaining LS", color: "var(--app-chart-gain)" },
+                    { key: "remaining", label: "Remaining LS", color: "var(--app-chart-b)" },
                   ]}
                 />
-              </div>
-            </div>
-            <div className={`${RESULTS_RIGHT} min-h-0`}>
-              <div className="flex h-full min-h-0 flex-col gap-4">
+              </>
+            }
+            right={
+              <>
                 <ResultCard
                   title="Allocation summary"
                   items={[
@@ -1178,15 +1149,15 @@ function AssignDashboard({
                 />
                 <div className="flex min-h-[240px] flex-1 flex-col">
                   {fundingSlices.length === 0 ? (
-                    <div className="flex h-full min-h-[220px] flex-col items-center justify-center rounded-xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)] p-4 text-center">
-                      <div className="text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
-                        Funding mix
-                      </div>
-                      <p className="mt-3 text-sm text-[var(--app-text-muted)]">No corpus assigned yet</p>
-                      <p className="mt-1 text-xs text-[var(--app-text-subtle)]">
+                    <Card variant="empty" className="h-full min-h-[220px] items-center justify-center text-center">
+                      <SectionTitle>Funding mix</SectionTitle>
+                      <p className="mt-3 text-[13px] text-[var(--app-text-muted)]">
+                        No corpus assigned yet
+                      </p>
+                      <p className={`mt-1 ${META_TEXT}`}>
                         Add current corpus or goals to see the mix.
                       </p>
-                    </div>
+                    </Card>
                   ) : (
                     <div className="relative flex h-full flex-col">
                       {!hasAssigned ? (
@@ -1209,11 +1180,13 @@ function AssignDashboard({
                     </div>
                   )}
                 </div>
-              </div>
-            </div>
-          </div>
+              </>
+            }
+          />
 
           <ScheduleTable
+              caption="Goal allocation"
+              meta={`${tableRows.length} goals`}
               zebra
               columns={[
                 {
@@ -1276,7 +1249,7 @@ function AssignDashboard({
             />
         </>
       ) : null}
-    </div>
+    </Stack>
   );
 }
 
@@ -1393,41 +1366,37 @@ function AssignGoalEditTimeline({
   const doneCount = sorted.filter((g) => doneIds.has(g.id)).length;
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 sm:p-4">
-      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-        <div className="flex flex-wrap items-center gap-3">
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
-            Goal timeline
-          </h2>
+    <Card className="gap-3">
+      <div className="flex flex-col justify-between gap-2.5 sm:flex-row sm:items-center">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <SectionTitle as="h2">Goal timeline</SectionTitle>
           <span className="rounded-md border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-2 py-0.5 text-[11px] font-medium text-[var(--app-text-muted)]">
             {goals.length} / {MAX_ASSIGN_GOALS}
           </span>
           {sorted.length > 0 ? (
-            <span className="text-[11px] text-[var(--app-text-subtle)]">
+            <span className={META_TEXT}>
               Review progress {doneCount}/{sorted.length}. Checkmarks mean reviewed, not funded.
             </span>
           ) : null}
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button
+          <button
             type="button"
-            variant="outline"
-            size="sm"
-            className="h-8 border-[var(--app-border)] text-[var(--app-text-muted)] hover:bg-[var(--app-surface-muted)]"
+            className={BUTTON_SECONDARY}
             onClick={onRequestReset}
             title="Reset Goals"
           >
-            <RotateCcw className="mr-1.5 size-4" />
+            <RotateCcw className="size-3.5" />
             Reset
-          </Button>
+          </button>
         </div>
       </div>
 
       {goals.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-[var(--app-border)] bg-[var(--app-surface-muted)] py-12 text-center">
-          <Target className="mb-3 size-8 text-[var(--app-text-subtle)]" />
-          <p className="mb-1 text-sm text-[var(--app-text-muted)]">No goals added.</p>
-          <p className="text-xs text-[var(--app-text-subtle)]">Use Reset to restore the sample goals.</p>
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-[var(--app-border)] bg-[var(--app-surface-muted)] py-10 text-center">
+          <Target className="mb-2.5 size-7 text-[var(--app-text-subtle)]" />
+          <p className="mb-1 text-[13px] text-[var(--app-text-muted)]">No goals added.</p>
+          <p className={META_TEXT}>Use Reset to restore the sample goals.</p>
         </div>
       ) : (
         <div className="relative w-full">
@@ -1497,14 +1466,14 @@ function AssignGoalEditTimeline({
                       </div>
                       {isDone ? (
                         <div className="mt-0.5 flex justify-center">
-                          <span className="rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider bg-[var(--app-step-bg)] text-[var(--app-step-text)]">
+                          <span className={`${PILL} bg-[var(--app-step-bg)] text-[var(--app-step-text)]`}>
                             Reviewed
                           </span>
                         </div>
                       ) : null}
                       <div className="mt-0.5 flex justify-center">
                         <span
-                          className={`rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider ${
+                          className={`${PILL} ${
                             bucket === "ST"
                               ? "bg-[var(--app-std-bg)] text-[var(--app-std-text)]"
                               : "bg-[var(--app-step-bg)] text-[var(--app-step-text)]"
@@ -1526,7 +1495,7 @@ function AssignGoalEditTimeline({
           {openGoal ? (
             <div
               ref={panelRef}
-              className="relative z-20 mt-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 shadow-md sm:p-4"
+              className="relative z-20 mt-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3.5 shadow-md sm:p-4"
             >
               <div className="mb-3 flex flex-wrap items-start justify-between gap-2 border-b border-[var(--app-border)] pb-3">
                 <div className="flex items-center gap-2.5">
@@ -1547,7 +1516,7 @@ function AssignGoalEditTimeline({
                       </div>
                       {openBucket ? (
                         <span
-                          className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
+                          className={`${PILL} ${
                             openBucket === "ST"
                               ? "bg-[var(--app-std-bg)] text-[var(--app-std-text)]"
                               : "bg-[var(--app-step-bg)] text-[var(--app-step-text)]"
@@ -1566,22 +1535,18 @@ function AssignGoalEditTimeline({
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
-                  <Button
+                  <button
                     type="button"
-                    size="sm"
-                    variant="outline"
-                    className="h-8"
+                    className={BUTTON_SECONDARY}
                     onClick={() => onDuplicate(openGoal.id)}
                     disabled={atCapacity}
                   >
-                    <Copy className="mr-1.5 size-3.5" />
+                    <Copy className="size-3.5" />
                     Duplicate
-                  </Button>
-                  <Button
+                  </button>
+                  <button
                     type="button"
-                    size="sm"
-                    variant="outline"
-                    className="h-8 text-[var(--app-danger)] hover:text-[var(--app-danger)]"
+                    className={BUTTON_DANGER}
                     onClick={() => {
                       const id = openGoal.id;
                       setOpenId(null);
@@ -1593,18 +1558,17 @@ function AssignGoalEditTimeline({
                       });
                     }}
                   >
-                    <Trash2 className="mr-1.5 size-3.5" />
+                    <Trash2 className="size-3.5" />
                     Remove
-                  </Button>
-                  <Button
+                  </button>
+                  <button
                     type="button"
-                    size="sm"
-                    className="h-8 bg-[var(--app-primary)] text-[var(--app-primary-fg)] hover:bg-[var(--app-primary-hover)]"
+                    className={BUTTON_PRIMARY}
                     onClick={() => markDoneAndAdvance(openGoal.id)}
                   >
-                    <Check className="mr-1.5 size-3.5" />
+                    <Check className="size-3.5" />
                     Reviewed · Next
-                  </Button>
+                  </button>
                 </div>
               </div>
 
@@ -1656,7 +1620,7 @@ function AssignGoalEditTimeline({
           ) : null}
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -1716,10 +1680,6 @@ function WithdrawalsDashboard({
           sublabel: atAgeRows.map((r) => r.name).join(" + "),
           corpus: row.corpus,
           withdrawal: row.withdrawal,
-          fill:
-            atAgeRows.length > 1
-              ? "color-mix(in srgb, var(--app-chart-gain) 70%, var(--app-chart-invested))"
-              : "var(--app-chart-gain)",
         };
       }) ?? [];
 
@@ -1752,14 +1712,13 @@ function WithdrawalsDashboard({
   const totalInvestedRows = rows.reduce((s, r) => s + r.invested, 0);
 
   return (
-    <div className="flex flex-col gap-4 lg:gap-6">
+    <Stack>
       {result ? (
         <>
-          <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2 xl:grid-cols-4">
+          <StatGrid>
             <StatCard
               title="Start monthly SIP"
               value={result.startMonthlySip}
-              size="lg"
               hint={
                 highest
                   ? `Highest: ${formatINRCurrency(highest.monthlySip)}/mo (${highest.name})`
@@ -1770,7 +1729,6 @@ function WithdrawalsDashboard({
               title="Total goals value"
               value={result.totalWithdrawn}
               variant="soft"
-              size="lg"
               hint={
                 largest
                   ? `Largest: ${largest.name}`
@@ -1780,7 +1738,6 @@ function WithdrawalsDashboard({
             <StatCard
               title="Total investment"
               value={result.totalInvested}
-              size="lg"
               hint={
                 wealthMultiplier != null
                   ? `${wealthMultiplier.toFixed(2)}x on capital`
@@ -1791,12 +1748,11 @@ function WithdrawalsDashboard({
               title="Total tax"
               value={result.totalTax}
               variant="soft"
-              size="lg"
               hint={`${wTax}% rate applied`}
             />
-          </div>
+          </StatGrid>
 
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
             <QuickStat
               icon={earliest ? (CATEGORY_META[inferCategory(earliest.name)] || CATEGORY_META.custom).icon : Target}
               label="Earliest"
@@ -1854,57 +1810,56 @@ function WithdrawalsDashboard({
               showLegend={false}
               className="h-[280px] w-full sm:h-[300px]"
             />
-            <div className={`${RESULTS_SPLIT} lg:items-start`}>
-              <div className={RESULTS_LEFT}>
-                <WithdrawalPathChart data={pathData} milestones={milestones} title="Corpus over age" />
-              </div>
-              <div className={RESULTS_RIGHT}>
-                <div className="[&>div]:p-3 sm:[&>div]:p-4 [&>div>h3]:text-xs">
-                  <ResultCard
-                    title="Totals"
-                    items={[
-                      {
-                        label: "Start monthly SIP",
-                        value: result.startMonthlySip,
-                        tone: "maturity",
-                        highlight: true,
-                      },
-                      { label: "Total goals value", value: result.totalWithdrawn, tone: "gain" },
-                      { label: "Total invested", value: result.totalInvested },
-                      { label: "Total tax", value: result.totalTax, tone: "tax" },
-                      {
-                        label: "Number of goals",
-                        displayValue: String(rows.length),
-                      },
-                      {
-                        label: "Investment duration",
-                        displayValue: `${durationYears} years`,
-                      },
-                    ]}
-                  />
-                </div>
-              </div>
-            </div>
+            <ResultsSplit
+              left={
+                <WithdrawalPathChart
+                  data={pathData}
+                  milestones={milestones}
+                  title="Corpus over age"
+                />
+              }
+              right={
+                <ResultCard
+                  title="Totals"
+                  items={[
+                    {
+                      label: "Start monthly SIP",
+                      value: result.startMonthlySip,
+                      tone: "maturity",
+                      highlight: true,
+                    },
+                    { label: "Total goals value", value: result.totalWithdrawn, tone: "gain" },
+                    { label: "Total invested", value: result.totalInvested },
+                    { label: "Total tax", value: result.totalTax, tone: "tax" },
+                    {
+                      label: "Number of goals",
+                      displayValue: String(rows.length),
+                    },
+                    {
+                      label: "Investment duration",
+                      displayValue: `${durationYears} years`,
+                    },
+                  ]}
+                />
+              }
+            />
           </div>
 
-          <div className="flex flex-col gap-2.5">
-            <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
-              <h3 className="text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
-                Withdrawal SIP schedule
-              </h3>
-              <p className="text-xs tabular-nums text-[var(--app-text-subtle)] sm:text-right">
-                Combined SIP{" "}
-                <span className="font-semibold text-[var(--app-text)]">
-                  {formatINRCurrency(totalSip)}
-                </span>
-                <span className="mx-2 text-[var(--app-border)]">·</span>
-                Invested{" "}
-                <span className="font-semibold text-[var(--app-text)]">
-                  {formatINRCurrency(totalInvestedRows)}
-                </span>
-              </p>
-            </div>
-            <ScheduleTable
+          <ScheduleTable
+              caption="Withdrawal SIP schedule"
+              meta={
+                <>
+                  Combined SIP{" "}
+                  <span className="font-semibold text-[var(--app-text)]">
+                    {formatINRCurrency(totalSip)}
+                  </span>
+                  <span className="mx-2 text-[var(--app-border)]">·</span>
+                  Invested{" "}
+                  <span className="font-semibold text-[var(--app-text)]">
+                    {formatINRCurrency(totalInvestedRows)}
+                  </span>
+                </>
+              }
               zebra
               columns={[
                 { key: "goal", header: "Goal", sticky: true },
@@ -1934,10 +1889,9 @@ function WithdrawalsDashboard({
               ]}
               rows={tableRows}
             />
-          </div>
         </>
       ) : null}
-    </div>
+    </Stack>
   );
 }
 
@@ -1953,26 +1907,20 @@ function QuickStat({
   sub?: string;
 }) {
   return (
-    <div className="flex h-full min-h-[6.75rem] flex-col rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-4 py-3.5 sm:min-h-[7.5rem] sm:px-5 sm:py-4">
-      <div className="flex items-center gap-3">
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[var(--app-surface-muted)] text-[var(--app-text-muted)] sm:size-10">
-          <Icon className="size-4 sm:size-5" />
+    <Card className="h-full gap-2.5">
+      <div className="flex items-center gap-2.5">
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]">
+          <Icon className="size-4" />
         </div>
-        <span className="text-[11px] font-semibold uppercase tracking-widest text-[var(--app-text-muted)] sm:text-xs">
-          {label}
-        </span>
+        <SectionTitle>{label}</SectionTitle>
       </div>
-      <div className="mt-3 min-w-0 flex-1">
-        <div className="break-words text-base font-semibold leading-snug text-[var(--app-text)] sm:text-lg">
+      <div className="min-w-0">
+        <div className="break-words text-[15px] font-semibold leading-snug text-[var(--app-text)] sm:text-base">
           {value}
         </div>
-        {sub ? (
-          <div className="mt-1.5 text-xs leading-snug text-[var(--app-text-subtle)] sm:text-sm">
-            {sub}
-          </div>
-        ) : null}
+        {sub ? <div className={`mt-1 ${META_TEXT}`}>{sub}</div> : null}
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -2089,62 +2037,50 @@ function GoalEditTimeline({
   const doneCount = sorted.filter((g) => doneIds.has(g.id)).length;
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 sm:p-4">
-      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-        <div className="flex flex-wrap items-center gap-3">
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
-            Goal timeline
-          </h2>
+    <Card className="gap-3">
+      <div className="flex flex-col justify-between gap-2.5 sm:flex-row sm:items-center">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <SectionTitle as="h2">Goal timeline</SectionTitle>
           <span className="rounded-md border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-2 py-0.5 text-[11px] font-medium text-[var(--app-text-muted)]">
             {goals.length} / {MAX_GOALS}
           </span>
           {sorted.length > 0 ? (
-            <span className="text-[11px] text-[var(--app-text-subtle)]">
+            <span className={META_TEXT}>
               Reviewed {doneCount}/{sorted.length}. Click a dot to edit.
             </span>
           ) : null}
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button
+          <button
             type="button"
-            variant="outline"
-            size="sm"
-            className="h-8 border-[var(--app-border)] text-[var(--app-text-muted)] hover:bg-[var(--app-surface-muted)]"
+            className={BUTTON_SECONDARY}
             onClick={onRequestReset}
             title="Reset Goals"
           >
-            <RotateCcw className="mr-1.5 size-4" />
+            <RotateCcw className="size-3.5" />
             Reset
-          </Button>
-          <Button
+          </button>
+          <button
             type="button"
-            size="sm"
-            className="h-8 bg-[var(--app-primary)] text-[var(--app-primary-fg)] hover:bg-[var(--app-primary-hover)]"
-            onClick={() => {
-              onAdd();
-            }}
+            className={BUTTON_PRIMARY}
+            onClick={onAdd}
             disabled={atCapacity}
             title="Add Goal"
           >
-            <Plus className="mr-1.5 size-4" />
+            <Plus className="size-3.5" />
             Add Goal
-          </Button>
+          </button>
         </div>
       </div>
 
       {goals.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-[var(--app-border)] bg-[var(--app-surface-muted)] py-12 text-center">
-          <Target className="mb-3 size-8 text-[var(--app-text-subtle)]" />
-          <p className="mb-4 text-sm text-[var(--app-text-muted)]">No withdrawal goals added.</p>
-          <Button
-            type="button"
-            size="sm"
-            className="h-8 bg-[var(--app-primary)] text-[var(--app-primary-fg)] hover:bg-[var(--app-primary-hover)]"
-            onClick={onAdd}
-          >
-            <Plus className="mr-1.5 size-4" />
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-[var(--app-border)] bg-[var(--app-surface-muted)] py-10 text-center">
+          <Target className="mb-2.5 size-7 text-[var(--app-text-subtle)]" />
+          <p className="mb-3 text-[13px] text-[var(--app-text-muted)]">No withdrawal goals added.</p>
+          <button type="button" className={BUTTON_PRIMARY} onClick={onAdd}>
+            <Plus className="size-3.5" />
             Add First Goal
-          </Button>
+          </button>
         </div>
       ) : (
         <div className="relative w-full">
@@ -2229,7 +2165,7 @@ function GoalEditTimeline({
           {openGoal ? (
             <div
               ref={panelRef}
-              className="relative z-20 mt-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 shadow-md sm:p-4"
+              className="relative z-20 mt-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3.5 shadow-md sm:p-4"
             >
               <div className="mb-3 flex flex-wrap items-start justify-between gap-2 border-b border-[var(--app-border)] pb-3">
                 <div className="flex items-center gap-2.5">
@@ -2254,22 +2190,18 @@ function GoalEditTimeline({
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
-                  <Button
+                  <button
                     type="button"
-                    size="sm"
-                    variant="outline"
-                    className="h-8"
+                    className={BUTTON_SECONDARY}
                     onClick={() => onDuplicate(openGoal.id)}
                     disabled={atCapacity}
                   >
-                    <Copy className="mr-1.5 size-3.5" />
+                    <Copy className="size-3.5" />
                     Duplicate
-                  </Button>
-                  <Button
+                  </button>
+                  <button
                     type="button"
-                    size="sm"
-                    variant="outline"
-                    className="h-8 text-[var(--app-danger)] hover:text-[var(--app-danger)]"
+                    className={BUTTON_DANGER}
                     onClick={() => {
                       const id = openGoal.id;
                       setOpenId(null);
@@ -2281,18 +2213,17 @@ function GoalEditTimeline({
                       });
                     }}
                   >
-                    <Trash2 className="mr-1.5 size-3.5" />
+                    <Trash2 className="size-3.5" />
                     Remove
-                  </Button>
-                  <Button
+                  </button>
+                  <button
                     type="button"
-                    size="sm"
-                    className="h-8 bg-[var(--app-primary)] text-[var(--app-primary-fg)] hover:bg-[var(--app-primary-hover)]"
+                    className={BUTTON_PRIMARY}
                     onClick={() => markDoneAndAdvance(openGoal.id)}
                   >
-                    <Check className="mr-1.5 size-3.5" />
+                    <Check className="size-3.5" />
                     Done · Next
-                  </Button>
+                  </button>
                 </div>
               </div>
 
@@ -2342,6 +2273,6 @@ function GoalEditTimeline({
           ) : null}
         </div>
       )}
-    </div>
+    </Card>
   );
 }

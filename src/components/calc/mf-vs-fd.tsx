@@ -1,29 +1,35 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Download, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import {
+  Card,
+  CHIP,
+  CHIP_OFF,
+  CHIP_ON,
   ClientHeader,
   CompareChart,
   CompositionChart,
-  formatPercent,
+  FormGrid,
+  MICRO_LABEL,
   MoneyInput,
   PercentInput,
   ResultCard,
+  ResultsSplit,
+  SectionTitle,
+  Stack,
   StatCard,
+  StatGrid,
+  StatusNote,
   YearInput,
 } from "@nivra/ui";
 import { CalculatorPage } from "@/components/layout/calculator-page-with-nav";
+import { ReportDownloadButton } from "@/components/calc/report-download-button";
 import {
   MfVsFdDossier,
   MF_VS_FD_REPORT_ID,
 } from "@/components/reports/mf-vs-fd-dossier";
 import { useCalculate } from "@/hooks/use-calculate";
 import { generatePdfFromElement } from "@/lib/pdf-generator";
-
-const FORM_GRID =
-  "grid grid-cols-[repeat(auto-fill,minmax(7.5rem,1fr))] items-start gap-x-3 gap-y-3";
 
 const DAY_PRESETS = [7, 15, 30, 90, 180, 365] as const;
 // tax rates: PercentInput only
@@ -174,23 +180,15 @@ export function MfVsFd() {
       title="Mutual Fund vs Fixed Deposit"
       description="Short-horizon post-tax compare of mutual funds vs fixed deposits (365-day count)."
       actions={
-        <Button
-          size="icon"
-          className="h-8 w-8 shrink-0 bg-[var(--app-primary)] text-[var(--app-primary-fg)] hover:bg-[var(--app-primary-hover)] transition-colors"
+        <ReportDownloadButton
           onClick={handleDownload}
-          title={isDownloading ? "Preparing PDF…" : "Download Report"}
-          disabled={!result || isDownloading}
-        >
-          {isDownloading ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <Download className="size-4" />
-          )}
-        </Button>
+          disabled={!result}
+          loading={isDownloading}
+        />
       }
       form={
         <div className="flex flex-col gap-3">
-          <div className={FORM_GRID}>
+          <FormGrid>
             <ClientHeader name={name} age={age} onNameChange={setName} onAgeChange={setAge} />
             <MoneyInput
               label="Investment amount"
@@ -232,21 +230,16 @@ export function MfVsFd() {
               onChange={setFdTax}
               error={fdTaxErr}
             />
-          </div>
+          </FormGrid>
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--app-text-subtle)]">
-              Quick period
-            </span>
+            <span className={MICRO_LABEL}>Quick period</span>
             {DAY_PRESETS.map((preset) => (
               <button
                 key={preset}
                 type="button"
                 onClick={() => setDays(preset)}
-                className={`rounded-md border px-2 py-1 text-[11px] font-medium tabular-nums transition-colors ${
-                  days === preset
-                    ? "border-[var(--app-primary)] bg-[var(--app-primary-soft)] text-[var(--app-text)]"
-                    : "border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-text-muted)] hover:border-[var(--app-primary)]"
-                }`}
+                aria-pressed={days === preset}
+                className={`${CHIP} ${days === preset ? CHIP_ON : CHIP_OFF}`}
               >
                 {preset} Days
               </button>
@@ -255,93 +248,103 @@ export function MfVsFd() {
         </div>
       }
       results={
-        <div className="flex flex-col gap-3">
-          {error ? <p className="text-sm text-[var(--app-danger)]">{error}</p> : null}
+        <>
+          {error ? <StatusNote tone="error">{error}</StatusNote> : null}
           {!canCalculate ? (
-            <div className="rounded-lg border border-[var(--app-danger)]/30 bg-red-50 px-3 py-2 text-sm text-[var(--app-danger)]">
+            <StatusNote tone="error">
               Fix the inputs above to refresh the calculation. Showing the last valid result.
-            </div>
+            </StatusNote>
           ) : null}
           {loading && !result && canCalculate ? (
-            <p className="text-sm text-[var(--app-text-muted)]">Calculating…</p>
+            <StatusNote tone="pending">Calculating…</StatusNote>
           ) : null}
           {result && insight ? (
-            <div className="grid grid-cols-1 gap-3 md:gap-4 lg:grid-cols-12">
-              <div className="flex flex-col gap-3 lg:col-span-7">
-                <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-3">
-                  <StatCard
-                    title="MF post-tax return"
-                    value={result.mf.postTax}
-                    hint={insight.mfWins ? "Higher return" : "After tax"}
-                  />
-                  <StatCard
-                    title="FD post-tax return"
-                    value={result.fd.postTax}
-                    variant="soft"
-                    hint={insight.fdWins ? "Higher return" : "After tax"}
-                  />
-                  <StatCard
-                    title={insight.mfWins ? "MF advantage" : insight.fdWins ? "FD advantage" : "Advantage"}
-                    value={insight.advantage}
-                    variant={insight.mfWins ? "primary" : "soft"}
-                    hint={
-                      insight.advantage > 0 && insight.relativePct > 0
-                        ? `${formatPercent(insight.relativePct, 1)} more than ${insight.mfWins ? "FD" : "MF"}`
-                        : "Tied"
-                    }
-                  />
-                </div>
-                <CompareChart
-                  title="MF vs FD"
-                  showBarLabels
-                  data={result.compare}
-                  series={[
-                    { key: "mf", label: "Mutual fund", color: "var(--app-chart-gain)" },
-                    { key: "fd", label: "Fixed deposit", color: "var(--app-chart-invested)" },
-                  ]}
+            <Stack>
+              <StatGrid>
+                <StatCard
+                  title="MF post-tax return"
+                  value={result.mf.postTax}
                 />
-                <div className="grid grid-cols-1 gap-3 min-[480px]:grid-cols-2">
-                  <CompositionChart
-                    title="MF mix"
-                    showPercentages
-                    slices={[
-                      {
-                        name: "Invested",
-                        value: result.mf.invested,
-                        color: "var(--app-chart-invested)",
-                      },
-                      { name: "Gain", value: result.mf.gain, color: "var(--app-chart-gain)" },
-                      { name: "Tax", value: result.mf.tax, color: "var(--app-chart-tax)" },
-                    ]}
-                    centerLabel="Maturity"
-                    centerValue={result.mf.net}
-                  />
-                  <CompositionChart
-                    title="FD mix"
-                    showPercentages
-                    slices={[
-                      {
-                        name: "Invested",
-                        value: result.fd.invested,
-                        color: "var(--app-chart-invested)",
-                      },
-                      { name: "Gain", value: result.fd.gain, color: "var(--app-chart-gain)" },
-                      { name: "Tax", value: result.fd.tax, color: "var(--app-chart-tax)" },
-                    ]}
-                    centerLabel="Maturity"
-                    centerValue={result.fd.net}
-                  />
-                </div>
-              </div>
-              <div className="flex flex-col gap-3 lg:col-span-5">
-                <ResultCard title="Mutual funds" items={legItems(result.mf, result.mfAdvantage)} />
-                <ResultCard title="Fixed deposit" items={legItems(result.fd, result.fdAdvantage)} />
-              </div>
-              <div className="rounded-xl border border-[var(--app-warn-border)] bg-[var(--app-warn-bg)] p-3 sm:p-4 lg:col-span-12">
-                <div className="text-[10px] font-semibold uppercase tracking-widest text-[var(--app-warn-text-strong)]">
+                <StatCard
+                  title="FD post-tax return"
+                  value={result.fd.postTax}
+                  variant="soft"
+                />
+                <StatCard
+                  title={
+                    insight.mfWins ? "MF advantage" : insight.fdWins ? "FD advantage" : "Advantage"
+                  }
+                  value={insight.advantage}
+                  variant={insight.mfWins ? "primary" : "soft"}
+                />
+              </StatGrid>
+
+              <ResultsSplit
+                left={
+                  <>
+                    <CompareChart
+                      title="MF vs FD"
+                      showBarLabels
+                      data={result.compare}
+                      series={[
+                        { key: "mf", label: "Mutual fund", color: "var(--app-chart-a)" },
+                        { key: "fd", label: "Fixed deposit", color: "var(--app-chart-b)" },
+                      ]}
+                    />
+                    <div className="grid grid-cols-1 gap-4 min-[560px]:grid-cols-2">
+                      <CompositionChart
+                        title="MF mix"
+                        showPercentages
+                        slices={[
+                          {
+                            name: "Invested",
+                            value: result.mf.invested,
+                            color: "var(--app-chart-invested)",
+                          },
+                          { name: "Gain", value: result.mf.gain, color: "var(--app-chart-gain)" },
+                          { name: "Tax", value: result.mf.tax, color: "var(--app-chart-tax)" },
+                        ]}
+                        centerLabel="Maturity"
+                        centerValue={result.mf.net}
+                      />
+                      <CompositionChart
+                        title="FD mix"
+                        showPercentages
+                        slices={[
+                          {
+                            name: "Invested",
+                            value: result.fd.invested,
+                            color: "var(--app-chart-invested)",
+                          },
+                          { name: "Gain", value: result.fd.gain, color: "var(--app-chart-gain)" },
+                          { name: "Tax", value: result.fd.tax, color: "var(--app-chart-tax)" },
+                        ]}
+                        centerLabel="Maturity"
+                        centerValue={result.fd.net}
+                      />
+                    </div>
+                  </>
+                }
+                right={
+                  <>
+                    <ResultCard
+                      title="Mutual funds"
+                      accent
+                      items={legItems(result.mf, result.mfAdvantage)}
+                    />
+                    <ResultCard
+                      title="Fixed deposit"
+                      items={legItems(result.fd, result.fdAdvantage)}
+                    />
+                  </>
+                }
+              />
+
+              <Card variant="warn">
+                <SectionTitle className="text-[var(--app-warn-text-strong)]">
                   Important investment notes
-                </div>
-                <ul className="mt-2 list-disc space-y-2 pl-4 text-xs leading-relaxed text-[var(--app-warn-text)] sm:columns-2 sm:gap-x-8">
+                </SectionTitle>
+                <ul className="mt-2 list-disc space-y-1.5 pl-4 text-xs leading-relaxed text-[var(--app-warn-text)] sm:columns-2 sm:gap-x-8">
                   <li>
                     Fixed Deposits may charge a premature withdrawal penalty, even for partial
                     withdrawals.
@@ -351,10 +354,10 @@ export function MfVsFd() {
                     FDs where tenure is fixed at the start.
                   </li>
                 </ul>
-              </div>
-            </div>
+              </Card>
+            </Stack>
           ) : null}
-        </div>
+        </>
       }
     />
     {result ? (

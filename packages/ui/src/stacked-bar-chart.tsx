@@ -8,7 +8,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { formatCompactINR, formatINRCurrency } from "./format";
+import { formatAxisINR, formatINRCurrency } from "./format";
+import { CARD, CARD_PAD, SECTION_TITLE } from "./tokens";
 
 export type StackedBarPoint = {
   category: string;
@@ -31,11 +32,11 @@ export function StackedBarChart({
 
   return (
     <div
-      className={`flex w-full flex-col overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 sm:p-4 ${
+      className={`flex w-full flex-col overflow-hidden ${CARD} ${CARD_PAD} ${
         hasFixedHeight ? "" : "min-h-[240px] flex-1"
       } ${className ?? ""}`}
     >
-      <div className="mb-3 shrink-0 text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
+      <div className={`mb-2.5 shrink-0 ${SECTION_TITLE}`}>
         {title}
       </div>
       <div className="relative min-h-0 w-full flex-1">
@@ -53,7 +54,7 @@ export function StackedBarChart({
               height={data.length > 8 ? 64 : 30}
             />
             <YAxis
-              tickFormatter={formatCompactINR}
+              tickFormatter={formatAxisINR}
               tick={{ fontSize: 11, fill: "var(--app-text-muted)" }}
               width={48}
               stroke="transparent"

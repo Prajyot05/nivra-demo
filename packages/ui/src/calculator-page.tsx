@@ -2,12 +2,21 @@
 
 import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { CalculatorPageHeader } from "./calculator-page-header";
+import { Card, SectionTitle } from "./card";
 import { Disclaimer } from "./disclaimer";
 import { getColorTheme, type ColorThemeId } from "./color-themes";
+import { STACK } from "./tokens";
 
+/**
+ * Shell for every calculator: title → assumptions → results → disclaimer.
+ *
+ * The order encodes the intended reading flow, so pages only supply content for
+ * each slot and never re-declare page padding, card chrome or section spacing.
+ */
 export function CalculatorPage({
   title,
   description,
+  formTitle = "Financial Assumptions",
   header,
   leading,
   actions,
@@ -18,6 +27,8 @@ export function CalculatorPage({
 }: {
   title: string;
   description?: string;
+  /** Heading above the input card. */
+  formTitle?: string;
   header?: ReactNode;
   leading?: ReactNode;
   actions?: ReactNode;
@@ -46,18 +57,16 @@ export function CalculatorPage({
 
         {modes ? <div className="shrink-0">{modes}</div> : null}
 
-        <div className="flex shrink-0 flex-col justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-4 py-3.5 sm:px-5 sm:py-4 lg:px-6">
-          <div className="mb-3 sm:mb-3.5">
-            <span className="text-sm font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
-              Financial Assumptions
-            </span>
-          </div>
+        <Card variant="muted" className="shrink-0">
+          <SectionTitle as="h2" className="mb-2.5">
+            {formTitle}
+          </SectionTitle>
           {header}
           {form}
-        </div>
+        </Card>
 
-        <div className="flex flex-col">{results}</div>
-        <div className="shrink-0 pb-3">{footer ?? <Disclaimer />}</div>
+        <div className={STACK}>{results}</div>
+        <div className="shrink-0 pt-1 pb-4">{footer ?? <Disclaimer />}</div>
       </div>
     </div>
   );

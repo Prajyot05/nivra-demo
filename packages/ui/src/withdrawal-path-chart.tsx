@@ -13,7 +13,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { formatCompactINR, formatINRCurrency } from "./format";
+import { formatAxisINR, formatINRCurrency } from "./format";
+import { CARD, CARD_PAD, SECTION_TITLE } from "./tokens";
 
 export type WithdrawalMilestone = {
   age: number;
@@ -102,11 +103,11 @@ export function WithdrawalPathChart({
 
   return (
     <div
-      className={`flex min-h-[300px] flex-1 flex-col rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 sm:min-h-[340px] sm:p-4 ${className ?? ""}`}
+      className={`flex min-h-[300px] flex-1 flex-col ${CARD} ${CARD_PAD} sm:min-h-[340px] ${className ?? ""}`}
     >
       {!compact ? (
         <>
-          <div className="mb-1 shrink-0 text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
+          <div className={`mb-1 shrink-0 ${SECTION_TITLE}`}>
             {title}
           </div>
           <p className="mb-3 shrink-0 text-[11px] text-[var(--app-text-subtle)]">
@@ -143,7 +144,7 @@ export function WithdrawalPathChart({
                 }}
               />
               <YAxis
-                tickFormatter={(v) => `₹${formatCompactINR(Number(v))}`}
+                tickFormatter={formatAxisINR}
                 tick={{ fontSize: 11, fill: "var(--app-text-muted)" }}
                 width={56}
                 stroke="transparent"

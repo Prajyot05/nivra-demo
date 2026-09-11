@@ -494,7 +494,7 @@ function EmiResults({ result }: { result: EmiResult }) {
     return { year: row.month, remaining: row.balance, interestPaid: interestToDate };
   });
   return (
-    <div className="flex flex-col gap-4 lg:gap-6">
+    <div className="flex flex-col gap-4">
       <div className={RESULTS_SPLIT}>
         <div className={RESULTS_LEFT}>
           <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
@@ -573,7 +573,7 @@ function PrepayResults({ result }: { result: PrepayResult }) {
     };
   });
   return (
-    <div className="flex flex-col gap-4 lg:gap-6">
+    <div className="flex flex-col gap-4">
       <div className={RESULTS_SPLIT}>
         <div className={RESULTS_LEFT}>
           <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
@@ -633,7 +633,7 @@ function PrepayResults({ result }: { result: PrepayResult }) {
 
 function ExtraVsInvestResults({ result }: { result: ExtraVsInvestResult }) {
   return (
-    <div className="flex flex-col gap-4 lg:gap-6">
+    <div className="flex flex-col gap-4">
       <div className={RESULTS_SPLIT}>
         <div className={RESULTS_LEFT}>
           <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
@@ -690,7 +690,7 @@ function ExtraVsInvestResults({ result }: { result: ExtraVsInvestResult }) {
 
 function RecoveryResults({ result }: { result: RecoveryResult }) {
   return (
-    <div className="flex flex-col gap-4 lg:gap-6">
+    <div className="flex flex-col gap-4">
       <div className={RESULTS_SPLIT}>
         <div className={RESULTS_LEFT}>
           <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
@@ -742,7 +742,7 @@ function RecoveryResults({ result }: { result: RecoveryResult }) {
 
 function VehicleResults({ result }: { result: VehicleResult }) {
   return (
-    <div className="flex flex-col gap-4 lg:gap-6">
+    <div className="flex flex-col gap-4">
       <div className={RESULTS_SPLIT}>
         <div className={RESULTS_LEFT}>
           <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">

@@ -43,3 +43,8 @@ export function formatCompactINR(value: number): string {
   }
   return `${sign}${Math.round(abs)}`;
 }
+
+/** Money tick for chart axes. Use this everywhere so axes read the same. */
+export function formatAxisINR(value: number | string): string {
+  return `₹${formatCompactINR(Number(value))}`;
+}

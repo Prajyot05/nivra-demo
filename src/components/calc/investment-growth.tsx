@@ -1,25 +1,26 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Download, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { generatePdfFromElement } from "@/lib/pdf-generator";
 import {
   ClientHeader,
   CompositionChart,
+  FormGrid,
   GrowthChart,
   MoneyInput,
   PercentInput,
   ResultCard,
-  RESULTS_LEFT,
-  RESULTS_RIGHT,
-  RESULTS_SPLIT,
+  ResultsSplit,
   ScheduleTable,
   SelectInput,
+  Stack,
   StatCard,
+  StatGrid,
+  StatusNote,
   YearInput,
 } from "@nivra/ui";
 import { CalculatorPage } from "@/components/layout/calculator-page-with-nav";
+import { ReportDownloadButton } from "@/components/calc/report-download-button";
 import {
   OneTimeInvestmentDossier,
   ONE_TIME_INVESTMENT_REPORT_ID,
@@ -83,9 +84,6 @@ function frequencyHint(timesPerYear: number): string {
       return "Select a contribution frequency";
   }
 }
-
-const FORM_GRID =
-  "grid grid-cols-[repeat(auto-fill,minmax(7.5rem,1fr))] items-start gap-x-3 gap-y-3";
 
 type YearRow = {
   year: number;
@@ -406,23 +404,15 @@ export function InvestmentGrowth() {
       title={getCalculatorPageTitle("/growth", mode)}
       description="Lumpsum and monthly SIP. See how savings grow over time."
       actions={
-        <Button
-          size="icon"
-          className="h-8 w-8 shrink-0 bg-[var(--app-primary)] text-[var(--app-primary-fg)] hover:bg-[var(--app-primary-hover)] transition-colors"
+        <ReportDownloadButton
           onClick={handleDownload}
-          title={isDownloading ? "Preparing PDF…" : "Download Report"}
-          disabled={!result || isDownloading}
-        >
-          {isDownloading ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <Download className="size-4" />
-          )}
-        </Button>
+          disabled={!result}
+          loading={isDownloading}
+        />
       }
       form={
         mode === "sip" ? (
-          <div className={FORM_GRID}>
+          <FormGrid>
             <ClientHeader name={name} age={age} onNameChange={setName} onAgeChange={setAge} />
             <MoneyInput
               label="Monthly SIP"
@@ -472,9 +462,9 @@ export function InvestmentGrowth() {
               onChange={(v) => setSipTax(Math.min(100, Math.max(0, v)))}
               error={sipTaxError}
             />
-          </div>
+          </FormGrid>
         ) : mode === "stepup" ? (
-          <div className={FORM_GRID}>
+          <FormGrid>
             <ClientHeader name={name} age={age} onNameChange={setName} onAgeChange={setAge} />
             <MoneyInput
               label="Start SIP"
@@ -514,8 +504,9 @@ export function InvestmentGrowth() {
               onChange={(v) => setStepTax(Math.min(100, Math.max(0, v)))}
               error={stepTaxError}
             />
-          </div>
-        ) : mode === "lumpsum" ? (          <div className={FORM_GRID}>
+          </FormGrid>
+        ) : mode === "lumpsum" ? (
+          <FormGrid>
             <ClientHeader name={name} age={age} onNameChange={setName} onAgeChange={setAge} />
             <MoneyInput
               label="Investment amount"
@@ -559,9 +550,9 @@ export function InvestmentGrowth() {
               onChange={(v) => setLumpTax(Math.max(0, v))}
               error={lumpTaxError}
             />
-          </div>
+          </FormGrid>
         ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] items-start gap-x-3 gap-y-3">
+          <FormGrid>
             <ClientHeader name={name} age={age} onNameChange={setName} onAgeChange={setAge} />
             <MoneyInput
               label="Amount each"
@@ -597,24 +588,24 @@ export function InvestmentGrowth() {
               onChange={(v) => setPeriodicTax(Math.min(100, Math.max(0, v)))}
               error={periodicTaxError}
             />
-          </div>
+          </FormGrid>
         )
       }
       results={
-        <div className="flex flex-col gap-4">
-          {error ? <p className="text-sm text-[var(--app-danger)]">{error}</p> : null}
+        <>
+          {error ? <StatusNote tone="error">{error}</StatusNote> : null}
           {!canCalculate ? (
-            <div className="rounded-lg border border-[var(--app-danger)]/30 bg-red-50 px-3 py-2 text-sm text-[var(--app-danger)]">
+            <StatusNote tone="error">
               Fix the inputs above to refresh the calculation. Showing the last valid result.
-            </div>
+            </StatusNote>
           ) : null}
           {loading && !result && canCalculate ? (
-            <p className="text-sm text-[var(--app-text-muted)]">Calculating…</p>
+            <StatusNote tone="pending">Calculating…</StatusNote>
           ) : null}
           {result ? (
             <GrowthResults mode={mode} result={result} timesPerYear={timesPerYear} />
           ) : null}
-        </div>
+        </>
       }
     />
     {mode === "sip" && result && result.inflationAdjusted != null ? (
@@ -743,7 +734,7 @@ function GrowthResults({
   const periodicRows = result.schedule.filter((row): row is PeriodicRow => "contributionFv" in row);
   const donut = (
     <CompositionChart
-      title="Invested / gain / tax"
+      title={mode === "periodic" ? "Periodic mix" : "Invested / gain / tax"}
       showPercentages
       size="lg"
       slices={mixSlices(result)}
@@ -764,8 +755,9 @@ function GrowthResults({
           inflationAdjusted: row.inflationAdjusted ?? row.yearEnd,
         }))}
         series={[
-          { key: "corpus", label: "Full return", color: "var(--app-chart-invested)" },
-          { key: "inflationAdjusted", label: "Inflation-adjusted", color: "var(--app-chart-gain)" },
+          { key: "invested", label: "Investment", color: "var(--app-chart-invested)" },
+          { key: "corpus", label: "Full return", color: "var(--app-chart-gain)" },
+          { key: "inflationAdjusted", label: "Inflation-adjusted", color: "var(--app-chart-inflation)" },
         ]}
       />
     ) : (
@@ -774,9 +766,6 @@ function GrowthResults({
         showEndLabels
         endpointDots
         strokeWidth={4}
-        className={
-          mode === "sip" || mode === "stepup" ? "min-h-[280px] lg:min-h-[300px]" : undefined
-        }
         data={yearRows.map((row) => ({
           year: row.year,
           invested: row.investedToDate,
@@ -786,21 +775,10 @@ function GrowthResults({
         series={[
           { key: "invested", label: "Investment", color: "var(--app-chart-invested)" },
           { key: "corpus", label: "Full return", color: "var(--app-chart-gain)" },
-          { key: "inflationAdjusted", label: "Inflation-adjusted", color: "var(--app-chart-tax)" },
+          { key: "inflationAdjusted", label: "Inflation-adjusted", color: "var(--app-chart-inflation)" },
         ]}
       />
     );
-
-  const periodicChart = mode === "periodic" ? (
-    <CompositionChart
-      title="Periodic mix"
-      showPercentages
-      size="lg"
-      slices={mixSlices(result)}
-      centerLabel="Maturity"
-      centerValue={result.maturity}
-    />
-  ) : null;
 
   const contributionChart =
     mode === "periodic" ? (
@@ -809,7 +787,6 @@ function GrowthResults({
         showEndLabels
         markers
         endLabelFull
-        className="min-h-[320px] sm:min-h-[380px] lg:min-h-[420px]"
         xTickFormatter={(month) => `Month ${month}`}
         data={periodicRows.map((row) => ({
           year: row.month,
@@ -824,25 +801,16 @@ function GrowthResults({
     ) : null;
 
   const statGrid = (
-    <div
-      className={`grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2 ${
-        mode === "periodic" ||
-        mode === "sip" ||
-        mode === "stepup" ||
-        (mode === "lumpsum" && result.inflationAdjusted != null)
-          ? "xl:grid-cols-3"
-          : ""
-      }`}
-    >
-      <StatCard title="Invested" value={result.totalInvested} size="lg" />
-      <StatCard title="Maturity" value={result.maturity} variant="soft" size="lg" />
+    <StatGrid>
+      <StatCard title="Invested" value={result.totalInvested} />
+      <StatCard title="Maturity" value={result.maturity} variant="soft" />
       {mode === "periodic" || mode === "sip" || mode === "stepup" ? (
-        <StatCard title="Net after tax" value={result.netAfterTax} size="lg" />
+        <StatCard title="Net after tax" value={result.netAfterTax} />
       ) : null}
       {mode === "lumpsum" && result.inflationAdjusted != null ? (
-        <StatCard title="Inflation adjusted" value={result.inflationAdjusted} size="lg" />
+        <StatCard title="Inflation adjusted" value={result.inflationAdjusted} />
       ) : null}
-    </div>
+    </StatGrid>
   );
 
   const yearlyColumns =
@@ -868,7 +836,7 @@ function GrowthResults({
             header: "Inflation-adj.",
             format: "inr" as const,
             align: "right" as const,
-            tone: "warn" as const,
+            tone: "std" as const,
           },
         ]
       : [
@@ -899,93 +867,62 @@ function GrowthResults({
             header: "Inflation-adj.",
             format: "inr" as const,
             align: "right" as const,
-            tone: "warn" as const,
+            tone: "std" as const,
           },
         ];
 
-  // SIP / Step-up mobile: summary → results → donut → full-width line → schedule.
-  if (mode === "sip" || mode === "stepup") {
-    return (
-      <div className="flex flex-col gap-4 lg:gap-6">
-        {statGrid}
-        <div className={`${RESULTS_SPLIT} lg:items-stretch`}>
-          <div className={`${RESULTS_RIGHT} order-1 min-h-0 lg:order-2`}>
-            <ResultCard title="Results" items={items} />
-            <div className="flex min-h-[220px] flex-1 flex-col">{donut}</div>
-          </div>
-          <div className={`${RESULTS_LEFT} order-2 min-h-0 lg:order-1`}>
-            <div className="flex min-h-[280px] flex-1 flex-col lg:min-h-[300px]">{lineChart}</div>
-          </div>
-        </div>
-        <ScheduleTable
-          caption="Yearly schedule"
-          zebra
-          columns={yearlyColumns}
-          rows={yearRows}
-        />
-      </div>
-    );
-  }
-
-  // Single split: stats+growth left, results+mix right — bottoms align, no gap under stats.
-  if (mode !== "periodic") {
-    return (
-      <div className="flex flex-col gap-4 lg:gap-6">
-        <div className={`${RESULTS_SPLIT} lg:items-stretch`}>
-          <div className={`${RESULTS_LEFT} min-h-0`}>
-            {statGrid}
-            <div className="flex min-h-[240px] flex-1 flex-col lg:min-h-[260px]">{lineChart}</div>
-          </div>
-          <div className={`${RESULTS_RIGHT} min-h-0`}>
-            <ResultCard title="Results" items={items} />
-            <div className="flex min-h-[220px] flex-1 flex-col">{donut}</div>
-          </div>
-        </div>
-        <ScheduleTable
-          caption="Yearly schedule"
-          zebra
-          columns={yearlyColumns}
-          rows={yearRows}
-        />
-      </div>
-    );
-  }
+  // One reading order for all four modes: headline numbers, then the answer
+  // panel, then the supporting chart, then the full schedule.
+  const primaryChart = mode === "periodic" ? contributionChart : lineChart;
 
   return (
-    <div className="flex flex-col gap-4 lg:gap-6">
-      <div className={`${RESULTS_SPLIT} lg:items-stretch`}>
-        <div className={`${RESULTS_LEFT} order-2 min-h-0 lg:order-1`}>
-          {statGrid}
-          <div className="flex min-h-0 flex-1 flex-col">{contributionChart}</div>
-        </div>
-        <div className={`${RESULTS_RIGHT} order-1 min-h-0 lg:order-2`}>
-          <ResultCard title="Results" items={items} />
-          <div className="flex min-h-[220px] flex-1 flex-col">{periodicChart}</div>
-        </div>
-      </div>
-      <ScheduleTable
-        caption="Contribution schedule"
-        zebra
-        columns={[
-          { key: "month", header: "Month", align: "right", sticky: true },
-          {
-            key: "contribution",
-            header: "Contribution",
-            format: "inr",
-            align: "right",
-            tone: "std",
-          },
-          {
-            key: "contributionFv",
-            header: "FV at horizon",
-            format: "inr",
-            align: "right",
-            tone: "step",
-          },
-        ]}
-        rows={periodicRows}
+    <Stack>
+      {statGrid}
+      <ResultsSplit
+        left={
+          <div className="flex min-h-[260px] flex-1 flex-col lg:min-h-[300px]">{primaryChart}</div>
+        }
+        right={
+          <>
+            <ResultCard title="Results" items={items} />
+            <div className="flex min-h-[220px] flex-1 flex-col">{donut}</div>
+          </>
+        }
       />
-    </div>
+      {mode === "periodic" ? (
+        <ScheduleTable
+          caption="Contribution schedule"
+          meta={`${periodicRows.length} contributions`}
+          zebra
+          columns={[
+            { key: "month", header: "Month", align: "right", sticky: true },
+            {
+              key: "contribution",
+              header: "Contribution",
+              format: "inr",
+              align: "right",
+              tone: "std",
+            },
+            {
+              key: "contributionFv",
+              header: "FV at horizon",
+              format: "inr",
+              align: "right",
+              tone: "step",
+            },
+          ]}
+          rows={periodicRows}
+        />
+      ) : (
+        <ScheduleTable
+          caption="Yearly schedule"
+          meta={`${yearRows.length} years`}
+          zebra
+          columns={yearlyColumns}
+          rows={yearRows}
+        />
+      )}
+    </Stack>
   );
 }
 

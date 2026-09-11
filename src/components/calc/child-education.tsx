@@ -263,7 +263,7 @@ function CostGrid({
 
 function EducationResults({ result }: { result: EducationResult }) {
   return (
-    <div className="flex flex-col gap-4 lg:gap-6">
+    <div className="flex flex-col gap-4">
       <div className={RESULTS_SPLIT}>
         <div className={RESULTS_LEFT}>
           <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">

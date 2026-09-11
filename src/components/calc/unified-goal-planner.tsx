@@ -1,30 +1,34 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
-import { Download, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { generateCalculatorReport, generatePdfFromElement } from "@/lib/pdf-generator";
 import { playbookForPdf } from "@/lib/report-playbooks";
 import {
+  Card,
   ClientHeader,
   CompareChart,
   CompositionChart,
   formatINRCurrency,
+  FormGrid,
   GrowthChart,
+  MICRO_LABEL,
   MoneyInput,
   PercentInput,
   ResultCard,
   type ResultItem,
-  RESULTS_LEFT,
-  RESULTS_RIGHT,
-  RESULTS_SPLIT,
+  ResultsSplit,
   ScheduleTable,
+  SectionTitle,
   SelectInput,
+  Stack,
   StatCard,
+  StatGrid,
+  StatusNote,
   WaterfallChart,
   YearInput,
 } from "@nivra/ui";
 import { CalculatorPage } from "@/components/layout/calculator-page-with-nav";
+import { ReportDownloadButton } from "@/components/calc/report-download-button";
 import { useCalculate } from "@/hooks/use-calculate";
 import { useCalculatorMode } from "@/hooks/use-calculator-mode";
 import { getCalculatorPageTitle } from "@/lib/calculator-nav";
@@ -56,9 +60,6 @@ const FREQUENCY_OPTIONS = [
   { value: "6", label: "6 · Every 2 months" },
   { value: "12", label: "12 · Monthly" },
 ];
-
-const FORM_GRID =
-  "grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] items-start gap-x-3 gap-y-3";
 
 const CALCULATOR_ID: Record<Mode, string> = {
   sip: "goal-sip",
@@ -333,22 +334,14 @@ export function UnifiedGoalPlanner() {
       title={getCalculatorPageTitle("/goals", mode)}
       description="Six goal modes. Additional SIP / lumpsum / step-up are solved so net after tax hits the goal."
       actions={
-        <Button
-          size="icon"
-          className="h-8 w-8 shrink-0 bg-[var(--app-primary)] text-[var(--app-primary-fg)] hover:bg-[var(--app-primary-hover)] transition-colors"
+        <ReportDownloadButton
           onClick={handleDownload}
-          title={isDownloading ? "Preparing PDF…" : "Download Report"}
-          disabled={!result || isDownloading}
-        >
-          {isDownloading ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <Download className="size-4" />
-          )}
-        </Button>
+          disabled={!result}
+          loading={isDownloading}
+        />
       }
       form={
-        <div className={FORM_GRID}>
+        <FormGrid>
           <ClientHeader
             name={name}
             age={age}
@@ -396,18 +389,15 @@ export function UnifiedGoalPlanner() {
           ) : (
             <YearInput label="Extra years" value={extraYears} min={0} max={50} onChange={setExtraYears} />
           )}
-          <div className="col-span-2 min-w-0 sm:col-span-2">
-            <SelectInput
-              label="Goal basis"
-              value={useInflAdj ? "infl" : "raw"}
-              onChange={(value) => setUseInflAdj(value === "infl")}
-              className="min-w-0 w-full"
-              options={[
-                { value: "raw", label: "Stated goal" },
-                { value: "infl", label: "Inflation-adjusted Goal" },
-              ]}
-            />
-          </div>
+          <SelectInput
+            label="Goal basis"
+            value={useInflAdj ? "infl" : "raw"}
+            onChange={(value) => setUseInflAdj(value === "infl")}
+            options={[
+              { value: "raw", label: "Stated goal" },
+              { value: "infl", label: "Inflation-adjusted Goal" },
+            ]}
+          />
           {mode === "current" || mode === "ls-sip" ? (
             <MoneyInput
               label="Current corpus"
@@ -447,19 +437,17 @@ export function UnifiedGoalPlanner() {
               />
             </>
           ) : null}
-        </div>
+        </FormGrid>
       }
       results={
-        <div className="flex flex-col gap-4">
-          {error ? <p className="text-sm text-[var(--app-danger)]">{error}</p> : null}
+        <>
+          {error ? <StatusNote tone="error">{error}</StatusNote> : null}
           {!canCalculate ? (
-            <p className="text-sm text-[var(--app-warn-text)]">Fix the highlighted inputs to calculate.</p>
+            <StatusNote tone="warn">Fix the highlighted inputs to calculate.</StatusNote>
           ) : null}
-          {loading && !result ? (
-            <p className="text-sm text-[var(--app-text-muted)]">Calculating…</p>
-          ) : null}
+          {loading && !result ? <StatusNote tone="pending">Calculating…</StatusNote> : null}
           {result ? <GoalResults mode={mode} result={result} tenureYears={tenureYears} /> : null}
-        </div>
+        </>
       }
     />
     {mode === "ls-sip" &&
@@ -650,17 +638,17 @@ function GoalResults({
   }
 
   return (
-    <div className="flex flex-col gap-4 lg:gap-6">
-      <div className={RESULTS_SPLIT}>
-        <div className={RESULTS_LEFT}>
-          <GoalHero mode={mode} result={result} />
-          <div className="flex flex-1 flex-col gap-4">
+    <Stack>
+      <GoalHero mode={mode} result={result} />
+      <ResultsSplit
+        left={
+          <>
             {goalRequiredChart(mode, result)}
             {goalExtraChart(mode, result, tenureYears)}
-          </div>
-        </div>
-        <div className={RESULTS_RIGHT}>
-          <div className="flex flex-col gap-4">
+          </>
+        }
+        right={
+          <>
             <ResultCard
               title={result.overfunded ? "Results · already funded" : "Goal summary"}
               items={summaryItems}
@@ -680,19 +668,20 @@ function GoalResults({
             {result.lumpsum?.lumpsum != null ? (
               <ResultCard title="Additional lumpsum today" items={legItems(result.lumpsum)} />
             ) : null}
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
       <ScheduleTable
         caption="Yearly schedule"
+        meta={`${result.schedule.length} years`}
         zebra
         columns={scheduleColumns(mode)}
         rows={result.schedule}
       />
       {result.delays && result.delays.length > 0 ? (
         <ScheduleTable
-          className="max-h-[160px] min-h-[120px] flex-none"
           caption="Cost of delay"
+          meta="Later start, higher SIP"
           columns={[
             { key: "months", header: "Delay (months)", sticky: true },
             {
@@ -713,7 +702,7 @@ function GoalResults({
           rows={result.delays}
         />
       ) : null}
-    </div>
+    </Stack>
   );
 }
 
@@ -731,27 +720,22 @@ function LsSipResults({
   const standard = result.standard;
 
   return (
-    <div className="flex flex-col gap-4 lg:gap-6">
-      <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-3">
-        <StatCard title="Target goal" value={result.targetGoal} size="lg" />
-        <StatCard
-          title="Shortfall to fund"
-          value={result.shortfall ?? 0}
-          variant="soft"
-          size="lg"
-        />
-        <StatCard title="Mix monthly SIP" value={mixSip} size="lg" />
-      </div>
+    <Stack>
+      <StatGrid>
+        <StatCard title="Target goal" value={result.targetGoal} />
+        <StatCard title="Shortfall to fund" value={result.shortfall ?? 0} variant="soft" />
+        <StatCard title="Mix monthly SIP" value={mixSip} />
+      </StatGrid>
 
-      <div className={RESULTS_SPLIT}>
-        <div className={RESULTS_LEFT}>
-          <div className="flex flex-1 flex-col gap-4">
+      <ResultsSplit
+        left={
+          <>
             {goalExtraChart("ls-sip", result, years)}
             {goalRequiredChart("ls-sip", result)}
-          </div>
-        </div>
-        <div className={RESULTS_RIGHT}>
-          <div className="flex flex-col gap-4">
+          </>
+        }
+        right={
+          <>
             <ResultCard
               title={result.overfunded ? "Results · already funded" : "Goal summary"}
               items={[
@@ -783,17 +767,18 @@ function LsSipResults({
             {result.stepUp ? (
               <LegMetricCard title="Additional step-up SIP" leg={result.stepUp} />
             ) : null}
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       <ScheduleTable
         caption="Yearly schedule"
+        meta={`${result.schedule.length} years`}
         zebra
         columns={scheduleColumns("ls-sip")}
         rows={result.schedule}
       />
-    </div>
+    </Stack>
   );
 }
 
@@ -811,36 +796,23 @@ function CurrentInvestmentResults({
   const lumpsum = result.lumpsum;
 
   return (
-    <div className="flex flex-col gap-4 lg:gap-6">
-      <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2 xl:grid-cols-4">
-        <StatCard title="Target goal" value={result.targetGoal} size="lg" />
-        <StatCard
-          title="Shortfall to fund"
-          value={result.shortfall ?? 0}
-          variant="soft"
-          size="lg"
-        />
-        <StatCard
-          title="Additional SIP · monthly"
-          value={standard?.monthlySip ?? 0}
-          size="lg"
-        />
-        <StatCard
-          title="Step-up SIP · start"
-          value={stepUp?.monthlySip ?? 0}
-          size="lg"
-        />
-      </div>
+    <Stack>
+      <StatGrid>
+        <StatCard title="Target goal" value={result.targetGoal} />
+        <StatCard title="Shortfall to fund" value={result.shortfall ?? 0} variant="soft" />
+        <StatCard title="Additional SIP · monthly" value={standard?.monthlySip ?? 0} />
+        <StatCard title="Step-up SIP · start" value={stepUp?.monthlySip ?? 0} />
+      </StatGrid>
 
-      <div className={`${RESULTS_SPLIT} lg:items-stretch`}>
-        <div className={`${RESULTS_LEFT} min-h-0`}>
-          <div className="flex h-full flex-col gap-4">
+      <ResultsSplit
+        left={
+          <>
             {goalExtraChart("current", result, years)}
             {goalRequiredChart("current", result)}
-          </div>
-        </div>
-        <div className={`${RESULTS_RIGHT} min-h-0`}>
-          <div className="flex h-full min-h-0 flex-col gap-4">
+          </>
+        }
+        right={
+          <>
             <ResultCard
               title={result.overfunded ? "Results · already funded" : "Goal summary"}
               items={[
@@ -909,9 +881,9 @@ function CurrentInvestmentResults({
                 />
               </div>
             ) : null}
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:items-stretch">
         {lumpsum?.lumpsum != null ? (
@@ -923,11 +895,12 @@ function CurrentInvestmentResults({
 
       <ScheduleTable
         caption="Yearly schedule"
+        meta={`${result.schedule.length} years`}
         zebra
         columns={scheduleColumns("current")}
         rows={result.schedule}
       />
-    </div>
+    </Stack>
   );
 }
 
@@ -944,11 +917,9 @@ function LegMetricCard({ title, leg }: { title: string; leg: GoalLeg }) {
   ];
   const isLumpsum = leg.lumpsum != null;
   return (
-    <div className="flex h-full min-h-0 flex-col rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 sm:p-3.5">
-      <div className="text-[10px] font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
-        {title}
-      </div>
-      <div className="mt-2 text-sm font-semibold tabular-nums text-[var(--app-text)]">
+    <Card className="h-full min-h-0">
+      <SectionTitle>{title}</SectionTitle>
+      <div className="mt-1.5 text-sm font-semibold tabular-nums text-[var(--app-text)]">
         {isLumpsum ? "Lumpsum today " : "Monthly SIP "}
         <span className="text-[var(--app-step-text-strong)]">
           {formatINRCurrency(isLumpsum ? (leg.lumpsum ?? 0) : leg.monthlySip)}
@@ -960,45 +931,43 @@ function LegMetricCard({ title, leg }: { title: string; leg: GoalLeg }) {
             key={row.label}
             className="rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-2"
           >
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
-              {row.label}
-            </div>
-            <div className={`mt-1 text-sm tabular-nums ${row.tone}`}>
+            <div className={MICRO_LABEL}>{row.label}</div>
+            <div className={`mt-1 text-[13px] font-semibold tabular-nums ${row.tone}`}>
               {formatINRCurrency(row.value)}
             </div>
           </div>
         ))}
       </div>
-    </div>
+    </Card>
   );
 }
 
 function GoalHero({ mode, result }: { mode: Mode; result: GoalPlannerResult }) {
   if (mode === "sip" && result.standard && result.stepUp) {
     return (
-      <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
+      <StatGrid>
         <StatCard title="Standard SIP · monthly" value={result.standard.monthlySip} />
         <StatCard title="Step-up SIP · monthly" value={result.stepUp.monthlySip} variant="soft" />
-      </div>
+      </StatGrid>
     );
   }
   if (result.standard) {
     return (
-      <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
+      <StatGrid>
         <StatCard title="Target goal" value={result.targetGoal} />
         <StatCard
           title={result.standard.lumpsum != null ? "Additional lumpsum" : "Additional SIP · monthly"}
           value={result.standard.lumpsum ?? result.standard.monthlySip}
           variant="soft"
         />
-      </div>
+      </StatGrid>
     );
   }
   return (
-    <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
+    <StatGrid>
       <StatCard title="Target goal" value={result.targetGoal} />
       <StatCard title="Inflation-adjusted" value={result.inflAdjGoal} variant="soft" />
-    </div>
+    </StatGrid>
   );
 }
 
@@ -1025,8 +994,8 @@ function investedTaxCorpus(legs: Array<{ key: string; label: string; color: stri
 function goalRequiredChart(mode: Mode, result: GoalPlannerResult): ReactNode {
   if (mode === "sip" && result.standard && result.stepUp) {
     const { data, series } = investedTaxCorpus([
-      { key: "sip", label: "SIP", color: "var(--app-chart-invested)", leg: result.standard },
-      { key: "step", label: "Step-up", color: "var(--app-chart-gain)", leg: result.stepUp },
+      { key: "sip", label: "SIP", color: "var(--app-chart-a)", leg: result.standard },
+      { key: "step", label: "Step-up", color: "var(--app-chart-b)", leg: result.stepUp },
     ]);
     return <CompareChart title="SIP vs step-up" data={data} series={series} />;
   }
@@ -1035,7 +1004,7 @@ function goalRequiredChart(mode: Mode, result: GoalPlannerResult): ReactNode {
     return (
       <WaterfallChart
         title="How the goal is funded"
-        className="h-[320px] w-full shrink-0 sm:h-[360px]"
+        className="min-h-[300px] w-full flex-1 sm:min-h-[330px]"
         steps={[
           { label: "Existing credit", value: result.existing.netCredit, kind: "increase" },
           { label: "Additional", value: result.shortfall ?? 0, kind: "increase" },
@@ -1061,7 +1030,7 @@ function goalRequiredChart(mode: Mode, result: GoalPlannerResult): ReactNode {
           {
             name: "Extra lumpsum",
             value: result.extraLumpsum ?? 0,
-            color: "var(--app-std-text)",
+            color: "var(--app-chart-b)",
           },
           {
             name: "SIP invested",
@@ -1173,25 +1142,25 @@ function goalExtraChart(mode: Mode, result: GoalPlannerResult, tenureYears = 15)
         title="Total capital · Extra LS vs SIP vs step-up"
         showBarLabels
         showLegend={false}
-        className="h-[320px] w-full shrink-0 sm:h-[360px]"
+        className="min-h-[300px] w-full flex-1 sm:min-h-[330px]"
         data={[
           {
             category: "Extra lumpsum",
             sublabel: "One-time today",
             amount: lsToday,
-            fill: "var(--app-chart-invested)",
+            fill: "var(--app-chart-a)",
           },
           {
             category: "Extra SIP",
             sublabel: `${formatINRCurrency(result.standard.monthlySip)}/mo × ${years}y`,
             amount: sipTotal,
-            fill: "var(--app-chart-gain)",
+            fill: "var(--app-chart-b)",
           },
           {
             category: "Extra step-up",
             sublabel: `${formatINRCurrency(result.stepUp.monthlySip)}/mo start`,
             amount: stepTotal,
-            fill: "var(--app-std-text)",
+            fill: "var(--app-chart-gain)",
           },
         ]}
         series={[{ key: "amount", label: "Total capital", color: "var(--app-chart-invested)" }]}
@@ -1209,25 +1178,25 @@ function goalExtraChart(mode: Mode, result: GoalPlannerResult, tenureYears = 15)
         title="Total capital · All-LS vs All-SIP vs Mix"
         showBarLabels
         showLegend={false}
-        className="h-[320px] w-full shrink-0 sm:h-[360px]"
+        className="min-h-[300px] w-full flex-1 sm:min-h-[330px]"
         data={[
           {
             category: "All lumpsum",
             sublabel: "One-time today",
             amount: result.allLumpsum,
-            fill: "var(--app-chart-invested)",
+            fill: "var(--app-chart-a)",
           },
           {
             category: "All SIP",
             sublabel: `${formatINRCurrency(result.allSip)}/mo × ${years}y`,
             amount: allSipTotal,
-            fill: "var(--app-chart-gain)",
+            fill: "var(--app-chart-b)",
           },
           {
             category: "Mix",
             sublabel: `LS + ${formatINRCurrency(result.mixSip ?? 0)}/mo`,
             amount: mixTotal,
-            fill: "var(--app-std-text)",
+            fill: "var(--app-chart-gain)",
           },
         ]}
         series={[{ key: "amount", label: "Total capital", color: "var(--app-chart-invested)" }]}
@@ -1252,8 +1221,8 @@ function goalExtraChart(mode: Mode, result: GoalPlannerResult, tenureYears = 15)
           },
         ]}
         series={[
-          { key: "existing", label: "Existing", color: "var(--app-chart-invested)" },
-          { key: "additional", label: "Additional", color: "var(--app-chart-gain)" },
+          { key: "existing", label: "Existing", color: "var(--app-chart-a)" },
+          { key: "additional", label: "Additional", color: "var(--app-chart-b)" },
         ]}
       />
     );
@@ -1281,8 +1250,8 @@ function goalExtraChart(mode: Mode, result: GoalPlannerResult, tenureYears = 15)
           },
         ]}
         series={[
-          { key: "sip", label: "Remaining SIP", color: "var(--app-chart-invested)" },
-          { key: "step", label: "Remaining step-up", color: "var(--app-chart-gain)" },
+          { key: "sip", label: "Remaining SIP", color: "var(--app-chart-a)" },
+          { key: "step", label: "Remaining step-up", color: "var(--app-chart-b)" },
         ]}
       />
     );
