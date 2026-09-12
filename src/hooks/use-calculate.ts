@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { calculate } from "@/lib/calculate-client";
 
-export function useCalculate<T>(id: string, input: unknown) {
+export function useCalculate<T>(id: string, input: unknown, enabled = true) {
   const [result, setResult] = useState<T | null>(null);
   const [resultId, setResultId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -10,6 +10,15 @@ export function useCalculate<T>(id: string, input: unknown) {
 
   useEffect(() => {
     let cancelled = false;
+
+    if (!enabled) {
+      // Keep the last valid result on screen; do not blank the page.
+      setLoading(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+
     setLoading(true);
     setError(null);
 
@@ -36,10 +45,10 @@ export function useCalculate<T>(id: string, input: unknown) {
       cancelled = true;
       window.clearTimeout(handle);
     };
-  }, [id, serialized]);
+  }, [id, serialized, enabled]);
 
   // Drop stale results immediately on id change (effects run after paint).
   const matched = resultId === id ? result : null;
 
-  return { result: matched, error, loading: loading || resultId !== id };
+  return { result: matched, error, loading: enabled && (loading || resultId !== id) };
 }

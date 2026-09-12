@@ -183,7 +183,7 @@ export function ChildEducationPlanner() {
       }
       form={
         <div className="flex flex-col gap-3">
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(6.75rem,1fr))] items-start gap-x-2 gap-y-2">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(7.5rem,1fr))] items-start gap-x-3 gap-y-3">
             <ClientHeader name={name} age={age} onNameChange={setName} onAgeChange={setAge} />
             <Field label="Child name">
               <TextInput
@@ -263,7 +263,7 @@ function CostGrid({
 
 function EducationResults({ result }: { result: EducationResult }) {
   return (
-    <div className="flex flex-col gap-4 lg:gap-6">
+    <div className="flex flex-col gap-4">
       <div className={RESULTS_SPLIT}>
         <div className={RESULTS_LEFT}>
           <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
@@ -309,15 +309,34 @@ function EducationResults({ result }: { result: EducationResult }) {
       </div>
       <ScheduleTable
         caption="Education investment and withdrawal plan"
+        zebra
         columns={[
-          { key: "age", header: "Age" },
+          { key: "age", header: "Age", sticky: true },
           { key: "classLabel", header: "Class", format: "text" },
-          { key: "cost", header: "Edu. cost", format: "inr", align: "right" },
-          { key: "tax", header: "Cap. gains", format: "inr", align: "right" },
-          { key: "withdrawal", header: "Withdrawal", format: "inr", align: "right" },
-          { key: "sipCorpus", header: "SIP corpus", format: "inr", align: "right" },
-          { key: "sipBalance", header: "SIP balance", format: "inr", align: "right" },
-          { key: "lumpsumBalance", header: "Lumpsum balance", format: "inr", align: "right" },
+          { key: "cost", header: "Edu. cost", format: "inr", align: "right", tone: "warn" },
+          { key: "tax", header: "Cap. gains", format: "inr", align: "right", tone: "warn" },
+          {
+            key: "withdrawal",
+            header: "Withdrawal",
+            format: "inr",
+            align: "right",
+            tone: "warn",
+          },
+          { key: "sipCorpus", header: "SIP corpus", format: "inr", align: "right", tone: "std" },
+          {
+            key: "sipBalance",
+            header: "SIP balance",
+            format: "inr",
+            align: "right",
+            tone: "std",
+          },
+          {
+            key: "lumpsumBalance",
+            header: "Lumpsum balance",
+            format: "inr",
+            align: "right",
+            tone: "step",
+          },
         ]}
         rows={result.schedule}
       />

@@ -8,7 +8,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { formatCompactINR, formatINRCurrency } from "./format";
+import { formatAxisINR, formatINRCurrency } from "./format";
+import { CARD, CARD_PAD, SECTION_TITLE } from "./tokens";
 
 export type StackedAreaPoint = {
   year: number;
@@ -25,8 +26,8 @@ export function StackedAreaChart({
   title?: string;
 }) {
   return (
-    <div className="flex min-h-[240px] flex-1 flex-col overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 sm:p-4">
-      <div className="mb-3 shrink-0 text-xs font-semibold uppercase tracking-widest text-[var(--app-text-muted)]">
+    <div className={`flex min-h-[240px] flex-1 flex-col overflow-hidden ${CARD} ${CARD_PAD}`}>
+      <div className={`mb-2.5 shrink-0 ${SECTION_TITLE}`}>
         {title}
       </div>
       <div className="relative min-h-0 flex-1">
@@ -36,7 +37,7 @@ export function StackedAreaChart({
               <CartesianGrid strokeDasharray="3 3" stroke="var(--app-border)" vertical={false} />
               <XAxis dataKey="year" tick={{ fontSize: 11, fill: "var(--app-text-muted)" }} stroke="var(--app-border)" />
               <YAxis
-                tickFormatter={formatCompactINR}
+                tickFormatter={formatAxisINR}
                 tick={{ fontSize: 11, fill: "var(--app-text-muted)" }}
                 width={48}
                 stroke="transparent"

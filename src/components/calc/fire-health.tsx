@@ -11,7 +11,6 @@ import {
   CompareChart,
   CompositionChart,
   GrowthChart,
-  ModeTabs,
   MoneyInput,
   PercentInput,
   ResultCard,
@@ -26,9 +25,11 @@ import {
 } from "@nivra/ui";
 import { CalculatorPage } from "@/components/layout/calculator-page-with-nav";
 import { useCalculate } from "@/hooks/use-calculate";
+import { useCalculatorMode } from "@/hooks/use-calculator-mode";
+import { getCalculatorPageTitle } from "@/lib/calculator-nav";
 
 const FORM_GRID =
-  "grid grid-cols-[repeat(auto-fill,minmax(6.75rem,1fr))] items-start gap-x-2 gap-y-2";
+  "grid grid-cols-[repeat(auto-fill,minmax(7.5rem,1fr))] items-start gap-x-3 gap-y-3";
 
 const MODES = [
   { id: "fire", label: "FIRE" },
@@ -36,7 +37,7 @@ const MODES = [
 ] as const;
 
 type Mode = (typeof MODES)[number]["id"];
-
+const MODE_IDS = MODES.map((m) => m.id);
 const FACTOR_OPTIONS = [
   { value: "200", label: "200% of current" },
   { value: "150", label: "150% of current" },
@@ -94,7 +95,7 @@ type HealthResult = {
 };
 
 export function FireHealthCalculator() {
-  const [mode, setMode] = useState<Mode>("fire");
+  const [mode] = useCalculatorMode(MODE_IDS, "fire");
 
   const [fireName, setFireName] = useState("Sanjay Gupta");
   const [age, setAge] = useState(40);
@@ -409,9 +410,8 @@ export function FireHealthCalculator() {
 
   return (
     <CalculatorPage
-      title="FIRE / Financial Health"
+      title={getCalculatorPageTitle("/fire", mode)}
       description="FIRE corpus / SIP planner and long-term financial health from Unprotected Excel."
-      modes={<ModeTabs tabs={[...MODES]} value={mode} onChange={(id) => setMode(id as Mode)} />}
       actions={
         <Button
           size="icon"
@@ -520,7 +520,7 @@ function FireResults({
   const gain = Math.max(0, result.balanceCorpus - invested);
 
   return (
-    <div className="flex flex-col gap-4 lg:gap-6">
+    <div className="flex flex-col gap-4">
       <div className={RESULTS_SPLIT}>
         <div className={RESULTS_LEFT}>
           <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
@@ -604,12 +604,25 @@ function FireResults({
       </div>
       <ScheduleTable
         caption="Age schedule"
+        zebra
         columns={[
-          { key: "age", header: "Age" },
+          { key: "age", header: "Age", sticky: true },
           { key: "phase", header: "Phase", format: "text" },
-          { key: "contribution", header: "Contribution", format: "inr", align: "right" },
-          { key: "withdrawal", header: "Withdrawal", format: "inr", align: "right" },
-          { key: "corpus", header: "Corpus", format: "inr", align: "right" },
+          {
+            key: "contribution",
+            header: "Contribution",
+            format: "inr",
+            align: "right",
+            tone: "std",
+          },
+          {
+            key: "withdrawal",
+            header: "Withdrawal",
+            format: "inr",
+            align: "right",
+            tone: "warn",
+          },
+          { key: "corpus", header: "Corpus", format: "inr", align: "right", tone: "step" },
         ]}
         rows={result.schedule}
       />
@@ -625,7 +638,7 @@ function HealthResults({ result }: { result: HealthResult }) {
   }));
 
   return (
-    <div className="flex flex-col gap-4 lg:gap-6">
+    <div className="flex flex-col gap-4">
       <div className={RESULTS_SPLIT}>
         <div className={RESULTS_LEFT}>
           <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
@@ -688,12 +701,19 @@ function HealthResults({ result }: { result: HealthResult }) {
       </div>
       <ScheduleTable
         caption="Age path"
+        zebra
         columns={[
-          { key: "age", header: "Age" },
+          { key: "age", header: "Age", sticky: true },
           { key: "phase", header: "Phase", format: "text" },
-          { key: "yearlyExpense", header: "Expense", format: "inr", align: "right" },
-          { key: "eventAmount", header: "Event", format: "inr", align: "right" },
-          { key: "corpus", header: "Corpus", format: "inr", align: "right" },
+          {
+            key: "yearlyExpense",
+            header: "Expense",
+            format: "inr",
+            align: "right",
+            tone: "warn",
+          },
+          { key: "eventAmount", header: "Event", format: "inr", align: "right", tone: "warn" },
+          { key: "corpus", header: "Corpus", format: "inr", align: "right", tone: "step" },
         ]}
         rows={result.schedule}
       />

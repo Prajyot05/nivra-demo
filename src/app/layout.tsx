@@ -6,7 +6,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: {
     default: "Nivra Calculators",
-    template: "%s — Nivra",
+    template: "%s | Nivra",
   },
   description:
     "Plan and compare Standard and Step-Up SIP requirements side-by-side.",

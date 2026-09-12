@@ -3,7 +3,7 @@
   "scenarios": [
     {
       "name": "unprotected-sample",
-      "source": "Unprotected/Nivra MF vs FD v1.xlsm",
+      "source": "calculator-tests/Nivra MF vs FD v1.xlsm",
       "engineInput": {
         "amount": 1000000000,
         "days": 15,
@@ -21,8 +21,25 @@
         "fdTaxPct": 25
       },
       "expect": {
+        "mf.annualizedReturn": 50000000,
+        "mf.returnPerDay": 136986.301369863,
+        "mf.preTax": 2054794.520547945,
+        "mf.tax": 410958.90410958906,
         "mf.postTax": 1643835.616438356,
-        "mfAdvantage": 719178.0821917807
+        "mf.invested": 1000000000,
+        "mf.gain": 2054794.520547945,
+        "mf.net": 1001643835.6164384,
+        "fd.annualizedReturn": 30000000,
+        "fd.returnPerDay": 82191.78082191781,
+        "fd.preTax": 1232876.7123287672,
+        "fd.tax": 308219.1780821918,
+        "fd.postTax": 924657.5342465753,
+        "fd.invested": 1000000000,
+        "fd.gain": 1232876.7123287672,
+        "fd.net": 1000924657.5342466,
+        "mfAdvantage": 719178.0821917807,
+        "fdAdvantage": 0,
+        "difference": 719178.0821917807
       }
     },
     {
@@ -49,6 +66,32 @@
         "fd.postTax": 56095890.4109589,
         "mfAdvantage": 22808219.178082183,
         "fdAdvantage": 0
+      }
+    },
+    {
+      "name": "fd-wins-short",
+      "source": "calculator-tests/Nivra MF vs FD v1.xlsm formula model",
+      "engineInput": {
+        "amount": 1000000,
+        "days": 10,
+        "mfRate": 0.04,
+        "fdRate": 0.08,
+        "mfTaxRate": 0.3,
+        "fdTaxRate": 0.2
+      },
+      "apiInput": {
+        "amount": 1000000,
+        "days": 10,
+        "mfReturnPct": 4,
+        "fdReturnPct": 8,
+        "mfTaxPct": 30,
+        "fdTaxPct": 20
+      },
+      "expect": {
+        "mfAdvantage": 0,
+        "fdAdvantage": 986.3013698630137,
+        "mf.postTax": 767.1232876712329,
+        "fd.postTax": 1753.4246575342465
       }
     }
   ]

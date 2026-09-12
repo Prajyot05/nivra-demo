@@ -204,46 +204,41 @@
   }
 }
 
-/* ── Admin layout skins (white surfaces only) ────────────────────────────── */
+/* ── Admin shell (Summit layout) ─────────────────────────────────────────── */
 
 .admin-shell {
-  --admin-radius: 0.75rem;
-  --admin-radius-sm: 0.5rem;
-  --admin-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
-  --admin-shadow-lg: 0 8px 24px rgb(15 23 42 / 0.06);
+  --admin-radius: 0.375rem;
+  --admin-radius-sm: 0.375rem;
+  --admin-shadow: 0 2px 4px rgb(22 50 92 / 0.06);
   --admin-main-pad: 1.5rem;
   --admin-content-max: 72rem;
-  --admin-sidebar-w: 16rem;
-  --admin-nav-active-indicator: none;
-  --admin-font-display: var(--font-sans);
+  --admin-sidebar-w: 15.5rem;
   --admin-label-tracking: 0.14em;
-  --admin-surface-pattern: none;
 
-  /* Shared white base — every layout starts here */
   --background: #ffffff;
-  --foreground: #0f172a;
+  --foreground: #16325c;
   --card: #ffffff;
-  --card-foreground: #0f172a;
+  --card-foreground: #16325c;
   --popover: #ffffff;
-  --popover-foreground: #0f172a;
-  --primary: #0f172a;
+  --popover-foreground: #16325c;
+  --primary: #0176d3;
   --primary-foreground: #ffffff;
   --secondary: #f8fafc;
-  --secondary-foreground: #0f172a;
-  --muted: #f8fafc;
-  --muted-foreground: #64748b;
-  --accent: #f1f5f9;
-  --accent-foreground: #0f172a;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #94a3b8;
+  --secondary-foreground: #16325c;
+  --muted: #fafbfc;
+  --muted-foreground: #5c6b7a;
+  --accent: #eaf5fe;
+  --accent-foreground: #0176d3;
+  --border: #dde3ea;
+  --input: #dde3ea;
+  --ring: #0176d3;
   --sidebar: #ffffff;
-  --sidebar-foreground: #0f172a;
-  --sidebar-primary: #0f172a;
+  --sidebar-foreground: #16325c;
+  --sidebar-primary: #0176d3;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f8fafc;
-  --sidebar-accent-foreground: #0f172a;
-  --sidebar-border: #e2e8f0;
+  --sidebar-accent: #eaf5fe;
+  --sidebar-accent-foreground: #0176d3;
+  --sidebar-border: #dde3ea;
 }
 
 .admin-shell .admin-card {
@@ -256,209 +251,34 @@
   border-radius: var(--admin-radius);
   box-shadow: var(--admin-shadow);
   background: #ffffff;
+  border-left: 3px solid #0176d3;
 }
 
 .admin-shell .admin-nav-link {
   border-radius: var(--admin-radius-sm);
 }
 
-.admin-shell .admin-main,
-.admin-shell .admin-aside {
-  background: #ffffff;
-}
-
-/* 1. Studio — soft rounded product console on white */
-.admin-shell[data-admin-layout="studio"] {
-  --admin-radius: 0.875rem;
-  --admin-radius-sm: 0.625rem;
-  --admin-shadow: 0 1px 2px rgb(15 23 42 / 0.05), 0 0 0 1px rgb(15 23 42 / 0.03);
-  --admin-main-pad: 1.75rem;
-  --border: #e8ebf0;
-  --sidebar-border: #e8ebf0;
-}
-
-.admin-shell[data-admin-layout="studio"] .admin-nav-link[data-active="true"] {
-  background: #0f172a;
-  color: #ffffff;
-}
-
-.admin-shell[data-admin-layout="studio"] .admin-nav-link[data-active="true"] .admin-nav-icon {
-  color: #ffffff;
-}
-
-/* 2. Harbor — refined banking white (Mercury / Brex) */
-.admin-shell[data-admin-layout="harbor"] {
-  --foreground: #0b1220;
-  --card-foreground: #0b1220;
-  --primary: #2563eb;
-  --primary-foreground: #ffffff;
-  --muted-foreground: #64748b;
-  --ring: #2563eb;
-  --admin-radius: 0.75rem;
-  --admin-radius-sm: 999px;
-  --admin-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
-  --admin-main-pad: 1.75rem;
-  --admin-sidebar-w: 16rem;
-  --border: #e8eef7;
-  --sidebar-border: #e8eef7;
-}
-
-.admin-shell[data-admin-layout="harbor"] .admin-nav-link {
-  padding-inline: 0.875rem;
-}
-
-.admin-shell[data-admin-layout="harbor"] .admin-nav-link[data-active="true"] {
-  background: #eff6ff;
-  color: #1d4ed8;
-}
-
-.admin-shell[data-admin-layout="harbor"] .admin-nav-link[data-active="true"] .admin-nav-icon {
-  color: #2563eb;
-}
-
-.admin-shell[data-admin-layout="harbor"] .admin-page-title {
-  font-weight: 600;
-  letter-spacing: -0.025em;
-}
-
-.admin-shell[data-admin-layout="harbor"] .admin-card,
-.admin-shell[data-admin-layout="harbor"] .admin-stat {
-  border-color: #e8eef7;
-  box-shadow: 0 1px 2px rgb(37 99 235 / 0.04);
-}
-
-/* 3. Ledger — advisory white with navy + gold accents only */
-.admin-shell[data-admin-layout="ledger"] {
-  --primary: #1e3a5f;
-  --primary-foreground: #ffffff;
-  --ring: #c4a35a;
-  --admin-radius: 0.5rem;
-  --admin-radius-sm: 0.375rem;
-  --admin-shadow: 0 1px 3px rgb(30 58 95 / 0.06);
-  --admin-main-pad: 2rem;
-  --admin-sidebar-w: 17rem;
-  --border: #dbe3ee;
-  --sidebar-border: #dbe3ee;
-}
-
-.admin-shell[data-admin-layout="ledger"] .admin-nav-link[data-active="true"] {
-  background: #f8fafc;
-  color: #1e3a5f;
-  box-shadow: inset 0 -2px 0 #c4a35a;
-}
-
-.admin-shell[data-admin-layout="ledger"] .admin-nav-link[data-active="true"] .admin-nav-icon {
-  color: #1e3a5f;
-}
-
-.admin-shell[data-admin-layout="ledger"] .admin-page-title {
-  font-weight: 600;
-  letter-spacing: -0.03em;
-  color: #1e3a5f;
-}
-
-.admin-shell[data-admin-layout="ledger"] .admin-card {
-  border-top: 2px solid #c4a35a;
-}
-
-/* 4. Workbench — crisp SaaS white */
-.admin-shell[data-admin-layout="workbench"] {
-  --foreground: #0a2540;
-  --card-foreground: #0a2540;
-  --primary: #0a2540;
-  --primary-foreground: #ffffff;
-  --muted-foreground: #697386;
-  --ring: #056ee8;
-  --admin-radius: 0.5rem;
-  --admin-radius-sm: 0.375rem;
-  --admin-shadow: none;
-  --admin-main-pad: 1.5rem;
-  --admin-sidebar-w: 15rem;
-  --border: #e6ebf1;
-  --sidebar-border: #e6ebf1;
-}
-
-.admin-shell[data-admin-layout="workbench"] .admin-nav-link[data-active="true"] {
-  background: #ffffff;
-  color: #0a2540;
-  box-shadow: 0 0 0 1px #e6ebf1, 0 1px 2px rgb(10 37 64 / 0.06);
-}
-
-.admin-shell[data-admin-layout="workbench"] .admin-nav-link[data-active="true"] .admin-nav-icon {
-  color: #056ee8;
-}
-
-.admin-shell[data-admin-layout="workbench"] .admin-stat,
-.admin-shell[data-admin-layout="workbench"] .admin-card {
-  box-shadow: none;
-  border-color: #e6ebf1;
-}
-
-/* 5. Summit — enterprise CRM structure (HubSpot / Salesforce) */
-.admin-shell[data-admin-layout="summit"] {
-  --foreground: #16325c;
-  --card-foreground: #16325c;
-  --primary: #0176d3;
-  --primary-foreground: #ffffff;
-  --muted-foreground: #5c6b7a;
-  --ring: #0176d3;
-  --admin-radius: 0.375rem;
-  --admin-radius-sm: 0.375rem;
-  --admin-shadow: 0 2px 4px rgb(22 50 92 / 0.06);
-  --admin-main-pad: 1.5rem;
-  --admin-sidebar-w: 15.5rem;
-  --border: #dde3ea;
-  --sidebar-border: #dde3ea;
-}
-
-.admin-shell[data-admin-layout="summit"] .admin-nav-link[data-active="true"] {
+.admin-shell .admin-nav-link[data-active="true"] {
   background: #eaf5fe;
   color: #0176d3;
   font-weight: 600;
 }
 
-.admin-shell[data-admin-layout="summit"] .admin-nav-link[data-active="true"] .admin-nav-icon {
+.admin-shell .admin-nav-link[data-active="true"] .admin-nav-icon {
   color: #0176d3;
 }
 
-.admin-shell[data-admin-layout="summit"] .admin-page-title {
+.admin-shell .admin-page-title {
   font-size: 1.375rem;
   font-weight: 700;
   color: #16325c;
 }
 
-.admin-shell[data-admin-layout="summit"] .admin-stat {
-  border-left: 3px solid #0176d3;
-}
-
-.admin-shell[data-admin-layout="summit"] .admin-panel-head {
+.admin-shell .admin-panel-head {
   background: #fafbfc;
 }
 
-/* 6. Command — soft executive white with teal accents */
-.admin-shell[data-admin-layout="command"] {
-  --primary: #0f766e;
-  --primary-foreground: #ffffff;
-  --ring: #0f766e;
-  --admin-radius: 1rem;
-  --admin-radius-sm: 0.75rem;
-  --admin-shadow: 0 8px 24px rgb(15 23 42 / 0.06);
-  --admin-main-pad: 1.75rem;
-  --admin-sidebar-w: 16.5rem;
-  --border: #e2e8f0;
-  --sidebar-border: #e2e8f0;
-}
-
-.admin-shell[data-admin-layout="command"] .admin-nav-link[data-active="true"] {
-  background: #f0fdfa;
-  color: #0f766e;
-}
-
-.admin-shell[data-admin-layout="command"] .admin-nav-link[data-active="true"] .admin-nav-icon {
-  color: #0f766e;
-}
-
-.admin-shell[data-admin-layout="command"] .admin-card,
-.admin-shell[data-admin-layout="command"] .admin-stat {
-  box-shadow: 0 8px 24px rgb(15 23 42 / 0.05);
+.admin-shell .admin-main,
+.admin-shell .admin-aside {
+  background: #ffffff;
 }

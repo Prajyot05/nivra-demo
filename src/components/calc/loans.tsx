@@ -10,7 +10,6 @@ import {
   CompareChart,
   CompositionChart,
   GrowthChart,
-  ModeTabs,
   MoneyInput,
   PercentInput,
   ResultCard,
@@ -25,9 +24,11 @@ import {
 } from "@nivra/ui";
 import { CalculatorPage } from "@/components/layout/calculator-page-with-nav";
 import { useCalculate } from "@/hooks/use-calculate";
+import { useCalculatorMode } from "@/hooks/use-calculator-mode";
+import { getCalculatorPageTitle } from "@/lib/calculator-nav";
 
 const FORM_GRID =
-  "grid grid-cols-[repeat(auto-fill,minmax(6.75rem,1fr))] items-start gap-x-2 gap-y-2";
+  "grid grid-cols-[repeat(auto-fill,minmax(7.5rem,1fr))] items-start gap-x-3 gap-y-3";
 
 const MODES = [
   { id: "emi", label: "EMI" },
@@ -37,11 +38,8 @@ const MODES = [
   { id: "vehicle", label: "Vehicle" },
 ] as const;
 
-/** Demo showcase: EMI only (simplest loan calculator). */
-const VISIBLE_MODES = MODES.filter((mode) => mode.id === "emi");
-
 type Mode = (typeof MODES)[number]["id"];
-
+const MODE_IDS = MODES.map((m) => m.id);
 const CALCULATOR_ID: Record<Mode, string> = {
   emi: "loan-emi",
   prepay: "loan-prepay",
@@ -117,7 +115,7 @@ type VehicleResult = {
 type LoanResult = EmiResult & Partial<PrepayResult> & Partial<ExtraVsInvestResult> & Partial<RecoveryResult> & Partial<VehicleResult>;
 
 export function LoansCalculator() {
-  const [mode, setMode] = useState<Mode>("emi");
+  const [mode] = useCalculatorMode(MODE_IDS, "emi");
   const [name, setName] = useState("Mr. Anshu Kaul");
   const [age, setAge] = useState(40);
 
@@ -228,7 +226,7 @@ export function LoansCalculator() {
     if (!result) return;
     const tables: PdfTableData[] = [];
     const modeLabel =
-      VISIBLE_MODES.find((m) => m.id === mode)?.label ??
+      MODES.find((m) => m.id === mode)?.label ??
       MODES.find((m) => m.id === mode)?.label ??
       String(mode);
 
@@ -394,9 +392,8 @@ export function LoansCalculator() {
 
   return (
     <CalculatorPage
-      title="Loan EMI"
+      title={getCalculatorPageTitle("/loans", mode)}
       description="Monthly EMI for a home or personal loan — principal, tenure, and interest rate."
-      modes={<ModeTabs tabs={VISIBLE_MODES} value={mode} onChange={(id) => setMode(id as Mode)} />}
       actions={
         <Button
           size="icon"
@@ -497,7 +494,7 @@ function EmiResults({ result }: { result: EmiResult }) {
     return { year: row.month, remaining: row.balance, interestPaid: interestToDate };
   });
   return (
-    <div className="flex flex-col gap-4 lg:gap-6">
+    <div className="flex flex-col gap-4">
       <div className={RESULTS_SPLIT}>
         <div className={RESULTS_LEFT}>
           <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
@@ -550,12 +547,13 @@ function EmiResults({ result }: { result: EmiResult }) {
       </div>
       <ScheduleTable
         caption="Amortisation"
+        zebra
         columns={[
-          { key: "month", header: "Month" },
-          { key: "emi", header: "EMI", format: "inr", align: "right" },
-          { key: "principal", header: "Principal", format: "inr", align: "right" },
-          { key: "interest", header: "Interest", format: "inr", align: "right" },
-          { key: "balance", header: "Balance", format: "inr", align: "right" },
+          { key: "month", header: "Month", sticky: true },
+          { key: "emi", header: "EMI", format: "inr", align: "right", tone: "std" },
+          { key: "principal", header: "Principal", format: "inr", align: "right", tone: "std" },
+          { key: "interest", header: "Interest", format: "inr", align: "right", tone: "warn" },
+          { key: "balance", header: "Balance", format: "inr", align: "right", tone: "step" },
         ]}
         rows={result.schedule}
       />
@@ -575,7 +573,7 @@ function PrepayResults({ result }: { result: PrepayResult }) {
     };
   });
   return (
-    <div className="flex flex-col gap-4 lg:gap-6">
+    <div className="flex flex-col gap-4">
       <div className={RESULTS_SPLIT}>
         <div className={RESULTS_LEFT}>
           <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
@@ -619,12 +617,13 @@ function PrepayResults({ result }: { result: PrepayResult }) {
       </div>
       <ScheduleTable
         caption="Prepaid schedule"
+        zebra
         columns={[
-          { key: "month", header: "Month" },
-          { key: "emi", header: "EMI", format: "inr", align: "right" },
-          { key: "extra", header: "Extra", format: "inr", align: "right" },
-          { key: "interest", header: "Interest", format: "inr", align: "right" },
-          { key: "balance", header: "Balance", format: "inr", align: "right" },
+          { key: "month", header: "Month", sticky: true },
+          { key: "emi", header: "EMI", format: "inr", align: "right", tone: "std" },
+          { key: "extra", header: "Extra", format: "inr", align: "right", tone: "warn" },
+          { key: "interest", header: "Interest", format: "inr", align: "right", tone: "warn" },
+          { key: "balance", header: "Balance", format: "inr", align: "right", tone: "step" },
         ]}
         rows={result.schedule}
       />
@@ -634,7 +633,7 @@ function PrepayResults({ result }: { result: PrepayResult }) {
 
 function ExtraVsInvestResults({ result }: { result: ExtraVsInvestResult }) {
   return (
-    <div className="flex flex-col gap-4 lg:gap-6">
+    <div className="flex flex-col gap-4">
       <div className={RESULTS_SPLIT}>
         <div className={RESULTS_LEFT}>
           <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
@@ -691,7 +690,7 @@ function ExtraVsInvestResults({ result }: { result: ExtraVsInvestResult }) {
 
 function RecoveryResults({ result }: { result: RecoveryResult }) {
   return (
-    <div className="flex flex-col gap-4 lg:gap-6">
+    <div className="flex flex-col gap-4">
       <div className={RESULTS_SPLIT}>
         <div className={RESULTS_LEFT}>
           <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
@@ -743,7 +742,7 @@ function RecoveryResults({ result }: { result: RecoveryResult }) {
 
 function VehicleResults({ result }: { result: VehicleResult }) {
   return (
-    <div className="flex flex-col gap-4 lg:gap-6">
+    <div className="flex flex-col gap-4">
       <div className={RESULTS_SPLIT}>
         <div className={RESULTS_LEFT}>
           <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
@@ -782,11 +781,18 @@ function VehicleResults({ result }: { result: VehicleResult }) {
       </div>
       <ScheduleTable
         caption="Depreciation"
+        zebra
         columns={[
-          { key: "year", header: "Year" },
-          { key: "value", header: "Value", format: "inr", align: "right" },
-          { key: "depreciation", header: "Depreciation", format: "inr", align: "right" },
-          { key: "balance", header: "Balance", format: "inr", align: "right" },
+          { key: "year", header: "Year", sticky: true },
+          { key: "value", header: "Value", format: "inr", align: "right", tone: "std" },
+          {
+            key: "depreciation",
+            header: "Depreciation",
+            format: "inr",
+            align: "right",
+            tone: "warn",
+          },
+          { key: "balance", header: "Balance", format: "inr", align: "right", tone: "step" },
         ]}
         rows={result.depreciation}
       />

@@ -22,6 +22,9 @@ export type ColorTheme = {
     invested: string;
     gain: string;
     tax: string;
+    inflation: string;
+    a: string;
+    b: string;
   };
 };
 
@@ -60,11 +63,17 @@ export const COLOR_THEMES: ColorTheme[] = [
       "--app-chart-invested": "#152033",
       "--app-chart-gain": "#34d399",
       "--app-chart-tax": "#f87171",
+      "--app-chart-inflation": "#075985",
+      "--app-chart-a": "#0f172a",
+      "--app-chart-b": "#64748b",
     },
     chart: {
       invested: "#152033",
       gain: "#34d399",
       tax: "#f87171",
+      inflation: "#075985",
+      a: "#0f172a",
+      b: "#64748b",
     },
   },
   {
@@ -101,11 +110,17 @@ export const COLOR_THEMES: ColorTheme[] = [
       "--app-chart-invested": "#0c4a6e",
       "--app-chart-gain": "#2dd4bf",
       "--app-chart-tax": "#fb7185",
+      "--app-chart-inflation": "#0e7490",
+      "--app-chart-a": "#0369a1",
+      "--app-chart-b": "#38bdf8",
     },
     chart: {
       invested: "#0c4a6e",
       gain: "#2dd4bf",
       tax: "#fb7185",
+      inflation: "#0e7490",
+      a: "#0369a1",
+      b: "#38bdf8",
     },
   },
   {
@@ -142,11 +157,17 @@ export const COLOR_THEMES: ColorTheme[] = [
       "--app-chart-invested": "#14532d",
       "--app-chart-gain": "#4ade80",
       "--app-chart-tax": "#f87171",
+      "--app-chart-inflation": "#166534",
+      "--app-chart-a": "#166534",
+      "--app-chart-b": "#4ade80",
     },
     chart: {
       invested: "#14532d",
       gain: "#4ade80",
       tax: "#f87171",
+      inflation: "#166534",
+      a: "#166534",
+      b: "#4ade80",
     },
   },
   {
@@ -183,11 +204,17 @@ export const COLOR_THEMES: ColorTheme[] = [
       "--app-chart-invested": "#9a3412",
       "--app-chart-gain": "#fb923c",
       "--app-chart-tax": "#fb7185",
+      "--app-chart-inflation": "#9a3412",
+      "--app-chart-a": "#c2410c",
+      "--app-chart-b": "#fb923c",
     },
     chart: {
       invested: "#9a3412",
       gain: "#fb923c",
       tax: "#fb7185",
+      inflation: "#9a3412",
+      a: "#c2410c",
+      b: "#fb923c",
     },
   },
   {
@@ -224,11 +251,17 @@ export const COLOR_THEMES: ColorTheme[] = [
       "--app-chart-invested": "#1e293b",
       "--app-chart-gain": "#60a5fa",
       "--app-chart-tax": "#f87171",
+      "--app-chart-inflation": "#334155",
+      "--app-chart-a": "#334155",
+      "--app-chart-b": "#64748b",
     },
     chart: {
       invested: "#1e293b",
       gain: "#60a5fa",
       tax: "#f87171",
+      inflation: "#334155",
+      a: "#334155",
+      b: "#64748b",
     },
   },
   {
@@ -265,11 +298,17 @@ export const COLOR_THEMES: ColorTheme[] = [
       "--app-chart-invested": "#9f1239",
       "--app-chart-gain": "#fb923c",
       "--app-chart-tax": "#f43f5e",
+      "--app-chart-inflation": "#b91c1c",
+      "--app-chart-a": "#e11d48",
+      "--app-chart-b": "#fb7185",
     },
     chart: {
       invested: "#9f1239",
       gain: "#fb923c",
       tax: "#f43f5e",
+      inflation: "#b91c1c",
+      a: "#e11d48",
+      b: "#fb7185",
     },
   },
   {
@@ -306,11 +345,17 @@ export const COLOR_THEMES: ColorTheme[] = [
       "--app-chart-invested": "#312e81",
       "--app-chart-gain": "#a78bfa",
       "--app-chart-tax": "#fb7185",
+      "--app-chart-inflation": "#3730a3",
+      "--app-chart-a": "#4338ca",
+      "--app-chart-b": "#818cf8",
     },
     chart: {
       invested: "#312e81",
       gain: "#a78bfa",
       tax: "#fb7185",
+      inflation: "#3730a3",
+      a: "#4338ca",
+      b: "#818cf8",
     },
   },
   {
@@ -347,11 +392,17 @@ export const COLOR_THEMES: ColorTheme[] = [
       "--app-chart-invested": "#134e4a",
       "--app-chart-gain": "#2dd4bf",
       "--app-chart-tax": "#fb7185",
+      "--app-chart-inflation": "#0f766e",
+      "--app-chart-a": "#0d9488",
+      "--app-chart-b": "#2dd4bf",
     },
     chart: {
       invested: "#134e4a",
       gain: "#2dd4bf",
       tax: "#fb7185",
+      inflation: "#0f766e",
+      a: "#0d9488",
+      b: "#2dd4bf",
     },
   },
   {
@@ -388,11 +439,17 @@ export const COLOR_THEMES: ColorTheme[] = [
       "--app-chart-invested": "#881337",
       "--app-chart-gain": "#f472b6",
       "--app-chart-tax": "#f43f5e",
+      "--app-chart-inflation": "#9d174d",
+      "--app-chart-a": "#e11d48",
+      "--app-chart-b": "#fb7185",
     },
     chart: {
       invested: "#881337",
       gain: "#f472b6",
       tax: "#f43f5e",
+      inflation: "#9d174d",
+      a: "#e11d48",
+      b: "#fb7185",
     },
   },
   {
@@ -429,11 +486,17 @@ export const COLOR_THEMES: ColorTheme[] = [
       "--app-chart-invested": "#92400e",
       "--app-chart-gain": "#fbbf24",
       "--app-chart-tax": "#f87171",
+      "--app-chart-inflation": "#b45309",
+      "--app-chart-a": "#d97706",
+      "--app-chart-b": "#f59e0b",
     },
     chart: {
       invested: "#92400e",
       gain: "#fbbf24",
       tax: "#f87171",
+      inflation: "#b45309",
+      a: "#d97706",
+      b: "#f59e0b",
     },
   },
   {
@@ -470,11 +533,17 @@ export const COLOR_THEMES: ColorTheme[] = [
       "--app-chart-invested": "#4c0519",
       "--app-chart-gain": "#c084fc",
       "--app-chart-tax": "#f43f5e",
+      "--app-chart-inflation": "#9f1239",
+      "--app-chart-a": "#9f1239",
+      "--app-chart-b": "#be123c",
     },
     chart: {
       invested: "#4c0519",
       gain: "#c084fc",
       tax: "#f43f5e",
+      inflation: "#9f1239",
+      a: "#9f1239",
+      b: "#be123c",
     },
   },
   {
@@ -511,11 +580,17 @@ export const COLOR_THEMES: ColorTheme[] = [
       "--app-chart-invested": "#0c4a6e",
       "--app-chart-gain": "#38bdf8",
       "--app-chart-tax": "#fb7185",
+      "--app-chart-inflation": "#0369a1",
+      "--app-chart-a": "#0284c7",
+      "--app-chart-b": "#38bdf8",
     },
     chart: {
       invested: "#0c4a6e",
       gain: "#38bdf8",
       tax: "#fb7185",
+      inflation: "#0369a1",
+      a: "#0284c7",
+      b: "#38bdf8",
     },
   },
 ];

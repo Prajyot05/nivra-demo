@@ -1,0 +1,47 @@
+---
+description: Executive PDF report standard (Goal SIP / MF vs FD style for all calculators)
+alwaysApply: true
+---
+
+# Executive PDF reports (always)
+
+**Canonical style:** Goal SIP (Standard vs Step-Up) and MF vs FD HTML dossiers. Every new or updated calculator PDF must match that look. Do **not** invent a new report layout or default to plain `generateCalculatorReport` jsPDF when shipping a client-facing report.
+
+## Stack (required)
+
+| Piece | Path |
+| --- | --- |
+| Sheet shell | `src/components/reports/executive-dossier.tsx` (`ExecutiveDossierSheet`, headings, playbook) |
+| Composition donuts | `src/components/reports/report-composition-donut.tsx` |
+| Capture | `generatePdfFromElement` in `src/lib/pdf-generator.ts` |
+| Reference dossiers | `goal-sip-dossier.tsx`, `mf-vs-fd-dossier.tsx` |
+
+Pattern: mount an off-screen `*Dossier` with live calc data → Download calls `generatePdfFromElement(REPORT_ID, filename)`.
+
+`generateCalculatorReport` (raw jsPDF) is legacy only until that calculator gets an HTML dossier. Do not use it for new client reports.
+
+## Visual system (do not freestyle)
+
+- White **900px** sheet, Finoptic logo, emerald brand line, uppercase black title
+- Header meta card: client name, context fields, **email + phone** (use `DUMMY_REPORT_CONTACT` until CRM)
+- Dual comparison cards when comparing two paths (dark slate vs emerald accent). No winner badges like "Preferred" / "Higher Return" / "Lower Return"
+- Assumptions grid, `ReportCompositionDonut` (invested / gain / tax + %), schedule table (slate header, emerald milestone rows), `ExecutivePlaybook`, disclaimer + "Powered by Nivra"
+- Rose "friction / notes / delay" panels when the page has warnings or cost-of-delay
+- Mark blocks that must not slice across pages with `data-pdf-keep-together`
+
+## Client-facing copy (hard)
+
+- **Never** put internal Excel paths or workbook names in the PDF (no `Unprotected…`, no `v1.xlsm`, no Full Set filenames)
+- **No em dashes (—) or en dashes (–)** in report copy; use periods, commas, or "to"
+- Do not label vehicles "Preferred" / "Recommended" / "Higher Return" / "Lower Return" on primary milestone cards
+- Money: full INR via `formatINRCurrency` (not compact L/Cr)
+- Percents: human form via `formatPercent`
+
+## Checklist when adding a calculator report
+
+1. Clone structure from `mf-vs-fd-dossier.tsx` or `goal-sip-dossier.tsx`
+2. Map every important page output (stats, mixes, insights, notes, schedule) into dossier sections
+3. Pass `contact` (or rely on dummy defaults on the sheet)
+4. Wire Download → `generatePdfFromElement` + loading spinner (see `mf-vs-fd.tsx` / `goal-sip-planner.tsx`)
+5. Playbook from `report-playbooks.ts` (client-safe wording only)
+6. Spot-check PDF: no internal filenames, no em dashes, email/phone present, notes block not cut across pages

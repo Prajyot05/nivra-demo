@@ -58,6 +58,7 @@ Docs: [`docs/ADMIN_PLATFORM.md`](docs/ADMIN_PLATFORM.md).
 9. Auth / save-calculation is out of scope.
 10. Keep pages responsive (phone, tablet, desktop). Tables may scroll horizontally; do not clip charts.
 11. **Charts:** read [`docs/charts.md`](docs/charts.md). Do not put `GrowthChart` on every calculator. Ship the **required** chart for that id; extras only from that file’s “Recommended extra” column. Add missing primitives to `@nivra/ui` first.
+12. **PDF reports:** read [`.cursor/rules/executive-reports.mdc`](.cursor/rules/executive-reports.mdc). Client reports use the Goal SIP / MF vs FD HTML dossier style (`ExecutiveDossierSheet` + `generatePdfFromElement`). No Excel filenames, no em/en dashes, include email + phone (dummy OK).
 
 ---
 
@@ -88,6 +89,7 @@ Engine rates are **decimals** (`0.12`). API JSON rates are **percents** (`12`).
 
 - Prefer editing the existing kit over new primitives.
 - **Charts:** always read [`docs/charts.md`](docs/charts.md) for the calculator you are wiring. Do not default to `GrowthChart`.
+- **PDF reports:** always follow [`.cursor/rules/executive-reports.mdc`](.cursor/rules/executive-reports.mdc). Match Goal SIP / MF vs FD HTML dossiers. Do not freestyle jsPDF layouts for new client reports.
 - If a formula is missing, **stop and say so** — do not invent Excel-incompatible math in the page.
 - After finance changes, run `npm test`.
 - Do not commit `.next/`, `Unprotected/`, or `Nivra Tools - Full Set/`.
