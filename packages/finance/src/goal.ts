@@ -486,6 +486,8 @@ export function calculateGoalPeriodicLumpsum(input: GoalPeriodicInput): {
     maturity: number;
     totalInvested: number;
     payments: number;
+    gain: number;
+    tax: number;
     netCredit: number;
   };
   shortfall: number;
@@ -495,6 +497,8 @@ export function calculateGoalPeriodicLumpsum(input: GoalPeriodicInput): {
   lumpsum: FundingLeg;
   schedule: Array<{
     year: number;
+    periodicPaid: number;
+    periodicInvestedYtd: number;
     sipMonthly: number;
     sipYearEnd: number;
     stepMonthly: number;
@@ -507,6 +511,7 @@ export function calculateGoalPeriodicLumpsum(input: GoalPeriodicInput): {
     timesPerYear: input.timesPerYear,
     years: input.tenureYears,
     annualReturn: input.annualReturn,
+    taxRate: input.taxRate,
   });
   const netCredit = existingNetCredit(periodic.maturity, periodic.totalInvested, input.taxRate);
   const shortfall = residualTarget(targetGoal, netCredit);
@@ -553,6 +558,13 @@ export function calculateGoalPeriodicLumpsum(input: GoalPeriodicInput): {
     taxRate: input.taxRate,
   });
 
+  const paidByYear = new Map<number, number>();
+  for (const row of periodic.schedule) {
+    const year = Math.floor(row.month / 12) + 1;
+    paidByYear.set(year, (paidByYear.get(year) ?? 0) + row.contribution);
+  }
+  let investedYtd = 0;
+
   return {
     inflAdjGoal,
     targetGoal,
@@ -560,6 +572,8 @@ export function calculateGoalPeriodicLumpsum(input: GoalPeriodicInput): {
       maturity: periodic.maturity,
       totalInvested: periodic.totalInvested,
       payments: periodic.payments,
+      gain: periodic.gain,
+      tax: periodic.tax,
       netCredit,
     },
     shortfall,
@@ -590,13 +604,19 @@ export function calculateGoalPeriodicLumpsum(input: GoalPeriodicInput): {
       tax: extraStepRun.tax,
       netAfterTax: extraStepRun.netAfterTax,
     },
-    schedule: extraSipRun.schedule.map((row, i) => ({
-      year: row.year,
-      sipMonthly: row.monthly,
-      sipYearEnd: row.yearEnd,
-      stepMonthly: extraStepRun.schedule[i]?.monthly ?? 0,
-      stepYearEnd: extraStepRun.schedule[i]?.yearEnd ?? 0,
-    })),
+    schedule: extraSipRun.schedule.map((row, i) => {
+      const paid = paidByYear.get(row.year) ?? 0;
+      investedYtd += paid;
+      return {
+        year: row.year,
+        periodicPaid: paid,
+        periodicInvestedYtd: investedYtd,
+        sipMonthly: row.monthly,
+        sipYearEnd: row.yearEnd,
+        stepMonthly: extraStepRun.schedule[i]?.monthly ?? 0,
+        stepYearEnd: extraStepRun.schedule[i]?.yearEnd ?? 0,
+      };
+    }),
   };
 }
 

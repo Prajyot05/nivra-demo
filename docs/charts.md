@@ -58,7 +58,7 @@ Add to the kit when a page needs them. Do not paste one-off Recharts into `src/a
 | 15 | Goal + current LS/SIP/SU | `/goals` · `goal-current` | **Inferred compare**: extra LS vs extra SIP vs extra step-up (invested / tax / corpus) | **Waterfall**: existing net credit → additional → target. **Donut** existing vs additional. |
 | 16 | Goal LS–SIP options v3 | `/goals` · `goal-ls-sip` | **Pie**: current corpus, corpus gain, lumpsum, lumpsum gain, SIP invested, SIP gain | **Compare** the three **options**: all-LS vs all-SIP vs mix (monthly SIP + extra LS). That is the point of the sheet; the pie only shows mix. |
 | 17 | Goal existing SIP v3 | `/goals` · `goal-existing-sip` | **Donut** (Excel 3D pie): SIP1 invested, SIP2 invested, SIP1 gain, SIP2 gain | **Compare** existing SIP vs additional SIP (monthly + corpus). |
-| 18 | Goal periodic lumpsum v2 | `/goals` · `goal-periodic` | **Pie**: periodic invested, periodic gain | **Compare** remaining SIP vs remaining step-up. Optional **line** of additional SIP corpus. |
+| 18 | Goal periodic lumpsum v2 | `/goals` · `goal-periodic` | **Pie/donut**: periodic invested, periodic gain. **Waterfall**: periodic credit → additional → target | **Compare** remaining SIP vs remaining step-up (invested / corpus). Monthly SIP as hero KPIs, not on the same bar scale. |
 | 19 | Power of compounding | `/goals` · `goal-compounding` | **Inferred:** clustered **columns or line** of SIP year-end vs lumpsum year-end (growth **steps**) | **Donut** SIP invested vs gain at goal year. **Compare** delay extra invested (3/6/9/12 mo). **Line** of extra years after goal (`sipAfterExtra` vs `lumpsumAfterExtra`). |
 | 20 | Multi-goal corpus assign | `/multi-goal` (blocked) | **Inferred compare / stacked**: corpus assigned per goal | **Stacked bar**: assigned vs remaining. Optional **timeline** (goal year on x, one bar per goal) — closer to Excel’s roadmap than a pie. |
 | 21 | SIP multiple withdrawals v2 | `/multi-goal` | **Clustered columns**: corpus by **age** at withdrawals | **Line / area** of corpus over age with **drops** at withdrawal years (columns hide the path). |
@@ -90,7 +90,7 @@ Do **not** add extras that need new math. Only plot fields already on `result`.
 | `/goals` Current | Compare extra LS/SIP/SU + waterfall | **OK** | — |
 | `/goals` LS–SIP | Mix pie + options compare | **OK** | — |
 | `/goals` Existing SIP | Donut + existing vs additional compare | **OK** | — |
-| `/goals` Periodic | Pie + remaining SIP vs step-up | **OK** | — |
+| `/goals` Periodic | Waterfall + donut (invested/gain) + remaining SIP vs step-up compare | **OK** | Monthly SIP shown as KPI cards, not on compare scale |
 | `/goals` Compounding | Line of growth steps + SIP donut | **OK** | — |
 | `/education` | Compare + stacked cost bars | **OK** | Optional corpus-vs-year line |
 | `/mf-fd` | Clustered compare + two donuts | **OK** | — |

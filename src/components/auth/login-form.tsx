@@ -5,7 +5,35 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getFirstEnabledRoute } from "@/lib/calculator-nav";
+import {
+  CALCULATOR_ROUTES,
+  getFirstEnabledRoute,
+  isCalculatorAccessAllowed,
+} from "@/lib/calculator-nav";
+import type { AuthProfileId } from "@/lib/auth";
+
+function resolvePostLoginDestination(
+  from: string | null,
+  profileId: AuthProfileId,
+): string {
+  const fallback = getFirstEnabledRoute(profileId);
+  if (!from || from === "/login") return fallback;
+
+  try {
+    const url = new URL(from, "http://local");
+    const path = url.pathname;
+    const mode = url.searchParams.get("mode");
+    const isCalc = CALCULATOR_ROUTES.includes(
+      path as (typeof CALCULATOR_ROUTES)[number],
+    );
+    if (isCalc && !isCalculatorAccessAllowed(path, mode, profileId)) {
+      return fallback;
+    }
+    return `${path}${url.search}`;
+  } catch {
+    return fallback;
+  }
+}
 
 export function LoginForm() {
   const router = useRouter();
@@ -32,9 +60,12 @@ export function LoginForm() {
         return;
       }
 
-      const from = searchParams.get("from");
-      const destination =
-        from && from !== "/login" ? from : getFirstEnabledRoute();
+      const body = (await res.json()) as { profileId?: AuthProfileId };
+      const profileId = body.profileId ?? "dev";
+      const destination = resolvePostLoginDestination(
+        searchParams.get("from"),
+        profileId,
+      );
       router.replace(destination);
       router.refresh();
     } catch {

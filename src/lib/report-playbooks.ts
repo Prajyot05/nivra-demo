@@ -15,6 +15,7 @@ export type CalculatorReportId =
   | "goal-sip"
   | "goal-ls-sip"
   | "goal-current"
+  | "goal-periodic"
   | "unified-goal"
   | "investment-growth"
   | "child-education"
@@ -89,6 +90,27 @@ const PLAYBOOKS: Record<CalculatorReportId, PlaybookPillar[]> = {
       title: "Re-run After Corpus Changes",
       description:
         "Whenever the current corpus or SIP changes, recalculate the residual so additional contributions stay matched to the remaining gap.",
+    },
+  ],
+  "goal-periodic": [
+    {
+      id: "01",
+      title: "Keep Periodic Cadence",
+      description:
+        "Do not pause the planned periodic contributions. Their net credit is already priced into the remaining shortfall.",
+    },
+    {
+      id: "02",
+      title: "Pick One Residual Path",
+      accent: true,
+      description:
+        "Fund the leftover gap with lumpsum today, flat SIP, or step-up SIP. Choose the cashflow that fits without stacking all three.",
+    },
+    {
+      id: "03",
+      title: "Re-run When Periodic Amount Changes",
+      description:
+        "If the periodic amount or frequency changes, recalculate so additional SIP or lumpsum stays matched to the new residual.",
     },
   ],
   "unified-goal": [

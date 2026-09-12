@@ -31,8 +31,8 @@ export function formatCompactINR(value: number): string {
     return `${sign}${n.toFixed(2).replace(/\.?0+$/, "")}Cr`;
   }
   if (abs >= 100_000) {
-    // Keep two decimals for Lakh ticks (₹1.05L, ₹1.40L).
-    return `${sign}${(abs / 100_000).toFixed(2)}L`;
+    // Lakh ticks: keep precision when needed, drop trailing zeros (₹1.4L not ₹1.40L).
+    return `${sign}${(abs / 100_000).toFixed(2).replace(/\.?0+$/, "")}L`;
   }
   if (abs >= 1_000) {
     const k = abs / 1_000;

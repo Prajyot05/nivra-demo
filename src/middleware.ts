@@ -4,7 +4,9 @@ import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 import {
   CALCULATOR_ROUTES,
   getFirstEnabledRoute,
-  isCalculatorEnabled,
+  hrefFor,
+  isCalculatorAccessAllowed,
+  getVisibleCalculators,
 } from "@/lib/calculator-nav";
 
 const PUBLIC_PATHS = ["/login", "/api/auth/login"];
@@ -24,7 +26,7 @@ export async function middleware(request: NextRequest) {
 
   if (isPublicPath(pathname)) {
     if (profileId && pathname === "/login") {
-      return NextResponse.redirect(new URL(getFirstEnabledRoute(), request.url));
+      return NextResponse.redirect(new URL(getFirstEnabledRoute(profileId), request.url));
     }
     return NextResponse.next();
   }
@@ -38,8 +40,15 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  if (isCalculatorRoute(pathname) && !isCalculatorEnabled(pathname)) {
-    return NextResponse.redirect(new URL(getFirstEnabledRoute(), request.url));
+  if (isCalculatorRoute(pathname)) {
+    const mode = request.nextUrl.searchParams.get("mode");
+    if (!isCalculatorAccessAllowed(pathname, mode, profileId)) {
+      const fallback = getVisibleCalculators(profileId).find((item) => item.to === pathname);
+      const dest = fallback
+        ? hrefFor(fallback)
+        : getFirstEnabledRoute(profileId);
+      return NextResponse.redirect(new URL(dest, request.url));
+    }
   }
 
   return NextResponse.next();
