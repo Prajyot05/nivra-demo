@@ -3,16 +3,17 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { LogOut, PanelLeftClose } from "lucide-react";
-import { Suspense, useCallback, useEffect, useState, type ReactNode } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { CalculatorNavRow } from "@/components/layout/calculator-nav-row";
 import { NavOverlay } from "@/components/layout/nav-overlay";
 import { SidebarProvider, useSidebar } from "@/components/layout/sidebar-context";
 import { NivraMark, PoweredByNivra } from "@/components/admin/branding";
 import { Button } from "@/components/ui/button";
+import { useAuthProfile } from "@/hooks/use-auth-profile";
 import { useCalculatorQaChecklist } from "@/hooks/use-calculator-qa-checklist";
 import {
-  getEnabledCalculators,
-  getEnabledCategories,
+  getVisibleCalculators,
+  getVisibleCategories,
   hrefFor,
   isNavItemActive,
   type NavItem,
@@ -27,14 +28,16 @@ function NavLinks({
   variant,
   checked,
   onToggle,
+  showQaChecklist,
 }: {
   pathname: string;
   mode: string | null;
   items: NavItem[];
-  categories: ReturnType<typeof getEnabledCategories>;
+  categories: ReturnType<typeof getVisibleCategories>;
   variant: "sidebar" | "mobile";
   checked: Record<string, boolean>;
   onToggle: (id: string) => void;
+  showQaChecklist: boolean;
 }) {
   if (variant === "mobile") {
     return (
@@ -50,11 +53,15 @@ function NavLinks({
                 active
                   ? "border-primary bg-primary text-primary-foreground"
                   : "border-border text-muted-foreground",
-                checked[item.id] && "ring-1 ring-emerald-500/50",
+                showQaChecklist &&
+                  (item.completed || checked[item.id]) &&
+                  "ring-1 ring-emerald-500/40",
               )}
               title={item.excelFile}
             >
-              {checked[item.id] ? "✓ " : ""}
+              {showQaChecklist && (item.completed || checked[item.id])
+                ? "✓ "
+                : ""}
               {item.shortLabel}
             </Link>
           );
@@ -78,7 +85,7 @@ function NavLinks({
                   key={item.id}
                   item={item}
                   active={active}
-                  showQaChecklist
+                  showQaChecklist={showQaChecklist}
                   checked={checked[item.id]}
                   onToggle={() => onToggle(item.id)}
                 />
@@ -96,8 +103,18 @@ function AppShellInner({ children }: { children: ReactNode }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const mode = searchParams.get("mode");
-  const enabledCalculators = getEnabledCalculators();
-  const enabledCategories = getEnabledCategories();
+  const { profileId } = useAuthProfile();
+  // Restrict until profile loads so clients never flash the full suite.
+  const navProfile = profileId ?? "client";
+  const enabledCalculators = useMemo(
+    () => getVisibleCalculators(navProfile),
+    [navProfile],
+  );
+  const enabledCategories = useMemo(
+    () => getVisibleCategories(navProfile),
+    [navProfile],
+  );
+  const showQaChecklist = profileId === "dev";
   const { collapsed, overlayOpen, collapse, expand, closeOverlay } = useSidebar();
   const { checked, toggle, clearAll } = useCalculatorQaChecklist();
   // Defer localStorage sidebar preference until after mount so SSR HTML always
@@ -123,7 +140,9 @@ function AppShellInner({ children }: { children: ReactNode }) {
   }
 
   const showSidebar = !ready || !collapsed;
-  const checkedCount = enabledCalculators.filter((item) => checked[item.id]).length;
+  const checkedCount = enabledCalculators.filter(
+    (item) => item.completed === true || checked[item.id],
+  ).length;
   const totalCount = enabledCalculators.length;
 
   return (
@@ -140,9 +159,15 @@ function AppShellInner({ children }: { children: ReactNode }) {
           <div>
             <NivraMark />
             <p className="mt-1 text-[11px] text-muted-foreground">Calculators</p>
-            <p className="mt-1 text-[10px] font-medium text-muted-foreground">
-              Excel QA · {checkedCount}/{totalCount}
-            </p>
+            {showQaChecklist ? (
+              <p className="mt-1 text-[10px] font-medium text-muted-foreground">
+                Done · {checkedCount}/{totalCount}
+              </p>
+            ) : (
+              <p className="mt-1 text-[10px] font-medium text-muted-foreground">
+                Client suite · {totalCount} tools
+              </p>
+            )}
           </div>
           <Button
             variant="ghost"
@@ -163,17 +188,20 @@ function AppShellInner({ children }: { children: ReactNode }) {
             variant="sidebar"
             checked={checked}
             onToggle={toggle}
+            showQaChecklist={showQaChecklist}
           />
         </nav>
         <div className="space-y-2 border-t border-sidebar-border p-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-start text-muted-foreground"
-            onClick={clearAll}
-          >
-            Clear Excel QA ticks
-          </Button>
+          {showQaChecklist ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start text-muted-foreground"
+              onClick={clearAll}
+            >
+              Clear Excel QA ticks
+            </Button>
+          ) : null}
           <Button
             variant="ghost"
             size="sm"
@@ -194,7 +222,7 @@ function AppShellInner({ children }: { children: ReactNode }) {
         mode={mode}
         onExpandSidebar={expand}
         onLogout={handleLogout}
-        showQaChecklist
+        showQaChecklist={showQaChecklist}
         checked={checked}
         onToggle={toggle}
       />
@@ -209,6 +237,7 @@ function AppShellInner({ children }: { children: ReactNode }) {
             variant="mobile"
             checked={checked}
             onToggle={toggle}
+            showQaChecklist={showQaChecklist}
           />
         </div>
         <main className="flex min-h-0 min-w-0 flex-1 flex-col">{children}</main>

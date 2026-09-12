@@ -182,7 +182,7 @@ Existing lumpsum uses annual compounding. Additional amounts are solved so **com
 
 **Input:** goal fields + `amount`, `timesPerYear` (1, 2, 3, 4, 6, or 12), `stepUpPct`.
 
-**Output:** `periodic` (`maturity`, `totalInvested`, `payments`, `netCredit`), `shortfall`, remaining `lumpsum` / `standard` / `stepUp`, SIP/step-up `schedule`.
+**Output:** `periodic` (`maturity`, `totalInvested`, `payments`, `gain`, `tax`, `netCredit`), `shortfall`, remaining `lumpsum` / `standard` / `stepUp`, `schedule[]` of `{ year, periodicPaid, periodicInvestedYtd, sipMonthly, sipYearEnd, stepMonthly, stepYearEnd }`.
 
 ---
 

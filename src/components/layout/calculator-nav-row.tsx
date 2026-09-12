@@ -23,6 +23,9 @@ export function CalculatorNavRow({
   onToggle?: () => void;
   onNavigate?: () => void;
 }) {
+  const isDone = item.completed === true;
+  const isChecked = isDone || Boolean(checked);
+
   return (
     <div
       className={cn(
@@ -35,12 +38,17 @@ export function CalculatorNavRow({
       {showQaChecklist ? (
         <input
           type="checkbox"
-          checked={Boolean(checked)}
-          onChange={onToggle}
+          checked={isChecked}
+          disabled={isDone}
+          onChange={isDone ? undefined : onToggle}
           onClick={(event) => event.stopPropagation()}
-          className="mt-0.5 h-3.5 w-3.5 shrink-0 cursor-pointer accent-primary"
-          aria-label={`Mark ${item.label} as Excel-tested`}
-          title="Mark as Excel-tested"
+          className="mt-0.5 h-3.5 w-3.5 shrink-0 accent-primary disabled:cursor-default"
+          aria-label={
+            isDone
+              ? `${item.label} completed`
+              : `Mark ${item.label} as Excel-tested`
+          }
+          title={isDone ? "Completed" : "Mark as Excel-tested"}
         />
       ) : null}
       <Link

@@ -11,13 +11,16 @@ import {
   formatINRCurrency,
   FormGrid,
   GrowthChart,
+  META_TEXT,
   MICRO_LABEL,
   MoneyInput,
+  ModeTabs,
   PercentInput,
   ResultCard,
   type ResultItem,
   ResultsSplit,
   ScheduleTable,
+  SectionHeader,
   SectionTitle,
   SelectInput,
   Stack,
@@ -40,6 +43,10 @@ import {
   GOAL_CURRENT_REPORT_ID,
   GoalCurrentDossier,
 } from "@/components/reports/goal-current-dossier";
+import {
+  GOAL_PERIODIC_REPORT_ID,
+  GoalPeriodicDossier,
+} from "@/components/reports/goal-periodic-dossier";
 
 const MODES = [
   { id: "sip", label: "SIP vs Step-up" },
@@ -101,6 +108,8 @@ type GoalPlannerResult = {
     maturity: number;
     totalInvested: number;
     payments: number;
+    gain?: number;
+    tax?: number;
     netCredit: number;
   };
   extraLumpsum?: number;
@@ -153,6 +162,10 @@ export function UnifiedGoalPlanner() {
   const corpusError = currentCorpus < 0 ? "Corpus cannot be negative." : undefined;
   const currentSipError = currentMonthlySip < 0 ? "Current SIP cannot be negative." : undefined;
   const extraLsError = extraLumpsum < 0 ? "Extra lumpsum cannot be negative." : undefined;
+  const periodicAmountError =
+    mode === "periodic" && periodicAmount <= 0
+      ? "Periodic investment amount is required."
+      : undefined;
 
   const canCalculate =
     !nameError &&
@@ -165,7 +178,8 @@ export function UnifiedGoalPlanner() {
     (mode === "compounding" ? true : !stepUpError) &&
     (mode !== "current" && mode !== "ls-sip" ? true : !corpusError) &&
     (mode !== "current" && mode !== "existing" ? true : !currentSipError) &&
-    (mode !== "ls-sip" ? true : !extraLsError);
+    (mode !== "ls-sip" ? true : !extraLsError) &&
+    (mode !== "periodic" ? true : !periodicAmountError);
 
   const input = useMemo(() => {
     const base = {
@@ -261,6 +275,26 @@ export function UnifiedGoalPlanner() {
       return;
     }
 
+    if (mode === "periodic") {
+      setIsDownloading(true);
+      try {
+        const safe = (name || "client")
+          .replace(/[^a-zA-Z0-9-_ ]/g, "")
+          .trim()
+          .replace(/\s+/g, "-")
+          .toLowerCase();
+        await generatePdfFromElement(
+          GOAL_PERIODIC_REPORT_ID,
+          `goal-periodic-${safe || "report"}`,
+        );
+      } catch (err) {
+        console.error("PDF download failed:", err);
+      } finally {
+        setIsDownloading(false);
+      }
+      return;
+    }
+
     const modeLabel =
       MODES.find((m) => m.id === mode)?.label ??
       String(mode);
@@ -341,103 +375,129 @@ export function UnifiedGoalPlanner() {
         />
       }
       form={
-        <FormGrid>
-          <ClientHeader
-            name={name}
-            age={age}
-            onNameChange={setName}
-            onAgeChange={setAge}
-            nameError={nameError}
-            ageError={ageError}
-          />
-          <MoneyInput
-            label="Goal amount"
-            value={goalAmount}
-            onChange={setGoalAmount}
-            error={goalError}
-            align="right"
-          />
-          <YearInput
-            label="Tenure (yrs)"
-            value={tenureYears}
-            min={1}
-            max={50}
-            onChange={setTenureYears}
-            error={tenureError}
-          />
-          <PercentInput
-            label="Return (%)"
-            value={returnPct}
-            onChange={setReturnPct}
-            error={returnError}
-          />
-          <PercentInput
-            label="Inflation (%)"
-            value={inflationPct}
-            onChange={setInflationPct}
-            error={inflationError}
-          />
-          <PercentInput label="Tax (%)" value={taxPct} onChange={setTaxPct} error={taxError} />
-          {mode !== "compounding" ? (
+        <div className="flex flex-col gap-3">
+          <FormGrid>
+            <ClientHeader
+              name={name}
+              age={age}
+              onNameChange={setName}
+              onAgeChange={setAge}
+              nameError={nameError}
+              ageError={ageError}
+            />
+            <MoneyInput
+              label="Goal amount"
+              value={goalAmount}
+              onChange={setGoalAmount}
+              error={goalError}
+              align="right"
+            />
+            <YearInput
+              label="Tenure (yrs)"
+              value={tenureYears}
+              min={1}
+              max={50}
+              onChange={setTenureYears}
+              error={tenureError}
+              hint="Max. 50 years"
+            />
             <PercentInput
-              label="Step-up (%)"
-              value={stepUpPct}
-              onChange={setStepUpPct}
-              error={stepUpError}
-              hint="Annual SIP Increase"
+              label="Return (%)"
+              value={returnPct}
+              onChange={setReturnPct}
+              error={returnError}
             />
-          ) : (
-            <YearInput label="Extra years" value={extraYears} min={0} max={50} onChange={setExtraYears} />
-          )}
-          <SelectInput
-            label="Goal basis"
-            value={useInflAdj ? "infl" : "raw"}
-            onChange={(value) => setUseInflAdj(value === "infl")}
-            options={[
-              { value: "raw", label: "Stated goal" },
-              { value: "infl", label: "Inflation-adjusted Goal" },
-            ]}
-          />
-          {mode === "current" || mode === "ls-sip" ? (
-            <MoneyInput
-              label="Current corpus"
-              value={currentCorpus}
-              onChange={setCurrentCorpus}
-              error={corpusError}
-              align="right"
+            <PercentInput
+              label="Inflation (%)"
+              value={inflationPct}
+              onChange={setInflationPct}
+              error={inflationError}
             />
-          ) : null}
-          {mode === "current" || mode === "existing" ? (
-            <MoneyInput
-              label="Current SIP"
-              value={currentMonthlySip}
-              onChange={setCurrentMonthlySip}
-              error={currentSipError}
-              align="right"
-            />
-          ) : null}
-          {mode === "ls-sip" ? (
-            <MoneyInput
-              label="Extra lumpsum"
-              value={extraLumpsum}
-              onChange={setExtraLumpsum}
-              error={extraLsError}
-              align="right"
-            />
-          ) : null}
-          {mode === "periodic" ? (
-            <>
-              <MoneyInput label="Periodic amt" value={periodicAmount} onChange={setPeriodicAmount} align="right" />
-              <SelectInput
-                label="Freq / yr"
-                value={String(timesPerYear)}
-                onChange={(value) => setTimesPerYear(Number(value))}
-                options={FREQUENCY_OPTIONS}
-                hint="Must divide 12"
+            <PercentInput label="Tax (%)" value={taxPct} onChange={setTaxPct} error={taxError} />
+            {mode !== "compounding" ? (
+              <PercentInput
+                label="Step-up (%)"
+                value={stepUpPct}
+                onChange={setStepUpPct}
+                error={stepUpError}
+                hint="Annual SIP Increase"
               />
-            </>
-          ) : null}
-        </FormGrid>
+            ) : (
+              <YearInput
+                label="Extra years"
+                value={extraYears}
+                min={0}
+                max={50}
+                onChange={setExtraYears}
+              />
+            )}
+          </FormGrid>
+
+          <FormGrid>
+            <div className="col-span-2 flex min-w-0 flex-col gap-1.5">
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--app-text-subtle)] sm:text-[11px]">
+                Goal basis
+              </span>
+              <ModeTabs
+                fullWidth
+                tabs={[
+                  { id: "raw", label: "Stated goal" },
+                  { id: "infl", label: "Inflation-adjusted" },
+                ]}
+                value={useInflAdj ? "infl" : "raw"}
+                onChange={(id) => setUseInflAdj(id === "infl")}
+              />
+              <span className={META_TEXT}>
+                {useInflAdj ? "Target grows with inflation over tenure" : "Uses the stated goal amount"}
+              </span>
+            </div>
+            {mode === "periodic" ? (
+              <>
+                <MoneyInput
+                  label="Periodic amt"
+                  value={periodicAmount}
+                  onChange={setPeriodicAmount}
+                  error={periodicAmountError}
+                  align="right"
+                />
+                <SelectInput
+                  label="How often"
+                  value={String(timesPerYear)}
+                  onChange={(value) => setTimesPerYear(Number(value))}
+                  options={FREQUENCY_OPTIONS}
+                  hint={`${formatINRCurrency(periodicAmount * timesPerYear)} / year`}
+                />
+              </>
+            ) : null}
+            {mode === "current" || mode === "ls-sip" ? (
+              <MoneyInput
+                label="Current corpus"
+                value={currentCorpus}
+                onChange={setCurrentCorpus}
+                error={corpusError}
+                align="right"
+              />
+            ) : null}
+            {mode === "current" || mode === "existing" ? (
+              <MoneyInput
+                label="Current SIP"
+                value={currentMonthlySip}
+                onChange={setCurrentMonthlySip}
+                error={currentSipError}
+                align="right"
+              />
+            ) : null}
+            {mode === "ls-sip" ? (
+              <MoneyInput
+                label="Extra lumpsum"
+                value={extraLumpsum}
+                onChange={setExtraLumpsum}
+                error={extraLsError}
+                align="right"
+              />
+            ) : null}
+          </FormGrid>
+        </div>
       }
       results={
         <>
@@ -574,6 +634,79 @@ export function UnifiedGoalPlanner() {
         }}
       />
     ) : null}
+    {mode === "periodic" &&
+    result &&
+    result.periodic &&
+    result.standard &&
+    result.stepUp &&
+    result.lumpsum?.lumpsum != null ? (
+      <GoalPeriodicDossier
+        data={{
+          clientName: name,
+          age,
+          goalAmount,
+          tenureYears,
+          returnPct,
+          inflationPct,
+          taxPct,
+          stepUpPct,
+          useInflAdj,
+          periodicAmount,
+          timesPerYear,
+          inflAdjGoal: result.inflAdjGoal,
+          targetGoal: result.targetGoal,
+          shortfall: result.shortfall ?? 0,
+          overfunded: result.overfunded,
+          periodic: {
+            maturity: result.periodic.maturity,
+            totalInvested: result.periodic.totalInvested,
+            payments: result.periodic.payments,
+            gain:
+              result.periodic.gain ??
+              Math.max(0, result.periodic.maturity - result.periodic.totalInvested),
+            tax:
+              result.periodic.tax ??
+              Math.max(0, result.periodic.maturity - result.periodic.netCredit),
+            netCredit: result.periodic.netCredit,
+          },
+          lumpsum: {
+            lumpsum: result.lumpsum.lumpsum ?? 0,
+            invested: result.lumpsum.invested,
+            maturity: result.lumpsum.maturity,
+            gain: result.lumpsum.gain,
+            tax: result.lumpsum.tax,
+            netAfterTax: result.lumpsum.netAfterTax,
+          },
+          standard: {
+            monthlySip: result.standard.monthlySip,
+            invested: result.standard.invested,
+            maturity: result.standard.maturity,
+            gain: result.standard.gain,
+            tax: result.standard.tax,
+            netAfterTax: result.standard.netAfterTax,
+          },
+          stepUp: {
+            monthlySip: result.stepUp.monthlySip,
+            endMonthlySip: result.stepUp.endMonthlySip,
+            invested: result.stepUp.invested,
+            maturity: result.stepUp.maturity,
+            gain: result.stepUp.gain,
+            tax: result.stepUp.tax,
+            netAfterTax: result.stepUp.netAfterTax,
+          },
+          schedule: result.schedule.map((row) => ({
+            year: row.year,
+            periodicPaid: row.periodicPaid ?? 0,
+            periodicInvestedYtd: row.periodicInvestedYtd ?? 0,
+            periodicCorpusEnd: row.periodicCorpusEnd,
+            sipMonthly: row.sipMonthly ?? 0,
+            sipYearEnd: row.sipYearEnd ?? 0,
+            stepMonthly: row.stepMonthly ?? 0,
+            stepYearEnd: row.stepYearEnd ?? 0,
+          })),
+        }}
+      />
+    ) : null}
     </>
   );
 }
@@ -592,6 +725,9 @@ function GoalResults({
   }
   if (mode === "current") {
     return <CurrentInvestmentResults result={result} tenureYears={tenureYears} />;
+  }
+  if (mode === "periodic") {
+    return <PeriodicResults result={result} tenureYears={tenureYears} />;
   }
 
   const summaryItems: ResultItem[] = [
@@ -782,6 +918,142 @@ function LsSipResults({
   );
 }
 
+function PeriodicResults({
+  result,
+  tenureYears,
+}: {
+  result: GoalPlannerResult;
+  tenureYears: number;
+}) {
+  const years = result.schedule.length || tenureYears;
+  const periodic = result.periodic;
+  const standard = result.standard;
+  const stepUp = result.stepUp;
+  const lumpsum = result.lumpsum;
+  const shortfall = result.shortfall ?? 0;
+  const periodicGain =
+    periodic?.gain ??
+    (periodic ? Math.max(0, periodic.maturity - periodic.totalInvested) : 0);
+  const periodicTax =
+    periodic?.tax ??
+    (periodic ? Math.max(0, periodic.maturity - periodic.netCredit) : 0);
+
+  return (
+    <Stack>
+      {result.overfunded ? (
+        <StatusNote tone="info">
+          Periodic investments already fund this goal. Additional SIP, step-up, and lumpsum are not
+          required.
+        </StatusNote>
+      ) : null}
+
+      <StatGrid>
+        <StatCard title="Target goal" value={result.targetGoal} />
+        <StatCard
+          title={result.overfunded ? "Periodic net credit" : "Shortfall to fund"}
+          value={result.overfunded ? (periodic?.netCredit ?? 0) : shortfall}
+          variant="soft"
+        />
+        <StatCard
+          title="Additional SIP · monthly"
+          value={standard?.monthlySip ?? 0}
+        />
+        <StatCard title="Step-up SIP · start" value={stepUp?.monthlySip ?? 0} />
+      </StatGrid>
+
+      <ResultsSplit
+        left={
+          <>
+            <div className="flex min-h-[260px] flex-1 flex-col sm:min-h-[300px]">
+              {goalRequiredChart("periodic", result)}
+            </div>
+            {goalExtraChart("periodic", result, years)}
+          </>
+        }
+        right={
+          <>
+            <ResultCard
+              title={result.overfunded ? "Results · already funded" : "Goal summary"}
+              items={[
+                {
+                  label: "Target goal",
+                  value: result.targetGoal,
+                  highlight: true,
+                  tone: "maturity",
+                },
+                { label: "Inflation-adjusted goal", value: result.inflAdjGoal },
+                {
+                  label: "Shortfall to fund",
+                  value: shortfall,
+                  highlight: true,
+                  tone: "delay",
+                },
+                { label: "Periodic maturity", value: periodic?.maturity ?? 0 },
+                { label: "Periodic invested", value: periodic?.totalInvested ?? 0 },
+                {
+                  label: "Periodic gain",
+                  value: periodicGain,
+                  tone: "gain",
+                },
+                { label: "Periodic tax", value: periodicTax, tone: "tax" },
+                {
+                  label: "Periodic net credit",
+                  value: periodic?.netCredit ?? 0,
+                  highlight: true,
+                  tone: "inflation",
+                },
+                {
+                  label: "Periodic payments",
+                  displayValue: String(periodic?.payments ?? 0),
+                },
+              ]}
+            />
+            {periodic ? (
+              <div className="flex min-h-[240px] flex-1 flex-col">
+                <CompositionChart
+                  title="Periodic mix"
+                  centerLabel="Maturity"
+                  centerValue={periodic.maturity}
+                  showPercentages
+                  size="lg"
+                  slices={[
+                    {
+                      name: "Periodic invested",
+                      value: periodic.totalInvested,
+                      color: "var(--app-chart-invested)",
+                    },
+                    {
+                      name: "Periodic gain",
+                      value: periodicGain,
+                      color: "var(--app-chart-gain)",
+                    },
+                  ]}
+                />
+              </div>
+            ) : null}
+          </>
+        }
+      />
+
+      <FundingPathsBoard
+        muted={Boolean(result.overfunded)}
+        lumpsum={lumpsum}
+        standard={standard}
+        stepUp={stepUp}
+      />
+
+      <ScheduleTable
+        caption="Yearly schedule"
+        meta={`${result.schedule.length} years · periodic + remaining SIP`}
+        zebra
+        highlightLastRow
+        columns={scheduleColumns("periodic")}
+        rows={result.schedule}
+      />
+    </Stack>
+  );
+}
+
 function CurrentInvestmentResults({
   result,
   tenureYears,
@@ -885,13 +1157,7 @@ function CurrentInvestmentResults({
         }
       />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:items-stretch">
-        {lumpsum?.lumpsum != null ? (
-          <LegMetricCard title="Additional lumpsum today" leg={lumpsum} />
-        ) : null}
-        {standard ? <LegMetricCard title="Additional SIP" leg={standard} /> : null}
-        {stepUp ? <LegMetricCard title="Additional step-up SIP" leg={stepUp} /> : null}
-      </div>
+      <FundingPathsBoard lumpsum={lumpsum} standard={standard} stepUp={stepUp} />
 
       <ScheduleTable
         caption="Yearly schedule"
@@ -901,6 +1167,216 @@ function CurrentInvestmentResults({
         rows={result.schedule}
       />
     </Stack>
+  );
+}
+
+function FundingPathsBoard({
+  lumpsum,
+  standard,
+  stepUp,
+  muted = false,
+}: {
+  lumpsum?: GoalLeg | null;
+  standard?: GoalLeg | null;
+  stepUp?: GoalLeg | null;
+  muted?: boolean;
+}) {
+  const paths = [
+    lumpsum?.lumpsum != null
+      ? {
+          key: "lumpsum",
+          eyebrow: "One-time",
+          title: "Lumpsum today",
+          primary: formatINRCurrency(lumpsum.lumpsum),
+          primaryHint: "Pay once",
+          secondary:
+            lumpsum.monthlySip > 0
+              ? `${formatINRCurrency(lumpsum.monthlySip)} / mo`
+              : "No monthly SIP",
+          leg: lumpsum,
+        }
+      : null,
+    standard
+      ? {
+          key: "sip",
+          eyebrow: "Level SIP",
+          title: "Additional SIP",
+          primary: formatINRCurrency(standard.monthlySip),
+          primaryHint: "Every month",
+          secondary: "Flat for the full tenure",
+          leg: standard,
+        }
+      : null,
+    stepUp
+      ? {
+          key: "step",
+          eyebrow: "Growing SIP",
+          title: "Step-up SIP",
+          primary: formatINRCurrency(stepUp.monthlySip),
+          primaryHint: "Starts at",
+          secondary:
+            stepUp.endMonthlySip != null
+              ? `Ends at ${formatINRCurrency(stepUp.endMonthlySip)}`
+              : "Rises each year",
+          leg: stepUp,
+        }
+      : null,
+  ].filter(Boolean) as Array<{
+    key: string;
+    eyebrow: string;
+    title: string;
+    primary: string;
+    primaryHint: string;
+    secondary: string;
+    leg: GoalLeg;
+  }>;
+
+  if (paths.length === 0) return null;
+
+  const ranked = [...paths].sort((a, b) => a.leg.invested - b.leg.invested);
+  const rankTone = new Map<string, { shell: string; badge: string; label: string }>();
+  const tones = [
+    {
+      shell: "bg-[var(--app-step-bg)] border-[var(--app-step-text)]/25",
+      badge: "bg-[var(--app-step-text)] text-white",
+      label: "Least capital",
+    },
+    {
+      shell: "bg-[var(--app-std-bg)] border-[var(--app-std-text)]/25",
+      badge: "bg-[var(--app-std-text)] text-white",
+      label: "Mid capital",
+    },
+    {
+      shell: "bg-[var(--app-warn-bg)] border-[var(--app-warn-border)]",
+      badge: "bg-[var(--app-warn-text)] text-white",
+      label: "Most capital",
+    },
+  ];
+  ranked.forEach((path, i) => {
+    rankTone.set(path.key, tones[Math.min(i, tones.length - 1)]!);
+  });
+
+  return (
+    <Card className={muted ? "opacity-70" : undefined}>
+      <SectionHeader
+        title="Ways to cover the shortfall"
+        meta="Same net after tax · green needs the least capital"
+      />
+      <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
+        {paths.map((path) => {
+          const tone = rankTone.get(path.key)!;
+          const mix = [
+            {
+              key: "invested",
+              label: "Invested",
+              value: path.leg.invested,
+              color: "var(--app-chart-invested)",
+            },
+            {
+              key: "gain",
+              label: "Gain",
+              value: path.leg.gain,
+              color: "var(--app-chart-gain)",
+            },
+            {
+              key: "tax",
+              label: "Tax",
+              value: path.leg.tax,
+              color: "var(--app-chart-tax)",
+            },
+          ];
+          const mixTotal = mix.reduce((sum, part) => sum + Math.max(0, part.value), 0) || 1;
+
+          return (
+            <div
+              key={path.key}
+              className={`flex min-w-0 flex-col rounded-xl border p-3.5 sm:p-4 ${tone.shell}`}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className={MICRO_LABEL}>{path.eyebrow}</div>
+                  <div className="mt-0.5 text-sm font-semibold text-[var(--app-text)]">
+                    {path.title}
+                  </div>
+                </div>
+                <span
+                  className={`shrink-0 rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${tone.badge}`}
+                >
+                  {tone.label}
+                </span>
+              </div>
+
+              <div className="mt-2.5">
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-subtle)]">
+                  {path.primaryHint}
+                </div>
+                <div className="mt-0.5 text-xl font-semibold tabular-nums tracking-tight text-[var(--app-text)] sm:text-2xl">
+                  {path.primary}
+                </div>
+                <div className={`mt-0.5 ${META_TEXT}`}>{path.secondary}</div>
+              </div>
+
+              <div className="mt-3 rounded-lg bg-white/70 p-2.5">
+                <div className={`${MICRO_LABEL} mb-2`}>Maturity mix</div>
+                <div
+                  className="flex h-3 overflow-hidden rounded-full"
+                  title="Invested · Gain · Tax"
+                >
+                  {mix.map((part) => {
+                    const pct = Math.max(0, part.value) / mixTotal;
+                    if (pct <= 0) return null;
+                    return (
+                      <div
+                        key={part.key}
+                        className="h-full min-w-[3px] first:rounded-l-full last:rounded-r-full"
+                        style={{
+                          width: `${pct * 100}%`,
+                          background: part.color,
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+                <div className="mt-2.5 grid grid-cols-3 gap-1.5">
+                  {mix.map((part) => {
+                    const pct = Math.round((Math.max(0, part.value) / mixTotal) * 100);
+                    return (
+                      <div key={part.key} className="min-w-0">
+                        <div className="flex items-center gap-1">
+                          <span
+                            className="size-1.5 shrink-0 rounded-full"
+                            style={{ background: part.color }}
+                            aria-hidden
+                          />
+                          <span className="truncate text-[10px] font-semibold uppercase tracking-wide text-[var(--app-text-muted)]">
+                            {part.label}
+                          </span>
+                        </div>
+                        <div className="mt-0.5 truncate text-[11px] font-semibold tabular-nums text-[var(--app-text)]">
+                          {formatINRCurrency(part.value)}
+                        </div>
+                        <div className="text-[10px] tabular-nums text-[var(--app-text-subtle)]">
+                          {pct}%
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="mt-2.5 flex items-center justify-between gap-2 rounded-lg bg-[var(--app-primary)] px-2.5 py-2">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--app-primary-fg-muted)]">
+                  Net after tax
+                </span>
+                <span className="text-[12px] font-bold tabular-nums text-[var(--app-primary-fg)] sm:text-[13px]">
+                  {formatINRCurrency(path.leg.netAfterTax)}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </Card>
   );
 }
 
@@ -1087,21 +1563,21 @@ function goalRequiredChart(mode: Mode, result: GoalPlannerResult): ReactNode {
 
   if (mode === "periodic" && result.periodic) {
     return (
-      <CompositionChart
-        title="Periodic mix"
-        centerLabel="Maturity"
-        centerValue={result.periodic.maturity}
-        slices={[
+      <WaterfallChart
+        title="How the goal is funded"
+        className="min-h-[300px] w-full flex-1 sm:min-h-[330px]"
+        steps={[
           {
-            name: "Periodic invested",
-            value: result.periodic.totalInvested,
-            color: "var(--app-chart-invested)",
-          },
-          {
-            name: "Periodic net credit",
+            label: "Periodic credit",
             value: result.periodic.netCredit,
-            color: "var(--app-chart-gain)",
+            kind: "increase",
           },
+          {
+            label: "Additional",
+            value: result.shortfall ?? 0,
+            kind: "increase",
+          },
+          { label: "Target", value: result.targetGoal, kind: "total" },
         ]}
       />
     );
@@ -1232,12 +1708,8 @@ function goalExtraChart(mode: Mode, result: GoalPlannerResult, tenureYears = 15)
     return (
       <CompareChart
         title="Remaining SIP vs step-up"
+        className="min-h-[300px] w-full flex-1 sm:min-h-[330px]"
         data={[
-          {
-            category: "Monthly",
-            sip: result.standard.monthlySip,
-            step: result.stepUp.monthlySip,
-          },
           {
             category: "Invested",
             sip: result.standard.invested,
@@ -1386,8 +1858,22 @@ function scheduleColumns(mode: Mode) {
     return [
       { key: "year", header: "Year", sticky: true },
       {
+        key: "periodicPaid",
+        header: "Periodic paid",
+        format: "inr" as const,
+        align: "right" as const,
+        tone: "warn" as const,
+      },
+      {
+        key: "periodicInvestedYtd",
+        header: "Periodic YTD",
+        format: "inr" as const,
+        align: "right" as const,
+        tone: "warn" as const,
+      },
+      {
         key: "sipMonthly",
-        header: "Add. SIP",
+        header: "Add. SIP (mo)",
         format: "inr" as const,
         align: "right" as const,
         tone: "std" as const,
@@ -1401,7 +1887,7 @@ function scheduleColumns(mode: Mode) {
       },
       {
         key: "stepMonthly",
-        header: "Step SIP",
+        header: "Step SIP (mo)",
         format: "inr" as const,
         align: "right" as const,
         tone: "step" as const,

@@ -22,6 +22,11 @@ export type NavItem = {
   excelFile: string;
   /** Set to false to hide and block this calculator. Defaults to true. */
   enabled?: boolean;
+  /**
+   * Shipped for client login. Client profiles only see `completed: true` items.
+   * Dev team still sees every enabled calculator.
+   */
+  completed?: boolean;
 };
 
 /** Basename only — for compact sidebar labels. */
@@ -40,6 +45,7 @@ export type NavCategory = {
  * Calculators grouped by product category (STANDARD → INSURANCE).
  * Set `enabled: false` on an item to hide it; middleware blocks the route
  * when every item for that path is disabled.
+ * Set `completed: true` for client-visible calculators (through Goal Periodic).
  */
 export const CALCULATOR_CATEGORIES: NavCategory[] = [
   {
@@ -52,6 +58,7 @@ export const CALCULATOR_CATEGORIES: NavCategory[] = [
         label: "Mutual Fund vs Fixed Deposit",
         shortLabel: "MF vs FD",
         excelFile: "calculator-tests/Nivra MF vs FD v1.xlsm",
+        completed: true,
       },
       {
         id: "growth-lumpsum",
@@ -60,6 +67,7 @@ export const CALCULATOR_CATEGORIES: NavCategory[] = [
         label: "One-Time Investment",
         shortLabel: "One-Time",
         excelFile: "calculator-tests/Nivra One-Time Investment v2.xlsm",
+        completed: true,
       },
       {
         id: "growth-periodic",
@@ -68,6 +76,7 @@ export const CALCULATOR_CATEGORIES: NavCategory[] = [
         label: "Periodic Lumpsum Investment",
         shortLabel: "Periodic LS",
         excelFile: "Unprotected/Nivra Periodic Investment v1.xlsm",
+        completed: true,
       },
       {
         id: "growth-sip",
@@ -76,6 +85,7 @@ export const CALCULATOR_CATEGORIES: NavCategory[] = [
         label: "SIP Calculator",
         shortLabel: "SIP",
         excelFile: "Unprotected/Nivra SIP Calculator v3.xlsm",
+        completed: true,
       },
       {
         id: "growth-stepup",
@@ -84,6 +94,7 @@ export const CALCULATOR_CATEGORIES: NavCategory[] = [
         label: "SIP Step-Up Calculator",
         shortLabel: "Step-Up SIP",
         excelFile: "Unprotected/Nivra SIP Step-Up Calculator v1.xlsm",
+        completed: true,
       },
       {
         id: "multi-withdrawals",
@@ -92,6 +103,7 @@ export const CALCULATOR_CATEGORIES: NavCategory[] = [
         label: "SIP Required for Multiple Withdrawals",
         shortLabel: "Multi Withdrawals",
         excelFile: "Unprotected/Nivra SIP for Multiple Withdrawals v2.xlsm",
+        completed: true,
       },
     ],
   },
@@ -107,6 +119,7 @@ export const CALCULATOR_CATEGORIES: NavCategory[] = [
         shortLabel: "Goal LS + SIP",
         excelFile:
           "calculator-tests/Nivra Goal w Current Investment, LS - SIP Options v3.xlsm",
+        completed: true,
       },
       {
         id: "goal-current",
@@ -116,6 +129,7 @@ export const CALCULATOR_CATEGORIES: NavCategory[] = [
         shortLabel: "Goal Current",
         excelFile:
           "calculator-tests/Nivra Goal with Current Investment - LS, SIP, SU_SIP.xlsm",
+        completed: true,
       },
       {
         id: "multi-goal-assign",
@@ -125,6 +139,7 @@ export const CALCULATOR_CATEGORIES: NavCategory[] = [
         shortLabel: "Multi-Goal",
         excelFile:
           "calculator-tests/Nivra Multiple Goals with Corpus Assignment v2.xlsm",
+        completed: true,
       },
       {
         id: "goal-periodic",
@@ -133,6 +148,7 @@ export const CALCULATOR_CATEGORIES: NavCategory[] = [
         label: "Goal with Periodic Lumpsum",
         shortLabel: "Goal Periodic",
         excelFile: "Unprotected/Nivra Goal_Periodic_Lumpsum - Compute_SIP v2.xlsm",
+        completed: true,
       },
       {
         id: "goal-sip",
@@ -323,13 +339,59 @@ export function getEnabledCalculators(): NavItem[] {
   return CALCULATOR_NAV.filter((item) => item.enabled !== false);
 }
 
-export function isCalculatorEnabled(path: string): boolean {
-  return getEnabledCalculators().some((item) => item.to === path);
+/** Client login only sees completed calculators; dev sees every enabled item. */
+export function getVisibleCalculators(
+  profileId: "dev" | "client" | null | undefined = "dev",
+): NavItem[] {
+  const enabled = getEnabledCalculators();
+  if (profileId === "client") {
+    return enabled.filter((item) => item.completed === true);
+  }
+  return enabled;
 }
 
-export function getFirstEnabledRoute(): string {
-  const first = getEnabledCalculators()[0];
-  return first ? hrefFor(first) : "/";
+export function getVisibleCategories(
+  profileId: "dev" | "client" | null | undefined = "dev",
+): NavCategory[] {
+  const visibleIds = new Set(getVisibleCalculators(profileId).map((item) => item.id));
+  return CALCULATOR_CATEGORIES.map((category) => ({
+    ...category,
+    items: category.items.filter(
+      (item) => item.enabled !== false && visibleIds.has(item.id),
+    ),
+  })).filter((category) => category.items.length > 0);
+}
+
+export function isCalculatorEnabled(
+  path: string,
+  profileId: "dev" | "client" | null | undefined = "dev",
+): boolean {
+  return getVisibleCalculators(profileId).some((item) => item.to === path);
+}
+
+/** Path + optional ?mode= must match a visible nav item for this profile. */
+export function isCalculatorAccessAllowed(
+  path: string,
+  mode: string | null,
+  profileId: "dev" | "client" | null | undefined = "dev",
+): boolean {
+  const visible = getVisibleCalculators(profileId);
+  const matches = visible.filter((item) => item.to === path);
+  if (matches.length === 0) return false;
+
+  if (mode) {
+    return matches.some((item) => item.mode === mode || !item.mode);
+  }
+
+  // No mode in URL: allow if any single-mode item exists, or any mode on that path.
+  return matches.some((item) => !item.mode) || matches.length > 0;
+}
+
+export function getFirstEnabledRoute(
+  profileId: "dev" | "client" | null | undefined = "dev",
+): string {
+  const first = getVisibleCalculators(profileId)[0];
+  return first ? hrefFor(first) : "/mf-fd";
 }
 
 export const CALCULATOR_ROUTES = Array.from(
