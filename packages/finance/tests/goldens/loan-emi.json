@@ -12,11 +12,15 @@
       "apiInput": {
         "principal": 7500000,
         "years": 20,
-        "interestPct": 9.2
+        "interestPct": 9.2,
+        "recoverReturnPct": 12,
+        "delayMonths": 12
       },
       "expect": {
         "emi": 68447.15332576867,
-        "totalPrincipal": 7500000
+        "totalPrincipal": 7500000,
+        "recoverMonthlySip": 9705.109974231967,
+        "delayedRecoverMonthlySip": 11127.297031503196
       }
     },
     {

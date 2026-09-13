@@ -1,4 +1,4 @@
-import { monthlyRate, pmt } from "./core";
+import { fv, monthlyRate, pmt } from "./core";
 import { inflate } from "./inflation";
 import { calculateSip, calculateLumpsum, type YearRow } from "./sip";
 import { calculateStepUpSip, stepUpProjection } from "./stepup";
@@ -620,22 +620,83 @@ export function calculateGoalPeriodicLumpsum(input: GoalPeriodicInput): {
   };
 }
 
+export type GoalCompoundingInvestmentType = "one-time" | "sip";
+
+export type GrowthStep = {
+  /** Excel W at the crossing month: INT(corpus / stepSize). */
+  step: number;
+  /** step × stepSize, the milestone the path just cleared. */
+  targetCorpus: number;
+  /** Corpus in that month (Excel V). */
+  corpus: number;
+  /** 1-based month index (Excel U). */
+  months: number;
+};
+
 export type GoalCompoundingInput = GoalBaseInput & {
   extraYears?: number;
+  /** Excel C14: which path the growth-step table uses. */
+  investmentType?: GoalCompoundingInvestmentType;
+  /** Excel C15 / StepSize: 10K, 1L, 10L, or 1Cr. */
+  stepSize?: number;
 };
+
+const COMPOUNDING_STEP_SIZES = [10_000, 100_000, 1_000_000, 10_000_000] as const;
+
+/**
+ * Monthly wealth-step crossings from Unprotected Growth Steps (U14:W613).
+ * One Time: FV(annual, month/12, 0, −lumpsum, 1).
+ * SIP: FV(effective monthly, month, −sip, 0, 1).
+ * A step is recorded when INT(corpus / stepSize) increases.
+ */
+export function compoundingGrowthSteps(args: {
+  investmentType: GoalCompoundingInvestmentType;
+  stepSize: number;
+  tenureYears: number;
+  annualReturn: number;
+  lumpsum: number;
+  monthlySip: number;
+}): GrowthStep[] {
+  const horizon = Math.trunc(args.tenureYears * 12);
+  if (args.stepSize <= 0 || horizon <= 0) return [];
+  const rMonthly = monthlyRate(args.annualReturn);
+  const steps: GrowthStep[] = [];
+  let prevBucket = 0;
+  for (let month = 1; month <= horizon; month += 1) {
+    const corpus =
+      args.investmentType === "one-time"
+        ? fv(args.annualReturn, month / 12, 0, -args.lumpsum, 1)
+        : fv(rMonthly, month, -args.monthlySip, 0, 1);
+    const bucket = Math.floor(corpus / args.stepSize);
+    if (bucket > prevBucket) {
+      steps.push({
+        step: bucket,
+        targetCorpus: bucket * args.stepSize,
+        corpus,
+        months: month,
+      });
+      prevBucket = bucket;
+    }
+  }
+  return steps;
+}
 
 /**
  * Power of compounding / growth steps (Unprotected Growth Steps).
- * Required SIP and lumpsum paths year-by-year, plus extra compounding after the goal year.
+ * Required SIP and lumpsum so net after tax equals the stated goal, plus the
+ * monthly wealth-step table for the selected investment path.
  */
 export function calculateGoalCompounding(input: GoalCompoundingInput): {
   inflAdjGoal: number;
   targetGoal: number;
   extraYears: number;
+  investmentType: GoalCompoundingInvestmentType;
+  stepSize: number;
   standard: GoalLeg;
   lumpsum: FundingLeg;
   sipAfterExtra: number;
   lumpsumAfterExtra: number;
+  growthSteps: GrowthStep[];
   schedule: Array<{
     year: number;
     sipMonthly: number;
@@ -645,7 +706,13 @@ export function calculateGoalCompounding(input: GoalCompoundingInput): {
   delays: DelayRow[];
 } {
   const { inflAdjGoal, targetGoal } = goalTargets(input);
-  const extraYears = input.extraYears ?? 5;
+  const extraYears = input.extraYears ?? 0;
+  const investmentType = input.investmentType ?? "one-time";
+  const stepSize = COMPOUNDING_STEP_SIZES.includes(
+    input.stepSize as (typeof COMPOUNDING_STEP_SIZES)[number],
+  )
+    ? (input.stepSize as number)
+    : 1_000_000;
   const monthlySip = requiredSip({
     target: targetGoal,
     years: input.tenureYears,
@@ -724,6 +791,8 @@ export function calculateGoalCompounding(input: GoalCompoundingInput): {
     inflAdjGoal,
     targetGoal,
     extraYears,
+    investmentType,
+    stepSize,
     standard: {
       monthlySip,
       invested: sipAtGoal.totalInvested,
@@ -743,6 +812,14 @@ export function calculateGoalCompounding(input: GoalCompoundingInput): {
     },
     sipAfterExtra: sipRun.maturity,
     lumpsumAfterExtra: lumpRun.maturity,
+    growthSteps: compoundingGrowthSteps({
+      investmentType,
+      stepSize,
+      tenureYears: input.tenureYears,
+      annualReturn: input.annualReturn,
+      lumpsum,
+      monthlySip,
+    }),
     schedule,
     delays,
   };

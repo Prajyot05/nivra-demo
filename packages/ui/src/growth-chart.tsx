@@ -4,6 +4,7 @@ import {
   Legend,
   Line,
   LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -15,6 +16,15 @@ import { CARD, CARD_PAD, SECTION_TITLE } from "./tokens";
 export type GrowthPoint = {
   year: number;
   [series: string]: number;
+};
+
+export type GrowthReferenceLine = {
+  /** Vertical marker (matches X-axis value, e.g. month). */
+  x?: number;
+  /** Horizontal marker (matches Y-axis value). */
+  y?: number;
+  label?: string;
+  color?: string;
 };
 
 /** Label only the last point of a series. */
@@ -67,6 +77,7 @@ export function GrowthChart({
   endLabelFull = false,
   className,
   strokeWidth = 4,
+  referenceLines,
 }: {
   data: GrowthPoint[];
   series: Array<{ key: string; label: string; color: string }>;
@@ -84,11 +95,17 @@ export function GrowthChart({
   className?: string;
   /** Line stroke thickness (default 4). */
   strokeWidth?: number;
+  /** Horizontal corpus markers (wealth steps). */
+  referenceLines?: GrowthReferenceLine[];
 }) {
   const n = data.length;
+  const hasFixedHeight =
+    Boolean(className?.includes("min-h-")) ||
+    Boolean(className?.includes("h-[")) ||
+    Boolean(className?.includes("flex-none"));
   return (
     <div
-      className={`flex min-h-[220px] flex-1 flex-col ${CARD} ${CARD_PAD} sm:min-h-[240px] ${className ?? ""}`}
+      className={`flex min-h-[220px] flex-col ${hasFixedHeight ? "" : "flex-1"} ${CARD} ${CARD_PAD} sm:min-h-[240px] ${className ?? ""}`}
     >
       <div className={`mb-2.5 shrink-0 ${SECTION_TITLE}`}>
         {title}
@@ -150,6 +167,33 @@ export function GrowthChart({
                 iconSize={10}
                 iconType="plainline"
               />
+              {(referenceLines ?? []).map((line) => {
+                const hasX = line.x != null && Number.isFinite(line.x);
+                const hasY = line.y != null && Number.isFinite(line.y);
+                if (!hasX && !hasY) return null;
+                return (
+                  <ReferenceLine
+                    key={`${hasX ? `x-${line.x}` : `y-${line.y}`}-${line.label ?? ""}`}
+                    x={hasX ? line.x : undefined}
+                    y={hasY ? line.y : undefined}
+                    stroke={line.color ?? "var(--app-text-subtle)"}
+                    strokeDasharray="4 4"
+                    strokeOpacity={0.7}
+                    ifOverflow="extendDomain"
+                    label={
+                      line.label
+                        ? {
+                            value: line.label,
+                            position: hasX ? "insideTopLeft" : "insideTopRight",
+                            fill: "var(--app-text-muted)",
+                            fontSize: 10,
+                            fontWeight: 600,
+                          }
+                        : undefined
+                    }
+                  />
+                );
+              })}
               {series.map((s, seriesIndex) => (
                 <Line
                   key={s.key}

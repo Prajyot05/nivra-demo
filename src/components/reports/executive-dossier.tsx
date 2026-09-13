@@ -29,7 +29,10 @@ type ExecutiveDossierSheetProps = {
   /** Client email / phone shown in the header meta card */
   contact?: ExecutiveContact;
   children: ReactNode;
-  disclaimer?: string;
+  /** Pass `false` to omit the built-in footer (when the dossier inlines it). */
+  disclaimer?: string | false;
+  /** Tighter padding / gaps for 2-page dossiers. */
+  compact?: boolean;
 };
 
 const DEFAULT_DISCLAIMER =
@@ -47,6 +50,7 @@ export function ExecutiveDossierSheet({
   contact = DUMMY_REPORT_CONTACT,
   children,
   disclaimer = DEFAULT_DISCLAIMER,
+  compact = false,
 }: ExecutiveDossierSheetProps) {
   const email = contact.email?.trim() || DUMMY_REPORT_CONTACT.email;
   const phone = contact.phone?.trim() || DUMMY_REPORT_CONTACT.phone;
@@ -60,7 +64,9 @@ export function ExecutiveDossierSheet({
   return (
     <div
       id={id}
-      className="pointer-events-none fixed flex w-[900px] flex-col bg-white p-10 text-slate-900"
+      className={`pointer-events-none fixed flex w-[900px] flex-col bg-white text-slate-900 ${
+        compact ? "p-7" : "p-10"
+      }`}
       style={{
         // Fully off-screen (no transform) so it never intercepts selection/clicks
         left: "-10000px",
@@ -72,15 +78,17 @@ export function ExecutiveDossierSheet({
       }}
       aria-hidden
     >
-      <div className="flex flex-col gap-6">
-        <header className="border-b border-slate-200 pb-6">
+      <div className={`flex flex-col ${compact ? "gap-4" : "gap-6"}`}>
+        <header className={`border-b border-slate-200 ${compact ? "pb-4" : "pb-6"}`}>
           <div className="flex items-start justify-between gap-6">
             <div className="flex items-start gap-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/finoptic-logo.jpeg"
                 alt="Finoptic Capital Services"
-                className="h-14 w-auto max-w-[160px] shrink-0 object-contain object-left"
+                className={`w-auto max-w-[160px] shrink-0 object-contain object-left ${
+                  compact ? "h-11" : "h-14"
+                }`}
                 crossOrigin="anonymous"
               />
               <div className="space-y-1.5">
@@ -88,7 +96,11 @@ export function ExecutiveDossierSheet({
                   <span className="block text-[10px] font-extrabold uppercase tracking-[0.25em] text-emerald-700">
                     {brandLine}
                   </span>
-                  <h1 className="text-2xl font-black uppercase tracking-tight text-slate-950">
+                  <h1
+                    className={`font-black uppercase tracking-tight text-slate-950 ${
+                      compact ? "text-xl" : "text-2xl"
+                    }`}
+                  >
                     {title}
                   </h1>
                 </div>
@@ -97,7 +109,11 @@ export function ExecutiveDossierSheet({
             </div>
 
             {metaWithContact.length > 0 ? (
-              <div className="flex max-w-[420px] flex-wrap gap-x-5 gap-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-xs">
+              <div
+                className={`flex max-w-[420px] flex-wrap gap-x-5 gap-y-2 rounded-xl border border-slate-200 bg-slate-50 text-xs ${
+                  compact ? "p-2.5" : "p-3.5"
+                }`}
+              >
                 {metaWithContact.map((cell) => (
                   <div key={cell.label} className="min-w-[110px]">
                     <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
@@ -122,15 +138,17 @@ export function ExecutiveDossierSheet({
 
         {children}
 
-        <footer className="border-t border-slate-200 pt-5 text-[11px] leading-relaxed text-slate-500">
-          <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-700">
-            Disclaimer
-          </span>
-          <p>{disclaimer}</p>
-          <p className="mt-3 text-center text-[10px] text-slate-400">
-            Powered by <span className="font-medium text-slate-600">Nivra</span>
-          </p>
-        </footer>
+        {disclaimer !== false ? (
+          <footer className="mt-4 border-t border-slate-200 pt-4 text-[11px] leading-relaxed text-slate-500">
+            <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-700">
+              Disclaimer
+            </span>
+            <p>{disclaimer}</p>
+            <p className="mt-3 text-center text-[10px] text-slate-400">
+              Powered by <span className="font-medium text-slate-600">Nivra</span>
+            </p>
+          </footer>
+        ) : null}
       </div>
     </div>
   );
@@ -171,20 +189,29 @@ export function ExecutiveSectionHeading({
 
 export function ExecutivePlaybook({
   pillars,
+  compact = false,
 }: {
   pillars: { id: string; title: string; description: string; accent?: boolean }[];
+  compact?: boolean;
 }) {
   return (
-    <section className="flex flex-col gap-3" data-purpose="execution-playbook">
+    <section
+      className={`flex flex-col ${compact ? "gap-2" : "gap-3"}`}
+      data-purpose="execution-playbook"
+    >
       <ExecutiveSectionHeading title="Next steps" />
-      <div className="flex gap-4">
+      <div className={`flex ${compact ? "gap-2.5" : "gap-4"}`}>
         {pillars.map((p) => (
           <div
             key={p.id}
-            className="relative flex-1 rounded-xl border border-[#e2e8f0] bg-white p-4"
+            className={`relative flex-1 rounded-xl border border-[#e2e8f0] bg-white ${
+              compact ? "p-2.5" : "p-4"
+            }`}
           >
             <span
-              className="mb-2 inline-block rounded px-2 py-0.5 text-[10px] font-bold"
+              className={`inline-block rounded px-2 py-0.5 text-[10px] font-bold ${
+                compact ? "mb-1" : "mb-2"
+              }`}
               style={
                 p.accent
                   ? { backgroundColor: "#d1fae5", color: "#065f46" }
@@ -197,7 +224,7 @@ export function ExecutivePlaybook({
               {p.title}
             </h4>
             <p
-              className="mt-1 text-[11px] leading-relaxed"
+              className={`mt-1 leading-relaxed ${compact ? "text-[10px]" : "text-[11px]"}`}
               style={{ color: "#475569" }}
             >
               {p.description}

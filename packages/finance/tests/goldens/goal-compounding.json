@@ -32,6 +32,37 @@
       }
     },
     {
+      "name": "excel-growth-steps",
+      "source": "Unprotected/Nivra Goal with Power of Compounding - Growth Steps.xlsm",
+      "engineInput": {
+        "goalAmount": 5000000,
+        "tenureYears": 15,
+        "annualReturn": 0.14,
+        "inflationRate": 0,
+        "taxRate": 0.125,
+        "useInflationAdjustedGoal": false,
+        "extraYears": 0,
+        "investmentType": "one-time",
+        "stepSize": 1000000
+      },
+      "apiInput": {
+        "goalAmount": 5000000,
+        "tenureYears": 15,
+        "returnPct": 14,
+        "taxPct": 12.5,
+        "investmentType": "one-time",
+        "stepSize": 1000000
+      },
+      "expect": {
+        "standard.monthlySip": 9670.127843888453,
+        "lumpsum.lumpsum": 784843.6357742861,
+        "standard.maturity": 5465625.284014297,
+        "lumpsum.maturity": 5602165.194889388,
+        "standard.tax": 465625.2840142969,
+        "lumpsum.tax": 602165.1948893877
+      }
+    },
+    {
       "name": "hnw",
       "source": "engine regression @ HNW",
       "engineInput": {

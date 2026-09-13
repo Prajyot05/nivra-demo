@@ -159,7 +159,7 @@
         ]
       },
       "expect": {
-        "totalMonthlySip": 1717006.493293201,
+        "totalMonthlySip": 1717006.4932932009,
         "totalLumpsum": 123471712.85126668,
         "totalAssigned": 20000000
       }

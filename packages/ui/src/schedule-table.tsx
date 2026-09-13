@@ -40,6 +40,10 @@ export function ScheduleTable<T extends Record<string, unknown>>({
   zebra = false,
   highlightLastRow = false,
   emphasizeRow,
+  fillHeight = false,
+  stretchRows,
+  fitContent = false,
+  dense = false,
 }: {
   columns: ScheduleColumn<T>[];
   rows: T[];
@@ -53,17 +57,32 @@ export function ScheduleTable<T extends Record<string, unknown>>({
   highlightLastRow?: boolean;
   /** Highlight specific rows (e.g. highest SIP). */
   emphasizeRow?: (row: T, index: number) => boolean;
+  /** Stretch the card to fill the parent. Extra rows scroll unless `stretchRows`. */
+  fillHeight?: boolean;
+  /** Distribute row height so the table body fills the card. Defaults to `fillHeight`. */
+  stretchRows?: boolean;
+  /** Size table to content instead of stretching columns across the card. */
+  fitContent?: boolean;
+  /** Tighter cell padding for long schedules. */
+  dense?: boolean;
 }) {
+  const growRows = stretchRows ?? fillHeight;
   // Narrow schedules should fit a phone instead of forcing a horizontal scroll.
-  const minWidth = `${Math.max(18, columns.length * 6.5)}rem`;
+  const minWidth = `${Math.max(dense ? 16 : 18, columns.length * (dense ? 5.25 : 6.5))}rem`;
+  const cellPad = dense ? "px-2 py-1.5" : "px-3 py-2";
 
   return (
-    <Card className={`custom-scrollbar max-h-[540px] ${className ?? ""}`}>
+    <Card
+      className={`${fillHeight ? "h-full max-h-none overflow-hidden" : "max-h-[540px]"} custom-scrollbar ${className ?? ""}`}
+    >
       {caption || meta ? (
-        <SectionHeader title={caption} meta={meta} className="mb-2.5 shrink-0" />
+        <SectionHeader title={caption} meta={meta} className="mb-2 shrink-0" />
       ) : null}
-      <div className="custom-scrollbar overflow-auto rounded-lg border border-[var(--app-border)]">
-        <table className="w-full text-xs" style={{ minWidth }}>
+      <div className="custom-scrollbar min-h-0 flex-1 overflow-auto rounded-lg border border-[var(--app-border)]">
+        <table
+          className={`${fitContent ? "w-max max-w-full" : "w-full"} text-xs ${growRows ? "h-full" : ""}`}
+          style={{ minWidth }}
+        >
           <thead>
             <tr className="text-left text-[10px] font-semibold uppercase tracking-wider sm:text-[11px]">
               {columns.map((col) => {
@@ -71,7 +90,7 @@ export function ScheduleTable<T extends Record<string, unknown>>({
                 return (
                   <th
                     key={String(col.key)}
-                    className={`sticky top-0 z-10 border-b border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-2 whitespace-nowrap ${
+                    className={`sticky top-0 z-10 border-b border-[var(--app-border)] bg-[var(--app-surface-muted)] ${cellPad} whitespace-nowrap ${
                       HEAD_TONE[tone]
                     } ${col.align === "right" ? "text-right" : ""} ${
                       col.sticky ? "left-0 z-20 shadow-[1px_0_0_var(--app-border)]" : ""
@@ -101,7 +120,9 @@ export function ScheduleTable<T extends Record<string, unknown>>({
                   key={i}
                   className={`${
                     isLast ? "" : "border-b border-[var(--app-border)]"
-                  } transition-colors hover:bg-[var(--app-surface-muted)]/60 ${zebraBg} ${lastBg} ${emphBg}`}
+                  } transition-colors hover:bg-[var(--app-surface-muted)]/60 ${zebraBg} ${lastBg} ${emphBg} ${
+                    growRows ? "h-[1%]" : ""
+                  }`}
                 >
                   {columns.map((col) => {
                     const raw = row[col.key as keyof T];
@@ -129,11 +150,11 @@ export function ScheduleTable<T extends Record<string, unknown>>({
                     return (
                       <td
                         key={String(col.key)}
-                        className={`px-3 py-2 text-[11px] font-medium tabular-nums sm:text-xs ${
-                          col.render ? "whitespace-normal" : "whitespace-nowrap"
-                        } ${col.sticky ? "" : CELL_TONE[tone]} ${
-                          col.align === "right" ? "text-right" : ""
-                        } ${
+                        className={`${cellPad} text-[11px] font-medium tabular-nums sm:text-xs ${
+                          growRows && !dense ? "py-3.5" : ""
+                        } ${col.render ? "whitespace-normal" : "whitespace-nowrap"} ${
+                          col.sticky ? "" : CELL_TONE[tone]
+                        } ${col.align === "right" ? "text-right" : ""} ${
                           col.sticky
                             ? `sticky left-0 z-[5] shadow-[1px_0_0_var(--app-border)] ${stickyBg}`
                             : ""

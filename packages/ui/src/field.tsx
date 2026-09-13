@@ -4,17 +4,22 @@ export function Field({
   label,
   hint,
   error,
+  wrapLabel = false,
   children,
 }: {
   label: string;
   hint?: string;
   error?: string;
+  /** Allow multi-line labels instead of truncating. */
+  wrapLabel?: boolean;
   children: ReactNode;
 }) {
   return (
     <label className="flex min-w-0 flex-col gap-1.5">
       <span
-        className="block truncate text-[10px] font-semibold uppercase tracking-wide text-[var(--app-text-subtle)] sm:text-[11px]"
+        className={`block text-[10px] font-semibold uppercase tracking-wide text-[var(--app-text-subtle)] sm:text-[11px] ${
+          wrapLabel ? "whitespace-normal leading-snug" : "truncate"
+        }`}
         title={label}
       >
         {label}
@@ -29,7 +34,7 @@ export function Field({
         </span>
       ) : hint ? (
         <span
-          className="truncate text-[11px] leading-snug text-[var(--app-text-muted)]"
+          className={`${wrapLabel ? "whitespace-normal" : "truncate"} text-[11px] leading-snug text-[var(--app-text-muted)]`}
           title={hint}
         >
           {hint}
@@ -56,6 +61,8 @@ export function SelectInput({
   onChange,
   options,
   hint,
+  error,
+  wrapLabel = false,
   className,
 }: {
   label: string;
@@ -63,10 +70,12 @@ export function SelectInput({
   onChange: (value: string) => void;
   options: Array<{ value: string; label: string }>;
   hint?: string;
+  error?: string;
+  wrapLabel?: boolean;
   className?: string;
 }) {
   return (
-    <Field label={label} hint={hint}>
+    <Field label={label} hint={hint} error={error} wrapLabel={wrapLabel}>
       <select
         className={className ? `${inputClass} ${className}` : inputClass}
         value={value}

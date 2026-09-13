@@ -45,7 +45,7 @@ export type NavCategory = {
  * Calculators grouped by product category (STANDARD → INSURANCE).
  * Set `enabled: false` on an item to hide it; middleware blocks the route
  * when every item for that path is disabled.
- * Set `completed: true` for client-visible calculators (through Goal Periodic).
+ * Set `completed: true` for client-visible calculators (Excel QA / UI shipped).
  */
 export const CALCULATOR_CATEGORIES: NavCategory[] = [
   {
@@ -156,6 +156,7 @@ export const CALCULATOR_CATEGORIES: NavCategory[] = [
         label: "Goal – SIP & Step-Up SIP",
         shortLabel: "Goal SIP",
         excelFile: "Unprotected/Nivra Goal - Compute SIP_or_StepUP_SIP v3.xlsm",
+        completed: true,
       },
       {
         id: "goal-existing",
@@ -164,6 +165,7 @@ export const CALCULATOR_CATEGORIES: NavCategory[] = [
         label: "Goal with Existing SIP",
         shortLabel: "Goal Existing",
         excelFile: "Unprotected/Nivra Goal_Existing_SIP - Compute SIP v3.xlsm",
+        completed: true,
       },
       {
         id: "goal-compounding",
@@ -173,6 +175,7 @@ export const CALCULATOR_CATEGORIES: NavCategory[] = [
         shortLabel: "Compounding",
         excelFile:
           "Unprotected/Nivra Goal with Power of Compounding - Growth Steps.xlsm",
+        completed: true,
       },
     ],
   },
@@ -187,6 +190,7 @@ export const CALCULATOR_CATEGORIES: NavCategory[] = [
         label: "Financial Health Analysis",
         shortLabel: "Health",
         excelFile: "Unprotected/Nivra Financial Health Analysis v4.xlsm",
+        completed: true,
       },
       {
         id: "fire-planner",
@@ -209,6 +213,7 @@ export const CALCULATOR_CATEGORIES: NavCategory[] = [
         label: "Loan EMI with Interest Recovery",
         shortLabel: "Loan EMI",
         excelFile: "Unprotected/Nivra Loan EMI Calculator v1.xlsm",
+        completed: true,
       },
       {
         id: "loan-extra-vs-invest",
@@ -217,6 +222,7 @@ export const CALCULATOR_CATEGORIES: NavCategory[] = [
         label: "Loan – One Extra Payment vs Investment",
         shortLabel: "Extra vs Invest",
         excelFile: "Unprotected/Nivra Loan Extra Payment vs Investment v2.xlsm",
+        completed: true,
       },
       {
         id: "loan-recovery",
@@ -225,6 +231,7 @@ export const CALCULATOR_CATEGORIES: NavCategory[] = [
         label: "Loan Restructuring with Interest Recovery",
         shortLabel: "Interest Recovery",
         excelFile: "Unprotected/Nivra Loan Interest Recovery v7.xlsm",
+        completed: true,
       },
       {
         id: "loan-prepay",
@@ -233,6 +240,7 @@ export const CALCULATOR_CATEGORIES: NavCategory[] = [
         label: "Loan with Extra Yearly Payments",
         shortLabel: "Yearly Extra",
         excelFile: "Unprotected/Nivra Loan with Periodic Extra Payments - v1.xlsm",
+        completed: true,
       },
     ],
   },
@@ -253,6 +261,7 @@ export const CALCULATOR_CATEGORIES: NavCategory[] = [
         mode: "vehicle",
         label: "Vehicle Loan Benefit Analysis",
         shortLabel: "Vehicle Loan",
+        completed: true,
         excelFile:
           "Nivra Tools - Full Set/Nivra Vehicle Loan Benefit Analysis-v2.xlsx",
       },

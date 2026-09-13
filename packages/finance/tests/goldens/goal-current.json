@@ -29,7 +29,7 @@
       "expect": {
         "shortfall": 16892374.415978163,
         "standard.monthlySip": 38484.4748799025,
-        "stepUp.monthlySip": 21889.918598229673,
+        "stepUp.monthlySip": 21889.918598229677,
         "lumpsum.lumpsum": 3437342.7887438303
       }
     },

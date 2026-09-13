@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { formatINRCurrency } from "./format";
 
 /**
@@ -12,11 +13,14 @@ export function StatCard({
   title,
   value,
   hint,
+  footer,
   variant = "primary",
 }: {
   title: string;
   value: number;
   hint?: string;
+  /** Extra line under the hint (e.g. Step-Up ending SIP). */
+  footer?: ReactNode;
   variant?: "primary" | "soft";
   /** @deprecated the stat band is a single scale. */
   size?: "default" | "lg";
@@ -34,6 +38,11 @@ export function StatCard({
       {hint ? (
         <div className="mt-1 text-[11px] leading-snug text-[var(--app-primary-fg-muted)]">
           {hint}
+        </div>
+      ) : null}
+      {footer ? (
+        <div className="mt-1.5 border-t border-[var(--app-primary-fg)]/15 pt-1.5 text-[11px] leading-snug text-[var(--app-primary-fg-muted)]">
+          {footer}
         </div>
       ) : null}
     </div>

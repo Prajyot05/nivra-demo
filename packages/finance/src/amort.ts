@@ -4,6 +4,10 @@ export type AmortInput = {
   principal: number;
   years: number;
   annualRate: number;
+  /** Annual return used for “invest to recover interest” SIP (default 12%). */
+  recoverReturn?: number;
+  /** Months to wait before starting the recovery SIP (default 12). */
+  delayMonths?: number;
 };
 
 export type AmortRow = {
@@ -32,6 +36,14 @@ export function calculateAmort(input: AmortInput): {
   totalInterest: number;
   totalPaid: number;
   schedule: AmortRow[];
+  recoverReturn: number;
+  delayMonths: number;
+  recoverMonths: number;
+  delayedRecoverMonths: number;
+  recoverMonthlySip: number;
+  recoverInvested: number;
+  delayedRecoverMonthlySip: number;
+  delayedRecoverInvested: number;
 } {
   const n = input.years * 12;
   const r = nominalMonthlyRate(input.annualRate);
@@ -61,12 +73,37 @@ export function calculateAmort(input: AmortInput): {
     });
   }
 
+  // Investment to recover interest (Excel Loan EMI v1 side panel).
+  // Immediate SIP: beginning-of-period (type=1), same convention as loan-prepay recoverSip.
+  // Delayed SIP: Excel uses end-of-period (type=0) over the remaining months.
+  const recoverReturn = input.recoverReturn ?? 0.12;
+  const delayMonths = Math.max(0, Math.floor(input.delayMonths ?? 12));
+  const recoverMonths = n;
+  const delayedRecoverMonths = Math.max(0, n - delayMonths);
+  const recoverR = monthlyRate(recoverReturn);
+  const recoverMonthlySip =
+    recoverMonths > 0 && totalInterest > 0
+      ? pmt(recoverR, recoverMonths, 0, -totalInterest, 1)
+      : 0;
+  const delayedRecoverMonthlySip =
+    delayedRecoverMonths > 0 && totalInterest > 0
+      ? pmt(recoverR, delayedRecoverMonths, 0, -totalInterest, 0)
+      : 0;
+
   return {
     emi,
     totalPrincipal,
     totalInterest,
     totalPaid: totalPrincipal + totalInterest,
     schedule,
+    recoverReturn,
+    delayMonths,
+    recoverMonths,
+    delayedRecoverMonths,
+    recoverMonthlySip,
+    recoverInvested: recoverMonthlySip * recoverMonths,
+    delayedRecoverMonthlySip,
+    delayedRecoverInvested: delayedRecoverMonthlySip * delayedRecoverMonths,
   };
 }
 

@@ -554,6 +554,17 @@ const goalHnwEngine = {
 {
   const sample = calculateGoalCompounding({ ...goalEngine, extraYears: 5 });
   const hnw = calculateGoalCompounding({ ...goalHnwEngine, extraYears: 10 });
+  const excel = calculateGoalCompounding({
+    goalAmount: 5_000_000,
+    tenureYears: 15,
+    annualReturn: 0.14,
+    inflationRate: 0,
+    taxRate: 0.125,
+    useInflationAdjustedGoal: false,
+    extraYears: 0,
+    investmentType: "one-time",
+    stepSize: 1_000_000,
+  });
   write({
     id: "goal-compounding",
     scenarios: [
@@ -567,6 +578,37 @@ const goalHnwEngine = {
           "lumpsum.lumpsum",
           "sipAfterExtra",
           "lumpsumAfterExtra",
+        ]),
+      },
+      {
+        name: "excel-growth-steps",
+        source: "Unprotected/Nivra Goal with Power of Compounding - Growth Steps.xlsm",
+        engineInput: {
+          goalAmount: 5_000_000,
+          tenureYears: 15,
+          annualReturn: 0.14,
+          inflationRate: 0,
+          taxRate: 0.125,
+          useInflationAdjustedGoal: false,
+          extraYears: 0,
+          investmentType: "one-time",
+          stepSize: 1_000_000,
+        },
+        apiInput: {
+          goalAmount: 5_000_000,
+          tenureYears: 15,
+          returnPct: 14,
+          taxPct: 12.5,
+          investmentType: "one-time",
+          stepSize: 1_000_000,
+        },
+        expect: pick(excel, [
+          "standard.monthlySip",
+          "lumpsum.lumpsum",
+          "standard.maturity",
+          "lumpsum.maturity",
+          "standard.tax",
+          "lumpsum.tax",
         ]),
       },
       {
@@ -595,8 +637,19 @@ const goalHnwEngine = {
         name: "unprotected-sample",
         source: "Unprotected/Nivra Loan EMI Calculator v1.xlsm",
         engineInput: { principal: 7_500_000, years: 20, annualRate: 0.092 },
-        apiInput: { principal: 7_500_000, years: 20, interestPct: 9.2 },
-        expect: { emi: 68447.15332576867, totalPrincipal: 7_500_000 },
+        apiInput: {
+          principal: 7_500_000,
+          years: 20,
+          interestPct: 9.2,
+          recoverReturnPct: 12,
+          delayMonths: 12,
+        },
+        expect: {
+          emi: 68447.15332576867,
+          totalPrincipal: 7_500_000,
+          recoverMonthlySip: 9705.109974231967,
+          delayedRecoverMonthlySip: 11127.297031503196,
+        },
       },
       {
         name: "hnw",

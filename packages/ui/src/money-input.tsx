@@ -8,6 +8,7 @@ export function MoneyInput({
   hint,
   error,
   align = "left",
+  wrapLabel = false,
 }: {
   label: string;
   value: number;
@@ -15,9 +16,10 @@ export function MoneyInput({
   hint?: string;
   error?: string;
   align?: "left" | "right";
+  wrapLabel?: boolean;
 }) {
   return (
-    <Field label={label} hint={hint} error={error}>
+    <Field label={label} hint={hint} error={error} wrapLabel={wrapLabel}>
       <TextInput
         inputMode="numeric"
         className={`${error ? inputErrorClass : ""} ${align === "right" ? "text-right" : ""}`.trim()}

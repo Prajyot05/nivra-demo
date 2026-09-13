@@ -44,7 +44,7 @@ Percents are **human numbers** (12 = 12%), not decimals. Money is INR. The engin
 | `goal-ls-sip` | Unified Goal Planner · LS–SIP options | Extra lumpsum now vs remaining SIP |
 | `goal-existing-sip` | Unified Goal Planner · Existing SIP | Additional SIP = full required − current SIP |
 | `goal-periodic` | Unified Goal Planner · Periodic lumpsum | `timesPerYear` must divide 12 |
-| `goal-compounding` | Unified Goal Planner · Growth steps | Required SIP + lumpsum paths; extra years after goal |
+| `goal-compounding` | Unified Goal Planner · Growth steps | Required SIP + lumpsum; wealth-step timings. No inflation. |
 | `loan-emi` | Loan EMI | Uses `r/12` (not effective monthly). **Must** use this helper. UI `/loans` |
 | `loan-prepay` | Loan yearly extra | Unprotected Periodic Extra Payments v1. UI `/loans` |
 | `loan-extra-vs-invest` | Extra vs invest **v2** | Unprotected v2. UI `/loans` |
@@ -127,13 +127,13 @@ Health: `GET /api/health` → `{ ok, calculators }`.
 {
   "clientName": "Mr. John Doe",
   "age": 30,
-  "goalAmount": 1000000,
+  "goalAmount": 10000000,
   "tenureYears": 15,
   "returnPct": 12,
-  "inflationPct": 5.75,
+  "inflationPct": 5.25,
   "taxPct": 12.5,
   "stepUpPct": 10,
-  "useInflationAdjustedGoal": false
+  "useInflationAdjustedGoal": true
 }
 ```
 
@@ -188,19 +188,60 @@ Existing lumpsum uses annual compounding. Additional amounts are solved so **com
 
 ## `goal-compounding`
 
-**Input:** goal fields + optional `extraYears` (default 5).
+Unprotected *Goal with Power of Compounding / Growth Steps*. There is **no inflation input**. Net after tax equals the stated goal.
 
-**Output:** required `standard` SIP and `lumpsum` at the goal year, `sipAfterExtra` / `lumpsumAfterExtra`, `schedule[]` of `{ year, sipMonthly, sipYearEnd, lumpsumEnd }`, `delays[]` like `goal-sip`.
+**Input**
+
+```json
+{
+  "clientName": "Opinder Jain",
+  "age": 30,
+  "goalAmount": 5000000,
+  "tenureYears": 15,
+  "returnPct": 14,
+  "taxPct": 12.5,
+  "investmentType": "one-time",
+  "stepSize": 1000000
+}
+```
+
+`investmentType` is `one-time` or `sip` (which path the growth-step table uses). `stepSize` is one of `10000` · `100000` · `1000000` · `10000000`. Optional `extraYears` (default 0) extends the yearly schedule only. Optional `inflationPct` / `useInflationAdjustedGoal` default off so a shared goal-planner payload still parses.
+
+**Output `result`**
+
+| field | meaning |
+| --- | --- |
+| `targetGoal` | Stated goal (inflation off unless the caller opts in) |
+| `standard` | Required monthly SIP so **net after tax ≈ goal**. `invested`, `maturity`, `gain`, `tax`, `netAfterTax` at the goal year |
+| `lumpsum` | Required lumpsum today (`lumpsum.lumpsum`) plus the same mix fields at the goal year |
+| `growthSteps[]` | `{ step, targetCorpus, corpus, months }` when `INT(corpus / stepSize)` rises. Sample One Time / ₹10L steps: 23, 86, 123, 150, 170 months |
+| `investmentType` / `stepSize` | Echo of the selected path and step |
+| `schedule[]` | `{ year, sipMonthly, sipYearEnd, lumpsumEnd }` for tenure (+ extra years if sent) |
+| `sipAfterExtra` / `lumpsumAfterExtra` | Corpus at tenure + extra years (equals goal-year maturity when extra years is 0) |
+
+Sample: ₹50 L / 15y / 14% / 12.5% tax → SIP **₹9,670.13**/mo, lumpsum **₹7,84,843.64**, SIP maturity **₹54,65,625.28**, lumpsum maturity **₹56,02,165.19**.
 
 ---
 
 ## `loan-emi`
 
-**Input:** `principal`, `years`, `interestPct`.
+**Input:** `principal`, `years`, `interestPct`, optional `recoverReturnPct` (default 12), optional `delayMonths` (default 12).
 
-**Output:** `emi`, `totalPrincipal`, `totalInterest`, `totalPaid`, `schedule[]` of `{ month, emi, principal, interest, balance }`.
+`delayMonths` must be strictly less than `years × 12` so at least one recovery investment month remains.
+
+**Output:** `emi`, `totalPrincipal`, `totalInterest`, `totalPaid`, `schedule[]` of `{ month, emi, principal, interest, balance }`, plus interest-recovery fields:
+
+| field | meaning |
+| --- | --- |
+| `recoverMonthlySip` | Monthly SIP (start now) that grows to `totalInterest` over the loan term at `recoverReturnPct` |
+| `recoverInvested` | `recoverMonthlySip × recoverMonths` |
+| `delayedRecoverMonthlySip` | Monthly SIP if start is delayed by `delayMonths` |
+| `delayedRecoverInvested` | `delayedRecoverMonthlySip × delayedRecoverMonths` |
+| `recoverMonths` / `delayedRecoverMonths` | Investment months (full term vs term minus delay) |
 
 EMI formula matches Unprotected Loan EMI v1: `[P × R × (1+R)^N] / [(1+R)^N − 1]` with `R = annual/12`.
+
+Interest recovery uses effective monthly return `(1+r)^(1/12)-1`. Immediate SIP is beginning-of-period (Excel type=1). Delayed SIP matches Excel end-of-period (type=0) over the remaining months.
 
 ---
 
@@ -275,9 +316,9 @@ Sample: ₹2 Cr / 20y / 8.5% / extra ₹50 L at month 49 / 9% / 12.5% CG / 20% i
 
 ## `loan-interest-recovery`
 
-**Input:** `principal`, `years`, `interestPct`, `proposedYears`, `sipReturnPct`.
+**Input:** `principal`, `years` (baseline), `interestPct`, `proposedYears` (must be **less than** `years`), `sipReturnPct`.
 
-**Output:** baseline vs proposed EMI, SIP that recovers proposed interest (annuity due), `sipAtHorizon`, year `schedule` of baseline / proposed / SIP.
+**Output:** `baselineEmi`, `baselineInterest`, `baselinePaid`, `proposedEmi`, `proposedInterest`, `proposedPaid`, `monthlySip`, `sipInvested`, `sipAtHorizon`, `totalInvestedLoanPlusSip`, `savingsVsBaselinePaid`, `wealthCreated`, `totalAssetPlusWealth`, `additionalWealth`, year `schedule` of baseline balance / proposed balance / SIP / loanPlusSip.
 
 ---
 
@@ -285,7 +326,7 @@ Sample: ₹2 Cr / 20y / 8.5% / extra ₹50 L at month 49 / 9% / 12.5% CG / 20% i
 
 **Input:** `onRoadCost`, `loanAmount`, `interestPct`, `years`, `incomeTaxPct`, `depreciationPct`, returns and tax for FD / debt / conservative / equity.
 
-**Output:** `emi`, depreciation schedule, `options[]` (No loan, FD, MF debt, conservative, equity) with `financialBenefit`, `compare[]`.
+**Output:** `emi`, `totalInterest`, `totalDepreciation`, tax saved fields, depreciation schedule, `options[]` (No loan, FD, MF debt, Conservative, Equity) with invested / maturity / profit / netProfit / out-of-pocket / financialBenefit, `compare[]`, `stacked[]`, and `best` option name.
 
 FD uses quarterly FV; others annual FV. Depreciation is declining balance on on-road cost.
 
@@ -337,9 +378,9 @@ UI `/fire` · FIRE tab. Sample: age 40 / ret 55 / surv 90 → corpus **₹21,04,
 
 ## `financial-health`
 
-**Input:** `currentCorpus`, `monthlyExpenses`, `monthlyInvestment`, `lifestyleYearly`, ages, `inflationPct`, `returnPct`, `returnAfterPct`, `taxPct`, optional `retirementBenefit`, `savingsGrowthPct`, `events[]` of `{ age, amount, type: Expense|Income }`.
+**Input:** `currentCorpus`, `monthlyExpenses`, `monthlyInvestment`, `lifestyleYearly`, ages, `inflationPct`, `returnPct` (entered-value / direct rate), `returnAfterPct`, `taxPct`, optional `retirementBenefit`, `savingsGrowthPct`, `events[]` (max 5) of `{ age, amount, type: Expense|Income }`. Event ages must be after retirement and on/before survival.
 
-**Output:** `corpusAtRetirement`, `yearsLasting` / `monthsLasting`, `remainingAtSurvival`, `remainingPvToday`, `funded`, `message`, `gapAtRetirement`, age `schedule[]`.
+**Output:** `corpusAtRetirement`, `yearsLasting` / `monthsLasting`, `remainingAtSurvival`, `remainingPvToday`, `funded`, `message` (surplus / fully funded / insufficient), `gapAtRetirement`, age `schedule[]` with `eventAmount` as net event impact after tax for expenses.
 
 UI `/fire` · Health tab. Sample: ₹25 Cr / age 59→60, event ₹2 Cr expense at 62 → lasting **30 yrs**, remaining **₹81,42,85,941.84**.
 

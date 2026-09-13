@@ -27,6 +27,7 @@ export {
   calculateGoalExistingSip,
   calculateGoalPeriodicLumpsum,
   calculateGoalCompounding,
+  compoundingGrowthSteps,
   requiredSip,
   requiredLumpsum,
   requiredStepUpSip,
@@ -43,6 +44,8 @@ export type {
   GoalExistingSipInput,
   GoalPeriodicInput,
   GoalCompoundingInput,
+  GoalCompoundingInvestmentType,
+  GrowthStep,
   FundingLeg,
 } from "./goal";
 export {

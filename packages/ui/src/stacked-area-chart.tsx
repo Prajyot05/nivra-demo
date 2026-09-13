@@ -20,13 +20,21 @@ export function StackedAreaChart({
   data,
   series,
   title = "Over time",
+  xTickFormatter,
+  className,
 }: {
   data: StackedAreaPoint[];
   series: Array<{ key: string; label: string; color: string }>;
   title?: string;
+  /** Custom X-axis tick labels (e.g. Year 5). */
+  xTickFormatter?: (value: number) => string;
+  className?: string;
 }) {
+  const n = data.length;
   return (
-    <div className={`flex min-h-[240px] flex-1 flex-col overflow-hidden ${CARD} ${CARD_PAD}`}>
+    <div
+      className={`flex min-h-[240px] flex-1 flex-col overflow-hidden ${CARD} ${CARD_PAD} ${className ?? ""}`}
+    >
       <div className={`mb-2.5 shrink-0 ${SECTION_TITLE}`}>
         {title}
       </div>
@@ -35,7 +43,13 @@ export function StackedAreaChart({
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--app-border)" vertical={false} />
-              <XAxis dataKey="year" tick={{ fontSize: 11, fill: "var(--app-text-muted)" }} stroke="var(--app-border)" />
+              <XAxis
+                dataKey="year"
+                tick={{ fontSize: 11, fill: "var(--app-text-muted)" }}
+                stroke="var(--app-border)"
+                tickFormatter={xTickFormatter}
+                interval={n <= 16 ? 0 : "preserveStartEnd"}
+              />
               <YAxis
                 tickFormatter={formatAxisINR}
                 tick={{ fontSize: 11, fill: "var(--app-text-muted)" }}
@@ -52,6 +66,11 @@ export function StackedAreaChart({
                   boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
                 }}
                 itemStyle={{ fontWeight: 600 }}
+                labelFormatter={(label) =>
+                  xTickFormatter && typeof label === "number"
+                    ? xTickFormatter(label)
+                    : String(label)
+                }
                 formatter={(value, name) => [
                   typeof value === "number" ? formatINRCurrency(value) : String(value),
                   name,

@@ -178,6 +178,8 @@ export function dispatch(id: string, body: unknown) {
         taxRate: pct(input.taxPct),
         useInflationAdjustedGoal: input.useInflationAdjustedGoal,
         extraYears: input.extraYears,
+        investmentType: input.investmentType,
+        stepSize: input.stepSize,
       });
     }
     case "loan-emi": {
@@ -186,6 +188,8 @@ export function dispatch(id: string, body: unknown) {
         principal: input.principal,
         years: input.years,
         annualRate: pct(input.interestPct),
+        recoverReturn: pct(input.recoverReturnPct),
+        delayMonths: input.delayMonths,
       });
       return {
         emi: result.emi,
@@ -193,6 +197,14 @@ export function dispatch(id: string, body: unknown) {
         totalInterest: result.totalInterest,
         totalPaid: result.totalPaid,
         schedule: result.schedule,
+        recoverReturnPct: input.recoverReturnPct,
+        delayMonths: result.delayMonths,
+        recoverMonths: result.recoverMonths,
+        delayedRecoverMonths: result.delayedRecoverMonths,
+        recoverMonthlySip: result.recoverMonthlySip,
+        recoverInvested: result.recoverInvested,
+        delayedRecoverMonthlySip: result.delayedRecoverMonthlySip,
+        delayedRecoverInvested: result.delayedRecoverInvested,
       };
     }
     case "loan-prepay": {

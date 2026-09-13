@@ -65,4 +65,23 @@ test("Financial Health v4 Unprotected sample (event at 62)", () => {
   close(result.remainingAtSurvival, 814285941.8433343);
   close(result.remainingPvToday, 143908113.34575573);
   assert.equal(result.funded, true);
+  assert.equal(result.message, "You have more funds than you need.");
+});
+
+test("Financial Health shortfall message", () => {
+  const result = calculateFinancialHealth({
+    currentCorpus: 1_000_000,
+    monthlyExpenses: 350_000,
+    monthlyInvestment: 0,
+    lifestyleYearly: 2_500_000,
+    age: 59,
+    retirementAge: 60,
+    survivingAge: 90,
+    inflationRate: 0.0575,
+    annualReturn: 0.0975,
+    returnAfterRetirement: 0.08,
+    taxRate: 0.125,
+  });
+  assert.equal(result.funded, false);
+  assert.equal(result.message, "You do not have sufficient funds.");
 });

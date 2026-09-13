@@ -121,17 +121,44 @@ export const goalPeriodicSchema = z.object({
     }),
 });
 
+export const compoundingStepSizeSchema = z.union([
+  z.literal(10_000),
+  z.literal(100_000),
+  z.literal(1_000_000),
+  z.literal(10_000_000),
+]);
+
 export const goalCompoundingSchema = z.object({
-  ...goalPlannerBase,
-  extraYears: z.number().min(0).max(50).optional().default(5),
+  ...clientFields,
+  goalAmount: z.number().positive(),
+  tenureYears: z.number().positive().max(50),
+  returnPct: z.number().gt(0).max(100),
+  inflationPct: pct.optional().default(0),
+  taxPct: pct,
+  useInflationAdjustedGoal: z.boolean().optional().default(false),
+  extraYears: z.number().min(0).max(50).optional().default(0),
+  investmentType: z.enum(["one-time", "sip"]).optional().default("one-time"),
+  stepSize: compoundingStepSizeSchema.optional().default(1_000_000),
 });
 
-export const loanEmiSchema = z.object({
-  ...clientFields,
-  principal: money,
-  years,
-  interestPct: pct,
-});
+export const loanEmiSchema = z
+  .object({
+    ...clientFields,
+    principal: z.number().positive(),
+    years: z.number().positive().max(50),
+    interestPct: z.number().positive().max(100),
+    recoverReturnPct: z.number().positive().max(100).optional().default(12),
+    delayMonths: z.number().int().min(0).max(1199).optional().default(12),
+  })
+  .superRefine((val, ctx) => {
+    if (val.delayMonths >= val.years * 12) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Delay must leave at least one investment month within the loan term.",
+        path: ["delayMonths"],
+      });
+    }
+  });
 
 export const mfFdSchema = z.object({
   ...clientFields,
@@ -152,44 +179,96 @@ export const loanPrepaySchema = z.object({
   recoverReturnPct: pct.optional().default(12),
 });
 
-export const loanExtraVsInvestSchema = z.object({
-  ...clientFields,
-  principal: money,
-  years,
-  interestPct: pct,
-  extraAmount: money,
-  extraMonth: z.number().int().positive().max(1200),
-  investReturnPct: pct,
-  taxPct: pct,
-  incomeTaxPct: pct,
-});
+export const loanExtraVsInvestSchema = z
+  .object({
+    ...clientFields,
+    principal: money,
+    years,
+    interestPct: pct,
+    extraAmount: money,
+    extraMonth: z.number().int().positive().max(1200),
+    investReturnPct: pct,
+    taxPct: pct,
+    incomeTaxPct: pct,
+  })
+  .superRefine((data, ctx) => {
+    const maxMonth = Math.round(data.years * 12);
+    if (data.extraMonth > maxMonth) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["extraMonth"],
+        message: `Extra payment month cannot exceed the loan term (${maxMonth} months).`,
+      });
+    }
+    if (data.extraAmount > data.principal) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["extraAmount"],
+        message: "Extra payment cannot exceed the loan principal.",
+      });
+    }
+  });
 
-export const loanInterestRecoverySchema = z.object({
-  ...clientFields,
-  principal: money,
-  years,
-  interestPct: pct,
-  proposedYears: years,
-  sipReturnPct: pct,
-});
+export const loanInterestRecoverySchema = z
+  .object({
+    ...clientFields,
+    principal: money,
+    years,
+    interestPct: pct,
+    proposedYears: years,
+    sipReturnPct: pct,
+  })
+  .superRefine((data, ctx) => {
+    if (data.proposedYears >= data.years) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["proposedYears"],
+        message: "Proposed tenure must be shorter than the baseline tenure.",
+      });
+    }
+  });
 
-export const vehicleLoanSchema = z.object({
-  ...clientFields,
-  onRoadCost: money,
-  loanAmount: money,
-  interestPct: pct,
-  years,
-  incomeTaxPct: pct,
-  depreciationPct: pct.optional().default(15),
-  fdReturnPct: pct,
-  debtReturnPct: pct,
-  conservativeReturnPct: pct,
-  equityReturnPct: pct,
-  fdTaxPct: pct,
-  debtTaxPct: pct,
-  conservativeTaxPct: pct,
-  equityTaxPct: pct,
-});
+export const vehicleLoanSchema = z
+  .object({
+    ...clientFields,
+    onRoadCost: money,
+    loanAmount: money,
+    interestPct: pct,
+    years,
+    incomeTaxPct: pct,
+    depreciationPct: pct.optional().default(15),
+    fdReturnPct: pct,
+    debtReturnPct: pct,
+    conservativeReturnPct: pct,
+    equityReturnPct: pct,
+    fdTaxPct: pct,
+    debtTaxPct: pct,
+    conservativeTaxPct: pct,
+    equityTaxPct: pct,
+  })
+  .superRefine((data, ctx) => {
+    if (!(data.onRoadCost > 0)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["onRoadCost"],
+        message: "On-road cost must be greater than 0.",
+      });
+    }
+    if (data.loanAmount > data.onRoadCost) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["loanAmount"],
+        message: "Loan amount cannot exceed on-road cost.",
+      });
+    }
+    if (!(data.interestPct > 0)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["interestPct"],
+        message: "Loan interest rate must be above 0%.",
+      });
+    }
+  });
 
 export const insuranceIrrSchema = z.object({
   ...clientFields,
@@ -337,17 +416,44 @@ export const financialHealthSchema = z
           type: z.enum(["Expense", "Income"]),
         }),
       )
-      .max(10)
+      .max(5)
       .optional()
       .default([]),
   })
   .refine((d) => d.retirementAge >= d.age, {
-    message: "retirementAge must be >= age",
+    message: "Retirement age must be on or after current age",
     path: ["retirementAge"],
   })
   .refine((d) => d.survivingAge >= d.retirementAge, {
-    message: "survivingAge must be >= retirementAge",
+    message: "Survival age must be on or after retirement age",
     path: ["survivingAge"],
+  })
+  .refine((d) => d.returnPct > 0, {
+    message: "Pre-retirement return must be greater than 0%",
+    path: ["returnPct"],
+  })
+  .refine((d) => d.returnAfterPct > 0, {
+    message: "Post-retirement return must be greater than 0%",
+    path: ["returnAfterPct"],
+  })
+  .superRefine((d, ctx) => {
+    for (let i = 0; i < (d.events?.length ?? 0); i += 1) {
+      const ev = d.events![i]!;
+      if (ev.age <= d.retirementAge) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Event age must be after retirement age",
+          path: ["events", i, "age"],
+        });
+      }
+      if (ev.age > d.survivingAge) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Event age must be on or before survival age",
+          path: ["events", i, "age"],
+        });
+      }
+    }
   });
 
 export const CALCULATOR_IDS = [

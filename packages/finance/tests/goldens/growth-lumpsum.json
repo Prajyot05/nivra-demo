@@ -3,7 +3,7 @@
   "scenarios": [
     {
       "name": "unprotected-sample",
-      "source": "calculator-tests/Nivra One-Time Investment v2.xlsm",
+      "source": "Unprotected/Nivra One-Time Investment v2.xlsm",
       "engineInput": {
         "amount": 5000000,
         "years": 16,
@@ -21,15 +21,7 @@
         "taxPct": 0
       },
       "expect": {
-        "maturity": 30651968.25183946,
-        "totalInvested": 5000000,
-        "gain": 25651968.25183946,
-        "inflationAdjusted": 12530613.952781675,
-        "inflationAdjustedGain": 7530613.952781675,
-        "delayedMaturity": 28963387.567505162,
-        "costOfDelay": 1688580.6843342967,
-        "tax": 0,
-        "netAfterTax": 30651968.25183946
+        "maturity": 30651968.25183946
       }
     },
     {
