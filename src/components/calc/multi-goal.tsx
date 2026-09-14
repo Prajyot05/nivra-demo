@@ -1654,12 +1654,8 @@ function WithdrawalsDashboard({
   atCapacity: boolean;
 }) {
   const rows = result?.rows ?? [];
-  const maxSip = rows.reduce((m, r) => Math.max(m, r.monthlySip), 0);
-  const highest = rows.find((r) => r.monthlySip === maxSip && maxSip > 0);
   const maxAge = rows.reduce((m, r) => Math.max(m, r.atAge), clientAge);
   const durationYears = Math.max(0, maxAge - clientAge);
-  const wealthMultiplier =
-    result && result.totalInvested > 0 ? result.totalWithdrawn / result.totalInvested : null;
   const distinctPayoutAges = result
     ? new Set(result.ageChart.filter((r) => r.withdrawal > 0).map((r) => r.age)).size
     : 0;
@@ -1705,6 +1701,7 @@ function WithdrawalsDashboard({
     amount: row.amount,
     monthlySip: row.monthlySip,
     invested: row.invested,
+    peakCorpus: row.peakCorpus,
     yearsLabel: `${row.years} Years`,
   }));
 
@@ -1716,40 +1713,10 @@ function WithdrawalsDashboard({
       {result ? (
         <>
           <StatGrid>
-            <StatCard
-              title="Start monthly SIP"
-              value={result.startMonthlySip}
-              hint={
-                highest
-                  ? `Highest: ${formatINRCurrency(highest.monthlySip)}/mo (${highest.name})`
-                  : "Opening systematic flow"
-              }
-            />
-            <StatCard
-              title="Total goals value"
-              value={result.totalWithdrawn}
-              variant="soft"
-              hint={
-                largest
-                  ? `Largest: ${largest.name}`
-                  : `Across ${rows.length} withdrawal${rows.length === 1 ? "" : "s"}`
-              }
-            />
-            <StatCard
-              title="Total investment"
-              value={result.totalInvested}
-              hint={
-                wealthMultiplier != null
-                  ? `${wealthMultiplier.toFixed(2)}x on capital`
-                  : "Across all goals"
-              }
-            />
-            <StatCard
-              title="Total tax"
-              value={result.totalTax}
-              variant="soft"
-              hint={`${wTax}% rate applied`}
-            />
+            <StatCard title="Start monthly SIP" value={result.startMonthlySip} />
+            <StatCard title="Total goals value" value={result.totalWithdrawn} variant="soft" />
+            <StatCard title="Total investment" value={result.totalInvested} />
+            <StatCard title="Total tax" value={result.totalTax} variant="soft" />
           </StatGrid>
 
           <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
@@ -1884,6 +1851,13 @@ function WithdrawalsDashboard({
                   format: "inr",
                   align: "right",
                   tone: "std",
+                },
+                {
+                  key: "peakCorpus",
+                  header: "Corpus at Withdrawal",
+                  format: "inr",
+                  align: "right",
+                  tone: "step",
                 },
                 { key: "yearsLabel", header: "Years Available", align: "right", tone: "step" },
               ]}
