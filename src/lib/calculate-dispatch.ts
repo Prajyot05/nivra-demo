@@ -352,7 +352,22 @@ export function dispatch(id: string, body: unknown) {
         currentSipReturn: pct(input.currentSipReturnPct),
         limitSipYears: input.limitSipYears,
         stepUpRate: pct(input.stepUpPct),
+        stepUpEveryYears: input.stepUpEveryYears,
         delayMonths: input.delayMonths,
+        events: input.events.map((ev) => {
+          if ((ev.income ?? 0) > 0 || (ev.expense ?? 0) > 0) {
+            return {
+              age: ev.age,
+              income: ev.income ?? 0,
+              expense: ev.expense ?? 0,
+            };
+          }
+          return {
+            age: ev.age,
+            amount: ev.amount ?? 0,
+            type: ev.type,
+          };
+        }),
       });
     }
     case "financial-health": {

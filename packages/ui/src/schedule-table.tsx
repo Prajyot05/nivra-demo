@@ -40,6 +40,7 @@ export function ScheduleTable<T extends Record<string, unknown>>({
   zebra = false,
   highlightLastRow = false,
   emphasizeRow,
+  dangerRow,
   fillHeight = false,
   stretchRows,
   fitContent = false,
@@ -57,6 +58,8 @@ export function ScheduleTable<T extends Record<string, unknown>>({
   highlightLastRow?: boolean;
   /** Highlight specific rows (e.g. highest SIP). */
   emphasizeRow?: (row: T, index: number) => boolean;
+  /** Rose treatment for shortfall / negative-balance rows. Wins over emphasize. */
+  dangerRow?: (row: T, index: number) => boolean;
   /** Stretch the card to fill the parent. Extra rows scroll unless `stretchRows`. */
   fillHeight?: boolean;
   /** Distribute row height so the table body fills the card. Defaults to `fillHeight`. */
@@ -105,14 +108,19 @@ export function ScheduleTable<T extends Record<string, unknown>>({
           <tbody>
             {rows.map((row, i) => {
               const isLast = highlightLastRow && i === rows.length - 1;
-              const isEmphasized = emphasizeRow?.(row, i) ?? false;
+              const isDanger = dangerRow?.(row, i) ?? false;
+              const isEmphasized = !isDanger && (emphasizeRow?.(row, i) ?? false);
               const zebraBg =
-                zebra && !isLast && !isEmphasized && i % 2 === 1
+                zebra && !isLast && !isEmphasized && !isDanger && i % 2 === 1
                   ? "bg-[var(--app-surface-muted)]/50"
                   : "";
               const lastBg = isLast
                 ? "border-y border-[var(--app-step-text)]/35 bg-[var(--app-step-bg)] font-semibold"
                 : "";
+              const dangerBg =
+                isDanger && !isLast
+                  ? "bg-[var(--app-danger)]/10 font-semibold text-[var(--app-danger)]"
+                  : "";
               const emphBg =
                 isEmphasized && !isLast ? "bg-[var(--app-warn-bg)] font-semibold" : "";
               return (
@@ -120,7 +128,7 @@ export function ScheduleTable<T extends Record<string, unknown>>({
                   key={i}
                   className={`${
                     isLast ? "" : "border-b border-[var(--app-border)]"
-                  } transition-colors hover:bg-[var(--app-surface-muted)]/60 ${zebraBg} ${lastBg} ${emphBg} ${
+                  } transition-colors hover:bg-[var(--app-surface-muted)]/60 ${zebraBg} ${lastBg} ${dangerBg} ${emphBg} ${
                     growRows ? "h-[1%]" : ""
                   }`}
                 >
@@ -130,11 +138,13 @@ export function ScheduleTable<T extends Record<string, unknown>>({
                     const stickyBg = col.sticky
                       ? isLast
                         ? "bg-[var(--app-step-bg)]"
-                        : isEmphasized
-                          ? "bg-[var(--app-warn-bg)]"
-                          : zebra && i % 2 === 1
-                            ? "bg-[var(--app-surface-muted)]"
-                            : "bg-[var(--app-surface)]"
+                        : isDanger
+                          ? "bg-[var(--app-danger)]/10"
+                          : isEmphasized
+                            ? "bg-[var(--app-warn-bg)]"
+                            : zebra && i % 2 === 1
+                              ? "bg-[var(--app-surface-muted)]"
+                              : "bg-[var(--app-surface)]"
                       : "";
                     const content = col.render
                       ? col.render(raw, row, i)
@@ -153,7 +163,7 @@ export function ScheduleTable<T extends Record<string, unknown>>({
                         className={`${cellPad} text-[11px] font-medium tabular-nums sm:text-xs ${
                           growRows && !dense ? "py-3.5" : ""
                         } ${col.render ? "whitespace-normal" : "whitespace-nowrap"} ${
-                          col.sticky ? "" : CELL_TONE[tone]
+                          col.sticky || isDanger ? "" : CELL_TONE[tone]
                         } ${col.align === "right" ? "text-right" : ""} ${
                           col.sticky
                             ? `sticky left-0 z-[5] shadow-[1px_0_0_var(--app-border)] ${stickyBg}`

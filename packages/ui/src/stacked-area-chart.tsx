@@ -3,6 +3,7 @@ import {
   AreaChart,
   CartesianGrid,
   Legend,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -16,12 +17,22 @@ export type StackedAreaPoint = {
   [series: string]: number;
 };
 
+export type StackedAreaReferenceLine = {
+  x?: number;
+  y?: number;
+  label?: string;
+  color?: string;
+};
+
 export function StackedAreaChart({
   data,
   series,
   title = "Over time",
   xTickFormatter,
   className,
+  referenceLines,
+  /** Keys that should stroke only (no area fill). */
+  lineOnlyKeys,
 }: {
   data: StackedAreaPoint[];
   series: Array<{ key: string; label: string; color: string }>;
@@ -29,8 +40,11 @@ export function StackedAreaChart({
   /** Custom X-axis tick labels (e.g. Year 5). */
   xTickFormatter?: (value: number) => string;
   className?: string;
+  referenceLines?: StackedAreaReferenceLine[];
+  lineOnlyKeys?: string[];
 }) {
   const n = data.length;
+  const lineOnly = new Set(lineOnlyKeys ?? []);
   return (
     <div
       className={`flex min-h-[240px] flex-1 flex-col overflow-hidden ${CARD} ${CARD_PAD} ${className ?? ""}`}
@@ -41,7 +55,7 @@ export function StackedAreaChart({
       <div className="relative min-h-0 flex-1">
         <div className="absolute inset-0">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+            <AreaChart data={data} margin={{ top: 12, right: 12, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--app-border)" vertical={false} />
               <XAxis
                 dataKey="year"
@@ -69,14 +83,48 @@ export function StackedAreaChart({
                 labelFormatter={(label) =>
                   xTickFormatter && typeof label === "number"
                     ? xTickFormatter(label)
-                    : String(label)
+                    : `Age ${label}`
                 }
                 formatter={(value, name) => [
                   typeof value === "number" ? formatINRCurrency(value) : String(value),
                   name,
                 ]}
               />
-              <Legend wrapperStyle={{ fontSize: "12px", color: "var(--app-text-muted)" }} />
+              <Legend
+                verticalAlign="bottom"
+                height={36}
+                wrapperStyle={{
+                  fontSize: "12px",
+                  color: "var(--app-text-muted)",
+                  paddingTop: 8,
+                }}
+              />
+              {(referenceLines ?? []).map((line) => {
+                const hasX = line.x != null && Number.isFinite(line.x);
+                const hasY = line.y != null && Number.isFinite(line.y);
+                if (!hasX && !hasY) return null;
+                return (
+                  <ReferenceLine
+                    key={`${hasX ? `x-${line.x}` : `y-${line.y}`}-${line.label ?? ""}`}
+                    x={hasX ? line.x : undefined}
+                    y={hasY ? line.y : undefined}
+                    stroke={line.color ?? "var(--app-text-subtle)"}
+                    strokeDasharray="4 4"
+                    strokeOpacity={0.85}
+                    label={
+                      line.label
+                        ? {
+                            value: line.label,
+                            position: hasX ? "insideTopLeft" : "insideTopRight",
+                            fill: "var(--app-text-muted)",
+                            fontSize: 10,
+                            fontWeight: 600,
+                          }
+                        : undefined
+                    }
+                  />
+                );
+              })}
               {series.map((s) => (
                 <Area
                   key={s.key}
@@ -85,8 +133,8 @@ export function StackedAreaChart({
                   name={s.label}
                   stroke={s.color}
                   fill={s.color}
-                  fillOpacity={0.35}
-                  stackId="mix"
+                  fillOpacity={lineOnly.has(s.key) ? 0 : 0.35}
+                  stackId={lineOnly.has(s.key) ? undefined : "mix"}
                   strokeWidth={2}
                 />
               ))}

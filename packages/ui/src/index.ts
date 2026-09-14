@@ -33,7 +33,7 @@ export type { StackedBarPoint } from "./stacked-bar-chart";
 export { WaterfallChart } from "./waterfall-chart";
 export type { WaterfallStep } from "./waterfall-chart";
 export { StackedAreaChart } from "./stacked-area-chart";
-export type { StackedAreaPoint } from "./stacked-area-chart";
+export type { StackedAreaPoint, StackedAreaReferenceLine } from "./stacked-area-chart";
 export { ComboChart } from "./combo-chart";
 export type { ComboPoint, ComboAgeMarker } from "./combo-chart";
 export { Disclaimer } from "./disclaimer";
