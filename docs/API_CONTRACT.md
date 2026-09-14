@@ -344,9 +344,9 @@ Sample: ₹2 L × 5y, corpus ₹11.6 L, 20y, 11%, 12.5% tax → maturity **55,50
 
 ## `insurance-tp`
 
-**Input:** current policy (`premium`, `payTerm`, `yearsPaid`, `policyTerm`, `yearsToMaturity`, `maturityValue`, `taxPct`, `surrenderValue`) plus term (`termPremium`, `termYears`) and `returnPct`.
+**Input:** current policy (`premium`, `payTerm`, `yearsPaid`, `policyTerm`, `yearsToMaturity`, `maturityValue`, `taxPct`, `surrenderValue`) plus term (`termPremium`, `termYears`, optional `termCover`) and `returnPct`.
 
-**Output:** `keep` (net after tax, IRR) vs `switch` (`investMaturity`, term cost, IRR), `compare[]`.
+**Output:** `keep` (net after tax, IRR) vs `switch` (`investMaturity`, term cost, Investment IRR matching Excel col AG, `surrenderIrr`, `corpusPath`), `additionalWealth`, `compare[]`.
 
 ---
 

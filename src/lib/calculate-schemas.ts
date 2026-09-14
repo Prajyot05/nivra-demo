@@ -270,30 +270,107 @@ export const vehicleLoanSchema = z
     }
   });
 
-export const insuranceIrrSchema = z.object({
-  ...clientFields,
-  premium: money,
-  payTerm: years,
-  corpusAtPayEnd: money,
-  policyTerm: z.number().positive().max(50),
-  returnPct: pct,
-  taxPct: pct,
-});
+export const insuranceIrrSchema = z
+  .object({
+    ...clientFields,
+    premium: money,
+    payTerm: years,
+    corpusAtPayEnd: money,
+    policyTerm: z.number().positive().max(50),
+    returnPct: pct,
+    taxPct: pct,
+  })
+  .superRefine((data, ctx) => {
+    if (!(data.premium > 0)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["premium"],
+        message: "Annual premium must be greater than 0.",
+      });
+    }
+    if (!(data.corpusAtPayEnd > 0)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["corpusAtPayEnd"],
+        message: "Corpus at payment end must be greater than 0.",
+      });
+    }
+    if (!(data.returnPct > 0)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["returnPct"],
+        message: "Expected return must be above 0%.",
+      });
+    }
+    if (data.payTerm > data.policyTerm) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["payTerm"],
+        message: "Premium payment term cannot exceed the policy term.",
+      });
+    }
+  });
 
-export const insuranceTpSchema = z.object({
-  ...clientFields,
-  premium: money,
-  payTerm: years,
-  yearsPaid: z.number().min(0).max(50),
-  policyTerm: z.number().positive().max(50),
-  yearsToMaturity: years,
-  maturityValue: money,
-  taxPct: pct,
-  surrenderValue: money,
-  termPremium: money,
-  termYears: years,
-  returnPct: pct,
-});
+export const insuranceTpSchema = z
+  .object({
+    ...clientFields,
+    premium: money,
+    payTerm: years,
+    yearsPaid: z.number().min(0).max(50),
+    policyTerm: z.number().positive().max(50),
+    yearsToMaturity: years,
+    maturityValue: money,
+    taxPct: pct,
+    surrenderValue: money,
+    termPremium: money,
+    termYears: years,
+    returnPct: pct,
+    termCover: money.optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (!(data.premium > 0)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["premium"],
+        message: "Annual premium must be greater than 0.",
+      });
+    }
+    if (data.yearsPaid > data.payTerm) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["yearsPaid"],
+        message: "Years paid cannot exceed the premium payment term.",
+      });
+    }
+    if (data.payTerm > data.policyTerm) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["payTerm"],
+        message: "Premium payment term cannot exceed the policy term.",
+      });
+    }
+    if (data.yearsToMaturity > data.policyTerm) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["yearsToMaturity"],
+        message: "Years to maturity cannot exceed the policy term.",
+      });
+    }
+    if (!(data.returnPct > 0)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["returnPct"],
+        message: "Expected investment return must be above 0%.",
+      });
+    }
+    if (data.surrenderValue < 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["surrenderValue"],
+        message: "Surrender value cannot be negative.",
+      });
+    }
+  });
 
 export const multiGoalAssignSchema = z.object({
   ...clientFields,

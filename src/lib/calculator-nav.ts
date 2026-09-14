@@ -275,8 +275,9 @@ export const CALCULATOR_CATEGORIES: NavCategory[] = [
         id: "insurance-irr",
         to: "/insurance",
         mode: "irr",
-        label: "Insurance IRR",
+        label: "Insurance IRR Calculator",
         shortLabel: "Ins. IRR",
+        completed: true,
         excelFile: "Unprotected/Nivra Insurance IRR Calculator v1.xlsm",
       },
       {
@@ -285,6 +286,7 @@ export const CALCULATOR_CATEGORIES: NavCategory[] = [
         mode: "switch",
         label: "Insurance – Convert to Term Plan + Investment",
         shortLabel: "Term + Invest",
+        completed: true,
         excelFile:
           "Unprotected/Nivra Insurance - Convert to TP and Investment Planner v3.xlsm",
       },

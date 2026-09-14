@@ -295,6 +295,7 @@ export function dispatch(id: string, body: unknown) {
         termPremium: input.termPremium,
         termYears: input.termYears,
         expectedReturn: pct(input.returnPct),
+        termCover: input.termCover,
       });
     }
     case "multi-goal-assign": {
