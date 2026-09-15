@@ -1,4 +1,4 @@
-import { ShieldCheck, Headset } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { AdminPageHeader, Panel, StatTile } from "@/components/admin/admin-ui";
 import { NivraRoleBadge } from "@/components/admin/status-badges";
 import {
@@ -9,27 +9,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DUMMY_NIVRA_STAFF } from "@/lib/admin/dummy-data";
+import { listNivraStaff } from "@/lib/admin/queries";
+import { isDatabaseConfigured } from "@/lib/db";
 
-export default function AdminStaffPage() {
-  const admins = DUMMY_NIVRA_STAFF.filter((s) => s.role === "main_admin");
-  const support = DUMMY_NIVRA_STAFF.filter((s) => s.role === "support");
+export default async function AdminStaffPage() {
+  const staff = await listNivraStaff();
+  const source = isDatabaseConfigured() ? "Neon" : "dummy fallback";
 
   return (
     <>
       <AdminPageHeader
         title="Staff & roles"
-        description="Two Nivra roles: Main admin (platform) and Support staff who generate reports for tenants."
+        description={`Nivra platform admins (UserRole.NIVRA_ADMIN). Source: ${source}.`}
       />
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <StatTile label="Main admins" value={admins.length} icon={ShieldCheck} />
-        <StatTile
-          label="Support staff"
-          value={support.filter((s) => s.status === "active").length}
-          hint={`${support.length} total including inactive`}
-          icon={Headset}
-        />
+        <StatTile label="Nivra admins" value={staff.length} icon={ShieldCheck} />
       </div>
 
       <Panel title="Nivra team">
@@ -43,7 +38,7 @@ export default function AdminStaffPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {DUMMY_NIVRA_STAFF.map((person) => (
+            {staff.map((person) => (
               <TableRow key={person.id}>
                 <TableCell>
                   <div className="font-medium">{person.name}</div>

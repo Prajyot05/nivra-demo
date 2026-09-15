@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getCompany, getCompanyUsers } from "@/lib/admin/dummy-data";
+import { getCompanyById, listCompanyUsers } from "@/lib/admin/queries";
 
 export default async function AdminCompanyDetailPage({
   params,
@@ -26,10 +26,10 @@ export default async function AdminCompanyDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const company = getCompany(id);
+  const company = await getCompanyById(id);
   if (!company) notFound();
 
-  const users = getCompanyUsers(company.id);
+  const users = await listCompanyUsers(company.id);
 
   return (
     <>

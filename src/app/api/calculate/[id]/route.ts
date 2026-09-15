@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
+import { getCurrentAppUser } from "@/lib/auth";
 import { dispatch } from "@/lib/calculate-dispatch";
 
 export async function POST(
@@ -7,6 +8,30 @@ export async function POST(
   context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
+
+  const user = await getCurrentAppUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { entitlements } = user;
+  if (!entitlements.canUseCalculators) {
+    return NextResponse.json(
+      { error: "Calculators are locked for this organization" },
+      { status: 403 },
+    );
+  }
+  if (
+    entitlements.allowedCalculatorIds.length > 0 &&
+    !entitlements.allowedCalculatorIds.includes("*") &&
+    !entitlements.allowedCalculatorIds.includes(id)
+  ) {
+    return NextResponse.json(
+      { error: `Calculator not included in plan: ${id}` },
+      { status: 403 },
+    );
+  }
+
   try {
     const body = await request.json();
     const result = dispatch(id, body);

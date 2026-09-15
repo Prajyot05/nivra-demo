@@ -1,13 +1,24 @@
 import { NextResponse } from "next/server";
-import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
+import { getCurrentAppUser, navProfileForRole } from "@/lib/auth";
 
 export async function GET() {
-  const { cookies } = await import("next/headers");
-  const jar = await cookies();
-  const token = jar.get(SESSION_COOKIE)?.value;
-  const profileId = await verifySessionToken(token);
-  if (!profileId) {
+  const user = await getCurrentAppUser();
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  return NextResponse.json({ profileId });
+
+  return NextResponse.json({
+    profileId: navProfileForRole(user.role),
+    role: user.role,
+    userId: user.id,
+    organizationId: user.organizationId,
+    entitlements: {
+      lockMode: user.entitlements.lockMode,
+      canUseCalculators: user.entitlements.canUseCalculators,
+      canGenerateReports: user.entitlements.canGenerateReports,
+      tierName: user.entitlements.tierName,
+      allowedCalculatorIds: user.entitlements.allowedCalculatorIds,
+      reportsRemaining: user.entitlements.reportsRemaining,
+    },
+  });
 }

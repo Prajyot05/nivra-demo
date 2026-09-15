@@ -9,19 +9,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DUMMY_COMPANIES, platformStats } from "@/lib/admin/dummy-data";
+import { getPlatformStats, listCompanies } from "@/lib/admin/queries";
+import { isDatabaseConfigured } from "@/lib/db";
 
-export default function AdminReportsPage() {
-  const stats = platformStats();
-  const byVolume = [...DUMMY_COMPANIES].sort(
+export default async function AdminReportsPage() {
+  const stats = await getPlatformStats();
+  const companies = await listCompanies();
+  const byVolume = [...companies].sort(
     (a, b) => b.reportsThisMonth - a.reportsThisMonth,
   );
+  const source = isDatabaseConfigured() ? "Neon" : "dummy fallback";
 
   return (
     <>
       <AdminPageHeader
         title="Reports"
-        description="Aggregate report generation across tenants. Soft-locked companies stay view-only for a few days."
+        description={`Aggregate report generation across tenants. Soft-lock: 3 days view-only, then hard lock. Source: ${source}.`}
       />
 
       <div className="grid gap-4 sm:grid-cols-2">
