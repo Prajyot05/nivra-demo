@@ -43,6 +43,8 @@ export function CompositionChart({
   slices,
   centerLabel = "Total",
   centerValue,
+  /** Override the formatted centre amount (e.g. compact ₹16.91 Cr). */
+  centerValueDisplay,
   className,
   compact = false,
   showPercentages = false,
@@ -56,6 +58,7 @@ export function CompositionChart({
   slices: CompositionSlice[];
   centerLabel?: string;
   centerValue?: number;
+  centerValueDisplay?: string;
   className?: string;
   /** Tighter vertical footprint — less empty space above/below the donut. */
   compact?: boolean;
@@ -70,7 +73,7 @@ export function CompositionChart({
   const data = slices.filter((s) => s.value > 0);
   const sliceSum = slices.reduce((sum, s) => sum + Math.max(0, s.value), 0);
   const total = centerValue ?? data.reduce((sum, s) => sum + s.value, 0);
-  const label = formatINRCurrency(total);
+  const label = centerValueDisplay ?? formatINRCurrency(total);
   const len = label.length;
   const corpusFont = compact
     ? len > 13
@@ -199,12 +202,12 @@ export function CompositionChart({
                   {label}
                 </div>
                 <div
-                  className={`mt-0.5 font-semibold uppercase tracking-widest text-[var(--app-text-subtle)] ${
+                  className={`mt-0.5 font-semibold uppercase tracking-wide text-[var(--app-text-subtle)] ${
                     compact
-                      ? "text-[8px]"
+                      ? "text-[8px] leading-tight"
                       : large
-                        ? "text-[10px] sm:text-xs"
-                        : "text-[9px] sm:text-[10px]"
+                        ? "text-[9px] leading-tight sm:text-[10px]"
+                        : "text-[8px] leading-tight sm:text-[9px]"
                   }`}
                 >
                   {centerLabel}

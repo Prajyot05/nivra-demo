@@ -16,19 +16,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DUMMY_COMPANIES, platformStats } from "@/lib/admin/dummy-data";
+import { getPlatformStats, listCompanies } from "@/lib/admin/queries";
+import { isDatabaseConfigured } from "@/lib/db";
 
-export default function AdminOverviewPage() {
-  const stats = platformStats();
-  const recent = [...DUMMY_COMPANIES].sort((a, b) =>
-    b.createdAt.localeCompare(a.createdAt),
-  );
+export default async function AdminOverviewPage() {
+  const stats = await getPlatformStats();
+  const companies = await listCompanies();
+  const recent = [...companies].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const source = isDatabaseConfigured() ? "Neon" : "dummy fallback (set DATABASE_URL)";
 
   return (
     <>
       <AdminPageHeader
         title="Platform overview"
-        description="All tenant companies, report volume, and subscription health. Dummy data until auth + Neon are wired."
+        description={`All tenant companies, report volume, and subscription health. Data source: ${source}.`}
         actions={
           <Button size="sm" asChild>
             <Link href="/admin/companies">View companies</Link>
@@ -47,7 +48,7 @@ export default function AdminOverviewPage() {
         <StatTile
           label="Seats used"
           value={`${stats.seatsUsed}/${stats.seatsTotal}`}
-          hint="Across all tenants"
+          hint="Across all tenants (member count; seat caps deferred)"
           icon={Users}
         />
         <StatTile
@@ -99,7 +100,7 @@ export default function AdminOverviewPage() {
                   <Badge variant="outline">{company.tier}</Badge>
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
-                  {company.seatsUsed}/{company.seats}
+                  {company.seatsUsed}
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
                   {company.reportsGenerated.toLocaleString("en-IN")}

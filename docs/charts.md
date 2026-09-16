@@ -51,8 +51,8 @@ Add to the kit when a page needs them. Do not paste one-off Recharts into `src/a
 | 8 | Extra pay vs invest v2 | `/loans` | **Inferred compare**: prepay vs invest (interest saved, corpus, net) | **Line** of both paths over years (loan outstanding falling vs investment rising). |
 | 9 | Interest recovery v7 | `/loans` | **Line**: Baseline, SIP value, Proposed / loan+SIP | **Compare** at horizon: loan-only wealth vs loan+SIP wealth. |
 | 10 | Vehicle loan (Full Set) | Vehicle | **Clustered columns**: No loan, FD, MF debt, conservative, equity | **Stacked bar** per option: tax shield vs opportunity cost vs net benefit (Excel only shows one net bar). |
-| 11 | Insurance IRR v1 | `/insurance` | **Pie**: Premium paid, gain, tax | **Compare** cash in vs cash out (premiums vs maturity). Optional **waterfall** of IRR build if XIRR exists. |
-| 12 | Convert to TP v3 | `/insurance` | **Inferred compare**: keep policy vs surrender + term + invest | **Line** of switched corpus vs years. **Donut** of new mix (term cost vs invested). |
+| 11 | Insurance IRR v1 | `/insurance` | **Donut**: Premium paid + gain (gross maturity center); tax and net after tax as footer, not pie slices | **Compare**: premiums vs gross maturity vs net after tax. |
+| 12 | Convert to TP v3 | `/insurance` | **Inferred compare**: final value / tax / term cost for keep vs switch | **Line** corpus path over years to maturity. **Donut**: initial switch funding (surrender + term cost). |
 | 13 | Child Education v4 | `/education` | **Inferred compare**: lumpsum vs SIP (invested, tax, corpus) | **Stacked columns** of year-wise education cost (the cost grid as a chart). Optional **line** of corpus vs year until each fee year. |
 | 14 | Goal SIP vs Step-up v3 | `/` · `/goals` · `goal-sip` | **Donuts**: Invested + Gain (pre-tax center); tax and net corpus as footer metrics, not pie slices. **Clustered columns**: Invested / Gain / Pre-Tax / Net for SIP vs Step-up. | Keep delay as table **or** small **compare** of extra invested at 3/6/9/12 months. `/goals` must not use a line as the primary. |
 | 15 | Goal + current LS/SIP/SU | `/goals` · `goal-current` | **Inferred compare**: extra LS vs extra SIP vs extra step-up (invested / tax / corpus) | **Waterfall**: existing net credit → additional → target. **Donut** existing vs additional. |
@@ -99,7 +99,7 @@ Do **not** add extras that need new math. Only plot fields already on `result`.
 | `/loans` Extra vs invest | Compare + path line | **OK** | — |
 | `/loans` Recovery | Three-line + compare | **OK** | — |
 | `/loans` Vehicle | Clustered benefit + stacked bar | **OK** | — |
-| `/insurance` IRR | Pie + cash compare | **OK** | — |
+| `/insurance` IRR | Donut (premium+gain) + premiums/gross/net compare | **OK** | Tax/net as donut footer |
 | `/insurance` TP | Keep vs switch compare | **OK** | — |
 | `/multi-goal` Assign | Compare / stacked assigned | **OK** | — |
 | `/multi-goal` Withdrawals | Columns by age + line | **OK** | — |

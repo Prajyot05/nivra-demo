@@ -1,9 +1,12 @@
 export function formatINR(value: number, digits = 0): string {
   if (!Number.isFinite(value)) return "—";
+  const n = digits === 0 ? Math.round(value) : value;
+  // Math.round of tiny negatives yields -0; Intl then prints "₹-0".
+  const normalized = Object.is(n, -0) ? 0 : n;
   return new Intl.NumberFormat("en-IN", {
     maximumFractionDigits: digits,
     minimumFractionDigits: digits,
-  }).format(digits === 0 ? Math.round(value) : value);
+  }).format(normalized);
 }
 
 export function formatINRCurrency(value: number, digits = 0): string {

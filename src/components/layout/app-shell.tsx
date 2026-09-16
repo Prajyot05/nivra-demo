@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { LogOut, PanelLeftClose } from "lucide-react";
 import { Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { CalculatorNavRow } from "@/components/layout/calculator-nav-row";
@@ -9,7 +9,7 @@ import { NavOverlay } from "@/components/layout/nav-overlay";
 import { SidebarProvider, useSidebar } from "@/components/layout/sidebar-context";
 import { NivraMark, PoweredByNivra } from "@/components/admin/branding";
 import { Button } from "@/components/ui/button";
-import { useAuthProfile } from "@/hooks/use-auth-profile";
+import { useAuthProfile, useSignOut } from "@/hooks/use-auth-profile";
 import { useCalculatorQaChecklist } from "@/hooks/use-calculator-qa-checklist";
 import {
   getVisibleCalculators,
@@ -100,10 +100,10 @@ function NavLinks({
 
 function AppShellInner({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const mode = searchParams.get("mode");
   const { profileId } = useAuthProfile();
+  const signOut = useSignOut();
   // Restrict until profile loads so clients never flash the full suite.
   const navProfile = profileId ?? "client";
   const enabledCalculators = useMemo(
@@ -125,11 +125,9 @@ function AppShellInner({ children }: { children: ReactNode }) {
   }, []);
 
   const handleLogout = useCallback(async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
     closeOverlay();
-    router.replace("/login");
-    router.refresh();
-  }, [router, closeOverlay]);
+    await signOut();
+  }, [signOut, closeOverlay]);
 
   if (
     pathname === "/login" ||

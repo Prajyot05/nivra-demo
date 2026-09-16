@@ -1,58 +1,29 @@
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
-import {
-  CALCULATOR_ROUTES,
-  getFirstEnabledRoute,
-  hrefFor,
-  isCalculatorAccessAllowed,
-  getVisibleCalculators,
-} from "@/lib/calculator-nav";
 
-const PUBLIC_PATHS = ["/login", "/api/auth/login"];
+const isPublicRoute = createRouteMatcher([
+  "/login(.*)",
+  "/api/webhooks(.*)",
+  "/api/health",
+]);
 
-function isPublicPath(pathname: string): boolean {
-  return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
-}
-
-function isCalculatorRoute(pathname: string): boolean {
-  return CALCULATOR_ROUTES.includes(pathname as (typeof CALCULATOR_ROUTES)[number]);
-}
-
-export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  const sessionToken = request.cookies.get(SESSION_COOKIE)?.value;
-  const profileId = await verifySessionToken(sessionToken);
-
-  if (isPublicPath(pathname)) {
-    if (profileId && pathname === "/login") {
-      return NextResponse.redirect(new URL(getFirstEnabledRoute(profileId), request.url));
-    }
+export default clerkMiddleware(async (auth, request) => {
+  if (isPublicRoute(request)) {
     return NextResponse.next();
   }
 
-  if (!profileId) {
-    if (pathname.startsWith("/api/")) {
+  const session = await auth();
+  if (!session.userId) {
+    if (request.nextUrl.pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("from", pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  if (isCalculatorRoute(pathname)) {
-    const mode = request.nextUrl.searchParams.get("mode");
-    if (!isCalculatorAccessAllowed(pathname, mode, profileId)) {
-      const fallback = getVisibleCalculators(profileId).find((item) => item.to === pathname);
-      const dest = fallback
-        ? hrefFor(fallback)
-        : getFirstEnabledRoute(profileId);
-      return NextResponse.redirect(new URL(dest, request.url));
-    }
+    const login = new URL("/login", request.url);
+    login.searchParams.set("from", request.nextUrl.pathname + request.nextUrl.search);
+    return NextResponse.redirect(login);
   }
 
   return NextResponse.next();
-}
+});
 
 export const config = {
   matcher: [

@@ -3,12 +3,7 @@
 import { useMemo, useState } from "react";
 import { Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  generateCalculatorReport,
-  generatePdfFromElement,
-  type PdfTableData,
-} from "@/lib/pdf-generator";
-import { playbookForPdf } from "@/lib/report-playbooks";
+import { generatePdfFromElement } from "@/lib/pdf-generator";
 import {
   LOAN_EMI_REPORT_ID,
   LoanEmiDossier,
@@ -26,9 +21,15 @@ import {
   LoanPrepayDossier,
 } from "@/components/reports/loan-prepay-dossier";
 import {
+  VEHICLE_LOAN_REPORT_ID,
+  VehicleLoanDossier,
+} from "@/components/reports/vehicle-loan-dossier";
+import {
+  AgeInput,
   ClientHeader,
   CompareChart,
   CompositionChart,
+  Field,
   formatCompactINR,
   formatINRCurrency,
   formatPercent,
@@ -45,6 +46,7 @@ import {
   StackedBarChart,
   StatCard,
   StatusNote,
+  TextInput,
   YearInput,
 } from "@nivra/ui";
 import { CalculatorPage } from "@/components/layout/calculator-page-with-nav";
@@ -150,6 +152,8 @@ type VehicleResult = {
   emi: number;
   totalInterest: number;
   totalDepreciation: number;
+  taxOnInterest: number;
+  taxOnDepreciation: number;
   totalTaxSaved: number;
   best: string | null;
   compare: Array<{ category: string; benefit: number }>;
@@ -577,65 +581,24 @@ export function LoansCalculator() {
       return;
     }
 
-    const tables: PdfTableData[] = [];
-    const modeLabel =
-      MODES.find((m) => m.id === mode)?.label ??
-      MODES.find((m) => m.id === mode)?.label ??
-      String(mode);
-
-    let headlines = [
-      { label: "Monthly EMI", value: result.emi ?? 0, highlight: true as const, hint: modeLabel },
-      { label: "Total Interest", value: result.totalInterest ?? result.originalInterest ?? 0, hint: "Lifetime interest cost" },
-    ];
-    let metrics: Array<{ label: string; value: string | number; currency?: boolean; danger?: boolean }> = [
-      { label: "Principal", value: result.totalPrincipal ?? principal },
-      { label: "Tenure", value: `${years} yrs`, currency: false },
-      { label: "Rate", value: `${interest}%`, currency: false },
-      { label: "Total Paid", value: result.totalPaid ?? 0 },
-    ];
-    const assumptions: Array<[string, string | number, boolean?]> = [
-      ["Mode", modeLabel],
-    ];
-
-    if (mode === "vehicle" && result.depreciation) {
-      headlines = [
-        { label: "EMI", value: result.emi ?? 0, highlight: true, hint: "Vehicle loan EMI" },
-        { label: "Tax Saved", value: result.totalTaxSaved ?? 0, hint: "Depreciation shield" },
-      ];
-      metrics = [
-        { label: "Total Interest", value: result.totalInterest ?? 0 },
-        { label: "Total Depreciation", value: result.totalDepreciation ?? 0 },
-        { label: "On-Road Price", value: onRoad },
-        { label: "Loan Amount", value: vehLoan },
-      ];
-      assumptions.push(
-        ["On-Road", onRoad, true],
-        ["Loan", vehLoan, true],
-        ["Rate", `${vehRate}%`],
-        ["Years", vehYears],
-      );
-      tables.push({
-        title: "Depreciation Schedule",
-        head: ["Year", "Value", "Depreciation", "Balance"],
-        body: result.depreciation.map((row) => [row.year, row.value, row.depreciation, row.balance]),
-        columnAlignments: ["left", "right", "right", "right"],
-        currencyColumns: [1, 2, 3],
-      });
+    if (mode === "vehicle") {
+      setIsDownloading(true);
+      try {
+        const safe = (name || "client")
+          .replace(/[^a-zA-Z0-9-_ ]/g, "")
+          .trim()
+          .replace(/\s+/g, "-")
+          .toLowerCase();
+        await generatePdfFromElement(
+          VEHICLE_LOAN_REPORT_ID,
+          `vehicle-loan-${safe || "report"}`,
+        );
+      } catch (err) {
+        console.error("PDF download failed:", err);
+      } finally {
+        setIsDownloading(false);
+      }
     }
-
-    generateCalculatorReport({
-      title: "Loan Analysis Dossier",
-      subtitle: `${modeLabel} · ${name}`,
-      clientName: name,
-      age,
-      status: "Validated Model",
-      filename: `loans-${name}`,
-      headlines,
-      metrics,
-      assumptions,
-      tables,
-      playbook: playbookForPdf("loan-emi"),
-    });
   };
 
   return (
@@ -835,120 +798,99 @@ export function LoansCalculator() {
             />
           </div>
         ) : (
-          <div className="flex flex-col gap-4">
-            <div className="grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] items-start gap-x-3 gap-y-3">
-              <ClientHeader name={name} age={age} onNameChange={setName} onAgeChange={setAge} />
+          <div className="grid grid-cols-2 items-start gap-x-3 gap-y-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
+            <div className="col-span-2 xl:col-span-1">
+              <Field label="Client Name">
+                <TextInput value={name} onChange={(e) => setName(e.target.value)} />
+              </Field>
             </div>
-
-            <div className="space-y-2">
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
-                Vehicle & loan
-              </div>
-              <div className="grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] items-start gap-x-3 gap-y-3">
-                <MoneyInput
-                  label="On-road cost"
-                  value={onRoad}
-                  onChange={setOnRoad}
-                  error={vehOnRoadError}
-                />
-                <MoneyInput
-                  label="Loan amount"
-                  value={vehLoan}
-                  onChange={setVehLoan}
-                  error={vehLoanError}
-                />
-                <PercentInput
-                  label="Loan interest rate (%)"
-                  value={vehRate}
-                  onChange={setVehRate}
-                  error={vehRateError}
-                />
-                <YearInput
-                  label="Tenure"
-                  value={vehYears}
-                  min={1}
-                  max={15}
-                  onChange={setVehYears}
-                  error={vehYearsError}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
-                Tax assumptions
-              </div>
-              <div className="grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] items-start gap-x-3 gap-y-3">
-                <PercentInput
-                  label="Income tax rate (%)"
-                  value={vehTax}
-                  onChange={setVehTax}
-                  error={vehTaxError}
-                />
-                <PercentInput
-                  label="Depreciation rate (%)"
-                  value={depPct}
-                  onChange={setDepPct}
-                  error={depPctError}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
-                Investment alternatives
-              </div>
-              <div className="grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] items-start gap-x-3 gap-y-3">
-                <PercentInput
-                  label="FD return (%)"
-                  value={fdRet}
-                  onChange={setFdRet}
-                  error={fdRetError}
-                />
-                <PercentInput
-                  label="FD tax rate (%)"
-                  value={fdTax}
-                  onChange={setFdTax}
-                  error={fdTaxError}
-                />
-                <PercentInput
-                  label="MF debt return (%)"
-                  value={debtRet}
-                  onChange={setDebtRet}
-                  error={debtRetError}
-                />
-                <PercentInput
-                  label="MF debt tax rate (%)"
-                  value={debtTax}
-                  onChange={setDebtTax}
-                  error={debtTaxError}
-                />
-                <PercentInput
-                  label="MF conservative return (%)"
-                  value={consRet}
-                  onChange={setConsRet}
-                  error={consRetError}
-                />
-                <PercentInput
-                  label="Conservative tax rate (%)"
-                  value={consTax}
-                  onChange={setConsTax}
-                  error={consTaxError}
-                />
-                <PercentInput
-                  label="Equity return (%)"
-                  value={eqRet}
-                  onChange={setEqRet}
-                  error={eqRetError}
-                />
-                <PercentInput
-                  label="Equity tax rate (%)"
-                  value={eqTax}
-                  onChange={setEqTax}
-                  error={eqTaxError}
-                />
-              </div>
-            </div>
+            <AgeInput value={age} onChange={setAge} />
+            <MoneyInput
+              label="On-road cost"
+              value={onRoad}
+              onChange={setOnRoad}
+              error={vehOnRoadError}
+            />
+            <MoneyInput
+              label="Loan amount"
+              value={vehLoan}
+              onChange={setVehLoan}
+              error={vehLoanError}
+            />
+            <PercentInput
+              label="Loan interest (%)"
+              value={vehRate}
+              onChange={setVehRate}
+              error={vehRateError}
+            />
+            <YearInput
+              label="Tenure"
+              value={vehYears}
+              min={1}
+              max={15}
+              onChange={setVehYears}
+              error={vehYearsError}
+            />
+            <PercentInput
+              label="Income tax (%)"
+              value={vehTax}
+              onChange={setVehTax}
+              error={vehTaxError}
+            />
+            <PercentInput
+              label="Depreciation (%)"
+              value={depPct}
+              onChange={setDepPct}
+              error={depPctError}
+            />
+            <PercentInput
+              label="FD return (%)"
+              value={fdRet}
+              onChange={setFdRet}
+              error={fdRetError}
+            />
+            <PercentInput
+              label="FD tax (%)"
+              value={fdTax}
+              onChange={setFdTax}
+              error={fdTaxError}
+            />
+            <PercentInput
+              label="MF debt return (%)"
+              value={debtRet}
+              onChange={setDebtRet}
+              error={debtRetError}
+            />
+            <PercentInput
+              label="MF debt tax (%)"
+              value={debtTax}
+              onChange={setDebtTax}
+              error={debtTaxError}
+            />
+            <PercentInput
+              label="Cons. return (%)"
+              value={consRet}
+              onChange={setConsRet}
+              error={consRetError}
+            />
+            <PercentInput
+              label="Cons. tax (%)"
+              value={consTax}
+              onChange={setConsTax}
+              error={consTaxError}
+            />
+            <PercentInput
+              label="Equity return (%)"
+              value={eqRet}
+              onChange={setEqRet}
+              error={eqRetError}
+            />
+            <PercentInput
+              label="Equity tax (%)"
+              value={eqTax}
+              onChange={setEqTax}
+              error={eqTaxError}
+            />
           </div>
         )
       }
@@ -1012,6 +954,8 @@ export function LoansCalculator() {
           {result && mode === "vehicle" && Array.isArray(result.depreciation) ? (
             <VehicleResults
               result={result as VehicleResult}
+              onRoadCost={onRoad}
+              loanAmount={vehLoan}
               returnsByOption={{
                 "No loan": null,
                 FD: fdRet,
@@ -1126,6 +1070,38 @@ export function LoansCalculator() {
           revisedRecoverSip: result.revisedRecoverSip ?? 0,
           schedule: (result.schedule as PrepayResult["schedule"]) ?? [],
           originalScheduleLength: result.originalSchedule.length,
+        }}
+      />
+    ) : null}
+    {mode === "vehicle" && result && Array.isArray(result.depreciation) ? (
+      <VehicleLoanDossier
+        data={{
+          clientName: name,
+          age,
+          onRoadCost: onRoad,
+          loanAmount: vehLoan,
+          interestPct: vehRate,
+          years: vehYears,
+          incomeTaxPct: vehTax,
+          depreciationPct: depPct,
+          fdReturnPct: fdRet,
+          debtReturnPct: debtRet,
+          conservativeReturnPct: consRet,
+          equityReturnPct: eqRet,
+          fdTaxPct: fdTax,
+          debtTaxPct: debtTax,
+          conservativeTaxPct: consTax,
+          equityTaxPct: eqTax,
+          emi: result.emi ?? 0,
+          totalInterest: result.totalInterest ?? 0,
+          totalDepreciation: result.totalDepreciation ?? 0,
+          taxOnInterest: result.taxOnInterest ?? 0,
+          taxOnDepreciation: result.taxOnDepreciation ?? 0,
+          totalTaxSaved: result.totalTaxSaved ?? 0,
+          best: result.best ?? null,
+          options: (result.options as VehicleOptionRow[]) ?? [],
+          stacked: result.stacked ?? [],
+          depreciation: result.depreciation,
         }}
       />
     ) : null}
@@ -2316,9 +2292,13 @@ function RecoveryResults({
 
 function VehicleResults({
   result,
+  onRoadCost,
+  loanAmount,
   returnsByOption,
 }: {
   result: VehicleResult;
+  onRoadCost: number;
+  loanAmount: number;
   returnsByOption: Record<string, number | null>;
 }) {
   const ranked = [...result.options].sort(
@@ -2330,8 +2310,12 @@ function VehicleResults({
   const best =
     result.options.find((opt) => opt.name === result.best) ?? ranked[0] ?? null;
   const noLoan = result.options.find((opt) => opt.name === "No loan");
+  const runnerUp = ranked[1] ?? null;
   const vsNoLoan =
     best && noLoan ? best.financialBenefit - noLoan.financialBenefit : 0;
+  const vsRunnerUp =
+    best && runnerUp ? best.financialBenefit - runnerUp.financialBenefit : 0;
+  const downPayment = Math.max(0, onRoadCost - loanAmount);
   const lastDep = result.depreciation[result.depreciation.length - 1];
   const depRows: Array<Record<string, unknown>> = [
     ...result.depreciation.map((row) => ({ ...row })),
@@ -2343,7 +2327,7 @@ function VehicleResults({
     },
   ];
 
-  const compareData = result.options.map((opt) => {
+  const compareData = ranked.map((opt) => {
     const returnPct = returnsByOption[opt.name];
     const rank = rankByName[opt.name] ?? 0;
     const isBest = best?.name === opt.name;
@@ -2367,22 +2351,75 @@ function VehicleResults({
               },
             ]
           : []),
-        ...(opt.netProfit > 0 || opt.name !== "No loan"
-          ? [
+        ...(opt.name === "No loan" && opt.netProfit === 0
+          ? []
+          : [
               {
                 label: "Net profit",
                 value: formatINRCurrency(opt.netProfit),
               },
-            ]
-          : []),
+            ]),
         { label: "Rank", value: `#${rank}` },
       ],
     };
   });
 
+  const stackedData = ranked.map((opt) => {
+    const base = result.stacked.find((row) => row.category === opt.name);
+    return {
+      category: opt.name,
+      taxShield: base?.taxShield ?? result.totalTaxSaved,
+      opportunity: base?.opportunity ?? opt.netProfit,
+      netBenefit: base?.netBenefit ?? opt.financialBenefit,
+    };
+  });
+
   return (
     <div className="flex w-full flex-col gap-3">
-      <div className="grid w-full grid-cols-1 gap-2 min-[640px]:grid-cols-3">
+      <div className="grid w-full grid-cols-1 gap-2 min-[640px]:grid-cols-4">
+        <div className="relative flex min-h-[5.25rem] min-w-0 flex-col justify-center overflow-hidden rounded-xl border border-[var(--app-step-text)]/30 bg-[var(--app-step-bg)] px-3 py-2.5">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-step-text)]">
+            Best financing path
+          </div>
+          {best ? (
+            <div className="mt-1.5 grid grid-cols-2 gap-2">
+              <div className="rounded-lg bg-[var(--app-surface)]/70 px-2 py-1.5">
+                <div className="text-[9px] font-semibold uppercase tracking-wide text-[var(--app-step-text)]">
+                  Rank #1
+                </div>
+                <div className="mt-0.5 text-sm font-semibold text-[var(--app-step-text-strong)]">
+                  {best.name}
+                </div>
+                <div className="mt-0.5 text-[10px] tabular-nums text-[var(--app-step-text)]">
+                  {formatINRCurrency(best.financialBenefit)}
+                </div>
+              </div>
+              <div className="rounded-lg bg-[var(--app-surface)]/70 px-2 py-1.5">
+                <div className="text-[9px] font-semibold uppercase tracking-wide text-[var(--app-step-text)]">
+                  {vsNoLoan > 0 ? "Vs no loan" : "Edge vs #2"}
+                </div>
+                <div className="mt-0.5 text-sm font-semibold tabular-nums text-[var(--app-step-text-strong)]">
+                  {vsNoLoan > 0
+                    ? formatINRCurrency(vsNoLoan)
+                    : vsRunnerUp > 0
+                      ? formatINRCurrency(vsRunnerUp)
+                      : "—"}
+                </div>
+                <div className="mt-0.5 text-[10px] text-[var(--app-step-text)]">
+                  {vsNoLoan > 0
+                    ? "Extra benefit"
+                    : runnerUp
+                      ? `Over ${runnerUp.name}`
+                      : "Lead"}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-1.5 text-sm font-semibold leading-snug text-[var(--app-step-text-strong)]">
+              Compare loan-plus-invest options against paying cash.
+            </div>
+          )}
+        </div>
         <div className="min-h-[5.25rem] min-w-0 [&>div]:h-full">
           <StatCard title="EMI" value={result.emi} />
         </div>
@@ -2390,212 +2427,241 @@ function VehicleResults({
           <StatCard
             title="Total tax saved"
             value={result.totalTaxSaved}
-            hint="Loan interest + depreciation"
+            hint="Interest + depreciation"
             variant="soft"
           />
         </div>
         <div className="min-h-[5.25rem] min-w-0 [&>div]:h-full">
           <StatCard
-            title="Best financial benefit"
-            value={best?.financialBenefit ?? 0}
-            hint={best ? `${best.name} · Rank #1` : undefined}
+            title="Down payment"
+            value={downPayment}
+            hint={`${formatINRCurrency(loanAmount)} financed`}
           />
         </div>
       </div>
 
-      {best ? (
-        <div className="relative flex min-h-[5.25rem] min-w-0 flex-col justify-center overflow-hidden rounded-xl border border-[var(--app-step-text)]/30 bg-[var(--app-step-bg)] px-3 py-2.5">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-step-text)]">
-            Highest financial benefit
-          </div>
-          <div className="mt-1.5 flex flex-wrap items-end justify-between gap-2">
-            <div>
-              <div className="text-sm font-semibold text-[var(--app-step-text-strong)]">
-                {best.name} provides the highest financial benefit
+      {ranked.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-2">
+          {ranked.slice(0, 3).map((opt) => {
+            const rank = rankByName[opt.name] ?? 0;
+            const isBest = rank === 1;
+            return (
+              <div
+                key={opt.name}
+                className={`rounded-lg border px-2.5 py-1.5 text-[11px] ${
+                  isBest
+                    ? "border-[var(--app-step-text)]/35 bg-[var(--app-step-bg)] text-[var(--app-step-text-strong)]"
+                    : "border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-text)]"
+                }`}
+              >
+                <span className="font-semibold">#{rank} {opt.name}</span>
+                <span className="ml-1.5 tabular-nums text-[var(--app-text-muted)]">
+                  {formatINRCurrency(opt.financialBenefit)}
+                </span>
               </div>
-              <div className="mt-0.5 text-[12px] tabular-nums text-[var(--app-step-text)]">
-                {formatINRCurrency(best.financialBenefit)}
-                {vsNoLoan > 0 && noLoan ? (
-                  <span className="ml-1.5 font-normal">
-                    · {formatINRCurrency(vsNoLoan)} above No loan
-                  </span>
-                ) : null}
-              </div>
-            </div>
-            <div className="rounded-md bg-[var(--app-surface)]/80 px-2.5 py-1 text-[11px] font-semibold tabular-nums text-[var(--app-step-text-strong)]">
-              Rank #1
-            </div>
-          </div>
+            );
+          })}
         </div>
       ) : null}
 
       <div className={`${RESULTS_SPLIT} gap-3 lg:items-start`}>
         <div className={`${RESULTS_LEFT} gap-3`}>
           <CompareChart
-            title="Financial benefit"
-            className="min-h-[280px] flex-none sm:min-h-[300px]"
+            title="Financial benefit by option"
+            className="h-[360px] min-h-[360px] w-full flex-none sm:h-[400px] sm:min-h-[400px]"
             data={compareData}
-            series={[{ key: "benefit", label: "Financial benefit", color: "var(--app-chart-gain)" }]}
+            series={[
+              {
+                key: "benefit",
+                label: "Financial benefit",
+                color: "var(--app-chart-gain)",
+              },
+            ]}
             showBarLabels
             showLegend={false}
           />
           <div className={`-mt-1 px-0.5 ${META_TEXT}`}>
-            Bars ranked by financial benefit. Hover for return, investment value, and net profit.
+            Sorted best to worst. Assumes the loan amount is invested at each option&apos;s return
+            while the EMI runs.
           </div>
 
           <StackedBarChart
-            title="Tax shield vs opportunity vs net"
-            className="min-h-[260px] flex-none"
-            data={result.stacked}
+            title="Tax shield, investment gain, and net benefit"
+            className="h-[320px] min-h-[320px] w-full flex-none sm:h-[360px] sm:min-h-[360px]"
+            data={stackedData}
             series={[
-              { key: "taxShield", label: "Tax shield", color: "var(--app-chart-invested)" },
-              { key: "opportunity", label: "Opportunity", color: "var(--app-chart-gain)" },
-              { key: "netBenefit", label: "Net benefit", color: "var(--app-chart-tax)" },
+              {
+                key: "taxShield",
+                label: "Tax shield",
+                color: "var(--app-chart-invested)",
+              },
+              {
+                key: "opportunity",
+                label: "After-tax investment gain",
+                color: "var(--app-chart-gain)",
+              },
+              {
+                key: "netBenefit",
+                label: "Net financial benefit",
+                color: "var(--app-chart-tax)",
+              },
             ]}
           />
           <div className={`-mt-1 px-0.5 ${META_TEXT}`}>
-            Tax shield = tax benefit from financing. Opportunity = investment gain after tax. Net
-            benefit = final financial benefit for each option.
+            Tax shield is the loan interest and depreciation tax benefit. Investment gain is
+            after-tax profit on deploying the loan. Net benefit is the final outcome per option.
+            Segments are shown for comparison and are not strictly additive.
           </div>
         </div>
 
         <div className={`${RESULTS_RIGHT} gap-3`}>
           <ResultCard
-            title="Loan summary"
+            title="Financing breakdown"
             items={[
-              { label: "EMI", value: result.emi },
-              { label: "Interest paid", value: result.totalInterest },
-              { label: "Total depreciation", value: result.totalDepreciation },
+              {
+                label: "On-road cost",
+                value: onRoadCost,
+              },
+              {
+                label: "Loan amount",
+                value: loanAmount,
+              },
+              {
+                label: "Down payment",
+                value: downPayment,
+                hint: "On-road less loan",
+              },
+              {
+                label: "Interest paid",
+                value: result.totalInterest,
+              },
+              {
+                label: "Tax saved on interest",
+                value: result.taxOnInterest ?? 0,
+              },
+              {
+                label: "Tax saved on depreciation",
+                value: result.taxOnDepreciation ?? 0,
+              },
               {
                 label: "Total tax saved",
                 value: result.totalTaxSaved,
                 highlight: true,
                 tone: "gain",
               },
-              ...(best
-                ? [
-                    {
-                      label: `${best.name} benefit`,
-                      value: best.financialBenefit,
-                      hint: "Rank #1",
-                      highlight: true,
-                      tone: "gain" as const,
-                    },
-                  ]
-                : []),
             ]}
+          />
+
+          <div className="overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)]">
+            <div className="border-b border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
+              Investment ranking
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[28rem] border-collapse text-left text-[11px] sm:text-[12px]">
+                <thead>
+                  <tr className="border-b border-[var(--app-border)] text-[10px] uppercase tracking-wider text-[var(--app-text-muted)]">
+                    <th className="px-2.5 py-2 font-semibold sm:px-3">Rank</th>
+                    <th className="px-2.5 py-2 font-semibold sm:px-3">Option</th>
+                    <th className="px-2.5 py-2 font-semibold sm:px-3">Return</th>
+                    <th className="px-2.5 py-2 text-right font-semibold sm:px-3">
+                      Investment value
+                    </th>
+                    <th className="px-2.5 py-2 text-right font-semibold sm:px-3">Net profit</th>
+                    <th className="px-2.5 py-2 text-right font-semibold sm:px-3">Benefit</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ranked.map((opt) => {
+                    const rank = rankByName[opt.name] ?? 0;
+                    const returnPct = returnsByOption[opt.name];
+                    const isBest = best?.name === opt.name;
+                    return (
+                      <tr
+                        key={opt.name}
+                        className={`border-b border-[var(--app-border)] last:border-b-0 ${
+                          isBest ? "bg-[var(--app-step-bg)] font-semibold" : ""
+                        }`}
+                      >
+                        <td
+                          className={`px-2.5 py-2 tabular-nums sm:px-3 ${
+                            isBest
+                              ? "text-[var(--app-step-text-strong)]"
+                              : "text-[var(--app-text-muted)]"
+                          }`}
+                        >
+                          #{rank}
+                        </td>
+                        <td className="px-2.5 py-2 text-[var(--app-text)] sm:px-3">
+                          {opt.name}
+                          {isBest ? (
+                            <span className="ml-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--app-step-text)]">
+                              Best
+                            </span>
+                          ) : null}
+                        </td>
+                        <td className="px-2.5 py-2 tabular-nums text-[var(--app-text)] sm:px-3">
+                          {returnPct == null ? "—" : formatPercent(returnPct, 0)}
+                        </td>
+                        <td className="px-2.5 py-2 text-right tabular-nums text-[var(--app-text)] sm:px-3">
+                          {opt.maturity > 0 ? formatINRCurrency(opt.maturity) : "—"}
+                        </td>
+                        <td className="px-2.5 py-2 text-right tabular-nums text-[var(--app-text)] sm:px-3">
+                          {opt.name === "No loan" && opt.netProfit === 0
+                            ? "—"
+                            : formatINRCurrency(opt.netProfit)}
+                        </td>
+                        <td
+                          className={`px-2.5 py-2 text-right tabular-nums sm:px-3 ${
+                            isBest
+                              ? "text-[var(--app-step-text-strong)]"
+                              : "text-[var(--app-text)]"
+                          }`}
+                        >
+                          {formatINRCurrency(opt.financialBenefit)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <ScheduleTable
+            caption="Depreciation schedule"
+            meta={`Total ${formatINRCurrency(result.totalDepreciation)}`}
+            zebra
+            dense
+            highlightLastRow
+            columns={[
+              { key: "year", header: "Year", sticky: true },
+              {
+                key: "value",
+                header: "Value",
+                align: "right",
+                tone: "std",
+                render: (value) =>
+                  typeof value === "number" ? formatINRCurrency(value) : "—",
+              },
+              {
+                key: "depreciation",
+                header: "Depreciation",
+                format: "inr",
+                align: "right",
+                tone: "warn",
+              },
+              {
+                key: "balance",
+                header: "Balance",
+                format: "inr",
+                align: "right",
+                tone: "step",
+              },
+            ]}
+            rows={depRows}
           />
         </div>
       </div>
-
-      <div className="overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)]">
-        <div className="border-b border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
-          Investment option comparison
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[40rem] border-collapse text-left text-[12px]">
-            <thead>
-              <tr className="border-b border-[var(--app-border)] text-[10px] uppercase tracking-wider text-[var(--app-text-muted)]">
-                <th className="px-3 py-2 font-semibold">Option</th>
-                <th className="px-3 py-2 font-semibold">Return</th>
-                <th className="px-3 py-2 text-right font-semibold">Investment value</th>
-                <th className="px-3 py-2 text-right font-semibold">Net profit</th>
-                <th className="px-3 py-2 text-right font-semibold">Financial benefit</th>
-                <th className="px-3 py-2 text-right font-semibold">Rank</th>
-              </tr>
-            </thead>
-            <tbody>
-              {result.options.map((opt) => {
-                const rank = rankByName[opt.name] ?? 0;
-                const returnPct = returnsByOption[opt.name];
-                const isBest = best?.name === opt.name;
-                return (
-                  <tr
-                    key={opt.name}
-                    className={`border-b border-[var(--app-border)] last:border-b-0 ${
-                      isBest
-                        ? "bg-[var(--app-step-bg)] font-semibold"
-                        : ""
-                    }`}
-                  >
-                    <td className="px-3 py-2 text-[var(--app-text)]">
-                      {opt.name}
-                      {isBest ? (
-                        <span className="ml-1.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--app-step-text)]">
-                          Best
-                        </span>
-                      ) : null}
-                    </td>
-                    <td className="px-3 py-2 tabular-nums text-[var(--app-text)]">
-                      {returnPct == null ? "—" : formatPercent(returnPct, 0)}
-                    </td>
-                    <td className="px-3 py-2 text-right tabular-nums text-[var(--app-text)]">
-                      {opt.maturity > 0 ? formatINRCurrency(opt.maturity) : "—"}
-                    </td>
-                    <td className="px-3 py-2 text-right tabular-nums text-[var(--app-text)]">
-                      {opt.name === "No loan" && opt.netProfit === 0
-                        ? "—"
-                        : formatINRCurrency(opt.netProfit)}
-                    </td>
-                    <td
-                      className={`px-3 py-2 text-right tabular-nums ${
-                        isBest
-                          ? "text-[var(--app-step-text-strong)]"
-                          : "text-[var(--app-text)]"
-                      }`}
-                    >
-                      {formatINRCurrency(opt.financialBenefit)}
-                    </td>
-                    <td
-                      className={`px-3 py-2 text-right tabular-nums ${
-                        isBest
-                          ? "text-[var(--app-step-text-strong)]"
-                          : "text-[var(--app-text-muted)]"
-                      }`}
-                    >
-                      #{rank}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <ScheduleTable
-        caption="Depreciation"
-        meta={`Total depreciation ${formatINRCurrency(result.totalDepreciation)}`}
-        zebra
-        dense
-        highlightLastRow
-        columns={[
-          { key: "year", header: "Year", sticky: true },
-          {
-            key: "value",
-            header: "Value",
-            align: "right",
-            tone: "std",
-            render: (value) =>
-              typeof value === "number" ? formatINRCurrency(value) : "—",
-          },
-          {
-            key: "depreciation",
-            header: "Depreciation",
-            format: "inr",
-            align: "right",
-            tone: "warn",
-          },
-          {
-            key: "balance",
-            header: "Balance",
-            format: "inr",
-            align: "right",
-            tone: "step",
-          },
-        ]}
-        rows={depRows}
-      />
     </div>
   );
 }

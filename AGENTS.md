@@ -25,9 +25,21 @@ npm run dev       # http://localhost:3000
 
 Contract: [`docs/API_CONTRACT.md`](docs/API_CONTRACT.md). Progress / handoff: [`PROGRESS.md`](PROGRESS.md). Charts: [`docs/charts.md`](docs/charts.md).
 
-**Admin / multi-tenant (confirmed product + stack):** [`.cursor/rules/admin-platform.mdc`](.cursor/rules/admin-platform.mdc). Dummy UIs: `/admin` (Nivra platform) · `/company` (tenant). Auth provider and launch tiers still TBD.
+**Admin / multi-tenant:** [`.cursor/rules/admin-platform.mdc`](.cursor/rules/admin-platform.mdc). Auth: **Clerk**. Data: **Neon + Prisma** — [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md). Dashboards: `/admin` · `/company` (DB-backed with dummy fallback if `DATABASE_URL` unset).
 
 Docs: [`docs/ADMIN_PLATFORM.md`](docs/ADMIN_PLATFORM.md).
+
+### Database / auth setup
+
+```sh
+cp .env.example .env   # fill Clerk keys; add Neon URLs when ready
+npm i
+npm run db:migrate     # requires DATABASE_URL
+npm run db:seed
+npm run dev
+```
+
+Clerk webhook: `session.created` → `POST /api/webhooks/clerk` (enforces one session per user).
 
 ---
 

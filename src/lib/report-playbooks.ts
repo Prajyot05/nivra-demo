@@ -27,6 +27,7 @@ export type CalculatorReportId =
   | "loan-emi"
   | "loan-extra"
   | "loan-recovery"
+  | "loan-vehicle"
   | "insurance"
   | "multi-goal"
   | "multi-withdrawals";
@@ -345,6 +346,27 @@ const PLAYBOOKS: Record<CalculatorReportId, PlaybookPillar[]> = {
       title: "Annual Path Recheck",
       description:
         "Re-run baseline vs proposed each year after rate resets or income changes so the SIP size and horizon wealth stay on track.",
+    },
+  ],
+  "loan-vehicle": [
+    {
+      id: "01",
+      title: "Loan-Plus-Invest Discipline",
+      description:
+        "If financing, deploy the loan proceeds into the selected sleeve on day one so opportunity gain offsets interest cost over the EMI tenure.",
+    },
+    {
+      id: "02",
+      title: "Tax Shield Capture",
+      accent: true,
+      description:
+        "Confirm interest and depreciation tax treatment with the CA before locking tenure, so modeled tax savings match the filing position.",
+    },
+    {
+      id: "03",
+      title: "Risk-Matched Sleeve Choice",
+      description:
+        "Match the investment sleeve to the loan horizon. Shorter tenures favor debt or conservative paths; equity needs stomach for mark-to-market swings.",
     },
   ],
   insurance: [

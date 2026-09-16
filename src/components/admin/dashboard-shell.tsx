@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   Building2,
   Calculator,
@@ -19,6 +19,7 @@ import {
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { NivraMark, PoweredByNivra } from "@/components/admin/branding";
 import { Button } from "@/components/ui/button";
+import { useSignOut } from "@/hooks/use-auth-profile";
 import { cn } from "@/lib/utils";
 
 export type AdminNavIcon =
@@ -66,14 +67,12 @@ export function DashboardShell({
   switchLink?: { href: string; label: string };
 }) {
   const pathname = usePathname();
-  const router = useRouter();
+  const signOut = useSignOut();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleLogout = useCallback(async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
-    router.replace("/login");
-    router.refresh();
-  }, [router]);
+    await signOut();
+  }, [signOut]);
 
   useEffect(() => {
     setMobileOpen(false);

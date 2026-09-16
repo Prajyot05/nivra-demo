@@ -344,9 +344,9 @@ Sample: ₹2 L × 5y, corpus ₹11.6 L, 20y, 11%, 12.5% tax → maturity **55,50
 
 ## `insurance-tp`
 
-**Input:** current policy (`premium`, `payTerm`, `yearsPaid`, `policyTerm`, `yearsToMaturity`, `maturityValue`, `taxPct`, `surrenderValue`) plus term (`termPremium`, `termYears`) and `returnPct`.
+**Input:** current policy (`premium`, `payTerm`, `yearsPaid`, `policyTerm`, `yearsToMaturity`, `maturityValue`, `taxPct`, `surrenderValue`) plus term (`termPremium`, `termYears`, optional `termCover`) and `returnPct`.
 
-**Output:** `keep` (net after tax, IRR) vs `switch` (`investMaturity`, term cost, IRR), `compare[]`.
+**Output:** `keep` (net after tax, IRR) vs `switch` (`investMaturity`, term cost, Investment IRR matching Excel col AG, `surrenderIrr`, `corpusPath`), `additionalWealth`, `compare[]`.
 
 ---
 
@@ -368,9 +368,9 @@ Sample: ₹2 L × 5y, corpus ₹11.6 L, 20y, 11%, 12.5% tax → maturity **55,50
 
 ## `fire-planner`
 
-**Input:** `age`, `retirementAge`, `survivingAge`, `monthlyExpenses`, `lifestyleYearly`, `monthlyExpenseFactorPct` / `lifestyleFactorPct` (100 = same as current; allowed 0–200 for UI options like 150%/200%), `inflationPct`, `returnPct`, `returnAfterPct`, `taxPct`, optional `corpusSlices[]` of `{ returnPct, amount }` (max 3), `currentSipMonthly`, `currentSipReturnPct`, `limitSipYears`, `stepUpPct`, `delayMonths`.
+**Input:** `age`, `retirementAge`, `survivingAge`, `monthlyExpenses`, `lifestyleYearly`, `monthlyExpenseFactorPct` / `lifestyleFactorPct` (100 = same as current; Excel list 30%–200% in 10% steps), `inflationPct`, `returnPct`, `returnAfterPct`, `taxPct`, optional `corpusSlices[]` of `{ returnPct, amount }` (max 3 = Type 1/2/3), `currentSipMonthly`, `currentSipReturnPct`, `limitSipYears`, `stepUpPct`, `stepUpEveryYears` (default 1; Excel “Once every (years)”), `delayMonths`, optional `events[]` (max 10) of `{ age, income, expense }` matching Excel P/Q/R (net T = income − expense). Legacy `{ age, amount, type }` still accepted.
 
-**Output:** inflated expenses at retirement, `corpusRequired` (backward PV of taxed withdrawals), `currentAtRetirement`, `balanceCorpus`, `additionalLumpsum`, flat `monthlySip` / `stepUpStartSip`, delay SIP/lumpsum, age `schedule[]` (`corpus`, `contribution`, `withdrawal`, `phase`).
+**Output:** inflated expenses at retirement, `corpusRequired` (backward PV of taxed withdrawals, post-ret events adjust yearly net via Excel AB = expense − T), `currentAtRetirement`, `eventsCorpusAtRetirement` (pre-ret income FV = Excel AL37/C20), `balanceCorpus` (Excel L11), `additionalLumpsum`, flat `monthlySip` / `stepUpStartSip`, delay SIP/lumpsum, `eventLumpsum` (Excel AJ37/C25), `eventSip` / `eventSipUntilAge` (single expense = AK39; multiple = AH32 GoalSeek constant SIP to latest expense age), age `schedule[]` (`corpus`, `contribution`, `withdrawal`, `eventAmount`, `phase`).
 
 UI `/fire` · FIRE tab. Sample: age 40 / ret 55 / surv 90 → corpus **₹21,04,42,136.92**, SIP **₹3,55,210.92**.
 

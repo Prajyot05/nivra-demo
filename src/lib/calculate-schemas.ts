@@ -270,30 +270,107 @@ export const vehicleLoanSchema = z
     }
   });
 
-export const insuranceIrrSchema = z.object({
-  ...clientFields,
-  premium: money,
-  payTerm: years,
-  corpusAtPayEnd: money,
-  policyTerm: z.number().positive().max(50),
-  returnPct: pct,
-  taxPct: pct,
-});
+export const insuranceIrrSchema = z
+  .object({
+    ...clientFields,
+    premium: money,
+    payTerm: years,
+    corpusAtPayEnd: money,
+    policyTerm: z.number().positive().max(50),
+    returnPct: pct,
+    taxPct: pct,
+  })
+  .superRefine((data, ctx) => {
+    if (!(data.premium > 0)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["premium"],
+        message: "Annual premium must be greater than 0.",
+      });
+    }
+    if (!(data.corpusAtPayEnd > 0)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["corpusAtPayEnd"],
+        message: "Corpus at payment end must be greater than 0.",
+      });
+    }
+    if (!(data.returnPct > 0)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["returnPct"],
+        message: "Expected return must be above 0%.",
+      });
+    }
+    if (data.payTerm > data.policyTerm) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["payTerm"],
+        message: "Premium payment term cannot exceed the policy term.",
+      });
+    }
+  });
 
-export const insuranceTpSchema = z.object({
-  ...clientFields,
-  premium: money,
-  payTerm: years,
-  yearsPaid: z.number().min(0).max(50),
-  policyTerm: z.number().positive().max(50),
-  yearsToMaturity: years,
-  maturityValue: money,
-  taxPct: pct,
-  surrenderValue: money,
-  termPremium: money,
-  termYears: years,
-  returnPct: pct,
-});
+export const insuranceTpSchema = z
+  .object({
+    ...clientFields,
+    premium: money,
+    payTerm: years,
+    yearsPaid: z.number().min(0).max(50),
+    policyTerm: z.number().positive().max(50),
+    yearsToMaturity: years,
+    maturityValue: money,
+    taxPct: pct,
+    surrenderValue: money,
+    termPremium: money,
+    termYears: years,
+    returnPct: pct,
+    termCover: money.optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (!(data.premium > 0)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["premium"],
+        message: "Annual premium must be greater than 0.",
+      });
+    }
+    if (data.yearsPaid > data.payTerm) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["yearsPaid"],
+        message: "Years paid cannot exceed the premium payment term.",
+      });
+    }
+    if (data.payTerm > data.policyTerm) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["payTerm"],
+        message: "Premium payment term cannot exceed the policy term.",
+      });
+    }
+    if (data.yearsToMaturity > data.policyTerm) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["yearsToMaturity"],
+        message: "Years to maturity cannot exceed the policy term.",
+      });
+    }
+    if (!(data.returnPct > 0)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["returnPct"],
+        message: "Expected investment return must be above 0%.",
+      });
+    }
+    if (data.surrenderValue < 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["surrenderValue"],
+        message: "Surrender value cannot be negative.",
+      });
+    }
+  });
 
 export const multiGoalAssignSchema = z.object({
   ...clientFields,
@@ -379,7 +456,24 @@ export const firePlannerSchema = z
     currentSipReturnPct: pct.optional().default(0),
     limitSipYears: z.number().min(0).max(50).optional().default(0),
     stepUpPct: pct.optional().default(10),
+    stepUpEveryYears: z.number().int().min(1).max(50).optional().default(1),
     delayMonths: months.optional().default(0),
+    events: z
+      .array(
+        z.object({
+          age,
+          /** Excel Q column. */
+          income: money.optional().default(0),
+          /** Excel R column. */
+          expense: money.optional().default(0),
+          /** Legacy single-amount form (maps to income or expense). */
+          amount: money.optional(),
+          type: z.enum(["Expense", "Income"]).optional(),
+        }),
+      )
+      .max(10)
+      .optional()
+      .default([]),
   })
   .refine((d) => d.retirementAge >= d.age, {
     message: "retirementAge must be >= age",
@@ -388,6 +482,54 @@ export const firePlannerSchema = z
   .refine((d) => d.survivingAge >= d.retirementAge, {
     message: "survivingAge must be >= retirementAge",
     path: ["survivingAge"],
+  })
+  .refine(
+    (d) =>
+      d.limitSipYears === 0 ||
+      d.limitSipYears <= Math.max(0, d.retirementAge - d.age),
+    {
+      message: "limitSipYears cannot exceed years until retirement",
+      path: ["limitSipYears"],
+    },
+  )
+  .superRefine((d, ctx) => {
+    const ages = new Map<number, number>();
+    for (let i = 0; i < (d.events?.length ?? 0); i += 1) {
+      const ev = d.events![i]!;
+      const hasLegacy = (ev.amount ?? 0) > 0 && ev.type != null;
+      const hasSplit = (ev.income ?? 0) > 0 || (ev.expense ?? 0) > 0;
+      if (!hasLegacy && !hasSplit) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Enter an income and/or expense amount",
+          path: ["events", i, "expense"],
+        });
+      }
+      if (ev.age < d.age) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Event age must be on or after current age",
+          path: ["events", i, "age"],
+        });
+      }
+      if (ev.age > d.survivingAge) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Event age must be on or before survival age",
+          path: ["events", i, "age"],
+        });
+      }
+      const prev = ages.get(ev.age);
+      if (prev != null) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Duplicate event age (Excel allows one row per age)",
+          path: ["events", i, "age"],
+        });
+      } else {
+        ages.set(ev.age, i);
+      }
+    }
   });
 
 export const financialHealthSchema = z

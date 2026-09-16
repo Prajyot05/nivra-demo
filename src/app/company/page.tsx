@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { Gem, Users, FileBarChart, Briefcase } from "lucide-react";
 import { AdminPageHeader, Panel, StatTile } from "@/components/admin/admin-ui";
 import {
@@ -9,24 +10,27 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  DEMO_COMPANY_ID,
-  getCompany,
-  getCompanyUsers,
-} from "@/lib/admin/dummy-data";
+  getCompanyById,
+  getDemoCompanyId,
+  listCompanyUsers,
+} from "@/lib/admin/queries";
+import { isDatabaseConfigured } from "@/lib/db";
 
-export default function CompanyOverviewPage() {
-  const company = getCompany(DEMO_COMPANY_ID)!;
-  const users = getCompanyUsers(company.id);
-  const activeAdvisors = users.filter(
-    (u) => u.role === "advisor" && u.status === "active",
+export default async function CompanyOverviewPage() {
+  const companyId = await getDemoCompanyId();
+  const company = await getCompanyById(companyId);
+  if (!company) notFound();
+  const users = await listCompanyUsers(company.id);
+  const activeEmployees = users.filter(
+    (u) => u.role !== "admin" && u.status === "active",
   ).length;
-  const seatsLeft = company.seats - company.seatsUsed;
+  const source = isDatabaseConfigured() ? "Neon" : "dummy fallback";
 
   return (
     <>
       <AdminPageHeader
         title="Company overview"
-        description="Plan, seats, renewal, and usage. Subscriber is the default Admin (Owner). Dummy tenant: Acme Wealth Advisors."
+        description={`Plan, users, renewal, and usage. Company admin is the subscriber. Source: ${source}.`}
         actions={
           <Button size="sm" asChild>
             <Link href="/company/users">Manage users</Link>
@@ -57,9 +61,9 @@ export default function CompanyOverviewPage() {
           icon={Gem}
         />
         <StatTile
-          label="Seats"
-          value={`${company.seatsUsed} used`}
-          hint={`${seatsLeft} left of ${company.seats}`}
+          label="Users"
+          value={`${company.seatsUsed} active`}
+          hint="Member seat caps deferred for v1"
           icon={Users}
         />
         <StatTile
@@ -69,9 +73,9 @@ export default function CompanyOverviewPage() {
           icon={FileBarChart}
         />
         <StatTile
-          label="Active advisors"
-          value={activeAdvisors}
-          hint="Read-only usage"
+          label="Active employees"
+          value={activeEmployees}
+          hint="Company employees (non-admin)"
           icon={Briefcase}
         />
       </div>
@@ -88,10 +92,8 @@ export default function CompanyOverviewPage() {
               <dd className="font-medium tabular-nums">{company.renewsAt}</dd>
             </div>
             <div className="flex justify-between gap-4 border-b border-border pb-2">
-              <dt className="text-muted-foreground">Seats</dt>
-              <dd className="font-medium tabular-nums">
-                {company.seatsUsed} / {company.seats}
-              </dd>
+              <dt className="text-muted-foreground">Users</dt>
+              <dd className="font-medium tabular-nums">{company.seatsUsed}</dd>
             </div>
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Soft lock</dt>
@@ -101,15 +103,15 @@ export default function CompanyOverviewPage() {
             </div>
           </dl>
           <p className="mt-4 text-xs text-muted-foreground">
-            Expired or suspended tenants get a short view-only soft lock, then hard lock.
-            Tier names are placeholders until Sasmith confirms launch plans.
+            Expired or suspended tenants get a 3-day view-only soft lock, then hard lock.
+            Razorpay billing is stubbed until gateway credentials land.
           </p>
         </Panel>
 
         <Panel title="Quick links">
           <div className="grid gap-2">
             <Button variant="outline" className="justify-start" asChild>
-              <Link href="/company/users">Add or remove users (seat limits)</Link>
+              <Link href="/company/users">Add or remove users</Link>
             </Button>
             <Button variant="outline" className="justify-start" asChild>
               <Link href="/company/branding">Edit disclaimer, logo, contact</Link>
