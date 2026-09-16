@@ -43,7 +43,7 @@ export function ScheduleTable<T extends Record<string, unknown>>({
   dangerRow,
   fillHeight = false,
   stretchRows,
-  fitContent = false,
+  fitContent = true,
   dense = false,
 }: {
   columns: ScheduleColumn<T>[];
@@ -70,21 +70,18 @@ export function ScheduleTable<T extends Record<string, unknown>>({
   dense?: boolean;
 }) {
   const growRows = stretchRows ?? fillHeight;
-  // Narrow schedules should fit a phone instead of forcing a horizontal scroll.
-  const minWidth = `${Math.max(dense ? 16 : 18, columns.length * (dense ? 5.25 : 6.5))}rem`;
   const cellPad = dense ? "px-2 py-1.5" : "px-3 py-2";
 
   return (
     <Card
-      className={`${fillHeight ? "h-full max-h-none overflow-hidden" : "max-h-[540px]"} custom-scrollbar ${className ?? ""}`}
+      className={`mx-auto ${fitContent ? "w-fit" : "w-full"} ${fillHeight ? "h-full max-h-none overflow-hidden" : "max-h-[540px]"} custom-scrollbar ${className ?? ""}`}
     >
       {caption || meta ? (
         <SectionHeader title={caption} meta={meta} className="mb-2 shrink-0" />
       ) : null}
       <div className="custom-scrollbar min-h-0 flex-1 overflow-auto rounded-lg border border-[var(--app-border)]">
         <table
-          className={`${fitContent ? "w-max max-w-full" : "w-full"} text-xs ${growRows ? "h-full" : ""}`}
-          style={{ minWidth }}
+          className={`w-max max-w-full text-xs mx-auto ${growRows ? "h-full" : ""}`}
         >
           <thead>
             <tr className="text-left text-[10px] font-semibold uppercase tracking-wider sm:text-[11px]">
@@ -93,7 +90,7 @@ export function ScheduleTable<T extends Record<string, unknown>>({
                 return (
                   <th
                     key={String(col.key)}
-                    className={`sticky top-0 z-10 border-b border-[var(--app-border)] bg-[var(--app-surface-muted)] ${cellPad} whitespace-nowrap ${
+                    className={`sticky top-0 z-10 border-b border-slate-200 bg-slate-50 ${cellPad} whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-slate-600 ${
                       HEAD_TONE[tone]
                     } ${col.align === "right" ? "text-right" : ""} ${
                       col.sticky ? "left-0 z-20 shadow-[1px_0_0_var(--app-border)]" : ""
@@ -115,20 +112,20 @@ export function ScheduleTable<T extends Record<string, unknown>>({
                   ? "bg-[var(--app-surface-muted)]/50"
                   : "";
               const lastBg = isLast
-                ? "border-y border-[var(--app-step-text)]/35 bg-[var(--app-step-bg)] font-semibold"
+                ? "border-t-2 border-emerald-200 bg-emerald-50/50 font-semibold"
                 : "";
               const dangerBg =
                 isDanger && !isLast
                   ? "bg-[var(--app-danger)]/10 font-semibold text-[var(--app-danger)]"
                   : "";
               const emphBg =
-                isEmphasized && !isLast ? "bg-[var(--app-warn-bg)] font-semibold" : "";
+                isEmphasized && !isLast ? "bg-emerald-50/40 font-semibold" : "";
               return (
                 <tr
                   key={i}
                   className={`${
-                    isLast ? "" : "border-b border-[var(--app-border)]"
-                  } transition-colors hover:bg-[var(--app-surface-muted)]/60 ${zebraBg} ${lastBg} ${dangerBg} ${emphBg} ${
+                    isLast ? "" : "border-b border-slate-100"
+                  } transition-colors hover:bg-slate-50/70 ${zebraBg} ${lastBg} ${dangerBg} ${emphBg} ${
                     growRows ? "h-[1%]" : ""
                   }`}
                 >
@@ -137,14 +134,14 @@ export function ScheduleTable<T extends Record<string, unknown>>({
                     const tone = col.tone ?? "default";
                     const stickyBg = col.sticky
                       ? isLast
-                        ? "bg-[var(--app-step-bg)]"
+                        ? "bg-emerald-50"
                         : isDanger
                           ? "bg-[var(--app-danger)]/10"
                           : isEmphasized
-                            ? "bg-[var(--app-warn-bg)]"
+                            ? "bg-emerald-50/40"
                             : zebra && i % 2 === 1
-                              ? "bg-[var(--app-surface-muted)]"
-                              : "bg-[var(--app-surface)]"
+                              ? "bg-slate-50"
+                              : "bg-white"
                       : "";
                     const content = col.render
                       ? col.render(raw, row, i)

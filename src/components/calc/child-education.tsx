@@ -812,11 +812,12 @@ function EducationResults({
           title="Lumpsum required today"
           value={result.lumpsum.lumpsum}
           hint={`Peak ${formatINRCurrency(result.lumpsum.peakCorpus)}`}
+          tone="neutral"
         />
         <StatCard
           title="Monthly SIP required"
           value={result.sip.monthlySip}
-          variant="soft"
+          tone="positive"
           hint={`${result.sipYears} years of SIP funding`}
         />
       </StatGrid>

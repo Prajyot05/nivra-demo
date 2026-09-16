@@ -2,21 +2,16 @@
 
 import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { CalculatorPageHeader } from "./calculator-page-header";
-import { Card, SectionTitle } from "./card";
-import { Disclaimer } from "./disclaimer";
 import { getColorTheme, type ColorThemeId } from "./color-themes";
 import { STACK } from "./tokens";
+import { ComplianceFootnote } from "./bento-components";
 
 /**
- * Shell for every calculator: title → assumptions → results → disclaimer.
- *
- * The order encodes the intended reading flow, so pages only supply content for
- * each slot and never re-declare page padding, card chrome or section spacing.
+ * Shell for every calculator
  */
 export function CalculatorPage({
   title,
   description,
-  formTitle = "Financial Assumptions",
   header,
   leading,
   actions,
@@ -27,8 +22,6 @@ export function CalculatorPage({
 }: {
   title: string;
   description?: string;
-  /** Heading above the input card. */
-  formTitle?: string;
   header?: ReactNode;
   leading?: ReactNode;
   actions?: ReactNode;
@@ -42,10 +35,10 @@ export function CalculatorPage({
 
   return (
     <div
-      className="flex flex-1 flex-col bg-[var(--app-bg)] pt-[max(0.5rem,env(safe-area-inset-top))] pr-[max(0.75rem,env(safe-area-inset-right))] pb-[max(0.5rem,env(safe-area-inset-bottom))] pl-[max(0.75rem,env(safe-area-inset-left))] sm:px-5 md:px-6 lg:px-8"
+      className="flex flex-1 flex-col bg-[#f8fafc] text-slate-800 pt-[max(1.5rem,env(safe-area-inset-top))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(5rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] sm:px-6 lg:px-8 selection:bg-brand-100 selection:text-brand-900"
       style={theme.vars as CSSProperties}
     >
-      <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-3">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 sm:gap-8">
         <CalculatorPageHeader
           title={title}
           description={description}
@@ -55,18 +48,14 @@ export function CalculatorPage({
           onThemeChange={setThemeId}
         />
 
+        {header}
+
         {modes ? <div className="shrink-0">{modes}</div> : null}
 
-        <Card variant="muted" className="shrink-0">
-          <SectionTitle as="h2" className="mb-2.5">
-            {formTitle}
-          </SectionTitle>
-          {header}
-          {form}
-        </Card>
+        {form}
 
         <div className={STACK}>{results}</div>
-        <div className="shrink-0 pt-1 pb-4">{footer ?? <Disclaimer />}</div>
+        <div className="shrink-0 pt-1 pb-8">{footer ?? <ComplianceFootnote />}</div>
       </div>
     </div>
   );

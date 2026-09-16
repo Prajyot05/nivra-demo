@@ -13,6 +13,7 @@ import {
   ResultsSplit,
   ScheduleTable,
   SelectInput,
+  SegmentedChartControl,
   Stack,
   StatCard,
   StatGrid,
@@ -20,11 +21,8 @@ import {
   YearInput,
 } from "@nivra/ui";
 import { CalculatorPage } from "@/components/layout/calculator-page-with-nav";
+import { GrowthLumpsum } from "@/components/calc/growth-lumpsum";
 import { ReportDownloadButton } from "@/components/calc/report-download-button";
-import {
-  OneTimeInvestmentDossier,
-  ONE_TIME_INVESTMENT_REPORT_ID,
-} from "@/components/reports/one-time-investment-dossier";
 import {
   PeriodicInvestmentDossier,
   PERIODIC_INVESTMENT_REPORT_ID,
@@ -40,6 +38,7 @@ import {
 import { useCalculate } from "@/hooks/use-calculate";
 import { useCalculatorMode } from "@/hooks/use-calculator-mode";
 import { getCalculatorPageTitle } from "@/lib/calculator-nav";
+import { LineChart, PieChart } from "lucide-react";
 
 const MODES = [
   { id: "sip", label: "SIP" },
@@ -115,15 +114,22 @@ type GrowthResult = {
   schedule: Array<YearRow | PeriodicRow>;
 };
 
-const CALCULATOR_ID: Record<Mode, string> = {
+const CALCULATOR_ID: Record<Exclude<Mode, "lumpsum">, string> = {
   sip: "growth-sip",
   stepup: "growth-stepup",
-  lumpsum: "growth-lumpsum",
   periodic: "growth-periodic",
 };
 
 export function InvestmentGrowth() {
   const [mode] = useCalculatorMode(MODE_IDS, "lumpsum");
+  if (mode === "lumpsum") {
+    return <GrowthLumpsum />;
+  }
+
+  return <InvestmentGrowthModes mode={mode} />;
+}
+
+function InvestmentGrowthModes({ mode }: { mode: Exclude<Mode, "lumpsum"> }) {
   const [name, setName] = useState("Mr. Anshu Kaul");
   const [age, setAge] = useState(30);
 
@@ -193,33 +199,6 @@ export function InvestmentGrowth() {
   const stepTaxError =
     stepTax < 0 ? "Tax cannot be negative." : stepTax > 100 ? "Tax cannot exceed 100%." : undefined;
 
-  const [lumpAmount, setLumpAmount] = useState(5_000_000);
-  const [lumpYears, setLumpYears] = useState(16);
-  const [lumpReturn, setLumpReturn] = useState(12);
-  const [lumpInflation, setLumpInflation] = useState(5.75);
-  const [lumpDelay, setLumpDelay] = useState(6);
-  const [lumpTax, setLumpTax] = useState(0);
-
-  const lumpAmountError =
-    lumpAmount < 1
-      ? lumpAmount <= 0
-        ? "Investment amount is required."
-        : "Amount must be at least ₹1."
-      : undefined;
-  const lumpYearsError = lumpYears < 1 ? "Tenure must be at least 1 year." : undefined;
-  const lumpReturnError =
-    lumpReturn < 0 ? "Return cannot be negative." : lumpReturn > 100 ? "Return cannot exceed 100%." : undefined;
-  const lumpInflationError =
-    lumpInflation < 0
-      ? "Inflation cannot be negative."
-      : lumpInflation > 100
-        ? "Inflation cannot exceed 100%."
-        : undefined;
-  const lumpDelayError =
-    lumpDelay > lumpYears * 12 ? "Delay cannot exceed the investment tenure." : undefined;
-  const lumpTaxError =
-    lumpTax < 0 ? "Tax cannot be negative." : lumpTax > 100 ? "Tax cannot exceed 100%." : undefined;
-
   const [periodicAmount, setPeriodicAmount] = useState(100_000);
   const [timesPerYear, setTimesPerYear] = useState(2);
   const [periodicYears, setPeriodicYears] = useState(1);
@@ -246,35 +225,28 @@ export function InvestmentGrowth() {
     : undefined;
 
   const canCalculate =
-    mode === "lumpsum"
-      ? !lumpAmountError &&
-        !lumpYearsError &&
-        !lumpReturnError &&
-        !lumpInflationError &&
-        !lumpDelayError &&
-        !lumpTaxError
-      : mode === "periodic"
-        ? !periodicAmountError &&
-          !periodicYearsError &&
-          !periodicReturnError &&
-          !periodicTaxError &&
-          !periodicFreqError
-        : mode === "sip"
-          ? !sipMonthlyError &&
-            !sipYearsError &&
-            !sipHorizonError &&
-            !sipReturnError &&
-            !sipInflationError &&
-            !sipDelayError &&
-            !sipTaxError
-          : mode === "stepup"
-            ? !stepStartError &&
-              !stepYearsError &&
-              !stepReturnError &&
-              !stepUpPctError &&
-              !stepInflationError &&
-              !stepTaxError
-            : true;
+    mode === "periodic"
+      ? !periodicAmountError &&
+        !periodicYearsError &&
+        !periodicReturnError &&
+        !periodicTaxError &&
+        !periodicFreqError
+      : mode === "sip"
+        ? !sipMonthlyError &&
+          !sipYearsError &&
+          !sipHorizonError &&
+          !sipReturnError &&
+          !sipInflationError &&
+          !sipDelayError &&
+          !sipTaxError
+        : mode === "stepup"
+          ? !stepStartError &&
+            !stepYearsError &&
+            !stepReturnError &&
+            !stepUpPctError &&
+            !stepInflationError &&
+            !stepTaxError
+          : true;
 
   const input = useMemo(() => {
     switch (mode) {
@@ -300,17 +272,6 @@ export function InvestmentGrowth() {
           stepUpPct,
           inflationPct: stepInflation,
           taxPct: stepTax,
-        };
-      case "lumpsum":
-        return {
-          clientName: name,
-          age,
-          amount: lumpAmount,
-          years: lumpYears,
-          returnPct: lumpReturn,
-          inflationPct: lumpInflation,
-          delayMonths: Math.max(0, Math.round(lumpDelay)),
-          taxPct: lumpTax,
         };
       case "periodic":
         return {
@@ -340,12 +301,6 @@ export function InvestmentGrowth() {
     stepUpPct,
     stepInflation,
     stepTax,
-    lumpAmount,
-    lumpYears,
-    lumpReturn,
-    lumpInflation,
-    lumpDelay,
-    lumpTax,
     periodicAmount,
     timesPerYear,
     periodicYears,
@@ -369,15 +324,11 @@ export function InvestmentGrowth() {
       .replace(/\s+/g, "-")
       .toLowerCase();
 
-    const reportByMode: Partial<Record<Mode, { id: string; filename: string }>> = {
+    const reportByMode: Partial<Record<Exclude<Mode, "lumpsum">, { id: string; filename: string }>> = {
       sip: { id: SIP_CALCULATOR_REPORT_ID, filename: `sip-calculator-${safeName || "report"}` },
       stepup: {
         id: SIP_STEPUP_CALCULATOR_REPORT_ID,
         filename: `sip-stepup-calculator-${safeName || "report"}`,
-      },
-      lumpsum: {
-        id: ONE_TIME_INVESTMENT_REPORT_ID,
-        filename: `one-time-investment-${safeName || "report"}`,
       },
       periodic: {
         id: PERIODIC_INVESTMENT_REPORT_ID,
@@ -505,52 +456,6 @@ export function InvestmentGrowth() {
               error={stepTaxError}
             />
           </FormGrid>
-        ) : mode === "lumpsum" ? (
-          <FormGrid>
-            <ClientHeader name={name} age={age} onNameChange={setName} onAgeChange={setAge} />
-            <MoneyInput
-              label="Investment amount"
-              value={lumpAmount}
-              onChange={setLumpAmount}
-              error={lumpAmountError}
-            />
-            <YearInput
-              label="Term"
-              value={lumpYears}
-              min={1}
-              max={100}
-              suffix="Years"
-              onChange={setLumpYears}
-              error={lumpYearsError}
-            />
-            <PercentInput
-              label="Expected return"
-              value={lumpReturn}
-              onChange={(v) => setLumpReturn(Math.max(0, v))}
-              error={lumpReturnError}
-            />
-            <PercentInput
-              label="Inflation"
-              value={lumpInflation}
-              onChange={(v) => setLumpInflation(Math.max(0, v))}
-              error={lumpInflationError}
-            />
-            <YearInput
-              label="Delay"
-              value={lumpDelay}
-              min={0}
-              max={1200}
-              suffix="Months"
-              onChange={(v) => setLumpDelay(Math.max(0, v))}
-              error={lumpDelayError}
-            />
-            <PercentInput
-              label="Tax"
-              value={lumpTax}
-              onChange={(v) => setLumpTax(Math.max(0, v))}
-              error={lumpTaxError}
-            />
-          </FormGrid>
         ) : (
           <FormGrid>
             <ClientHeader name={name} age={age} onNameChange={setName} onAgeChange={setAge} />
@@ -659,30 +564,6 @@ export function InvestmentGrowth() {
         }}
       />
     ) : null}
-    {mode === "lumpsum" && result && result.inflationAdjusted != null ? (
-      <OneTimeInvestmentDossier
-        data={{
-          clientName: name,
-          age,
-          amount: lumpAmount,
-          years: lumpYears,
-          returnPct: lumpReturn,
-          inflationPct: lumpInflation,
-          taxPct: lumpTax,
-          delayMonths: lumpDelay,
-          maturity: result.maturity,
-          totalInvested: result.totalInvested,
-          gain: result.gain,
-          tax: result.tax,
-          netAfterTax: result.netAfterTax,
-          inflationAdjusted: result.inflationAdjusted,
-          inflationAdjustedGain: result.inflationAdjustedGain ?? result.inflationAdjusted - result.totalInvested,
-          delayedMaturity: result.delayedMaturity ?? null,
-          costOfDelay: result.costOfDelay ?? null,
-          schedule: result.schedule.filter(isYearRow),
-        }}
-      />
-    ) : null}
     {mode === "periodic" && result && result.payments != null ? (
       <PeriodicInvestmentDossier
         data={{
@@ -725,7 +606,7 @@ function GrowthResults({
   result,
   timesPerYear,
 }: {
-  mode: Mode;
+  mode: Exclude<Mode, "lumpsum">;
   result: GrowthResult;
   timesPerYear: number;
 }) {
@@ -744,23 +625,7 @@ function GrowthResults({
   );
 
   const lineChart =
-    mode === "periodic" ? null : mode === "lumpsum" ? (
-      <GrowthChart
-        title="Full return vs inflation-adjusted"
-        showEndLabels
-        endpointDots
-        data={yearRows.map((row) => ({
-          year: row.year,
-          corpus: row.yearEnd,
-          inflationAdjusted: row.inflationAdjusted ?? row.yearEnd,
-        }))}
-        series={[
-          { key: "invested", label: "Investment", color: "var(--app-chart-invested)" },
-          { key: "corpus", label: "Full return", color: "var(--app-chart-gain)" },
-          { key: "inflationAdjusted", label: "Inflation-adjusted", color: "var(--app-chart-inflation)" },
-        ]}
-      />
-    ) : (
+    mode === "periodic" ? null : (
       <GrowthChart
         title="Investment vs corpus"
         showEndLabels
@@ -802,76 +667,45 @@ function GrowthResults({
 
   const statGrid = (
     <StatGrid>
-      <StatCard title="Invested" value={result.totalInvested} />
-      <StatCard title="Maturity" value={result.maturity} variant="soft" />
-      {mode === "periodic" || mode === "sip" || mode === "stepup" ? (
-        <StatCard title="Net after tax" value={result.netAfterTax} />
-      ) : null}
-      {mode === "lumpsum" && result.inflationAdjusted != null ? (
-        <StatCard title="Inflation adjusted" value={result.inflationAdjusted} />
-      ) : null}
+      <StatCard title="Invested" value={result.totalInvested} tone="neutral" />
+      <StatCard title="Maturity" value={result.maturity} tone="positive" />
+      <StatCard title="Net after tax" value={result.netAfterTax} tone="positive" />
     </StatGrid>
   );
 
-  const yearlyColumns =
-    mode === "lumpsum"
-      ? [
-          { key: "year", header: "Year", sticky: true },
-          {
-            key: "investedToDate",
-            header: "Invested",
-            format: "inr" as const,
-            align: "right" as const,
-            tone: "std" as const,
-          },
-          {
-            key: "yearEnd",
-            header: "Year-end",
-            format: "inr" as const,
-            align: "right" as const,
-            tone: "step" as const,
-          },
-          {
-            key: "inflationAdjusted",
-            header: "Inflation-adj.",
-            format: "inr" as const,
-            align: "right" as const,
-            tone: "std" as const,
-          },
-        ]
-      : [
-          { key: "year", header: "Year", sticky: true },
-          {
-            key: "monthly",
-            header: "Monthly SIP",
-            format: "inr" as const,
-            align: "right" as const,
-            tone: "std" as const,
-          },
-          {
-            key: "investedToDate",
-            header: "Invested",
-            format: "inr" as const,
-            align: "right" as const,
-            tone: "std" as const,
-          },
-          {
-            key: "yearEnd",
-            header: "Year-end",
-            format: "inr" as const,
-            align: "right" as const,
-            tone: "step" as const,
-          },
-          {
-            key: "inflationAdjusted",
-            header: "Inflation-adj.",
-            format: "inr" as const,
-            align: "right" as const,
-            tone: "std" as const,
-          },
-        ];
+  const yearlyColumns = [
+    { key: "year", header: "Year", sticky: true },
+    {
+      key: "monthly",
+      header: "Monthly SIP",
+      format: "inr" as const,
+      align: "right" as const,
+      tone: "std" as const,
+    },
+    {
+      key: "investedToDate",
+      header: "Invested",
+      format: "inr" as const,
+      align: "right" as const,
+      tone: "std" as const,
+    },
+    {
+      key: "yearEnd",
+      header: "Year-end",
+      format: "inr" as const,
+      align: "right" as const,
+      tone: "step" as const,
+    },
+    {
+      key: "inflationAdjusted",
+      header: "Inflation-adj.",
+      format: "inr" as const,
+      align: "right" as const,
+      tone: "std" as const,
+    },
+  ];
 
-  // One reading order for all four modes: headline numbers, then the answer
+  // One reading order for all modes: headline numbers, then the answer
   // panel, then the supporting chart, then the full schedule.
   const primaryChart = mode === "periodic" ? contributionChart : lineChart;
 
@@ -880,14 +714,24 @@ function GrowthResults({
       {statGrid}
       <ResultsSplit
         left={
-          <div className="flex min-h-[260px] flex-1 flex-col lg:min-h-[300px]">{primaryChart}</div>
+          <SegmentedChartControl
+            tabs={[
+              {
+                id: "growth",
+                label: "Growth",
+                icon: <LineChart className="w-4 h-4" />,
+                content: <div className="flex min-h-[300px] flex-1 flex-col">{primaryChart}</div>
+              },
+              {
+                id: "allocation",
+                label: "Allocation",
+                icon: <PieChart className="w-4 h-4" />,
+                content: <div className="flex min-h-[300px] flex-1 flex-col">{donut}</div>
+              }
+            ]}
+          />
         }
-        right={
-          <>
-            <ResultCard title="Results" items={items} />
-            <div className="flex min-h-[220px] flex-1 flex-col">{donut}</div>
-          </>
-        }
+        right={<ResultCard title="Results" items={items} />}
       />
       {mode === "periodic" ? (
         <ScheduleTable
@@ -926,7 +770,7 @@ function GrowthResults({
   );
 }
 
-function resultItems(mode: Mode, result: GrowthResult, timesPerYear: number) {
+function resultItems(mode: Exclude<Mode, "lumpsum">, result: GrowthResult, timesPerYear: number) {
   const core: Array<{
     label: string;
     value?: number;

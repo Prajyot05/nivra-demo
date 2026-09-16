@@ -25,7 +25,7 @@ export function StatusNote({
   className?: string;
 }) {
   return (
-    <p
+    <div
       role={tone === "error" ? "alert" : undefined}
       aria-live={tone === "pending" ? "polite" : undefined}
       className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-[13px] leading-snug ${TONE[tone]} ${className ?? ""}`}
@@ -36,7 +36,7 @@ export function StatusNote({
           aria-hidden
         />
       ) : null}
-      <span className="min-w-0">{children}</span>
-    </p>
+      <div className="min-w-0">{children}</div>
+    </div>
   );
 }

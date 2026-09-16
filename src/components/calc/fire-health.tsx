@@ -1700,6 +1700,7 @@ function FireResults({
               title="Corpus required"
               value={result.corpusRequired}
               hint={`At age ${retirementAge}`}
+              tone="neutral"
             />
             <StatCard
               title={result.excess ? "Surplus at retirement" : "Monthly SIP needed"}
@@ -1710,18 +1711,18 @@ function FireResults({
                     result.corpusRequired
                   : result.monthlySip
               }
-              variant="soft"
+              tone={result.excess ? "positive" : "negative"}
             />
             <StatCard
               title="Current corpus at retirement"
               value={result.currentAtRetirement}
-              variant="soft"
+              tone="neutral"
               hint="Existing investments only"
             />
             <StatCard
               title="Additional lumpsum"
               value={result.additionalLumpsum}
-              variant="soft"
+              tone={result.excess ? "positive" : "negative"}
               hint={result.excess ? "Fully funded" : "Funding gap today"}
             />
           </div>
@@ -1993,11 +1994,11 @@ function HealthResults({
       <div className={`${RESULTS_SPLIT} gap-3`}>
         <div className={`${RESULTS_LEFT} gap-3`}>
           <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
-            <StatCard title="Corpus at retirement" value={result.corpusAtRetirement} />
+            <StatCard title="Corpus at retirement" value={result.corpusAtRetirement} tone="neutral" />
             <StatCard
               title={result.funded ? "Remaining at survival" : "Corpus when funds run out"}
               value={result.funded ? result.remainingAtSurvival : 0}
-              variant="soft"
+              tone={result.funded ? "positive" : "negative"}
               hint={
                 result.funded
                   ? `${result.retiredYears}-year retirement runway`

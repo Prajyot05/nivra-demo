@@ -38,6 +38,7 @@ import {
   ScheduleTable,
   SectionTitle,
   SelectInput,
+  SegmentedChartControl,
   StackedBarChart,
   Stack,
   StatCard,
@@ -60,6 +61,7 @@ import {
 import { useCalculate } from "@/hooks/use-calculate";
 import { useCalculatorMode } from "@/hooks/use-calculator-mode";
 import { getCalculatorPageTitle } from "@/lib/calculator-nav";
+import { PieChart, BarChart3, LineChart } from "lucide-react";
 
 const MODES = [
   { id: "assign", label: "Corpus assign" },
@@ -1005,6 +1007,7 @@ function AssignDashboard({
             <StatCard
               title="Total Investment Per Month"
               value={result.totalMonthlySip}
+              tone="positive"
               hint={
                 highestSip
                   ? `Highest: ${formatINRCurrency(highestSip.monthlySip)}/mo (${highestSip.name})`
@@ -1014,24 +1017,26 @@ function AssignDashboard({
             <StatCard
               title="Total Investment (One-Time)"
               value={result.totalLumpsum}
-              variant="soft"
+              tone="neutral"
               hint={largest ? `Largest goal · ${largest.name}` : "One-time investment alternative"}
             />
             <StatCard
               title="Total Investment (SIP)"
               value={result.totalSipInvested}
+              tone="neutral"
               hint="Total SIP capital over the horizon"
             />
             <StatCard
               title="Corpus Assigned"
               value={result.totalAssigned}
+              tone="positive"
               hint="Amount of current corpus allocated to goals."
             />
             {hasUnassigned ? (
               <StatCard
                 title="Unused Corpus Remaining"
                 value={result.unassignedCorpus}
-                variant="soft"
+                tone="neutral"
                 hint="Corpus not yet allocated to a goal"
               />
             ) : null}
@@ -1073,29 +1078,45 @@ function AssignDashboard({
         <>
           <ResultsSplit
             left={
-              <>
-                <CompareChart
-                  title="Monthly SIP by goal"
-                  data={sipCompare}
-                  series={[{ key: "amount", label: "Monthly SIP", color: "var(--app-chart-invested)" }]}
-                  showBarLabels
-                  showLegend={false}
-                  className="min-h-[290px] w-full flex-1 sm:min-h-[310px]"
-                />
-                <StackedBarChart
-                  title="Corpus assigned vs remaining lumpsum"
-                  className="min-h-[290px] w-full flex-1 sm:min-h-[310px]"
-                  data={result.compare.map((row) => ({
-                    category: row.category,
-                    assigned: row.assigned,
-                    remaining: row.remaining,
-                  }))}
-                  series={[
-                    { key: "assigned", label: "Assigned", color: "var(--app-chart-invested)" },
-                    { key: "remaining", label: "Remaining LS", color: "var(--app-chart-b)" },
-                  ]}
-                />
-              </>
+              <SegmentedChartControl
+                tabs={[
+                  {
+                    id: "sip",
+                    label: "Monthly SIP",
+                    icon: <BarChart3 className="w-4 h-4" />,
+                    content: (
+                      <CompareChart
+                        title="Monthly SIP by goal"
+                        data={sipCompare}
+                        series={[{ key: "amount", label: "Monthly SIP", color: "var(--app-chart-invested)" }]}
+                        showBarLabels
+                        showLegend={false}
+                        className="min-h-[290px] w-full flex-1 sm:min-h-[310px]"
+                      />
+                    )
+                  },
+                  {
+                    id: "lumpsum",
+                    label: "Lumpsum",
+                    icon: <BarChart3 className="w-4 h-4" />,
+                    content: (
+                      <StackedBarChart
+                        title="Corpus assigned vs remaining lumpsum"
+                        className="min-h-[290px] w-full flex-1 sm:min-h-[310px]"
+                        data={result.compare.map((row) => ({
+                          category: row.category,
+                          assigned: row.assigned,
+                          remaining: row.remaining,
+                        }))}
+                        series={[
+                          { key: "assigned", label: "Assigned", color: "var(--app-chart-invested)" },
+                          { key: "remaining", label: "Remaining LS", color: "var(--app-chart-b)" },
+                        ]}
+                      />
+                    )
+                  }
+                ]}
+              />
             }
             right={
               <>
@@ -1713,10 +1734,10 @@ function WithdrawalsDashboard({
       {result ? (
         <>
           <StatGrid>
-            <StatCard title="Start monthly SIP" value={result.startMonthlySip} />
-            <StatCard title="Total goals value" value={result.totalWithdrawn} variant="soft" />
-            <StatCard title="Total investment" value={result.totalInvested} />
-            <StatCard title="Total tax" value={result.totalTax} variant="soft" />
+            <StatCard title="Start monthly SIP" value={result.startMonthlySip} tone="positive" />
+            <StatCard title="Total goals value" value={result.totalWithdrawn} tone="neutral" />
+            <StatCard title="Total investment" value={result.totalInvested} tone="neutral" />
+            <StatCard title="Total tax" value={result.totalTax} tone="negative" />
           </StatGrid>
 
           <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
@@ -1768,21 +1789,39 @@ function WithdrawalsDashboard({
 
       {result ? (
         <>
-          <div className="flex flex-col gap-4">
-            <CompareChart
-              title="Corpus by withdrawal age"
-              data={compareData}
-              series={[{ key: "corpus", label: "Corpus", color: "var(--app-chart-gain)" }]}
-              showBarLabels
-              showLegend={false}
-              className="h-[280px] w-full sm:h-[300px]"
-            />
+          <div className="flex flex-col gap-4 mt-6">
             <ResultsSplit
               left={
-                <WithdrawalPathChart
-                  data={pathData}
-                  milestones={milestones}
-                  title="Corpus over age"
+                <SegmentedChartControl
+                  tabs={[
+                    {
+                      id: "path",
+                      label: "Path",
+                      icon: <LineChart className="w-4 h-4" />,
+                      content: (
+                        <WithdrawalPathChart
+                          data={pathData}
+                          milestones={milestones}
+                          title="Corpus over age"
+                        />
+                      )
+                    },
+                    {
+                      id: "withdrawals",
+                      label: "Withdrawals",
+                      icon: <BarChart3 className="w-4 h-4" />,
+                      content: (
+                        <CompareChart
+                          title="Corpus by withdrawal age"
+                          data={compareData}
+                          series={[{ key: "corpus", label: "Corpus", color: "var(--app-chart-gain)" }]}
+                          showBarLabels
+                          showLegend={false}
+                          className="h-[280px] w-full sm:h-[300px]"
+                        />
+                      )
+                    }
+                  ]}
                 />
               }
               right={

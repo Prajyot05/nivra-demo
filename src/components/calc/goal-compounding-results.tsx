@@ -80,17 +80,18 @@ export function CompoundingResults({
   return (
     <Stack>
       <StatGrid>
-        <StatCard title="Target goal" value={result.targetGoal} />
+        <StatCard title="Target goal" value={result.targetGoal} tone="neutral" />
         <StatCard
           title="Monthly SIP required"
           value={standard.monthlySip}
           hint="Every month for the full tenure"
+          tone="positive"
         />
         <StatCard
           title="Lumpsum required"
           value={lumpsumToday}
-          variant="soft"
           hint="One-time amount today"
+          tone="neutral"
         />
       </StatGrid>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Download, Loader2 } from "lucide-react";
+import { Download, Loader2, BarChart3, PieChart, LineChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { generatePdfFromElement } from "@/lib/pdf-generator";
 import {
@@ -46,6 +46,7 @@ import {
   StackedBarChart,
   StatCard,
   StatusNote,
+  SegmentedChartControl,
   TextInput,
   YearInput,
 } from "@nivra/ui";
@@ -1165,9 +1166,9 @@ function EmiResults({ result }: { result: EmiResult }) {
       <div className={`${RESULTS_SPLIT} gap-2.5`}>
         <div className={`${RESULTS_LEFT} gap-2.5`}>
           <div className="grid shrink-0 grid-cols-3 gap-2">
-            <StatCard title="EMI" value={result.emi} />
-            <StatCard title="Total interest" value={result.totalInterest} variant="soft" />
-            <StatCard title="Total paid" value={result.totalPaid} />
+            <StatCard title="EMI" value={result.emi} tone="neutral" />
+            <StatCard title="Total interest" value={result.totalInterest} tone="negative" />
+            <StatCard title="Total paid" value={result.totalPaid} tone="neutral" />
           </div>
 
           {first ? (
@@ -1195,44 +1196,69 @@ function EmiResults({ result }: { result: EmiResult }) {
             </div>
           ) : null}
 
-          <GrowthChart
-            title="Principal vs interest payment by month"
-            className="min-h-[200px] sm:min-h-[220px]"
-            data={result.schedule.map((row) => ({
-              year: row.month,
-              principal: row.principal,
-              interest: row.interest,
-            }))}
-            series={[
-              { key: "principal", label: "Principal payment", color: "var(--app-chart-invested)" },
-              { key: "interest", label: "Interest payment", color: "var(--app-chart-tax)" },
-            ]}
-            xTickFormatter={(month) => monthTickLabel(month, totalMonths)}
-          />
-          <CompositionChart
-            title="Lifetime mix"
-            compact
-            showPercentages
-            slices={[
-              { name: "Principal", value: result.totalPrincipal, color: "var(--app-chart-invested)" },
-              { name: "Interest", value: result.totalInterest, color: "var(--app-chart-tax)" },
-            ]}
-            centerLabel="Total paid"
-            centerValue={result.totalPaid}
-          />
-          <StackedAreaChart
-            title="Remaining principal vs cumulative interest paid"
-            className="min-h-[200px]"
-            data={area}
-            series={[
-              { key: "remaining", label: "Remaining principal", color: "var(--app-chart-invested)" },
+          <SegmentedChartControl
+            tabs={[
               {
-                key: "interestPaid",
-                label: "Cumulative interest paid",
-                color: "var(--app-chart-tax)",
+                id: "payments",
+                label: "Payments",
+                icon: <BarChart3 className="w-4 h-4" />,
+                content: (
+                  <GrowthChart
+                    title="Principal vs interest payment by month"
+                    className="min-h-[200px] sm:min-h-[220px]"
+                    data={result.schedule.map((row) => ({
+                      year: row.month,
+                      principal: row.principal,
+                      interest: row.interest,
+                    }))}
+                    series={[
+                      { key: "principal", label: "Principal payment", color: "var(--app-chart-invested)" },
+                      { key: "interest", label: "Interest payment", color: "var(--app-chart-tax)" },
+                    ]}
+                    xTickFormatter={(month) => monthTickLabel(month, totalMonths)}
+                  />
+                )
               },
+              {
+                id: "mix",
+                label: "Mix",
+                icon: <PieChart className="w-4 h-4" />,
+                content: (
+                  <CompositionChart
+                    title="Lifetime mix"
+                    compact
+                    showPercentages
+                    slices={[
+                      { name: "Principal", value: result.totalPrincipal, color: "var(--app-chart-invested)" },
+                      { name: "Interest", value: result.totalInterest, color: "var(--app-chart-tax)" },
+                    ]}
+                    centerLabel="Total paid"
+                    centerValue={result.totalPaid}
+                  />
+                )
+              },
+              {
+                id: "balance",
+                label: "Balance",
+                icon: <LineChart className="w-4 h-4" />,
+                content: (
+                  <StackedAreaChart
+                    title="Remaining principal vs cumulative interest paid"
+                    className="min-h-[200px]"
+                    data={area}
+                    series={[
+                      { key: "remaining", label: "Remaining principal", color: "var(--app-chart-invested)" },
+                      {
+                        key: "interestPaid",
+                        label: "Cumulative interest paid",
+                        color: "var(--app-chart-tax)",
+                      },
+                    ]}
+                    xTickFormatter={(month) => monthTickLabel(month, totalMonths)}
+                  />
+                )
+              }
             ]}
-            xTickFormatter={(month) => monthTickLabel(month, totalMonths)}
           />
         </div>
         <div className={`${RESULTS_RIGHT} gap-2.5`}>
@@ -1500,19 +1526,19 @@ function PrepayResults({
           )}
         </div>
         <div className="min-h-[5.25rem] min-w-0 [&>div]:h-full">
-          <StatCard title="Interest saved" value={result.interestSaved} />
+          <StatCard title="Interest saved" value={result.interestSaved} tone="positive" />
         </div>
         <div className="min-h-[5.25rem] min-w-0 [&>div]:h-full">
-          <StatCard title="Total extra payments" value={result.totalExtra} variant="soft" />
+          <StatCard title="Total extra payments" value={result.totalExtra} tone="neutral" />
         </div>
-        <div className="flex min-h-[5.25rem] min-w-0 flex-col justify-center rounded-xl bg-[var(--app-primary)] px-3.5 py-3">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-primary-fg-muted)] sm:text-[11px]">
+        <div className="flex min-h-[5.5rem] min-w-0 flex-col justify-center rounded-2xl border-[1.5px] border-dashed border-emerald-500 bg-[linear-gradient(180deg,rgba(236,253,245,0.45)_0%,rgba(255,255,255,0.95)_100%)] px-5 py-5 sm:px-6">
+          <div className="text-xs font-bold uppercase tracking-wider text-emerald-700">
             Time saved
           </div>
-          <div className="mt-1 text-lg font-semibold leading-tight tabular-nums text-[var(--app-primary-fg)] sm:text-xl">
+          <div className="mt-2 text-2xl font-extrabold leading-tight tabular-nums text-slate-900 sm:text-3xl">
             {originalMonths} → {monthsPaid} mo
           </div>
-          <div className="mt-1 text-[11px] leading-snug text-[var(--app-primary-fg-muted)]">
+          <div className="mt-2 text-xs font-medium text-emerald-800/80">
             {result.monthsSaved} month{result.monthsSaved === 1 ? "" : "s"} saved
           </div>
         </div>
@@ -1989,7 +2015,8 @@ function ExtraVsInvestResults({
             <div className="border-b border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
               Decision comparison
             </div>
-            <table className="w-full border-collapse text-left text-[12px]">
+            <div className="overflow-x-auto">
+              <table className="mx-auto w-max max-w-full border-collapse text-left text-[12px]">
               <thead>
                 <tr className="border-b border-[var(--app-border)] text-[10px] uppercase tracking-wider text-[var(--app-text-muted)]">
                   <th className="px-3 py-2 font-semibold">Metric</th>
@@ -2007,6 +2034,7 @@ function ExtraVsInvestResults({
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
       </div>
@@ -2122,17 +2150,17 @@ function RecoveryResults({
           )}
         </div>
         <div className="min-h-[5.25rem] min-w-0 [&>div]:h-full">
-          <StatCard title="Baseline EMI" value={result.baselineEmi} variant="soft" />
+          <StatCard title="Baseline EMI" value={result.baselineEmi} tone="neutral" />
         </div>
         <div className="min-h-[5.25rem] min-w-0 [&>div]:h-full">
-          <StatCard title="Proposed EMI" value={result.proposedEmi} />
+          <StatCard title="Proposed EMI" value={result.proposedEmi} tone="default" />
         </div>
         <div className="min-h-[5.25rem] min-w-0 [&>div]:h-full">
           <StatCard
             title="Monthly SIP"
             value={result.monthlySip}
             hint={accelerated ? `${yearsSaved}y faster` : undefined}
-            variant="soft"
+            tone="positive"
           />
         </div>
       </div>
@@ -2174,7 +2202,8 @@ function RecoveryResults({
             <div className="border-b border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
               Strategy comparison
             </div>
-            <table className="w-full border-collapse text-left text-[12px]">
+            <div className="overflow-x-auto">
+              <table className="mx-auto w-max max-w-full border-collapse text-left text-[12px]">
               <thead>
                 <tr className="border-b border-[var(--app-border)] text-[10px] uppercase tracking-wider text-[var(--app-text-muted)]">
                   <th className="px-3 py-2 font-semibold">Metric</th>
@@ -2192,6 +2221,7 @@ function RecoveryResults({
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
 
@@ -2421,14 +2451,14 @@ function VehicleResults({
           )}
         </div>
         <div className="min-h-[5.25rem] min-w-0 [&>div]:h-full">
-          <StatCard title="EMI" value={result.emi} />
+          <StatCard title="EMI" value={result.emi} tone="neutral" />
         </div>
         <div className="min-h-[5.25rem] min-w-0 [&>div]:h-full">
           <StatCard
             title="Total tax saved"
             value={result.totalTaxSaved}
-            hint="Interest + depreciation"
-            variant="soft"
+            hint="Loan interest + depreciation"
+            tone="positive"
           />
         </div>
         <div className="min-h-[5.25rem] min-w-0 [&>div]:h-full">
@@ -2436,6 +2466,7 @@ function VehicleResults({
             title="Down payment"
             value={downPayment}
             hint={`${formatINRCurrency(loanAmount)} financed`}
+            tone="neutral"
           />
         </div>
       </div>

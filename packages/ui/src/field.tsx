@@ -17,7 +17,7 @@ export function Field({
   return (
     <label className="flex min-w-0 flex-col gap-1.5">
       <span
-        className={`block text-[10px] font-semibold uppercase tracking-wide text-[var(--app-text-subtle)] sm:text-[11px] ${
+        className={`block text-[11px] font-bold uppercase tracking-wider text-slate-500 ${
           wrapLabel ? "whitespace-normal leading-snug" : "truncate"
         }`}
         title={label}
@@ -45,10 +45,10 @@ export function Field({
 }
 
 export const inputClass =
-  "flex h-9 w-full rounded-md border border-[var(--app-border)] bg-[var(--app-surface)] px-2.5 py-1 text-sm tabular-nums text-[var(--app-text)] shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--app-primary)] disabled:cursor-not-allowed disabled:opacity-50 sm:h-10";
+  "flex h-9 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold tabular-nums text-slate-800 shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20 focus-visible:border-emerald-600 disabled:cursor-not-allowed disabled:opacity-50 sm:h-10 sm:text-sm";
 
 export const inputErrorClass =
-  "border-[var(--app-danger)] focus-visible:ring-[var(--app-danger)]";
+  "border-[var(--app-danger)] focus-visible:ring-[var(--app-danger)]/30 focus-visible:border-[var(--app-danger)]";
 
 export function TextInput(props: InputHTMLAttributes<HTMLInputElement>) {
   const { className, ...rest } = props;

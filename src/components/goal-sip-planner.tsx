@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { BarChart3, PieChart } from "lucide-react";
 import { useGoalSip } from "@/hooks/use-goal-sip";
 import {
   AgeInput,
@@ -13,12 +14,16 @@ import {
   MoneyInput,
   PercentInput,
   ScheduleTable,
+  SegmentedChartControl,
   Stack,
   StatCard,
   StatGrid,
   StatusNote,
   TextInput,
   YearInput,
+  ClientProfileBar,
+  BentoSection,
+  BentoGroup,
 } from "@nivra/ui";
 import { CalculatorPage } from "@/components/layout/calculator-page-with-nav";
 import { ReportDownloadButton } from "@/components/calc/report-download-button";
@@ -64,7 +69,6 @@ export function GoalSipPlanner() {
   const [tax, setTax] = useState(12.5);
   const [stepUp, setStepUp] = useState(10);
   const [useInflAdj, setUseInflAdj] = useState(true);
-  const [chartType, setChartType] = useState<"pie" | "bar">("pie");
   const [isDownloading, setIsDownloading] = useState(false);
 
   const nameError = !clientName.trim() ? "Client Name required." : undefined;
@@ -162,8 +166,16 @@ export function GoalSipPlanner() {
   return (
     <>
       <CalculatorPage
-        title="Goal – SIP & Step-Up SIP"
-        description="Required monthly SIP and step-up SIP so the net corpus after capital gains tax reaches the goal."
+        title="Precision Wealth Engine"
+        description="Goal – SIP & Step-Up SIP Simulation with Tax Arbitrage"
+        header={
+          <ClientProfileBar
+            name={clientName}
+            age={age}
+            goal={useInflAdj ? "Inflation-Adjusted Target" : "Stated Target"}
+            strategy="Systematic Investment Plan (SIP)"
+          />
+        }
         actions={
           <ReportDownloadButton
             onClick={handleDownload}
@@ -172,9 +184,13 @@ export function GoalSipPlanner() {
           />
         }
         form={
-          <div className="grid grid-cols-1 gap-x-6 gap-y-6 lg:grid-cols-[minmax(0,1fr)_minmax(17rem,22rem)]">
-            <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-4">
-              <div className="col-span-2 sm:col-span-1">
+          <BentoSection
+            title="Financial Assumptions & Modeling Suite"
+            description="Interactive multi-parameter engine configured with life-cycle compounding"
+            sectionId="01"
+          >
+            <BentoGroup num="01" title="Investor Profile" subtitle="KYC Baseline" colSpan={4}>
+              <div className="flex flex-col gap-4">
                 <Field label="Client Name" error={nameError}>
                   <TextInput
                     value={clientName}
@@ -186,11 +202,7 @@ export function GoalSipPlanner() {
                     }
                   />
                 </Field>
-              </div>
-              <div>
                 <AgeInput value={age} onChange={setAge} error={ageError} />
-              </div>
-              <div>
                 <MoneyInput
                   label="Goal amount"
                   value={goal}
@@ -199,88 +211,91 @@ export function GoalSipPlanner() {
                   error={goalError}
                 />
               </div>
-              <div>
+              <div className="flex flex-col gap-1.5 mt-4 pt-3 border-t border-slate-200/60">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                  Goal basis
+                </span>
+                <ModeTabs
+                  fullWidth
+                  tabs={[
+                    { id: "raw", label: "Stated" },
+                    { id: "infl", label: "Inflation-adj" },
+                  ]}
+                  value={useInflAdj ? "infl" : "raw"}
+                  onChange={(id) => setUseInflAdj(id === "infl")}
+                />
+              </div>
+            </BentoGroup>
+
+            <BentoGroup 
+              num="02" 
+              title="Accumulation Engine" 
+              subtitle="SIP Mode"
+              colSpan={5}
+              footer={
+                 <>
+                   <span>Total Active Target:</span>
+                   <span className="font-bold text-brand-700">
+                     {canCalculate && result ? formatINRCurrency(targetGoal) : "-"}
+                   </span>
+                 </>
+              }
+            >
+              <div className="flex flex-col gap-4">
                 <YearInput
-                  label="Tenure (yrs)"
+                  label="Investment Tenure (yrs)"
                   value={tenure}
                   min={1}
                   max={75}
                   onChange={setTenure}
                   error={tenureError}
                 />
-              </div>
-              <div>
                 <PercentInput
-                  label="Return (%)"
+                  label="Step-Up (%)"
+                  value={stepUp}
+                  onChange={setStepUp}
+                  hint="Annual SIP increment"
+                  error={stepUpError}
+                />
+              </div>
+            </BentoGroup>
+
+            <BentoGroup 
+              num="03" 
+              title="Rate Assumptions" 
+              subtitle="CAGR & Tax" 
+              colSpan={3}
+              footer={
+                 <>
+                   <span>Real Net Yield:</span>
+                   <span className="font-bold text-brand-700">
+                     {(((1 + returnPct/100) / (1 + inflation/100) - 1)*100).toFixed(2)}% Net
+                   </span>
+                 </>
+              }
+            >
+              <div className="flex flex-col gap-4">
+                <PercentInput
+                  label="Expected Return (%)"
                   value={returnPct}
                   onChange={setReturnPct}
                   error={returnError}
                 />
-              </div>
-              <div>
                 <PercentInput
                   label="Inflation (%)"
                   value={inflation}
                   onChange={setInflation}
                   error={inflationError}
                 />
-              </div>
-              <div>
-                <PercentInput label="Tax (%)" value={tax} onChange={setTax} error={taxError} />
-              </div>
-              <div>
-                <PercentInput
-                  label="Step-Up (%)"
-                  value={stepUp}
-                  onChange={setStepUp}
-                  hint="Annual SIP increase"
-                  error={stepUpError}
+                <PercentInput 
+                  label="Tax Bracket (LTCG %)" 
+                  value={tax} 
+                  onChange={setTax} 
+                  error={taxError} 
                 />
               </div>
-            </div>
-
-            <div className="flex flex-col gap-3">
-              <div className="flex flex-col gap-1.5">
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--app-text-subtle)] sm:text-[11px]">
-                  Goal basis
-                </span>
-                <ModeTabs
-                  fullWidth
-                  tabs={[
-                    { id: "raw", label: "Stated goal" },
-                    { id: "infl", label: "Inflation-adjusted" },
-                  ]}
-                  value={useInflAdj ? "infl" : "raw"}
-                  onChange={(id) => setUseInflAdj(id === "infl")}
-                />
-                <span className={META_TEXT}>
-                  {useInflAdj
-                    ? "Target grows with inflation over tenure"
-                    : "Uses the stated goal amount"}
-                </span>
-              </div>
-              <div className="flex flex-col gap-1.5 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2.5">
-                <div className="flex items-baseline justify-between gap-2 text-xs sm:text-sm">
-                  <span className="text-[var(--app-text-muted)]">Stated goal</span>
-                  <span className="font-semibold tabular-nums text-[var(--app-text)]">
-                    {formatINRCurrency(goal)}
-                  </span>
-                </div>
-                <div className="flex items-baseline justify-between gap-2 text-xs sm:text-sm">
-                  <span className="text-[var(--app-text-muted)]">Inflation-adjusted</span>
-                  <span className="font-semibold tabular-nums text-[var(--app-warn-text-strong)]">
-                    {canCalculate && result ? formatINRCurrency(inflAdjGoal) : "-"}
-                  </span>
-                </div>
-                <div className="mt-0.5 flex items-baseline justify-between gap-2 border-t border-[var(--app-border)] pt-2 text-xs sm:text-sm">
-                  <span className="font-medium text-[var(--app-text)]">Active target</span>
-                  <span className="font-semibold tabular-nums text-[var(--app-step-text)]">
-                    {canCalculate && result ? formatINRCurrency(targetGoal) : "-"}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
+            </BentoGroup>
+          </BentoSection>
         }
         results={
           <>
@@ -302,16 +317,17 @@ export function GoalSipPlanner() {
                     title="Standard SIP"
                     value={standardSIP}
                     hint="Required monthly SIP"
+                    tone="neutral"
                   />
                   <StatCard
                     title="Step-Up SIP"
                     value={stepUpSIP}
                     hint="Starting monthly SIP"
-                    variant="soft"
+                    tone="positive"
                     footer={
                       <>
                         Ending SIP after {tenure} years ·{" "}
-                        <span className="font-semibold tabular-nums text-[var(--app-primary-fg)]">
+                        <span className="font-semibold tabular-nums text-emerald-700">
                           {formatINRCurrency(stepUpEndSIP)}
                         </span>
                         /mo
@@ -322,66 +338,69 @@ export function GoalSipPlanner() {
                     title="Target Corpus"
                     value={targetGoal}
                     hint="Net after capital gains tax"
+                    tone="positive"
                   />
                 </StatGrid>
 
                 <div className="grid grid-cols-1 items-stretch gap-4 xl:grid-cols-3">
-                  <div
-                    className={`flex min-w-0 flex-col gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3.5 sm:p-4 xl:col-span-2`}
-                  >
-                    <div className="flex flex-wrap items-center gap-3">
-                      <h3 className="text-[11px] font-semibold uppercase tracking-widest text-[var(--app-text-muted)] sm:text-xs">
-                        {chartType === "pie"
-                          ? "Corpus Breakdown"
-                          : "Standard vs Step-Up Comparison"}
-                      </h3>
-                      <ModeTabs
-                        tabs={[
-                          { id: "pie", label: "Pie chart" },
-                          { id: "bar", label: "Bar chart" },
-                        ]}
-                        value={chartType}
-                        onChange={(id) => setChartType(id as "pie" | "bar")}
-                      />
-                    </div>
-                    {chartType === "pie" ? (
-                      <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2">
-                        <CompositionChart
-                          title="Standard SIP"
-                          compact
-                          showPercentages
-                          centerLabel="Pre-Tax Corpus"
-                          centerValue={stdCorpus}
-                          slices={mixSlices(stdInvested, stdGain)}
-                          footer={<CorpusMixFooter taxAmt={stdTax} netAfterTax={stdNet} />}
-                        />
-                        <CompositionChart
-                          title="Step-Up SIP"
-                          compact
-                          showPercentages
-                          centerLabel="Pre-Tax Corpus"
-                          centerValue={stepCorpus}
-                          slices={mixSlices(stepInvested, stepGain)}
-                          footer={<CorpusMixFooter taxAmt={stepTax} netAfterTax={stepNet} />}
-                        />
-                      </div>
-                    ) : (
-                      <CompareChart
-                        title="Standard vs Step-Up"
-                        showBarLabels
-                        className="min-h-[280px] flex-1 sm:min-h-[320px]"
-                        data={[
-                          { category: "Invested", sip: stdInvested, step: stepInvested },
-                          { category: "Gain", sip: stdGain, step: stepGain },
-                          { category: "Pre-Tax Corpus", sip: stdCorpus, step: stepCorpus },
-                          { category: "Net Corpus", sip: stdNet, step: stepNet },
-                        ]}
-                        series={[
-                          { key: "sip", label: "SIP", color: "var(--app-chart-a)" },
-                          { key: "step", label: "Step-Up", color: "var(--app-chart-b)" },
-                        ]}
-                      />
-                    )}
+                  <div className="xl:col-span-2">
+                    <SegmentedChartControl
+                      tabs={[
+                        {
+                          id: "pie",
+                          label: "Corpus Growth Trajectory (Pie)",
+                          icon: <PieChart className="w-4 h-4" />,
+                          content: (
+                            <div className="flex min-w-0 flex-col gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3.5 sm:p-4">
+                              <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2">
+                                <CompositionChart
+                                  title="Standard SIP"
+                                  compact
+                                  showPercentages
+                                  centerLabel="Pre-Tax Corpus"
+                                  centerValue={stdCorpus}
+                                  slices={mixSlices(stdInvested, stdGain)}
+                                  footer={<CorpusMixFooter taxAmt={stdTax} netAfterTax={stdNet} />}
+                                />
+                                <CompositionChart
+                                  title="Step-Up SIP"
+                                  compact
+                                  showPercentages
+                                  centerLabel="Pre-Tax Corpus"
+                                  centerValue={stepCorpus}
+                                  slices={mixSlices(stepInvested, stepGain)}
+                                  footer={<CorpusMixFooter taxAmt={stepTax} netAfterTax={stepNet} />}
+                                />
+                              </div>
+                            </div>
+                          )
+                        },
+                        {
+                          id: "bar",
+                          label: "Invested vs Wealth Gain (Bar)",
+                          icon: <BarChart3 className="w-4 h-4" />,
+                          content: (
+                            <div className="flex min-w-0 flex-col gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3.5 sm:p-4">
+                              <CompareChart
+                                title="Standard vs Step-Up"
+                                showBarLabels
+                                className="min-h-[280px] flex-1 sm:min-h-[320px]"
+                                data={[
+                                  { category: "Invested", sip: stdInvested, step: stepInvested },
+                                  { category: "Gain", sip: stdGain, step: stepGain },
+                                  { category: "Pre-Tax Corpus", sip: stdCorpus, step: stepCorpus },
+                                  { category: "Net Corpus", sip: stdNet, step: stepNet },
+                                ]}
+                                series={[
+                                  { key: "sip", label: "SIP", color: "var(--app-chart-a)" },
+                                  { key: "step", label: "Step-Up", color: "var(--app-chart-b)" },
+                                ]}
+                              />
+                            </div>
+                          )
+                        }
+                      ]}
+                    />
                   </div>
 
                   <ScheduleTable
@@ -415,6 +434,14 @@ export function GoalSipPlanner() {
                   />
                 </div>
 
+                <div className="mt-8 mb-3 flex flex-col items-center justify-center text-center">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-brand-700 bg-brand-50 px-2 py-0.5 rounded border border-brand-200 mb-1">
+                    Audit Breakdown
+                  </span>
+                  <h3 className="text-sm font-bold text-slate-900">Year-by-Year Schedule</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">SIP vs Step-up SIP Progression Timeline</p>
+                </div>
+                
                 <ScheduleTable
                   caption="Yearly Schedule"
                   meta={`${combinedSchedule.length} years`}

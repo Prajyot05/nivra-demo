@@ -1,15 +1,17 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
+import { PieChart, BarChart3, LineChart } from "lucide-react";
 import { generateCalculatorReport, generatePdfFromElement } from "@/lib/pdf-generator";
 import { playbookForPdf } from "@/lib/report-playbooks";
 import {
   Card,
-  ClientHeader,
+  BentoSection,
+  BentoGroup,
+  ClientProfileBar,
   CompareChart,
   CompositionChart,
   formatINRCurrency,
-  FormGrid,
   GrowthChart,
   META_TEXT,
   MICRO_LABEL,
@@ -23,12 +25,16 @@ import {
   SectionHeader,
   SectionTitle,
   SelectInput,
+  SegmentedChartControl,
   Stack,
   StatCard,
   StatGrid,
   StatusNote,
   WaterfallChart,
   YearInput,
+  AgeInput,
+  Field,
+  TextInput,
 } from "@nivra/ui";
 import { CalculatorPage } from "@/components/layout/calculator-page-with-nav";
 import { ReportDownloadButton } from "@/components/calc/report-download-button";
@@ -458,121 +464,87 @@ export function UnifiedGoalPlanner() {
           loading={isDownloading}
         />
       }
+      header={
+        <ClientProfileBar
+          name={name}
+          age={age}
+          goal={mode === "compounding" ? "Capital Growth" : useInflAdj ? "Inflation-Adjusted Target" : "Stated Target"}
+          strategy={MODES.find(m => m.id === mode)?.label ?? "Goal Planner"}
+        />
+      }
       form={
-        mode === "compounding" ? (
-          <div className="grid w-fit max-w-full grid-cols-2 items-start gap-x-3 gap-y-3 sm:grid-cols-3 lg:grid-cols-[repeat(5,minmax(8.5rem,11rem))_16.5rem] lg:gap-x-4">
-            <ClientHeader
-              name={name}
-              age={age}
-              onNameChange={setName}
-              onAgeChange={setAge}
-              nameError={nameError}
-              ageError={ageError}
-            />
-            <MoneyInput
-              label="Goal amount"
-              value={goalAmount}
-              onChange={setGoalAmount}
-              error={goalError}
-              align="right"
-            />
-            <YearInput
-              label="Tenure (yrs)"
-              value={tenureYears}
-              min={1}
-              max={50}
-              onChange={setTenureYears}
-              error={tenureError}
-              hint="Max. 50 years"
-            />
-            <PercentInput
-              label="Return (%)"
-              value={returnPct}
-              onChange={setReturnPct}
-              error={returnError}
-            />
-            <div className="lg:col-start-1 lg:row-start-2">
-              <PercentInput label="Tax (%)" value={taxPct} onChange={setTaxPct} error={taxError} />
-            </div>
-            <div className="col-span-2 sm:col-span-3 lg:col-start-6 lg:row-span-2 lg:row-start-1">
-              <div className="flex flex-col gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--app-text-subtle)] sm:text-[11px]">
-                    Investment for growth steps
-                  </span>
-                  <ModeTabs
-                    fullWidth
-                    tabs={[
-                      { id: "one-time", label: "One Time" },
-                      { id: "sip", label: "SIP" },
-                    ]}
-                    value={investmentType}
-                    onChange={(id) => setInvestmentType(id === "sip" ? "sip" : "one-time")}
-                  />
-                  <span className={META_TEXT}>
-                    {investmentType === "sip"
-                      ? "Milestones use the required monthly SIP path"
-                      : "Milestones use the required lumpsum path"}
-                  </span>
-                </div>
-                <SelectInput
-                  label="Growth step size"
-                  value={String(stepSize)}
-                  onChange={(value) => setStepSize(Number(value))}
-                  options={COMPOUNDING_STEP_OPTIONS}
-                  hint="10K, 1L, 10L, or 1Cr milestones"
-                />
-              </div>
-            </div>
-          </div>
-        ) : mode === "existing" ? (
-          <div className="grid grid-cols-1 gap-x-6 gap-y-6 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)]">
+        <BentoSection
+          title="Financial Assumptions & Modeling Suite"
+          description="Interactive multi-parameter engine configured with life-cycle compounding"
+          sectionId="01"
+        >
+          <BentoGroup num="01" title="Investor Profile" subtitle="KYC Baseline" colSpan={4}>
             <div className="flex flex-col gap-4">
-              <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-4">
-                <ClientHeader
-                  name={name}
-                  age={age}
-                  onNameChange={setName}
-                  onAgeChange={setAge}
-                  nameError={nameError}
-                  ageError={ageError}
+              <Field label="Client Name" error={nameError}>
+                <TextInput
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className={
+                    nameError
+                      ? "border-[var(--app-danger)] focus-visible:ring-[var(--app-danger)]"
+                      : undefined
+                  }
                 />
-                <MoneyInput
-                  label="Goal amount"
-                  value={goalAmount}
-                  onChange={setGoalAmount}
-                  error={goalError}
-                  align="right"
-                />
-                <YearInput
-                  label="Tenure (yrs)"
-                  value={tenureYears}
-                  min={1}
-                  max={50}
-                  onChange={setTenureYears}
-                  error={tenureError}
-                  hint="Max. 50 years"
+              </Field>
+              <AgeInput value={age} onChange={setAge} error={ageError} />
+              <MoneyInput
+                label="Goal amount"
+                value={goalAmount}
+                onChange={setGoalAmount}
+                error={goalError}
+                align="right"
+              />
+            </div>
+            {mode !== "compounding" && (
+              <div className="flex flex-col gap-1.5 mt-4 pt-3 border-t border-slate-200/60">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                  Goal basis
+                </span>
+                <ModeTabs
+                  fullWidth
+                  tabs={[
+                    { id: "raw", label: "Stated" },
+                    { id: "infl", label: "Inflation-adj" },
+                  ]}
+                  value={useInflAdj ? "infl" : "raw"}
+                  onChange={(id) => setUseInflAdj(id === "infl")}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-5">
-                <PercentInput
-                  label="Return (%)"
-                  value={returnPct}
-                  onChange={setReturnPct}
-                  error={returnError}
-                />
-                <PercentInput
-                  label="Inflation (%)"
-                  value={inflationPct}
-                  onChange={setInflationPct}
-                  error={inflationError}
-                />
-                <PercentInput
-                  label="Tax (%)"
-                  value={taxPct}
-                  onChange={setTaxPct}
-                  error={taxError}
-                />
+            )}
+          </BentoGroup>
+
+          <BentoGroup 
+            num="02" 
+            title="Accumulation Engine" 
+            subtitle="Parameters"
+            colSpan={5}
+            footer={
+               mode !== "compounding" ? (
+                 <>
+                   <span>Total Target:</span>
+                   <span className="font-bold text-brand-700">
+                     {canCalculate && result ? formatINRCurrency(result.targetGoal) : "-"}
+                   </span>
+                 </>
+               ) : undefined
+            }
+          >
+            <div className="flex flex-col gap-4">
+              <YearInput
+                label="Investment Tenure (yrs)"
+                value={tenureYears}
+                min={1}
+                max={50}
+                onChange={setTenureYears}
+                error={tenureError}
+                hint="Max 50 years"
+              />
+              {mode !== "compounding" && (
                 <PercentInput
                   label="Step-up (%)"
                   value={stepUpPct}
@@ -580,174 +552,116 @@ export function UnifiedGoalPlanner() {
                   error={stepUpError}
                   hint="Annual SIP Increase"
                 />
+              )}
+              {mode === "periodic" && (
+                <>
+                  <MoneyInput
+                    label="Periodic amt"
+                    value={periodicAmount}
+                    onChange={setPeriodicAmount}
+                    error={periodicAmountError}
+                    align="right"
+                  />
+                  <SelectInput
+                    label="How often"
+                    value={String(timesPerYear)}
+                    onChange={(value) => setTimesPerYear(Number(value))}
+                    options={FREQUENCY_OPTIONS}
+                    hint={`${formatINRCurrency(periodicAmount * timesPerYear)} / year`}
+                  />
+                </>
+              )}
+              {(mode === "current" || mode === "ls-sip") && (
+                <MoneyInput
+                  label="Current corpus"
+                  value={currentCorpus}
+                  onChange={setCurrentCorpus}
+                  error={corpusError}
+                  align="right"
+                />
+              )}
+              {(mode === "current" || mode === "existing") && (
                 <MoneyInput
                   label="Current SIP"
                   value={currentMonthlySip}
                   onChange={setCurrentMonthlySip}
                   error={currentSipError}
                   align="right"
-                  hint="Existing monthly SIP"
                 />
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-3">
-              <div className="flex flex-col gap-1.5">
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--app-text-subtle)] sm:text-[11px]">
-                  Goal basis
-                </span>
-                <ModeTabs
-                  fullWidth
-                  tabs={[
-                    { id: "raw", label: "Stated goal" },
-                    { id: "infl", label: "Inflation-adjusted" },
-                  ]}
-                  value={useInflAdj ? "infl" : "raw"}
-                  onChange={(id) => setUseInflAdj(id === "infl")}
-                />
-                <span className={META_TEXT}>
-                  {useInflAdj
-                    ? "Target grows with inflation over tenure"
-                    : "Uses the stated goal amount"}
-                </span>
-              </div>
-              <div className="flex flex-col gap-1.5 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2.5">
-                <div className="flex items-baseline justify-between gap-2 text-xs sm:text-sm">
-                  <span className="text-[var(--app-text-muted)]">Stated goal</span>
-                  <span className="font-semibold tabular-nums text-[var(--app-text)]">
-                    {formatINRCurrency(goalAmount)}
-                  </span>
-                </div>
-                <div className="flex items-baseline justify-between gap-2 text-xs sm:text-sm">
-                  <span className="text-[var(--app-text-muted)]">Inflation-adjusted</span>
-                  <span className="font-semibold tabular-nums text-[var(--app-warn-text-strong)]">
-                    {canCalculate && result ? formatINRCurrency(result.inflAdjGoal) : "-"}
-                  </span>
-                </div>
-                <div className="mt-0.5 flex items-baseline justify-between gap-2 border-t border-[var(--app-border)] pt-2 text-xs sm:text-sm">
-                  <span className="font-medium text-[var(--app-text)]">Active target</span>
-                  <span className="font-semibold tabular-nums text-[var(--app-step-text)]">
-                    {canCalculate && result ? formatINRCurrency(result.targetGoal) : "-"}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-        <div className="flex flex-col gap-3">
-          <FormGrid>
-            <ClientHeader
-              name={name}
-              age={age}
-              onNameChange={setName}
-              onAgeChange={setAge}
-              nameError={nameError}
-              ageError={ageError}
-            />
-            <MoneyInput
-              label="Goal amount"
-              value={goalAmount}
-              onChange={setGoalAmount}
-              error={goalError}
-              align="right"
-            />
-            <YearInput
-              label="Tenure (yrs)"
-              value={tenureYears}
-              min={1}
-              max={50}
-              onChange={setTenureYears}
-              error={tenureError}
-              hint="Max. 50 years"
-            />
-            <PercentInput
-              label="Return (%)"
-              value={returnPct}
-              onChange={setReturnPct}
-              error={returnError}
-            />
-            <PercentInput
-              label="Inflation (%)"
-              value={inflationPct}
-              onChange={setInflationPct}
-              error={inflationError}
-            />
-            <PercentInput label="Tax (%)" value={taxPct} onChange={setTaxPct} error={taxError} />
-            <PercentInput
-              label="Step-up (%)"
-              value={stepUpPct}
-              onChange={setStepUpPct}
-              error={stepUpError}
-              hint="Annual SIP Increase"
-            />
-          </FormGrid>
-
-          <FormGrid>
-            <div className="col-span-2 flex min-w-0 flex-col gap-1.5">
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--app-text-subtle)] sm:text-[11px]">
-                Goal basis
-              </span>
-              <ModeTabs
-                fullWidth
-                tabs={[
-                  { id: "raw", label: "Stated goal" },
-                  { id: "infl", label: "Inflation-adjusted" },
-                ]}
-                value={useInflAdj ? "infl" : "raw"}
-                onChange={(id) => setUseInflAdj(id === "infl")}
-              />
-              <span className={META_TEXT}>
-                {useInflAdj ? "Target grows with inflation over tenure" : "Uses the stated goal amount"}
-              </span>
-            </div>
-            {mode === "periodic" ? (
-              <>
+              )}
+              {mode === "ls-sip" && (
                 <MoneyInput
-                  label="Periodic amt"
-                  value={periodicAmount}
-                  onChange={setPeriodicAmount}
-                  error={periodicAmountError}
+                  label="Extra lumpsum"
+                  value={extraLumpsum}
+                  onChange={setExtraLumpsum}
+                  error={extraLsError}
                   align="right"
                 />
-                <SelectInput
-                  label="How often"
-                  value={String(timesPerYear)}
-                  onChange={(value) => setTimesPerYear(Number(value))}
-                  options={FREQUENCY_OPTIONS}
-                  hint={`${formatINRCurrency(periodicAmount * timesPerYear)} / year`}
-                />
-              </>
-            ) : null}
-            {mode === "current" || mode === "ls-sip" ? (
-              <MoneyInput
-                label="Current corpus"
-                value={currentCorpus}
-                onChange={setCurrentCorpus}
-                error={corpusError}
-                align="right"
+              )}
+              {mode === "compounding" && (
+                <>
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                      Investment for growth steps
+                    </span>
+                    <ModeTabs
+                      fullWidth
+                      tabs={[
+                        { id: "one-time", label: "One Time" },
+                        { id: "sip", label: "SIP" },
+                      ]}
+                      value={investmentType}
+                      onChange={(id) => setInvestmentType(id === "sip" ? "sip" : "one-time")}
+                    />
+                  </div>
+                  <SelectInput
+                    label="Growth step size"
+                    value={String(stepSize)}
+                    onChange={(value) => setStepSize(Number(value))}
+                    options={COMPOUNDING_STEP_OPTIONS}
+                    hint="10K, 1L, 10L, or 1Cr milestones"
+                  />
+                </>
+              )}
+            </div>
+          </BentoGroup>
+
+          <BentoGroup 
+            num="03" 
+            title="Rate Assumptions" 
+            subtitle="CAGR & Tax" 
+            colSpan={3}
+            footer={
+               <>
+                 <span>Real Net Yield:</span>
+                 <span className="font-bold text-brand-700">
+                   {(((1 + returnPct/100) / (1 + inflationPct/100) - 1)*100).toFixed(2)}% Net
+                 </span>
+               </>
+            }
+          >
+            <div className="flex flex-col gap-4">
+              <PercentInput
+                label="Expected Return (%)"
+                value={returnPct}
+                onChange={setReturnPct}
+                error={returnError}
               />
-            ) : null}
-            {mode === "current" ? (
-              <MoneyInput
-                label="Current SIP"
-                value={currentMonthlySip}
-                onChange={setCurrentMonthlySip}
-                error={currentSipError}
-                align="right"
+              <PercentInput
+                label="Inflation (%)"
+                value={inflationPct}
+                onChange={setInflationPct}
+                error={inflationError}
               />
-            ) : null}
-            {mode === "ls-sip" ? (
-              <MoneyInput
-                label="Extra lumpsum"
-                value={extraLumpsum}
-                onChange={setExtraLumpsum}
-                error={extraLsError}
-                align="right"
+              <PercentInput 
+                label="Tax Bracket (LTCG %)" 
+                value={taxPct} 
+                onChange={setTaxPct} 
+                error={taxError} 
               />
-            ) : null}
-          </FormGrid>
-        </div>
-        )
+            </div>
+          </BentoGroup>
+        </BentoSection>
       }
       results={
         <>
@@ -1162,12 +1076,7 @@ function GoalResults({
     <Stack>
       <GoalHero mode={mode} result={result} />
       <ResultsSplit
-        left={
-          <>
-            {goalRequiredChart(mode, result)}
-            {goalExtraChart(mode, result, tenureYears)}
-          </>
-        }
+        left={renderGoalCharts(mode, result, tenureYears)}
         right={
           <>
             <ResultCard
@@ -1243,18 +1152,13 @@ function LsSipResults({
   return (
     <Stack>
       <StatGrid>
-        <StatCard title="Target goal" value={result.targetGoal} />
-        <StatCard title="Shortfall to fund" value={result.shortfall ?? 0} variant="soft" />
-        <StatCard title="Mix monthly SIP" value={mixSip} />
+        <StatCard title="Target goal" value={result.targetGoal} tone="neutral" />
+        <StatCard title="Shortfall to fund" value={result.shortfall ?? 0} tone="negative" />
+        <StatCard title="Mix monthly SIP" value={mixSip} tone="positive" />
       </StatGrid>
 
       <ResultsSplit
-        left={
-          <>
-            {goalExtraChart("ls-sip", result, years)}
-            {goalRequiredChart("ls-sip", result)}
-          </>
-        }
+        left={renderGoalCharts("ls-sip", result, years)}
         right={
           <>
             <ResultCard
@@ -1333,28 +1237,22 @@ function PeriodicResults({
       ) : null}
 
       <StatGrid>
-        <StatCard title="Target goal" value={result.targetGoal} />
+        <StatCard title="Target goal" value={result.targetGoal} tone="neutral" />
         <StatCard
           title={result.overfunded ? "Periodic net credit" : "Shortfall to fund"}
           value={result.overfunded ? (periodic?.netCredit ?? 0) : shortfall}
-          variant="soft"
+          tone={result.overfunded ? "positive" : "negative"}
         />
         <StatCard
           title="Additional SIP · monthly"
           value={standard?.monthlySip ?? 0}
+          tone="positive"
         />
-        <StatCard title="Step-up SIP · start" value={stepUp?.monthlySip ?? 0} />
+        <StatCard title="Step-up SIP · start" value={stepUp?.monthlySip ?? 0} tone="positive" />
       </StatGrid>
 
       <ResultsSplit
-        left={
-          <>
-            <div className="flex min-h-[260px] flex-1 flex-col sm:min-h-[300px]">
-              {goalRequiredChart("periodic", result)}
-            </div>
-            {goalExtraChart("periodic", result, years)}
-          </>
-        }
+        left={renderGoalCharts("periodic", result, years)}
         right={
           <>
             <ResultCard
@@ -1455,19 +1353,14 @@ function CurrentInvestmentResults({
   return (
     <Stack>
       <StatGrid>
-        <StatCard title="Target goal" value={result.targetGoal} />
-        <StatCard title="Shortfall to fund" value={result.shortfall ?? 0} variant="soft" />
-        <StatCard title="Additional SIP · monthly" value={standard?.monthlySip ?? 0} />
-        <StatCard title="Step-up SIP · start" value={stepUp?.monthlySip ?? 0} />
+        <StatCard title="Target goal" value={result.targetGoal} tone="neutral" />
+        <StatCard title="Shortfall to fund" value={result.shortfall ?? 0} tone="negative" />
+        <StatCard title="Additional SIP · monthly" value={standard?.monthlySip ?? 0} tone="positive" />
+        <StatCard title="Step-up SIP · start" value={stepUp?.monthlySip ?? 0} tone="positive" />
       </StatGrid>
 
       <ResultsSplit
-        left={
-          <>
-            {goalExtraChart("current", result, years)}
-            {goalRequiredChart("current", result)}
-          </>
-        }
+        left={renderGoalCharts("current", result, years)}
         right={
           <>
             <ResultCard
@@ -1586,29 +1479,31 @@ function ExistingSipResults({
         <StatCard
           title="Target goal"
           value={result.targetGoal}
+          tone="neutral"
           hint="Net after capital gains tax"
         />
         <StatCard
           title="Existing SIP credit"
           value={existing?.netCredit ?? 0}
+          tone="neutral"
           hint="Keep current SIP running"
-          variant="soft"
         />
         <StatCard
           title="Additional SIP"
           value={standard?.monthlySip ?? 0}
+          tone="positive"
           hint="Extra flat monthly SIP"
         />
         <StatCard
           title="Step-up SIP"
           value={stepUp?.monthlySip ?? 0}
+          tone="positive"
           hint="Starting monthly SIP"
-          variant="soft"
           footer={
             stepUp?.endMonthlySip != null ? (
               <>
                 Ending SIP after {years} years ·{" "}
-                <span className="font-semibold tabular-nums text-[var(--app-primary-fg)]">
+                <span className="font-semibold tabular-nums text-emerald-700">
                   {formatINRCurrency(stepUp.endMonthlySip)}
                 </span>
                 /mo
@@ -2071,31 +1966,59 @@ function LegMetricCard({ title, leg }: { title: string; leg: GoalLeg }) {
   );
 }
 
+function renderGoalCharts(mode: Mode, result: GoalPlannerResult, tenureYears: number) {
+  const req = goalRequiredChart(mode, result);
+  const extra = goalExtraChart(mode, result, tenureYears);
+  
+  if (!extra) {
+    return <div className="flex min-h-[260px] flex-1 flex-col sm:min-h-[300px]">{req}</div>;
+  }
+  
+  return (
+    <SegmentedChartControl
+      tabs={[
+        {
+          id: "required",
+          label: "Funding",
+          icon: <PieChart className="w-4 h-4" />,
+          content: <div className="flex min-h-[260px] flex-1 flex-col sm:min-h-[300px]">{req}</div>
+        },
+        {
+          id: "extra",
+          label: "Comparison",
+          icon: <BarChart3 className="w-4 h-4" />,
+          content: <div className="flex min-h-[260px] flex-1 flex-col sm:min-h-[300px]">{extra}</div>
+        }
+      ]}
+    />
+  );
+}
+
 function GoalHero({ mode, result }: { mode: Mode; result: GoalPlannerResult }) {
   if (mode === "sip" && result.standard && result.stepUp) {
     return (
       <StatGrid>
-        <StatCard title="Standard SIP · monthly" value={result.standard.monthlySip} />
-        <StatCard title="Step-up SIP · monthly" value={result.stepUp.monthlySip} variant="soft" />
+        <StatCard title="Standard SIP · monthly" value={result.standard.monthlySip} tone="positive" />
+        <StatCard title="Step-up SIP · monthly" value={result.stepUp.monthlySip} tone="positive" />
       </StatGrid>
     );
   }
   if (result.standard) {
     return (
       <StatGrid>
-        <StatCard title="Target goal" value={result.targetGoal} />
+        <StatCard title="Target goal" value={result.targetGoal} tone="neutral" />
         <StatCard
           title={result.standard.lumpsum != null ? "Additional lumpsum" : "Additional SIP · monthly"}
           value={result.standard.lumpsum ?? result.standard.monthlySip}
-          variant="soft"
+          tone="positive"
         />
       </StatGrid>
     );
   }
   return (
     <StatGrid>
-      <StatCard title="Target goal" value={result.targetGoal} />
-      <StatCard title="Inflation-adjusted" value={result.inflAdjGoal} variant="soft" />
+      <StatCard title="Target goal" value={result.targetGoal} tone="neutral" />
+      <StatCard title="Inflation-adjusted" value={result.inflAdjGoal} tone="neutral" />
     </StatGrid>
   );
 }

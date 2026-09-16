@@ -724,6 +724,7 @@ function IrrResults({
             title="Gross maturity"
             value={result.maturity}
             hint={`From ${formatINRCurrency(result.totalPremium)} premiums`}
+            tone="neutral"
           />
         </div>
         <div className="min-h-[5.25rem] min-w-0 [&>div]:h-full">
@@ -731,7 +732,7 @@ function IrrResults({
             title="Net after tax"
             value={result.net}
             hint={`Tax ${formatINRCurrency(result.tax)}`}
-            variant="soft"
+            tone="positive"
           />
         </div>
         <div className="flex min-h-[5.25rem] min-w-0 flex-col justify-center rounded-xl bg-[var(--app-primary)] px-3.5 py-3">
@@ -1062,6 +1063,7 @@ function TpResults({
             title="Keep (net)"
             value={result.keep.net}
             hint={keepIrrPct == null ? undefined : `IRR ${formatIrr(keepIrrPct)}`}
+            tone="neutral"
           />
         </div>
         <div className="min-h-[5.25rem] min-w-0 [&>div]:h-full">
@@ -1071,7 +1073,7 @@ function TpResults({
             hint={
               switchIrrPct == null ? undefined : `IRR ${formatIrr(switchIrrPct)}`
             }
-            variant="soft"
+            tone="positive"
           />
         </div>
         <div className="col-span-2 min-h-[5.25rem] min-w-0 min-[720px]:col-span-1 [&>div]:h-full">
@@ -1079,6 +1081,7 @@ function TpResults({
             title="Additional wealth"
             value={additionalWealth}
             hint="What switching adds"
+            tone="positive"
           />
         </div>
         <div className="flex min-h-[5.25rem] min-w-0 flex-col justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2.5">

@@ -14,10 +14,12 @@ export { PercentInput } from "./percent-input";
 export { YearInput, AgeInput } from "./year-input";
 export { ClientHeader } from "./client-header";
 export { ModeTabs } from "./mode-tabs";
+export { SegmentedChartControl, type ChartTab } from "./segmented-chart-control";
 export type { ModeTab } from "./mode-tabs";
 export { ResultCard } from "./result-card";
 export type { ResultItem, ResultTone } from "./result-card";
 export { StatCard } from "./stat-card";
+export type { StatCardTone } from "./stat-card";
 export { ScheduleTable } from "./schedule-table";
 export type { ScheduleColumn } from "./schedule-table";
 export { GrowthChart } from "./growth-chart";
@@ -41,6 +43,8 @@ export { CalculatorPage } from "./calculator-page";
 export { CalculatorPageHeader } from "./calculator-page-header";
 export { COLOR_THEMES, getColorTheme } from "./color-themes";
 export type { ColorTheme, ColorThemeId } from "./color-themes";
+
+export { ClientProfileBar, BentoSection, BentoGroup, ComplianceFootnote } from "./bento-components";
 
 /* Design system */
 export { Card, SectionTitle, SectionHeader } from "./card";

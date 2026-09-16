@@ -158,6 +158,49 @@
   scrollbar-color: var(--color-border) transparent;
 }
 
+/* Emerald amount / tenure range slider (Stitch-aligned) */
+.nivra-range-slider {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 6px;
+  border-radius: 9999px;
+  background: #e2e8f0;
+  outline: none;
+}
+
+.nivra-range-slider::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 18px;
+  width: 18px;
+  border-radius: 50%;
+  background: #059669;
+  cursor: pointer;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.22);
+  transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.nivra-range-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.28);
+}
+
+.nivra-range-slider::-moz-range-thumb {
+  height: 18px;
+  width: 18px;
+  border-radius: 50%;
+  background: #059669;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.22);
+}
+
+.nivra-range-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: #e2e8f0;
+}
+
 /* Executive dossier print / Export to PDF */
 @media print {
   body.dossier-printing {
