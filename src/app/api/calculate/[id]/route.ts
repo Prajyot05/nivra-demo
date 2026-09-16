@@ -9,7 +9,13 @@ export async function POST(
 ) {
   const { id } = await context.params;
 
-  const user = await getCurrentAppUser();
+  let user: Awaited<ReturnType<typeof getCurrentAppUser>> = null;
+  try {
+    user = await getCurrentAppUser();
+  } catch (error) {
+    console.error("getCurrentAppUser failed on calculate", error);
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

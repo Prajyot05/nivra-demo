@@ -24,11 +24,18 @@ import {
   VEHICLE_LOAN_REPORT_ID,
   VehicleLoanDossier,
 } from "@/components/reports/vehicle-loan-dossier";
+import { DUMMY_REPORT_CONTACT } from "@/components/reports/executive-dossier";
 import {
   AgeInput,
-  ClientHeader,
+  ageError,
+  BentoGroup,
+  BentoSection,
+  ChartPane,
+  ClientProfileBar,
   CompareChart,
+  ComplianceFootnote,
   CompositionChart,
+  emailError,
   Field,
   formatCompactINR,
   formatINRCurrency,
@@ -36,12 +43,17 @@ import {
   GrowthChart,
   META_TEXT,
   MoneyInput,
+  nameError,
   PercentInput,
+  phoneError,
+  rateError,
   ResultCard,
   RESULTS_LEFT,
   RESULTS_RIGHT,
   RESULTS_SPLIT,
+  ResultsSection,
   ScheduleTable,
+  Stack,
   StackedAreaChart,
   StackedBarChart,
   StatCard,
@@ -54,9 +66,6 @@ import { CalculatorPage } from "@/components/layout/calculator-page-with-nav";
 import { useCalculate } from "@/hooks/use-calculate";
 import { useCalculatorMode } from "@/hooks/use-calculator-mode";
 import { getCalculatorPageTitle } from "@/lib/calculator-nav";
-
-const FORM_GRID =
-  "grid grid-cols-[repeat(auto-fill,minmax(7.5rem,1fr))] items-start gap-x-3 gap-y-3";
 
 const MODES = [
   { id: "emi", label: "EMI" },
@@ -175,10 +184,52 @@ type VehicleResult = {
 
 type LoanResult = EmiResult & Partial<PrepayResult> & Partial<ExtraVsInvestResult> & Partial<RecoveryResult> & Partial<VehicleResult>;
 
+const MODE_COPY: Record<
+  Mode,
+  { description: string; strategy: string; goal: string; assumptions: string }
+> = {
+  emi: {
+    description: "Monthly EMI, amortisation, and the SIP needed to offset total loan interest.",
+    strategy: "EMI amortisation",
+    goal: "Interest recovery SIP",
+    assumptions: "Principal, tenure, rate, and recover-return assumptions for EMI and interest SIP",
+  },
+  prepay: {
+    description: "Annual extra payments versus the scheduled loan, with interest and tenure savings.",
+    strategy: "Annual prepayment",
+    goal: "Interest and tenure savings",
+    assumptions: "Loan terms, yearly extra payment, and investment return used to recover interest",
+  },
+  "extra-vs-invest": {
+    description: "Compare using a lump-sum extra to prepay the loan versus investing it instead.",
+    strategy: "Prepay vs invest",
+    goal: "Extra payment decision",
+    assumptions: "Loan terms, extra payment timing, investment return, and tax assumptions",
+  },
+  recovery: {
+    description: "Shorten tenure, raise EMI, and redirect the difference into a recovery SIP.",
+    strategy: "Tenure acceleration",
+    goal: "Interest recovery wealth",
+    assumptions: "Baseline versus proposed tenure and SIP return for interest recovery",
+  },
+  vehicle: {
+    description: "Compare financing paths for a vehicle purchase, including tax shield and invested loan proceeds.",
+    strategy: "Vehicle financing",
+    goal: "Best net benefit",
+    assumptions: "On-road cost, loan terms, depreciation, and option return or tax assumptions",
+  },
+};
+
 export function LoansCalculator() {
   const [mode] = useCalculatorMode(MODE_IDS, "emi");
   const [name, setName] = useState("Mr. Anshu Kaul");
   const [age, setAge] = useState(40);
+  const [email, setEmail] = useState(DUMMY_REPORT_CONTACT.email);
+  const [phone, setPhone] = useState(DUMMY_REPORT_CONTACT.phone);
+
+  const [openAssumptions, setOpenAssumptions] = useState(true);
+  const [openMilestones, setOpenMilestones] = useState(true);
+  const [openAnalytics, setOpenAnalytics] = useState(true);
 
   const [principal, setPrincipal] = useState(7_500_000);
   const [years, setYears] = useState(20);
@@ -222,6 +273,17 @@ export function LoansCalculator() {
   const [consTax, setConsTax] = useState(12.5);
   const [eqTax, setEqTax] = useState(12.5);
 
+  const clientNameError = nameError(name);
+  const clientAgeError = ageError(age);
+  const clientEmailError = emailError(email);
+  const clientPhoneError = phoneError(phone);
+  const contactErrors = [
+    clientNameError,
+    clientAgeError,
+    clientEmailError,
+    clientPhoneError,
+  ].filter((msg): msg is string => Boolean(msg));
+
   const emiPrincipalError =
     principal <= 0 ? "Enter a principal greater than zero." : undefined;
   const emiYearsError =
@@ -231,29 +293,25 @@ export function LoansCalculator() {
         ? "Loan tenure cannot exceed 50 years."
         : undefined;
   const emiInterestError =
-    interest <= 0
-      ? "Loan interest rate must be above 0%."
-      : interest > 100
-        ? "Loan interest rate cannot exceed 100%."
-        : undefined;
+    rateError(interest, "Loan interest rate") ??
+    (interest <= 0 ? "Loan interest rate must be above 0%." : undefined);
   const emiRecoverError =
-    emiRecoverReturn <= 0
-      ? "Investment return must be above 0%."
-      : emiRecoverReturn > 100
-        ? "Investment return cannot exceed 100%."
-        : undefined;
+    rateError(emiRecoverReturn, "Investment return") ??
+    (emiRecoverReturn <= 0 ? "Investment return must be above 0%." : undefined);
   const emiDelayError =
     emiDelayMonths < 0
       ? "Delay cannot be negative."
       : emiDelayMonths >= years * 12
         ? "Delay must leave at least one investment month within the loan term."
         : undefined;
-  const emiCanCalculate =
-    !emiPrincipalError &&
-    !emiYearsError &&
-    !emiInterestError &&
-    !emiRecoverError &&
-    !emiDelayError;
+  const emiFieldErrors = [
+    ...contactErrors,
+    emiPrincipalError,
+    emiYearsError,
+    emiInterestError,
+    emiRecoverError,
+    emiDelayError,
+  ].filter((msg): msg is string => Boolean(msg));
 
   const vsTermMonths = Math.round(vsYears * 12);
   const vsPrincipalError =
@@ -261,11 +319,8 @@ export function LoansCalculator() {
   const vsYearsError =
     !(vsYears > 0) ? "Tenure must be greater than 0." : undefined;
   const vsRateError =
-    !(vsRate > 0)
-      ? "Loan interest rate must be above 0%."
-      : vsRate > 100
-        ? "Loan interest rate cannot exceed 100%."
-        : undefined;
+    rateError(vsRate, "Loan interest rate") ??
+    (vsRate <= 0 ? "Loan interest rate must be above 0%." : undefined);
   const vsExtraError =
     extraAmount < 0
       ? "Extra payment cannot be negative."
@@ -279,43 +334,29 @@ export function LoansCalculator() {
         ? `Extra payment month cannot exceed the loan term (${vsTermMonths} months).`
         : undefined;
   const vsInvestError =
-    !(investReturn > 0)
-      ? "Investment return must be above 0%."
-      : investReturn > 100
-        ? "Investment return cannot exceed 100%."
-        : undefined;
-  const vsCgTaxError =
-    cgTax < 0
-      ? "Capital gains tax cannot be negative."
-      : cgTax > 100
-        ? "Capital gains tax cannot exceed 100%."
-        : undefined;
-  const vsIncomeTaxError =
-    incomeTax < 0
-      ? "Income tax rate cannot be negative."
-      : incomeTax > 100
-        ? "Income tax rate cannot exceed 100%."
-        : undefined;
-  const vsCanCalculate =
-    !vsPrincipalError &&
-    !vsYearsError &&
-    !vsRateError &&
-    !vsExtraError &&
-    !vsExtraMonthError &&
-    !vsInvestError &&
-    !vsCgTaxError &&
-    !vsIncomeTaxError;
+    rateError(investReturn, "Investment return") ??
+    (investReturn <= 0 ? "Investment return must be above 0%." : undefined);
+  const vsCgTaxError = rateError(cgTax, "Capital gains tax");
+  const vsIncomeTaxError = rateError(incomeTax, "Income tax rate");
+  const vsFieldErrors = [
+    ...contactErrors,
+    vsPrincipalError,
+    vsYearsError,
+    vsRateError,
+    vsExtraError,
+    vsExtraMonthError,
+    vsInvestError,
+    vsCgTaxError,
+    vsIncomeTaxError,
+  ].filter((msg): msg is string => Boolean(msg));
 
   const recPrincipalError =
     !(recPrincipal > 0) ? "Loan principal must be greater than 0." : undefined;
   const recYearsError =
     !(recYears > 0) ? "Baseline tenure must be greater than 0." : undefined;
   const recRateError =
-    !(recRate > 0)
-      ? "Loan interest rate must be above 0%."
-      : recRate > 100
-        ? "Loan interest rate cannot exceed 100%."
-        : undefined;
+    rateError(recRate, "Loan interest rate") ??
+    (recRate <= 0 ? "Loan interest rate must be above 0%." : undefined);
   const recProposedError =
     !(proposedYears > 0)
       ? "Proposed tenure must be greater than 0."
@@ -323,28 +364,24 @@ export function LoansCalculator() {
         ? "Proposed tenure must be shorter than the baseline tenure."
         : undefined;
   const recSipError =
-    !(sipReturn > 0)
-      ? "SIP return must be above 0%."
-      : sipReturn > 100
-        ? "SIP return cannot exceed 100%."
-        : undefined;
-  const recCanCalculate =
-    !recPrincipalError &&
-    !recYearsError &&
-    !recRateError &&
-    !recProposedError &&
-    !recSipError;
+    rateError(sipReturn, "SIP return") ??
+    (sipReturn <= 0 ? "SIP return must be above 0%." : undefined);
+  const recFieldErrors = [
+    ...contactErrors,
+    recPrincipalError,
+    recYearsError,
+    recRateError,
+    recProposedError,
+    recSipError,
+  ].filter((msg): msg is string => Boolean(msg));
 
   const prepayPrincipalError =
     !(prepayPrincipal > 0) ? "Loan principal must be greater than 0." : undefined;
   const prepayYearsError =
     !(prepayYears > 0) ? "Loan tenure must be greater than 0." : undefined;
   const prepayRateError =
-    !(prepayRate > 0)
-      ? "Loan interest rate must be above 0%."
-      : prepayRate > 100
-        ? "Loan interest rate cannot exceed 100%."
-        : undefined;
+    rateError(prepayRate, "Loan interest rate") ??
+    (prepayRate <= 0 ? "Loan interest rate must be above 0%." : undefined);
   const prepayExtraError =
     yearlyExtra < 0
       ? "Yearly extra payment cannot be negative."
@@ -352,24 +389,17 @@ export function LoansCalculator() {
         ? "Yearly extra payment cannot exceed the loan principal."
         : undefined;
   const prepayRecoverError =
-    !(recoverReturn > 0)
-      ? "Investment return must be above 0%."
-      : recoverReturn > 100
-        ? "Investment return cannot exceed 100%."
-        : undefined;
-  const prepayCanCalculate =
-    !prepayPrincipalError &&
-    !prepayYearsError &&
-    !prepayRateError &&
-    !prepayExtraError &&
-    !prepayRecoverError;
+    rateError(recoverReturn, "Investment return") ??
+    (recoverReturn <= 0 ? "Investment return must be above 0%." : undefined);
+  const prepayFieldErrors = [
+    ...contactErrors,
+    prepayPrincipalError,
+    prepayYearsError,
+    prepayRateError,
+    prepayExtraError,
+    prepayRecoverError,
+  ].filter((msg): msg is string => Boolean(msg));
 
-  const vehPctError = (value: number, label: string) =>
-    value < 0
-      ? `${label} cannot be negative.`
-      : value > 100
-        ? `${label} cannot exceed 100%.`
-        : undefined;
   const vehOnRoadError =
     !(onRoad > 0) ? "On-road cost must be greater than 0." : undefined;
   const vehLoanError =
@@ -379,38 +409,49 @@ export function LoansCalculator() {
         ? "Loan amount cannot exceed on-road cost."
         : undefined;
   const vehRateError =
-    !(vehRate > 0)
-      ? "Loan interest rate must be above 0%."
-      : vehRate > 100
-        ? "Loan interest rate cannot exceed 100%."
-        : undefined;
+    rateError(vehRate, "Loan interest rate") ??
+    (vehRate <= 0 ? "Loan interest rate must be above 0%." : undefined);
   const vehYearsError =
     !(vehYears > 0) ? "Loan tenure must be greater than 0." : undefined;
-  const vehTaxError = vehPctError(vehTax, "Income tax rate");
-  const depPctError = vehPctError(depPct, "Depreciation rate");
-  const fdRetError = vehPctError(fdRet, "FD return");
-  const debtRetError = vehPctError(debtRet, "MF debt return");
-  const consRetError = vehPctError(consRet, "Conservative return");
-  const eqRetError = vehPctError(eqRet, "Equity return");
-  const fdTaxError = vehPctError(fdTax, "FD tax rate");
-  const debtTaxError = vehPctError(debtTax, "MF debt tax rate");
-  const consTaxError = vehPctError(consTax, "Conservative tax rate");
-  const eqTaxError = vehPctError(eqTax, "Equity tax rate");
-  const vehCanCalculate =
-    !vehOnRoadError &&
-    !vehLoanError &&
-    !vehRateError &&
-    !vehYearsError &&
-    !vehTaxError &&
-    !depPctError &&
-    !fdRetError &&
-    !debtRetError &&
-    !consRetError &&
-    !eqRetError &&
-    !fdTaxError &&
-    !debtTaxError &&
-    !consTaxError &&
-    !eqTaxError;
+  const vehTaxError = rateError(vehTax, "Income tax rate");
+  const depPctError = rateError(depPct, "Depreciation rate");
+  const fdRetError = rateError(fdRet, "FD return");
+  const debtRetError = rateError(debtRet, "MF debt return");
+  const consRetError = rateError(consRet, "Conservative return");
+  const eqRetError = rateError(eqRet, "Equity return");
+  const fdTaxError = rateError(fdTax, "FD tax rate");
+  const debtTaxError = rateError(debtTax, "MF debt tax rate");
+  const consTaxError = rateError(consTax, "Conservative tax rate");
+  const eqTaxError = rateError(eqTax, "Equity tax rate");
+  const vehFieldErrors = [
+    ...contactErrors,
+    vehOnRoadError,
+    vehLoanError,
+    vehRateError,
+    vehYearsError,
+    vehTaxError,
+    depPctError,
+    fdRetError,
+    debtRetError,
+    consRetError,
+    eqRetError,
+    fdTaxError,
+    debtTaxError,
+    consTaxError,
+    eqTaxError,
+  ].filter((msg): msg is string => Boolean(msg));
+
+  const fieldErrors =
+    mode === "emi"
+      ? emiFieldErrors
+      : mode === "prepay"
+        ? prepayFieldErrors
+        : mode === "extra-vs-invest"
+          ? vsFieldErrors
+          : mode === "recovery"
+            ? recFieldErrors
+            : vehFieldErrors;
+  const canCalculate = fieldErrors.length === 0;
 
   const input = useMemo(() => {
     const client = { clientName: name, age };
@@ -484,20 +525,67 @@ export function LoansCalculator() {
   const { result, error, loading } = useCalculate<LoanResult>(
     CALCULATOR_ID[mode],
     input,
-    mode === "emi"
-      ? emiCanCalculate
-      : mode === "extra-vs-invest"
-        ? vsCanCalculate
-        : mode === "recovery"
-          ? recCanCalculate
-          : mode === "prepay"
-            ? prepayCanCalculate
-            : mode === "vehicle"
-              ? vehCanCalculate
-              : true,
+    canCalculate,
   );
 
   const [isDownloading, setIsDownloading] = useState(false);
+
+  const resetDefaults = () => {
+    setName("Mr. Anshu Kaul");
+    setAge(40);
+    setEmail(DUMMY_REPORT_CONTACT.email);
+    setPhone(DUMMY_REPORT_CONTACT.phone);
+
+    if (mode === "emi") {
+      setPrincipal(7_500_000);
+      setYears(20);
+      setInterest(9.2);
+      setEmiRecoverReturn(12);
+      setEmiDelayMonths(12);
+      return;
+    }
+    if (mode === "prepay") {
+      setPrepayPrincipal(15_000_000);
+      setPrepayYears(5);
+      setPrepayRate(10);
+      setYearlyExtra(318705.67);
+      setRecoverReturn(12);
+      return;
+    }
+    if (mode === "extra-vs-invest") {
+      setVsPrincipal(20_000_000);
+      setVsYears(20);
+      setVsRate(8.5);
+      setExtraAmount(5_000_000);
+      setExtraMonth(49);
+      setInvestReturn(9);
+      setCgTax(12.5);
+      setIncomeTax(20);
+      return;
+    }
+    if (mode === "recovery") {
+      setRecPrincipal(20_000_000);
+      setRecYears(20);
+      setRecRate(8.5);
+      setProposedYears(15);
+      setSipReturn(12);
+      return;
+    }
+    setOnRoad(3_500_000);
+    setVehLoan(2_800_000);
+    setVehRate(8.5);
+    setVehYears(5);
+    setVehTax(20);
+    setDepPct(15);
+    setFdRet(7);
+    setDebtRet(8);
+    setConsRet(9);
+    setEqRet(12);
+    setFdTax(20);
+    setDebtTax(25);
+    setConsTax(12.5);
+    setEqTax(12.5);
+  };
 
   const handleDownload = async () => {
     if (!result || isDownloading) return;
@@ -606,11 +694,7 @@ export function LoansCalculator() {
     <>
     <CalculatorPage
       title={getCalculatorPageTitle("/loans", mode)}
-      description={
-        mode === "emi"
-          ? "Monthly EMI, amortisation, and the SIP needed to offset total loan interest."
-          : "Monthly EMI for a home or personal loan — principal, tenure, and interest rate."
-      }
+      description={MODE_COPY[mode].description}
       actions={
         <Button
           size="icon"
@@ -622,317 +706,573 @@ export function LoansCalculator() {
           {isDownloading ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
         </Button>
       }
+      header={
+        <ClientProfileBar
+          name={name}
+          age={age}
+          email={email}
+          phone={phone}
+          strategy={MODE_COPY[mode].strategy}
+          goal={MODE_COPY[mode].goal}
+        />
+      }
       form={
-        mode === "emi" ? (
-          <div className={FORM_GRID}>
-            <ClientHeader name={name} age={age} onNameChange={setName} onAgeChange={setAge} />
-            <MoneyInput
-              label="Principal"
-              value={principal}
-              onChange={setPrincipal}
-              error={emiPrincipalError}
-              align="right"
-            />
-            <YearInput
-              label="Tenure"
-              value={years}
-              min={1}
-              max={50}
-              onChange={setYears}
-              error={emiYearsError}
-            />
-            <PercentInput
-              label="Loan rate"
-              value={interest}
-              onChange={setInterest}
-              error={emiInterestError}
-            />
-            <PercentInput
-              label="Recover return"
-              value={emiRecoverReturn}
-              onChange={setEmiRecoverReturn}
-              error={emiRecoverError}
-            />
-            <YearInput
-              label="Delay (mo)"
-              value={emiDelayMonths}
-              min={0}
-              max={Math.max(0, years * 12 - 1)}
-              onChange={setEmiDelayMonths}
-              error={emiDelayError}
-            />
-          </div>
-        ) : mode === "prepay" ? (
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] items-start gap-x-3 gap-y-3">
-            <ClientHeader name={name} age={age} onNameChange={setName} onAgeChange={setAge} />
-            <MoneyInput
-              label="Loan principal"
-              value={prepayPrincipal}
-              onChange={setPrepayPrincipal}
-              error={prepayPrincipalError}
-            />
-            <YearInput
-              label="Loan tenure"
-              value={prepayYears}
-              min={1}
-              max={50}
-              onChange={setPrepayYears}
-              error={prepayYearsError}
-            />
-            <PercentInput
-              label="Loan interest (%)"
-              value={prepayRate}
-              onChange={setPrepayRate}
-              error={prepayRateError}
-            />
-            <MoneyInput
-              label="Yearly extra payment"
-              value={yearlyExtra}
-              onChange={setYearlyExtra}
-              error={prepayExtraError}
-              wrapLabel
-            />
-            <PercentInput
-              label="Investment return (%)"
-              value={recoverReturn}
-              onChange={setRecoverReturn}
-              error={prepayRecoverError}
-              wrapLabel
-            />
-          </div>
-        ) : mode === "extra-vs-invest" ? (
-          <div className="grid grid-cols-2 items-start gap-x-3 gap-y-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
-            <ClientHeader name={name} age={age} onNameChange={setName} onAgeChange={setAge} />
-            <MoneyInput
-              label="Loan principal"
-              value={vsPrincipal}
-              onChange={setVsPrincipal}
-              error={vsPrincipalError}
-            />
-            <YearInput
-              value={vsYears}
-              min={1}
-              max={50}
-              onChange={setVsYears}
-              error={vsYearsError}
-            />
-            <PercentInput
-              label="Loan interest (%)"
-              value={vsRate}
-              onChange={setVsRate}
-              error={vsRateError}
-            />
-            <MoneyInput
-              label="Extra payment"
-              value={extraAmount}
-              onChange={setExtraAmount}
-              error={vsExtraError}
-            />
-            <YearInput
-              label="Extra payment month"
-              value={extraMonth}
-              min={1}
-              max={vsTermMonths || 1200}
-              onChange={setExtraMonth}
-              hint="Of the loan term"
-              error={vsExtraMonthError}
-              wrapLabel
-            />
-            <PercentInput
-              label="Investment return (%)"
-              value={investReturn}
-              onChange={setInvestReturn}
-              error={vsInvestError}
-              wrapLabel
-            />
-            <PercentInput
-              label="Capital gains tax (%)"
-              value={cgTax}
-              onChange={setCgTax}
-              error={vsCgTaxError}
-              wrapLabel
-            />
-            <PercentInput
-              label="Income tax rate (%)"
-              value={incomeTax}
-              onChange={setIncomeTax}
-              error={vsIncomeTaxError}
-              wrapLabel
-            />
-          </div>
-        ) : mode === "recovery" ? (
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] items-start gap-x-3 gap-y-3">
-            <ClientHeader name={name} age={age} onNameChange={setName} onAgeChange={setAge} />
-            <MoneyInput
-              label="Loan principal"
-              value={recPrincipal}
-              onChange={setRecPrincipal}
-              error={recPrincipalError}
-            />
-            <YearInput
-              label="Baseline tenure"
-              value={recYears}
-              min={1}
-              max={50}
-              onChange={setRecYears}
-              error={recYearsError}
-            />
-            <PercentInput
-              label="Loan interest (%)"
-              value={recRate}
-              onChange={setRecRate}
-              error={recRateError}
-            />
-            <YearInput
-              label="Proposed tenure"
-              value={proposedYears}
-              min={1}
-              max={Math.max(1, recYears - 1)}
-              onChange={setProposedYears}
-              error={recProposedError}
-            />
-            <PercentInput
-              label="SIP return (%)"
-              value={sipReturn}
-              onChange={setSipReturn}
-              error={recSipError}
-            />
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 items-start gap-x-3 gap-y-3 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
-            <div className="col-span-2 xl:col-span-1">
-              <Field label="Client Name">
-                <TextInput value={name} onChange={(e) => setName(e.target.value)} />
+        <BentoSection
+          sectionId="01"
+          title="Financial Assumptions & Modeling Suite"
+          description={MODE_COPY[mode].assumptions}
+          collapsible
+          open={openAssumptions}
+          onToggle={() => setOpenAssumptions((v) => !v)}
+          actions={
+            <button
+              type="button"
+              onClick={resetDefaults}
+              className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 transition-all hover:bg-slate-100 hover:text-emerald-700"
+            >
+              Reset to Baseline
+            </button>
+          }
+        >
+          <BentoGroup
+            num="01"
+            title="Investor Profile"
+            colSpan={4}
+            footer={
+              <>
+                <span>Horizon:</span>
+                <span className="font-bold text-slate-700">
+                  {age} →{" "}
+                  {age +
+                    (mode === "emi"
+                      ? years
+                      : mode === "prepay"
+                        ? prepayYears
+                        : mode === "extra-vs-invest"
+                          ? vsYears
+                          : mode === "recovery"
+                            ? recYears
+                            : vehYears)}
+                </span>
+              </>
+            }
+          >
+            <div className="mb-4">
+              <Field label="Client Name" error={clientNameError}>
+                <TextInput
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className={clientNameError ? "border-[var(--app-danger)]" : undefined}
+                />
               </Field>
             </div>
-            <AgeInput value={age} onChange={setAge} />
-            <MoneyInput
-              label="On-road cost"
-              value={onRoad}
-              onChange={setOnRoad}
-              error={vehOnRoadError}
-            />
-            <MoneyInput
-              label="Loan amount"
-              value={vehLoan}
-              onChange={setVehLoan}
-              error={vehLoanError}
-            />
-            <PercentInput
-              label="Loan interest (%)"
-              value={vehRate}
-              onChange={setVehRate}
-              error={vehRateError}
-            />
-            <YearInput
-              label="Tenure"
-              value={vehYears}
-              min={1}
-              max={15}
-              onChange={setVehYears}
-              error={vehYearsError}
-            />
-            <PercentInput
-              label="Income tax (%)"
-              value={vehTax}
-              onChange={setVehTax}
-              error={vehTaxError}
-            />
-            <PercentInput
-              label="Depreciation (%)"
-              value={depPct}
-              onChange={setDepPct}
-              error={depPctError}
-            />
-            <PercentInput
-              label="FD return (%)"
-              value={fdRet}
-              onChange={setFdRet}
-              error={fdRetError}
-            />
-            <PercentInput
-              label="FD tax (%)"
-              value={fdTax}
-              onChange={setFdTax}
-              error={fdTaxError}
-            />
-            <PercentInput
-              label="MF debt return (%)"
-              value={debtRet}
-              onChange={setDebtRet}
-              error={debtRetError}
-            />
-            <PercentInput
-              label="MF debt tax (%)"
-              value={debtTax}
-              onChange={setDebtTax}
-              error={debtTaxError}
-            />
-            <PercentInput
-              label="Cons. return (%)"
-              value={consRet}
-              onChange={setConsRet}
-              error={consRetError}
-            />
-            <PercentInput
-              label="Cons. tax (%)"
-              value={consTax}
-              onChange={setConsTax}
-              error={consTaxError}
-            />
-            <PercentInput
-              label="Equity return (%)"
-              value={eqRet}
-              onChange={setEqRet}
-              error={eqRetError}
-            />
-            <PercentInput
-              label="Equity tax (%)"
-              value={eqTax}
-              onChange={setEqTax}
-              error={eqTaxError}
-            />
-          </div>
-        )
+            <div className="mb-4">
+              <AgeInput value={age} onChange={setAge} error={clientAgeError} />
+            </div>
+            <div className="mb-4">
+              <Field label="Email" error={clientEmailError}>
+                <TextInput
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="client@email.com"
+                  className={clientEmailError ? "border-[var(--app-danger)]" : undefined}
+                />
+              </Field>
+            </div>
+            <Field label="Phone" error={clientPhoneError}>
+              <TextInput
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+91 98765 43210"
+                className={clientPhoneError ? "border-[var(--app-danger)]" : undefined}
+              />
+            </Field>
+          </BentoGroup>
+
+          {mode === "emi" ? (
+            <>
+              <BentoGroup
+                num="02"
+                title="Loan Parameters"
+                colSpan={5}
+                footer={
+                  <>
+                    <span>Term:</span>
+                    <span className="font-bold text-emerald-700">{years} years</span>
+                  </>
+                }
+              >
+                <div className="mb-3.5">
+                  <MoneyInput
+                    label="Principal"
+                    value={principal}
+                    onChange={setPrincipal}
+                    error={emiPrincipalError}
+                    align="right"
+                  />
+                </div>
+                <div className="mb-3.5">
+                  <YearInput
+                    label="Tenure"
+                    value={years}
+                    min={1}
+                    max={50}
+                    onChange={setYears}
+                    error={emiYearsError}
+                  />
+                </div>
+                <PercentInput
+                  label="Loan rate"
+                  value={interest}
+                  onChange={setInterest}
+                  error={emiInterestError}
+                />
+              </BentoGroup>
+              <BentoGroup
+                num="03"
+                title="Rate Assumptions"
+                subtitle="Recover & Delay"
+                colSpan={3}
+                footer={
+                  <>
+                    <span>Recover:</span>
+                    <span className="font-bold text-emerald-700">{emiRecoverReturn}%</span>
+                  </>
+                }
+              >
+                <div className="mb-3.5">
+                  <PercentInput
+                    label="Recover return"
+                    value={emiRecoverReturn}
+                    onChange={setEmiRecoverReturn}
+                    error={emiRecoverError}
+                  />
+                </div>
+                <YearInput
+                  label="Delay (mo)"
+                  value={emiDelayMonths}
+                  min={0}
+                  max={Math.max(0, years * 12 - 1)}
+                  onChange={setEmiDelayMonths}
+                  error={emiDelayError}
+                />
+              </BentoGroup>
+            </>
+          ) : mode === "prepay" ? (
+            <>
+              <BentoGroup
+                num="02"
+                title="Loan Parameters"
+                colSpan={5}
+                footer={
+                  <>
+                    <span>Extra:</span>
+                    <span className="font-bold text-emerald-700">yearly</span>
+                  </>
+                }
+              >
+                <div className="mb-3.5">
+                  <MoneyInput
+                    label="Loan principal"
+                    value={prepayPrincipal}
+                    onChange={setPrepayPrincipal}
+                    error={prepayPrincipalError}
+                  />
+                </div>
+                <div className="mb-3.5">
+                  <YearInput
+                    label="Loan tenure"
+                    value={prepayYears}
+                    min={1}
+                    max={50}
+                    onChange={setPrepayYears}
+                    error={prepayYearsError}
+                  />
+                </div>
+                <div className="mb-3.5">
+                  <PercentInput
+                    label="Loan interest (%)"
+                    value={prepayRate}
+                    onChange={setPrepayRate}
+                    error={prepayRateError}
+                  />
+                </div>
+                <MoneyInput
+                  label="Yearly extra payment"
+                  value={yearlyExtra}
+                  onChange={setYearlyExtra}
+                  error={prepayExtraError}
+                  wrapLabel
+                />
+              </BentoGroup>
+              <BentoGroup
+                num="03"
+                title="Rate Assumptions"
+                subtitle="Recover Return"
+                colSpan={3}
+                footer={
+                  <>
+                    <span>Return:</span>
+                    <span className="font-bold text-emerald-700">{recoverReturn}%</span>
+                  </>
+                }
+              >
+                <PercentInput
+                  label="Investment return (%)"
+                  value={recoverReturn}
+                  onChange={setRecoverReturn}
+                  error={prepayRecoverError}
+                  wrapLabel
+                />
+              </BentoGroup>
+            </>
+          ) : mode === "extra-vs-invest" ? (
+            <>
+              <BentoGroup
+                num="02"
+                title="Loan Parameters"
+                colSpan={5}
+                footer={
+                  <>
+                    <span>Extra at:</span>
+                    <span className="font-bold text-emerald-700">M{extraMonth}</span>
+                  </>
+                }
+              >
+                <div className="mb-3.5">
+                  <MoneyInput
+                    label="Loan principal"
+                    value={vsPrincipal}
+                    onChange={setVsPrincipal}
+                    error={vsPrincipalError}
+                  />
+                </div>
+                <div className="mb-3.5">
+                  <YearInput
+                    value={vsYears}
+                    min={1}
+                    max={50}
+                    onChange={setVsYears}
+                    error={vsYearsError}
+                  />
+                </div>
+                <div className="mb-3.5">
+                  <PercentInput
+                    label="Loan interest (%)"
+                    value={vsRate}
+                    onChange={setVsRate}
+                    error={vsRateError}
+                  />
+                </div>
+                <div className="mb-3.5">
+                  <MoneyInput
+                    label="Extra payment"
+                    value={extraAmount}
+                    onChange={setExtraAmount}
+                    error={vsExtraError}
+                  />
+                </div>
+                <YearInput
+                  label="Extra payment month"
+                  value={extraMonth}
+                  min={1}
+                  max={vsTermMonths || 1200}
+                  onChange={setExtraMonth}
+                  hint="Of the loan term"
+                  error={vsExtraMonthError}
+                  wrapLabel
+                />
+              </BentoGroup>
+              <BentoGroup
+                num="03"
+                title="Rate Assumptions"
+                subtitle="Return & Tax"
+                colSpan={3}
+                footer={
+                  <>
+                    <span>Invest:</span>
+                    <span className="font-bold text-emerald-700">{investReturn}%</span>
+                  </>
+                }
+              >
+                <div className="mb-3.5">
+                  <PercentInput
+                    label="Investment return (%)"
+                    value={investReturn}
+                    onChange={setInvestReturn}
+                    error={vsInvestError}
+                    wrapLabel
+                  />
+                </div>
+                <div className="mb-3.5">
+                  <PercentInput
+                    label="Capital gains tax (%)"
+                    value={cgTax}
+                    onChange={setCgTax}
+                    error={vsCgTaxError}
+                    wrapLabel
+                  />
+                </div>
+                <PercentInput
+                  label="Income tax rate (%)"
+                  value={incomeTax}
+                  onChange={setIncomeTax}
+                  error={vsIncomeTaxError}
+                  wrapLabel
+                />
+              </BentoGroup>
+            </>
+          ) : mode === "recovery" ? (
+            <>
+              <BentoGroup
+                num="02"
+                title="Loan Parameters"
+                colSpan={5}
+                footer={
+                  <>
+                    <span>Path:</span>
+                    <span className="font-bold text-emerald-700">
+                      {recYears}y → {proposedYears}y
+                    </span>
+                  </>
+                }
+              >
+                <div className="mb-3.5">
+                  <MoneyInput
+                    label="Loan principal"
+                    value={recPrincipal}
+                    onChange={setRecPrincipal}
+                    error={recPrincipalError}
+                  />
+                </div>
+                <div className="mb-3.5">
+                  <YearInput
+                    label="Baseline tenure"
+                    value={recYears}
+                    min={1}
+                    max={50}
+                    onChange={setRecYears}
+                    error={recYearsError}
+                  />
+                </div>
+                <div className="mb-3.5">
+                  <PercentInput
+                    label="Loan interest (%)"
+                    value={recRate}
+                    onChange={setRecRate}
+                    error={recRateError}
+                  />
+                </div>
+                <YearInput
+                  label="Proposed tenure"
+                  value={proposedYears}
+                  min={1}
+                  max={Math.max(1, recYears - 1)}
+                  onChange={setProposedYears}
+                  error={recProposedError}
+                />
+              </BentoGroup>
+              <BentoGroup
+                num="03"
+                title="Rate Assumptions"
+                subtitle="SIP Return"
+                colSpan={3}
+                footer={
+                  <>
+                    <span>SIP:</span>
+                    <span className="font-bold text-emerald-700">{sipReturn}%</span>
+                  </>
+                }
+              >
+                <PercentInput
+                  label="SIP return (%)"
+                  value={sipReturn}
+                  onChange={setSipReturn}
+                  error={recSipError}
+                />
+              </BentoGroup>
+            </>
+          ) : (
+            <>
+              <BentoGroup
+                num="02"
+                title="Loan Parameters"
+                colSpan={5}
+                footer={
+                  <>
+                    <span>Finance:</span>
+                    <span className="font-bold text-emerald-700">{vehYears}y loan</span>
+                  </>
+                }
+              >
+                <div className="mb-3.5">
+                  <MoneyInput
+                    label="On-road cost"
+                    value={onRoad}
+                    onChange={setOnRoad}
+                    error={vehOnRoadError}
+                  />
+                </div>
+                <div className="mb-3.5">
+                  <MoneyInput
+                    label="Loan amount"
+                    value={vehLoan}
+                    onChange={setVehLoan}
+                    error={vehLoanError}
+                  />
+                </div>
+                <div className="mb-3.5">
+                  <PercentInput
+                    label="Loan interest (%)"
+                    value={vehRate}
+                    onChange={setVehRate}
+                    error={vehRateError}
+                  />
+                </div>
+                <div className="mb-3.5">
+                  <YearInput
+                    label="Tenure"
+                    value={vehYears}
+                    min={1}
+                    max={15}
+                    onChange={setVehYears}
+                    error={vehYearsError}
+                  />
+                </div>
+                <div className="mb-3.5">
+                  <PercentInput
+                    label="Income tax (%)"
+                    value={vehTax}
+                    onChange={setVehTax}
+                    error={vehTaxError}
+                  />
+                </div>
+                <PercentInput
+                  label="Depreciation (%)"
+                  value={depPct}
+                  onChange={setDepPct}
+                  error={depPctError}
+                />
+              </BentoGroup>
+              <BentoGroup
+                num="03"
+                title="Rate Assumptions"
+                subtitle="Options & Tax"
+                colSpan={3}
+                footer={
+                  <>
+                    <span>Equity:</span>
+                    <span className="font-bold text-emerald-700">{eqRet}%</span>
+                  </>
+                }
+              >
+                <div className="mb-3.5">
+                  <PercentInput
+                    label="FD return (%)"
+                    value={fdRet}
+                    onChange={setFdRet}
+                    error={fdRetError}
+                  />
+                </div>
+                <div className="mb-3.5">
+                  <PercentInput
+                    label="FD tax (%)"
+                    value={fdTax}
+                    onChange={setFdTax}
+                    error={fdTaxError}
+                  />
+                </div>
+                <div className="mb-3.5">
+                  <PercentInput
+                    label="MF debt return (%)"
+                    value={debtRet}
+                    onChange={setDebtRet}
+                    error={debtRetError}
+                  />
+                </div>
+                <div className="mb-3.5">
+                  <PercentInput
+                    label="MF debt tax (%)"
+                    value={debtTax}
+                    onChange={setDebtTax}
+                    error={debtTaxError}
+                  />
+                </div>
+                <div className="mb-3.5">
+                  <PercentInput
+                    label="Cons. return (%)"
+                    value={consRet}
+                    onChange={setConsRet}
+                    error={consRetError}
+                  />
+                </div>
+                <div className="mb-3.5">
+                  <PercentInput
+                    label="Cons. tax (%)"
+                    value={consTax}
+                    onChange={setConsTax}
+                    error={consTaxError}
+                  />
+                </div>
+                <div className="mb-3.5">
+                  <PercentInput
+                    label="Equity return (%)"
+                    value={eqRet}
+                    onChange={setEqRet}
+                    error={eqRetError}
+                  />
+                </div>
+                <PercentInput
+                  label="Equity tax (%)"
+                  value={eqTax}
+                  onChange={setEqTax}
+                  error={eqTaxError}
+                />
+              </BentoGroup>
+            </>
+          )}
+        </BentoSection>
       }
       results={
-        <div className="flex min-h-0 flex-1 flex-col gap-3">
-          {mode === "emi" && !emiCanCalculate ? (
+        <div className="flex flex-col gap-3">
+          {!canCalculate ? (
             <StatusNote tone="error">
-              Fix the highlighted principal, tenure, rate, or recovery fields before calculating.
-            </StatusNote>
-          ) : null}
-          {mode === "extra-vs-invest" && !vsCanCalculate ? (
-            <StatusNote tone="error">
-              Fix the highlighted loan, prepayment, or investment fields before calculating.
-            </StatusNote>
-          ) : null}
-          {mode === "recovery" && !recCanCalculate ? (
-            <StatusNote tone="error">
-              Fix the highlighted loan or SIP fields before calculating. Proposed tenure must be shorter than baseline.
-            </StatusNote>
-          ) : null}
-          {mode === "prepay" && !prepayCanCalculate ? (
-            <StatusNote tone="error">
-              Fix the highlighted loan, extra payment, or investment return fields before calculating.
-            </StatusNote>
-          ) : null}
-          {mode === "vehicle" && !vehCanCalculate ? (
-            <StatusNote tone="error">
-              Fix the highlighted vehicle, loan, tax, or investment fields before calculating. Loan amount cannot exceed on-road cost.
+              <div className="flex flex-col gap-1">
+                <span className="font-semibold">
+                  Fix the inputs above to refresh the calculation
+                  {result ? ". Showing the last valid result." : "."}
+                </span>
+                <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[12px] font-normal">
+                  {fieldErrors.map((msg) => (
+                    <li key={msg}>{msg}</li>
+                  ))}
+                </ul>
+              </div>
             </StatusNote>
           ) : null}
           {error ? <StatusNote tone="error">{error}</StatusNote> : null}
-          {loading && !result ? (
+          {loading && !result && canCalculate ? (
             <StatusNote tone="pending">Calculating…</StatusNote>
           ) : null}
           {result && mode === "emi" && Array.isArray(result.schedule) ? (
-            <EmiResults result={result as EmiResult} />
+            <EmiResults
+              result={result as EmiResult}
+              openMilestones={openMilestones}
+              onToggleMilestones={() => setOpenMilestones((v) => !v)}
+              openAnalytics={openAnalytics}
+              onToggleAnalytics={() => setOpenAnalytics((v) => !v)}
+            />
           ) : null}
           {result && mode === "prepay" && Array.isArray(result.originalSchedule) ? (
             <PrepayResults
               result={result as PrepayResult}
               yearlyExtra={yearlyExtra}
+              openMilestones={openMilestones}
+              onToggleMilestones={() => setOpenMilestones((v) => !v)}
+              openAnalytics={openAnalytics}
+              onToggleAnalytics={() => setOpenAnalytics((v) => !v)}
             />
           ) : null}
           {result && mode === "extra-vs-invest" && Array.isArray(result.path) ? (
@@ -942,6 +1282,10 @@ export function LoansCalculator() {
               extraMonth={extraMonth}
               tenureYears={vsYears}
               investReturnPct={investReturn}
+              openMilestones={openMilestones}
+              onToggleMilestones={() => setOpenMilestones((v) => !v)}
+              openAnalytics={openAnalytics}
+              onToggleAnalytics={() => setOpenAnalytics((v) => !v)}
             />
           ) : null}
           {result && mode === "recovery" && result.baselineEmi != null ? (
@@ -950,6 +1294,10 @@ export function LoansCalculator() {
               principal={recPrincipal}
               baselineYears={recYears}
               proposedYears={proposedYears}
+              openMilestones={openMilestones}
+              onToggleMilestones={() => setOpenMilestones((v) => !v)}
+              openAnalytics={openAnalytics}
+              onToggleAnalytics={() => setOpenAnalytics((v) => !v)}
             />
           ) : null}
           {result && mode === "vehicle" && Array.isArray(result.depreciation) ? (
@@ -964,9 +1312,20 @@ export function LoansCalculator() {
                 Conservative: consRet,
                 Equity: eqRet,
               }}
+              openMilestones={openMilestones}
+              onToggleMilestones={() => setOpenMilestones((v) => !v)}
+              openAnalytics={openAnalytics}
+              onToggleAnalytics={() => setOpenAnalytics((v) => !v)}
             />
           ) : null}
         </div>
+      }
+      footer={
+        <ComplianceFootnote>
+          Calculations shown are for illustration purposes only. Loan EMIs, interest savings, and
+          investment outcomes depend on assumed rates, taxes, and lender terms. Actual results can
+          differ.
+        </ComplianceFootnote>
       }
     />
     {mode === "emi" && result && Array.isArray(result.schedule) ? (
@@ -974,6 +1333,8 @@ export function LoansCalculator() {
         data={{
           clientName: name,
           age,
+          email,
+          phone,
           principal,
           years,
           interestPct: interest,
@@ -998,6 +1359,8 @@ export function LoansCalculator() {
         data={{
           clientName: name,
           age,
+          email,
+          phone,
           principal: vsPrincipal,
           years: vsYears,
           interestPct: vsRate,
@@ -1026,6 +1389,8 @@ export function LoansCalculator() {
         data={{
           clientName: name,
           age,
+          email,
+          phone,
           principal: recPrincipal,
           baselineYears: recYears,
           proposedYears,
@@ -1054,6 +1419,8 @@ export function LoansCalculator() {
         data={{
           clientName: name,
           age,
+          email,
+          phone,
           principal: prepayPrincipal,
           years: prepayYears,
           interestPct: prepayRate,
@@ -1079,6 +1446,8 @@ export function LoansCalculator() {
         data={{
           clientName: name,
           age,
+          email,
+          phone,
           onRoadCost: onRoad,
           loanAmount: vehLoan,
           interestPct: vehRate,
@@ -1117,7 +1486,19 @@ function monthTickLabel(month: number, totalMonths: number): string {
   return "";
 }
 
-function EmiResults({ result }: { result: EmiResult }) {
+function EmiResults({
+  result,
+  openMilestones,
+  onToggleMilestones,
+  openAnalytics,
+  onToggleAnalytics,
+}: {
+  result: EmiResult;
+  openMilestones: boolean;
+  onToggleMilestones: () => void;
+  openAnalytics: boolean;
+  onToggleAnalytics: () => void;
+}) {
   let interestToDate = 0;
   const area = result.schedule.map((row) => {
     interestToDate += row.interest;
@@ -1162,106 +1543,52 @@ function EmiResults({ result }: { result: EmiResult }) {
     .filter((row): row is { year: number; month: number; balance: number } => row != null);
 
   return (
-    <div className="flex flex-col gap-2.5">
-      <div className={`${RESULTS_SPLIT} gap-2.5`}>
-        <div className={`${RESULTS_LEFT} gap-2.5`}>
-          <div className="grid shrink-0 grid-cols-3 gap-2">
-            <StatCard title="EMI" value={result.emi} tone="neutral" />
-            <StatCard title="Total interest" value={result.totalInterest} tone="negative" />
-            <StatCard title="Total paid" value={result.totalPaid} tone="neutral" />
+    <Stack>
+      <ResultsSection
+        sectionId="02"
+        title="Loan Payment Milestones"
+        description="EMI, lifetime interest, recover SIP, and payoff timeline"
+        open={openMilestones}
+        onToggle={onToggleMilestones}
+        meta={
+          <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">
+            {totalMonths} months
+          </span>
+        }
+      >
+      <div className="grid shrink-0 grid-cols-1 gap-2 sm:grid-cols-3">
+        <StatCard title="EMI" value={result.emi} tone="neutral" />
+        <StatCard title="Total interest" value={result.totalInterest} tone="negative" />
+        <StatCard title="Total paid" value={result.totalPaid} tone="neutral" />
+      </div>
+
+      {first ? (
+        <div className="mt-3 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-2.5 py-2">
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 text-[12px]">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
+              First EMI
+            </span>
+            <span>
+              Principal{" "}
+              <span className="font-semibold tabular-nums text-[var(--app-std-text)]">
+                {formatINRCurrency(first.principal)}
+              </span>
+            </span>
+            <span>
+              Interest{" "}
+              <span className="font-semibold tabular-nums text-[var(--app-warn-text)]">
+                {formatINRCurrency(first.interest)}
+              </span>
+            </span>
+            <span className={META_TEXT}>
+              Interest = {formatPercent(interestBurdenPct, 0)} of principal
+            </span>
           </div>
-
-          {first ? (
-            <div className="rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-2.5 py-2">
-              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 text-[12px]">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
-                  First EMI
-                </span>
-                <span>
-                  Principal{" "}
-                  <span className="font-semibold tabular-nums text-[var(--app-std-text)]">
-                    {formatINRCurrency(first.principal)}
-                  </span>
-                </span>
-                <span>
-                  Interest{" "}
-                  <span className="font-semibold tabular-nums text-[var(--app-warn-text)]">
-                    {formatINRCurrency(first.interest)}
-                  </span>
-                </span>
-                <span className={META_TEXT}>
-                  Interest = {formatPercent(interestBurdenPct, 0)} of principal
-                </span>
-              </div>
-            </div>
-          ) : null}
-
-          <SegmentedChartControl
-            tabs={[
-              {
-                id: "payments",
-                label: "Payments",
-                icon: <BarChart3 className="w-4 h-4" />,
-                content: (
-                  <GrowthChart
-                    title="Principal vs interest payment by month"
-                    className="min-h-[200px] sm:min-h-[220px]"
-                    data={result.schedule.map((row) => ({
-                      year: row.month,
-                      principal: row.principal,
-                      interest: row.interest,
-                    }))}
-                    series={[
-                      { key: "principal", label: "Principal payment", color: "var(--app-chart-invested)" },
-                      { key: "interest", label: "Interest payment", color: "var(--app-chart-tax)" },
-                    ]}
-                    xTickFormatter={(month) => monthTickLabel(month, totalMonths)}
-                  />
-                )
-              },
-              {
-                id: "mix",
-                label: "Mix",
-                icon: <PieChart className="w-4 h-4" />,
-                content: (
-                  <CompositionChart
-                    title="Lifetime mix"
-                    compact
-                    showPercentages
-                    slices={[
-                      { name: "Principal", value: result.totalPrincipal, color: "var(--app-chart-invested)" },
-                      { name: "Interest", value: result.totalInterest, color: "var(--app-chart-tax)" },
-                    ]}
-                    centerLabel="Total paid"
-                    centerValue={result.totalPaid}
-                  />
-                )
-              },
-              {
-                id: "balance",
-                label: "Balance",
-                icon: <LineChart className="w-4 h-4" />,
-                content: (
-                  <StackedAreaChart
-                    title="Remaining principal vs cumulative interest paid"
-                    className="min-h-[200px]"
-                    data={area}
-                    series={[
-                      { key: "remaining", label: "Remaining principal", color: "var(--app-chart-invested)" },
-                      {
-                        key: "interestPaid",
-                        label: "Cumulative interest paid",
-                        color: "var(--app-chart-tax)",
-                      },
-                    ]}
-                    xTickFormatter={(month) => monthTickLabel(month, totalMonths)}
-                  />
-                )
-              }
-            ]}
-          />
         </div>
-        <div className={`${RESULTS_RIGHT} gap-2.5`}>
+      ) : null}
+
+      <div className={`${RESULTS_SPLIT} mt-3 gap-2.5`}>
+        <div className={`${RESULTS_LEFT} gap-2.5`}>
           <ResultCard
             title="Loan summary"
             items={[
@@ -1275,6 +1602,8 @@ function EmiResults({ result }: { result: EmiResult }) {
               { label: "Total paid", value: result.totalPaid },
             ]}
           />
+        </div>
+        <div className={`${RESULTS_RIGHT} gap-2.5`}>
           <ResultCard
             title="Recover interest"
             items={[
@@ -1366,6 +1695,86 @@ function EmiResults({ result }: { result: EmiResult }) {
           </div>
         </div>
       ) : null}
+      </ResultsSection>
+
+      <ResultsSection
+        sectionId="03"
+        title="Loan Analytics"
+        description="Payment mix, balance path, and full amortisation schedule"
+        open={openAnalytics}
+        onToggle={onToggleAnalytics}
+      >
+          <SegmentedChartControl
+            variant="pill"
+            tabs={[
+              {
+                id: "payments",
+                label: "Payments",
+                icon: <BarChart3 className="h-3.5 w-3.5" />,
+                content: (
+                  <ChartPane>
+                  <GrowthChart
+                    title="Principal vs interest payment by month"
+                    className="min-h-[200px] sm:min-h-[220px]"
+                    data={result.schedule.map((row) => ({
+                      year: row.month,
+                      principal: row.principal,
+                      interest: row.interest,
+                    }))}
+                    series={[
+                      { key: "principal", label: "Principal payment", color: "var(--app-chart-invested)" },
+                      { key: "interest", label: "Interest payment", color: "var(--app-chart-tax)" },
+                    ]}
+                    xTickFormatter={(month) => monthTickLabel(month, totalMonths)}
+                  />
+                  </ChartPane>
+                )
+              },
+              {
+                id: "mix",
+                label: "Mix",
+                icon: <PieChart className="h-3.5 w-3.5" />,
+                content: (
+                  <ChartPane>
+                  <CompositionChart
+                    title="Lifetime mix"
+                    compact
+                    showPercentages
+                    slices={[
+                      { name: "Principal", value: result.totalPrincipal, color: "var(--app-chart-invested)" },
+                      { name: "Interest", value: result.totalInterest, color: "var(--app-chart-tax)" },
+                    ]}
+                    centerLabel="Total paid"
+                    centerValue={result.totalPaid}
+                  />
+                  </ChartPane>
+                )
+              },
+              {
+                id: "balance",
+                label: "Balance",
+                icon: <LineChart className="h-3.5 w-3.5" />,
+                content: (
+                  <ChartPane>
+                  <StackedAreaChart
+                    title="Remaining principal vs cumulative interest paid"
+                    className="min-h-[200px]"
+                    data={area}
+                    series={[
+                      { key: "remaining", label: "Remaining principal", color: "var(--app-chart-invested)" },
+                      {
+                        key: "interestPaid",
+                        label: "Cumulative interest paid",
+                        color: "var(--app-chart-tax)",
+                      },
+                    ]}
+                    xTickFormatter={(month) => monthTickLabel(month, totalMonths)}
+                  />
+                  </ChartPane>
+                )
+              }
+            ]}
+          />
 
       <ScheduleTable
         caption="Amortisation"
@@ -1430,16 +1839,25 @@ function EmiResults({ result }: { result: EmiResult }) {
         ]}
         rows={scheduleRows}
       />
-    </div>
+      </ResultsSection>
+    </Stack>
   );
 }
 
 function PrepayResults({
   result,
   yearlyExtra,
+  openMilestones,
+  onToggleMilestones,
+  openAnalytics,
+  onToggleAnalytics,
 }: {
   result: PrepayResult;
   yearlyExtra: number;
+  openMilestones: boolean;
+  onToggleMilestones: () => void;
+  openAnalytics: boolean;
+  onToggleAnalytics: () => void;
 }) {
   const originalMonths = result.originalSchedule.length;
   const monthsPaid = result.monthsPaid;
@@ -1488,7 +1906,19 @@ function PrepayResults({
   ];
 
   return (
-    <div className="flex w-full flex-col gap-3">
+    <Stack>
+      <ResultsSection
+        sectionId="02"
+        title="Prepayment Milestones"
+        description="Interest saved, time saved, and yearly extra payment timeline"
+        open={openMilestones}
+        onToggle={onToggleMilestones}
+        meta={
+          <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">
+            {monthsPaid} of {originalMonths} mo
+          </span>
+        }
+      >
       <div className="grid w-full grid-cols-4 gap-2">
         <div className="relative flex min-h-[5.25rem] min-w-0 flex-col justify-center overflow-hidden rounded-xl border border-[var(--app-step-text)]/30 bg-[var(--app-step-bg)] px-3 py-2.5">
           <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-step-text)]">
@@ -1595,7 +2025,15 @@ function PrepayResults({
           </div>
         </div>
       ) : null}
+      </ResultsSection>
 
+      <ResultsSection
+        sectionId="03"
+        title="Prepayment Analytics"
+        description="Outstanding path, interest compare, and prepaid schedule"
+        open={openAnalytics}
+        onToggle={onToggleAnalytics}
+      >
       <div className={`${RESULTS_SPLIT} gap-3 lg:items-start`}>
         <div className={`${RESULTS_LEFT} gap-3`}>
           <GrowthChart
@@ -1760,7 +2198,8 @@ function PrepayResults({
         ]}
         rows={scheduleRows}
       />
-    </div>
+      </ResultsSection>
+    </Stack>
   );
 }
 
@@ -1782,12 +2221,20 @@ function ExtraVsInvestResults({
   extraMonth,
   tenureYears,
   investReturnPct,
+  openMilestones,
+  onToggleMilestones,
+  openAnalytics,
+  onToggleAnalytics,
 }: {
   result: ExtraVsInvestResult;
   extraAmount: number;
   extraMonth: number;
   tenureYears: number;
   investReturnPct: number;
+  openMilestones: boolean;
+  onToggleMilestones: () => void;
+  openAnalytics: boolean;
+  onToggleAnalytics: () => void;
 }) {
   const decisionMonth = result.path[0]
     ? Math.min(
@@ -1867,7 +2314,19 @@ function ExtraVsInvestResults({
     },
   ];
   return (
-    <div className="flex flex-col gap-3">
+    <Stack>
+      <ResultsSection
+        sectionId="02"
+        title="Decision Milestones"
+        description="Prepay versus invest savings and which path wins on net outcome"
+        open={openMilestones}
+        onToggle={onToggleMilestones}
+        meta={
+          <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">
+            Extra at M{decisionMonth}
+          </span>
+        }
+      >
       <div className="grid grid-cols-1 gap-2 lg:grid-cols-3">
         <div className="flex min-w-0 flex-col justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3.5 py-3">
           <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
@@ -1903,7 +2362,15 @@ function ExtraVsInvestResults({
           variant={investWins || tie ? "primary" : "soft"}
         />
       </div>
+      </ResultsSection>
 
+      <ResultsSection
+        sectionId="03"
+        title="Decision Analytics"
+        description="Compare charts, outstanding versus investment path, and option cards"
+        open={openAnalytics}
+        onToggle={onToggleAnalytics}
+      >
       <div className={`${RESULTS_SPLIT} gap-3 lg:items-start`}>
         <div className={`${RESULTS_LEFT} gap-3`}>
           <CompareChart
@@ -2038,7 +2505,8 @@ function ExtraVsInvestResults({
           </div>
         </div>
       </div>
-    </div>
+      </ResultsSection>
+    </Stack>
   );
 }
 
@@ -2047,11 +2515,19 @@ function RecoveryResults({
   principal,
   baselineYears,
   proposedYears,
+  openMilestones,
+  onToggleMilestones,
+  openAnalytics,
+  onToggleAnalytics,
 }: {
   result: RecoveryResult;
   principal: number;
   baselineYears: number;
   proposedYears: number;
+  openMilestones: boolean;
+  onToggleMilestones: () => void;
+  openAnalytics: boolean;
+  onToggleAnalytics: () => void;
 }) {
   const yearsSaved = Math.max(0, baselineYears - proposedYears);
   const interestSaved = Math.max(0, result.baselineInterest - result.proposedInterest);
@@ -2112,7 +2588,19 @@ function RecoveryResults({
   ];
 
   return (
-    <div className="flex w-full flex-col gap-3">
+    <Stack>
+      <ResultsSection
+        sectionId="02"
+        title="Recovery Milestones"
+        description="Baseline versus proposed EMI and the SIP redirected from tenure savings"
+        open={openMilestones}
+        onToggle={onToggleMilestones}
+        meta={
+          <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">
+            {baselineYears}y → {proposedYears}y
+          </span>
+        }
+      >
       <div className="grid w-full grid-cols-4 gap-2">
         <div className="relative flex min-h-[5.25rem] min-w-0 flex-col justify-center overflow-hidden rounded-xl border border-[var(--app-step-text)]/30 bg-[var(--app-step-bg)] px-3 py-2.5">
           <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-step-text)]">
@@ -2164,7 +2652,15 @@ function RecoveryResults({
           />
         </div>
       </div>
+      </ResultsSection>
 
+      <ResultsSection
+        sectionId="03"
+        title="Recovery Analytics"
+        description="Wealth path, horizon compare, and baseline versus proposed detail cards"
+        open={openAnalytics}
+        onToggle={onToggleAnalytics}
+      >
       <div className={`${RESULTS_SPLIT} gap-3 lg:items-start`}>
         <div className={`${RESULTS_LEFT} gap-3`}>
           <GrowthChart
@@ -2316,7 +2812,8 @@ function RecoveryResults({
           />
         </div>
       </div>
-    </div>
+      </ResultsSection>
+    </Stack>
   );
 }
 
@@ -2325,11 +2822,19 @@ function VehicleResults({
   onRoadCost,
   loanAmount,
   returnsByOption,
+  openMilestones,
+  onToggleMilestones,
+  openAnalytics,
+  onToggleAnalytics,
 }: {
   result: VehicleResult;
   onRoadCost: number;
   loanAmount: number;
   returnsByOption: Record<string, number | null>;
+  openMilestones: boolean;
+  onToggleMilestones: () => void;
+  openAnalytics: boolean;
+  onToggleAnalytics: () => void;
 }) {
   const ranked = [...result.options].sort(
     (a, b) => b.financialBenefit - a.financialBenefit,
@@ -2405,7 +2910,19 @@ function VehicleResults({
   });
 
   return (
-    <div className="flex w-full flex-col gap-3">
+    <Stack>
+      <ResultsSection
+        sectionId="02"
+        title="Vehicle Financing Milestones"
+        description="Best path, EMI, tax saved, and top ranked options"
+        open={openMilestones}
+        onToggle={onToggleMilestones}
+        meta={
+          <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">
+            {best ? best.name : "Compare options"}
+          </span>
+        }
+      >
       <div className="grid w-full grid-cols-1 gap-2 min-[640px]:grid-cols-4">
         <div className="relative flex min-h-[5.25rem] min-w-0 flex-col justify-center overflow-hidden rounded-xl border border-[var(--app-step-text)]/30 bg-[var(--app-step-bg)] px-3 py-2.5">
           <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-step-text)]">
@@ -2494,7 +3011,15 @@ function VehicleResults({
           })}
         </div>
       ) : null}
+      </ResultsSection>
 
+      <ResultsSection
+        sectionId="03"
+        title="Vehicle Analytics"
+        description="Benefit charts, financing breakdown, ranking table, and depreciation"
+        open={openAnalytics}
+        onToggle={onToggleAnalytics}
+      >
       <div className={`${RESULTS_SPLIT} gap-3 lg:items-start`}>
         <div className={`${RESULTS_LEFT} gap-3`}>
           <CompareChart
@@ -2693,6 +3218,7 @@ function VehicleResults({
           />
         </div>
       </div>
-    </div>
+      </ResultsSection>
+    </Stack>
   );
 }

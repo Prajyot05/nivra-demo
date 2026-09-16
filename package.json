@@ -18,6 +18,7 @@
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
+    "db:link-admin": "node --env-file=.env --import tsx scripts/link-platform-admin.ts",
     "postinstall": "prisma generate"
   },
   "prisma": {

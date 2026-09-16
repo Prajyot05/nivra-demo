@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowRight, Download, Loader2, TrendingUp } from "lucide-react";
+import { ArrowRight, BarChart3, Download, LineChart, Loader2, PieChart, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { generatePdfFromElement } from "@/lib/pdf-generator";
 import {
@@ -12,32 +12,40 @@ import {
   INSURANCE_TP_REPORT_ID,
   InsuranceTpDossier,
 } from "@/components/reports/insurance-tp-dossier";
+import { DUMMY_REPORT_CONTACT } from "@/components/reports/executive-dossier";
 import {
-  ClientHeader,
+  AgeInput,
+  BentoGroup,
+  BentoSection,
+  ChartPane,
+  ClientProfileBar,
   CompareChart,
+  ComplianceFootnote,
   CompositionChart,
+  Field,
   formatINRCurrency,
   formatPercent,
   GrowthChart,
   META_TEXT,
   MoneyInput,
   PercentInput,
-  RESULTS_LEFT,
-  RESULTS_RIGHT,
-  RESULTS_SPLIT,
+  ResultsSection,
+  SegmentedChartControl,
+  Stack,
   StatCard,
   StatusNote,
+  TextInput,
   YearInput,
+  ageError,
+  emailError,
+  nameError,
+  phoneError,
+  rateError,
 } from "@nivra/ui";
 import { CalculatorPage } from "@/components/layout/calculator-page-with-nav";
 import { useCalculate } from "@/hooks/use-calculate";
 import { useCalculatorMode } from "@/hooks/use-calculator-mode";
 import { getCalculatorPageTitle } from "@/lib/calculator-nav";
-
-const FORM_GRID =
-  "grid grid-cols-2 items-start gap-x-3 gap-y-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6";
-const FORM_GRID_DENSE =
-  "grid grid-cols-2 items-start gap-x-3 gap-y-3 sm:grid-cols-4 lg:grid-cols-4 xl:grid-cols-6";
 
 const MODES = [
   { id: "irr", label: "IRR" },
@@ -80,6 +88,8 @@ export function InsuranceCalculator() {
   const [mode] = useCalculatorMode(MODE_IDS, "irr");
   const [name, setName] = useState("Mr. John Doe");
   const [age, setAge] = useState(42);
+  const [email, setEmail] = useState(DUMMY_REPORT_CONTACT.email);
+  const [phone, setPhone] = useState(DUMMY_REPORT_CONTACT.phone);
 
   const [premium, setPremium] = useState(200_000);
   const [payTerm, setPayTerm] = useState(5);
@@ -90,6 +100,8 @@ export function InsuranceCalculator() {
 
   const [tpName, setTpName] = useState("Lucky Singh");
   const [tpAge, setTpAge] = useState(51);
+  const [tpEmail, setTpEmail] = useState(DUMMY_REPORT_CONTACT.email);
+  const [tpPhone, setTpPhone] = useState(DUMMY_REPORT_CONTACT.phone);
   const [tpPremium, setTpPremium] = useState(300_000);
   const [tpPay, setTpPay] = useState(5);
   const [yearsPaid, setYearsPaid] = useState(3);
@@ -103,6 +115,14 @@ export function InsuranceCalculator() {
   const [termCover, setTermCover] = useState(10_000_000);
   const [tpRet, setTpRet] = useState(11.88);
 
+  const [openAssumptions, setOpenAssumptions] = useState(true);
+  const [openMilestones, setOpenMilestones] = useState(true);
+  const [openAnalytics, setOpenAnalytics] = useState(true);
+
+  const irrNameError = nameError(name);
+  const irrAgeError = ageError(age);
+  const irrEmailError = emailError(email);
+  const irrPhoneError = phoneError(phone);
   const irrPremiumError =
     !(premium > 0) ? "Annual premium must be greater than 0." : undefined;
   const irrPayTermError =
@@ -121,26 +141,29 @@ export function InsuranceCalculator() {
       : policyTerm > 50
         ? "Policy term cannot exceed 50 years."
         : undefined;
-  const irrReturnError =
-    !(ret > 0)
-      ? "Expected return must be above 0%."
-      : ret > 100
-        ? "Expected return cannot exceed 100%."
-        : undefined;
-  const irrTaxError =
-    tax < 0
-      ? "Capital gains tax cannot be negative."
-      : tax > 100
-        ? "Capital gains tax cannot exceed 100%."
-        : undefined;
-  const irrCanCalculate =
-    !irrPremiumError &&
-    !irrPayTermError &&
-    !irrCorpusError &&
-    !irrPolicyTermError &&
-    !irrReturnError &&
-    !irrTaxError;
+  const irrReturnError = rateError(ret, "Expected return") ?? (
+    ret <= 0 ? "Expected return must be above 0%." : undefined
+  );
+  const irrTaxError = rateError(tax, "Capital gains tax");
 
+  const irrFieldErrors = [
+    irrNameError,
+    irrAgeError,
+    irrEmailError,
+    irrPhoneError,
+    irrPremiumError,
+    irrPayTermError,
+    irrCorpusError,
+    irrPolicyTermError,
+    irrReturnError,
+    irrTaxError,
+  ].filter((msg): msg is string => Boolean(msg));
+  const irrCanCalculate = irrFieldErrors.length === 0;
+
+  const tpNameError = nameError(tpName);
+  const tpAgeErr = ageError(tpAge);
+  const tpEmailError = emailError(tpEmail);
+  const tpPhoneError = phoneError(tpPhone);
   const tpPremiumError =
     !(tpPremium > 0) ? "Annual premium must be greater than 0." : undefined;
   const tpPayError =
@@ -179,30 +202,32 @@ export function InsuranceCalculator() {
     termPrem < 0 ? "Term premium cannot be negative." : undefined;
   const tpTermYearsError =
     !(termYears > 0) ? "Term years must be greater than 0." : undefined;
-  const tpRetError =
-    !(tpRet > 0)
-      ? "Expected investment return must be above 0%."
-      : tpRet > 100
-        ? "Expected investment return cannot exceed 100%."
-        : undefined;
-  const tpTaxError =
-    tpTax < 0
-      ? "Tax on gain cannot be negative."
-      : tpTax > 100
-        ? "Tax on gain cannot exceed 100%."
-        : undefined;
-  const tpCanCalculate =
-    !tpPremiumError &&
-    !tpPayError &&
-    !tpYearsPaidError &&
-    !tpPolError &&
-    !tpYearsLeftError &&
-    !tpMaturityError &&
-    !tpSurrenderError &&
-    !tpTermPremError &&
-    !tpTermYearsError &&
-    !tpRetError &&
-    !tpTaxError;
+  const tpRetError = rateError(tpRet, "Expected investment return") ?? (
+    tpRet <= 0 ? "Expected investment return must be above 0%." : undefined
+  );
+  const tpTaxError = rateError(tpTax, "Tax on gain");
+
+  const tpFieldErrors = [
+    tpNameError,
+    tpAgeErr,
+    tpEmailError,
+    tpPhoneError,
+    tpPremiumError,
+    tpPayError,
+    tpYearsPaidError,
+    tpPolError,
+    tpYearsLeftError,
+    tpMaturityError,
+    tpSurrenderError,
+    tpTermPremError,
+    tpTermYearsError,
+    tpRetError,
+    tpTaxError,
+  ].filter((msg): msg is string => Boolean(msg));
+  const tpCanCalculate = tpFieldErrors.length === 0;
+
+  const fieldErrors = mode === "irr" ? irrFieldErrors : tpFieldErrors;
+  const canCalculate = mode === "irr" ? irrCanCalculate : tpCanCalculate;
 
   const input = useMemo(() => {
     if (mode === "irr") {
@@ -263,10 +288,42 @@ export function InsuranceCalculator() {
   const { result, error, loading } = useCalculate<IrrResult & Partial<TpResult>>(
     calculatorId,
     input,
-    mode === "irr" ? irrCanCalculate : tpCanCalculate,
+    canCalculate,
   );
 
   const [isDownloading, setIsDownloading] = useState(false);
+
+  const resetDefaults = () => {
+    if (mode === "irr") {
+      setName("Mr. John Doe");
+      setAge(42);
+      setEmail(DUMMY_REPORT_CONTACT.email);
+      setPhone(DUMMY_REPORT_CONTACT.phone);
+      setPremium(200_000);
+      setPayTerm(5);
+      setCorpusAtPayEnd(1_160_000);
+      setPolicyTerm(20);
+      setRet(11);
+      setTax(12.5);
+      return;
+    }
+    setTpName("Lucky Singh");
+    setTpAge(51);
+    setTpEmail(DUMMY_REPORT_CONTACT.email);
+    setTpPhone(DUMMY_REPORT_CONTACT.phone);
+    setTpPremium(300_000);
+    setTpPay(5);
+    setYearsPaid(3);
+    setTpPol(20);
+    setYearsLeft(11);
+    setMaturity(5_000_000);
+    setTpTax(20);
+    setSurrender(3_000_000);
+    setTermPrem(10_000);
+    setTermYears(11);
+    setTermCover(10_000_000);
+    setTpRet(11.88);
+  };
 
   const handleDownload = async () => {
     if (!result || isDownloading) return;
@@ -311,6 +368,11 @@ export function InsuranceCalculator() {
     }
   };
 
+  const profileName = mode === "irr" ? name : tpName;
+  const profileAge = mode === "irr" ? age : tpAge;
+  const profileEmail = mode === "irr" ? email : tpEmail;
+  const profilePhone = mode === "irr" ? phone : tpPhone;
+
   return (
     <>
     <CalculatorPage
@@ -331,33 +393,123 @@ export function InsuranceCalculator() {
           {isDownloading ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
         </Button>
       }
+      header={
+        <ClientProfileBar
+          name={profileName}
+          age={profileAge}
+          email={profileEmail}
+          phone={profilePhone}
+          strategy={mode === "irr" ? "Traditional policy IRR" : "Term plus invest switch"}
+          goal={mode === "irr" ? "Policy return clarity" : "Keep vs switch decision"}
+        />
+      }
       form={
         mode === "irr" ? (
-          <div className="flex flex-col gap-3">
-            <div className={FORM_GRID}>
-              <ClientHeader name={name} age={age} onNameChange={setName} onAgeChange={setAge} />
-              <MoneyInput
-                label="Annual premium"
-                value={premium}
-                onChange={setPremium}
-                error={irrPremiumError}
-              />
-              <YearInput
-                label="Pay term"
-                value={payTerm}
-                min={1}
-                max={50}
-                onChange={setPayTerm}
-                error={irrPayTermError}
-                hint="Premium years"
-              />
-              <MoneyInput
-                label="Corpus at pay end"
-                value={corpusAtPayEnd}
-                onChange={setCorpusAtPayEnd}
-                error={irrCorpusError}
-                wrapLabel
-              />
+          <BentoSection
+            sectionId="01"
+            title="Financial Assumptions & Modeling Suite"
+            description="Policy premium path, corpus at pay end, and return assumptions for XIRR"
+            collapsible
+            open={openAssumptions}
+            onToggle={() => setOpenAssumptions((v) => !v)}
+            actions={
+              <button
+                type="button"
+                onClick={resetDefaults}
+                className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 transition-all hover:bg-slate-100 hover:text-emerald-700"
+              >
+                Reset to Baseline
+              </button>
+            }
+          >
+            <BentoGroup
+              num="01"
+              title="Investor Profile"
+              colSpan={4}
+              footer={
+                <>
+                  <span>Horizon:</span>
+                  <span className="font-bold text-slate-700">
+                    {age} → {age + policyTerm}
+                  </span>
+                </>
+              }
+            >
+              <div className="mb-4">
+                <Field label="Client Name" error={irrNameError}>
+                  <TextInput
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className={irrNameError ? "border-[var(--app-danger)]" : undefined}
+                  />
+                </Field>
+              </div>
+              <div className="mb-4">
+                <AgeInput value={age} onChange={setAge} error={irrAgeError} />
+              </div>
+              <div className="mb-4">
+                <Field label="Email" error={irrEmailError}>
+                  <TextInput
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="client@email.com"
+                    className={irrEmailError ? "border-[var(--app-danger)]" : undefined}
+                  />
+                </Field>
+              </div>
+              <Field label="Phone" error={irrPhoneError}>
+                <TextInput
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+91 98765 43210"
+                  className={irrPhoneError ? "border-[var(--app-danger)]" : undefined}
+                />
+              </Field>
+            </BentoGroup>
+
+            <BentoGroup
+              num="02"
+              title="Policy Parameters"
+              colSpan={5}
+              footer={
+                <>
+                  <span>Pay path:</span>
+                  <span className="font-bold text-emerald-700">
+                    {payTerm}y premiums · matures Y{policyTerm}
+                  </span>
+                </>
+              }
+            >
+              <div className="mb-3.5">
+                <MoneyInput
+                  label="Annual premium"
+                  value={premium}
+                  onChange={setPremium}
+                  error={irrPremiumError}
+                />
+              </div>
+              <div className="mb-3.5">
+                <YearInput
+                  label="Pay term"
+                  value={payTerm}
+                  min={1}
+                  max={50}
+                  onChange={setPayTerm}
+                  error={irrPayTermError}
+                  hint="Premium years"
+                />
+              </div>
+              <div className="mb-3.5">
+                <MoneyInput
+                  label="Corpus at pay end"
+                  value={corpusAtPayEnd}
+                  onChange={setCorpusAtPayEnd}
+                  error={irrCorpusError}
+                  wrapLabel
+                />
+              </div>
               <YearInput
                 label="Policy term"
                 value={policyTerm}
@@ -366,51 +518,124 @@ export function InsuranceCalculator() {
                 onChange={setPolicyTerm}
                 error={irrPolicyTermError}
               />
-              <PercentInput
-                label="Expected return (%)"
-                value={ret}
-                onChange={setRet}
-                error={irrReturnError}
-                wrapLabel
-              />
+            </BentoGroup>
+
+            <BentoGroup
+              num="03"
+              title="Rate Assumptions"
+              subtitle="Return & Tax"
+              colSpan={3}
+              footer={
+                <>
+                  <span>Tax drag:</span>
+                  <span className="font-bold text-emerald-700">{tax}%</span>
+                </>
+              }
+            >
+              <div className="mb-3.5">
+                <PercentInput
+                  label="Expected return (%)"
+                  value={ret}
+                  onChange={(v) => setRet(Math.max(0, v))}
+                  error={irrReturnError}
+                  wrapLabel
+                />
+              </div>
               <PercentInput
                 label="Tax on gain (%)"
                 value={tax}
-                onChange={setTax}
+                onChange={(v) => setTax(Math.max(0, v))}
                 error={irrTaxError}
               />
-            </div>
-            <div className="rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-2 text-[12px] leading-snug text-[var(--app-text)]">
-              Premiums for{" "}
-              <span className="font-semibold tabular-nums">{payTerm}</span> year
-              {payTerm === 1 ? "" : "s"}
-              <span className="text-[var(--app-text-muted)]"> · </span>
-              Policy matures in year{" "}
-              <span className="font-semibold tabular-nums">{policyTerm}</span>
-            </div>
-          </div>
+            </BentoGroup>
+          </BentoSection>
         ) : (
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-0.5 rounded-full bg-[var(--app-text-muted)]" />
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
-                  Current policy
-                </div>
+          <BentoSection
+            sectionId="01"
+            title="Financial Assumptions & Modeling Suite"
+            description="Current policy snapshot versus term cover plus redirected investment"
+            collapsible
+            open={openAssumptions}
+            onToggle={() => setOpenAssumptions((v) => !v)}
+            actions={
+              <button
+                type="button"
+                onClick={resetDefaults}
+                className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 transition-all hover:bg-slate-100 hover:text-emerald-700"
+              >
+                Reset to Baseline
+              </button>
+            }
+          >
+            <BentoGroup
+              num="01"
+              title="Investor Profile"
+              colSpan={4}
+              footer={
+                <>
+                  <span>Age path:</span>
+                  <span className="font-bold text-slate-700">
+                    {tpAge} → {tpAge + yearsLeft}
+                  </span>
+                </>
+              }
+            >
+              <div className="mb-4">
+                <Field label="Client Name" error={tpNameError}>
+                  <TextInput
+                    value={tpName}
+                    onChange={(e) => setTpName(e.target.value)}
+                    className={tpNameError ? "border-[var(--app-danger)]" : undefined}
+                  />
+                </Field>
               </div>
-              <div className={FORM_GRID}>
-                <ClientHeader
-                  name={tpName}
-                  age={tpAge}
-                  onNameChange={setTpName}
-                  onAgeChange={setTpAge}
+              <div className="mb-4">
+                <AgeInput value={tpAge} onChange={setTpAge} error={tpAgeErr} />
+              </div>
+              <div className="mb-4">
+                <Field label="Email" error={tpEmailError}>
+                  <TextInput
+                    type="email"
+                    value={tpEmail}
+                    onChange={(e) => setTpEmail(e.target.value)}
+                    placeholder="client@email.com"
+                    className={tpEmailError ? "border-[var(--app-danger)]" : undefined}
+                  />
+                </Field>
+              </div>
+              <Field label="Phone" error={tpPhoneError}>
+                <TextInput
+                  type="tel"
+                  value={tpPhone}
+                  onChange={(e) => setTpPhone(e.target.value)}
+                  placeholder="+91 98765 43210"
+                  className={tpPhoneError ? "border-[var(--app-danger)]" : undefined}
                 />
+              </Field>
+            </BentoGroup>
+
+            <BentoGroup
+              num="02"
+              title="Policy & Switch Parameters"
+              colSpan={5}
+              footer={
+                <>
+                  <span>Remaining:</span>
+                  <span className="font-bold text-emerald-700">
+                    {Math.max(0, tpPay - yearsPaid)} premium yrs · {yearsLeft}y to maturity
+                  </span>
+                </>
+              }
+            >
+              <div className="mb-3.5">
                 <MoneyInput
                   label="Annual premium"
                   value={tpPremium}
                   onChange={setTpPremium}
                   error={tpPremiumError}
                 />
+              </div>
+              <div className="mb-3.5">
                 <YearInput
                   label="Pay term"
                   value={tpPay}
@@ -420,6 +645,8 @@ export function InsuranceCalculator() {
                   error={tpPayError}
                   hint="Original premium years"
                 />
+              </div>
+              <div className="mb-3.5">
                 <YearInput
                   label="Years paid"
                   value={yearsPaid}
@@ -429,6 +656,8 @@ export function InsuranceCalculator() {
                   error={tpYearsPaidError}
                   hint="Already paid"
                 />
+              </div>
+              <div className="mb-3.5">
                 <YearInput
                   label="Policy term"
                   value={tpPol}
@@ -437,6 +666,8 @@ export function InsuranceCalculator() {
                   onChange={setTpPol}
                   error={tpPolError}
                 />
+              </div>
+              <div className="mb-3.5">
                 <YearInput
                   label="Yrs to maturity"
                   value={yearsLeft}
@@ -447,25 +678,80 @@ export function InsuranceCalculator() {
                   hint={`${yearsLeft}y remaining`}
                   wrapLabel
                 />
+              </div>
+              <div className="mb-3.5">
                 <MoneyInput
                   label="Maturity value"
                   value={maturity}
                   onChange={setMaturity}
                   error={tpMaturityError}
                 />
+              </div>
+              <div className="mb-3.5">
                 <MoneyInput
                   label="Surrender value"
                   value={surrender}
                   onChange={setSurrender}
                   error={tpSurrenderError}
                 />
-                <PercentInput
-                  label="Tax on gain (%)"
-                  value={tpTax}
-                  onChange={setTpTax}
-                  error={tpTaxError}
+              </div>
+              <div className="mb-3.5">
+                <MoneyInput
+                  label="Term premium"
+                  value={termPrem}
+                  onChange={setTermPrem}
+                  error={tpTermPremError}
                 />
               </div>
+              <div className="mb-3.5">
+                <YearInput
+                  label="Term years"
+                  value={termYears}
+                  min={1}
+                  max={50}
+                  onChange={setTermYears}
+                  error={tpTermYearsError}
+                />
+              </div>
+              <MoneyInput
+                label="Term cover"
+                value={termCover}
+                onChange={setTermCover}
+                hint="Sum assured"
+              />
+            </BentoGroup>
+
+            <BentoGroup
+              num="03"
+              title="Rate Assumptions"
+              subtitle="Return & Tax"
+              colSpan={3}
+              footer={
+                <>
+                  <span>Tax drag:</span>
+                  <span className="font-bold text-emerald-700">{tpTax}%</span>
+                </>
+              }
+            >
+              <div className="mb-3.5">
+                <PercentInput
+                  label="Expected return (%)"
+                  value={tpRet}
+                  onChange={(v) => setTpRet(Math.max(0, v))}
+                  error={tpRetError}
+                  wrapLabel
+                  hint="Assumed investment rate"
+                />
+              </div>
+              <PercentInput
+                label="Tax on gain (%)"
+                value={tpTax}
+                onChange={(v) => setTpTax(Math.max(0, v))}
+                error={tpTaxError}
+              />
+            </BentoGroup>
+
+            <div className="lg:col-span-12">
               <div className="rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-2.5 sm:px-3.5">
                 <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
                   Policy snapshot
@@ -522,67 +808,31 @@ export function InsuranceCalculator() {
                 </div>
               </div>
             </div>
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-0.5 rounded-full bg-[var(--app-step-text)]" />
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-step-text)]">
-                  Switch strategy
-                </div>
-              </div>
-              <div className={FORM_GRID_DENSE}>
-                <MoneyInput
-                  label="Term premium"
-                  value={termPrem}
-                  onChange={setTermPrem}
-                  error={tpTermPremError}
-                />
-                <YearInput
-                  label="Term years"
-                  value={termYears}
-                  min={1}
-                  max={50}
-                  onChange={setTermYears}
-                  error={tpTermYearsError}
-                />
-                <MoneyInput
-                  label="Term cover"
-                  value={termCover}
-                  onChange={setTermCover}
-                  hint="Sum assured"
-                />
-                <PercentInput
-                  label="Expected return (%)"
-                  value={tpRet}
-                  onChange={setTpRet}
-                  error={tpRetError}
-                  wrapLabel
-                  hint="Assumed investment rate"
-                />
-              </div>
-            </div>
-          </div>
+          </BentoSection>
         )
       }
       results={
         <div className="flex flex-col gap-3">
-          {mode === "irr" && !irrCanCalculate ? (
+          {!canCalculate ? (
             <StatusNote tone="error">
-              Fix the highlighted premium, term, corpus, return, or tax fields before calculating.
-              Premium payment term cannot exceed policy term.
+              <div className="flex flex-col gap-1">
+                <span className="font-semibold">
+                  Fix the inputs above to refresh the calculation
+                  {result ? ". Showing the last valid result." : "."}
+                </span>
+                <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[12px] font-normal">
+                  {fieldErrors.map((msg) => (
+                    <li key={msg}>{msg}</li>
+                  ))}
+                </ul>
+              </div>
             </StatusNote>
           ) : null}
-          {mode === "switch" && !tpCanCalculate ? (
-            <StatusNote tone="error">
-              Fix the highlighted policy, surrender, term, or investment fields before calculating.
-              Premium payment term cannot exceed policy term, and years paid cannot exceed the
-              payment term.
-            </StatusNote>
-          ) : null}
-          {mode === "switch" && tpCanCalculate && tpSurrenderWarn ? (
+          {mode === "switch" && canCalculate && tpSurrenderWarn ? (
             <StatusNote tone="warn">{tpSurrenderWarn}</StatusNote>
           ) : null}
           {error ? <StatusNote tone="error">{error}</StatusNote> : null}
-          {loading && !result ? (
+          {loading && !result && canCalculate ? (
             <StatusNote tone="pending">Calculating…</StatusNote>
           ) : null}
           {mode === "irr" && result && "maturity" in result && "xirr" in result ? (
@@ -592,6 +842,10 @@ export function InsuranceCalculator() {
               policyTerm={policyTerm}
               expectedReturnPct={ret}
               annualPremium={premium}
+              openMilestones={openMilestones}
+              onToggleMilestones={() => setOpenMilestones((v) => !v)}
+              openAnalytics={openAnalytics}
+              onToggleAnalytics={() => setOpenAnalytics((v) => !v)}
             />
           ) : null}
           {mode === "switch" && result && "keep" in result ? (
@@ -600,9 +854,20 @@ export function InsuranceCalculator() {
               yearsToMaturity={yearsLeft}
               expectedReturnPct={tpRet}
               termPremium={termPrem}
+              openMilestones={openMilestones}
+              onToggleMilestones={() => setOpenMilestones((v) => !v)}
+              openAnalytics={openAnalytics}
+              onToggleAnalytics={() => setOpenAnalytics((v) => !v)}
             />
           ) : null}
         </div>
+      }
+      footer={
+        <ComplianceFootnote>
+          Calculations shown are for illustration purposes only. Insurance illustrations depend on
+          assumed returns, tax treatment, and insurer quotes. Actual policy values and investment
+          outcomes can differ.
+        </ComplianceFootnote>
       }
     />
     {mode === "irr" && result && "maturity" in result && "xirr" in result ? (
@@ -610,6 +875,8 @@ export function InsuranceCalculator() {
         data={{
           clientName: name,
           age,
+          email,
+          phone,
           premium,
           payTerm,
           corpusAtPayEnd,
@@ -631,6 +898,8 @@ export function InsuranceCalculator() {
         data={{
           clientName: tpName,
           age: tpAge,
+          email: tpEmail,
+          phone: tpPhone,
           premium: tpPremium,
           payTerm: tpPay,
           yearsPaid,
@@ -662,12 +931,20 @@ function IrrResults({
   policyTerm,
   expectedReturnPct,
   annualPremium,
+  openMilestones,
+  onToggleMilestones,
+  openAnalytics,
+  onToggleAnalytics,
 }: {
   result: IrrResult;
   payTerm: number;
   policyTerm: number;
   expectedReturnPct: number;
   annualPremium: number;
+  openMilestones: boolean;
+  onToggleMilestones: () => void;
+  openAnalytics: boolean;
+  onToggleAnalytics: () => void;
 }) {
   const xirrPct = Number.isFinite(result.xirr) ? result.xirr * 100 : null;
   const growthYears = Math.max(0, policyTerm - payTerm);
@@ -717,7 +994,19 @@ function IrrResults({
   ];
 
   return (
-    <div className="flex w-full flex-col gap-3">
+    <Stack>
+      <ResultsSection
+        sectionId="02"
+        title="Policy Return Milestones"
+        description="Gross maturity, net after tax, and policy XIRR versus assumed return"
+        open={openMilestones}
+        onToggle={onToggleMilestones}
+        meta={
+          <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">
+            Term: {policyTerm} Years · Pay {payTerm}y
+          </span>
+        }
+      >
       <div className="grid w-full grid-cols-1 gap-2 min-[640px]:grid-cols-3">
         <div className="min-h-[5.25rem] min-w-0 [&>div]:h-full">
           <StatCard
@@ -828,8 +1117,25 @@ function IrrResults({
         </div>
       </div>
 
-      <div className={`${RESULTS_SPLIT} gap-3 lg:items-start`}>
-        <div className={`${RESULTS_LEFT} gap-3`}>
+      </ResultsSection>
+
+      <ResultsSection
+        sectionId="03"
+        title="Policy Analytics"
+        description="Maturity mix, premium compare, cash-flow steps, and assumed return versus XIRR"
+        open={openAnalytics}
+        onToggle={onToggleAnalytics}
+      >
+
+        <SegmentedChartControl
+          variant="pill"
+          tabs={[
+            {
+              id: "mix",
+              label: "Mix",
+              icon: <PieChart className="h-3.5 w-3.5" />,
+              content: (
+                <ChartPane>
           <CompositionChart
             title="Gross maturity mix"
             showPercentages
@@ -868,7 +1174,15 @@ function IrrResults({
               </div>
             }
           />
-
+                </ChartPane>
+              ),
+            },
+            {
+              id: "compare",
+              label: "Compare",
+              icon: <BarChart3 className="h-3.5 w-3.5" />,
+              content: (
+                <ChartPane>
           <CompareChart
             title="Premiums vs gross & net maturity"
             className="min-h-[280px] flex-none sm:min-h-[300px]"
@@ -893,12 +1207,19 @@ function IrrResults({
             ]}
             series={[{ key: "value", label: "Amount", color: "var(--app-chart-gain)" }]}
           />
-          <div className={`-mt-1 px-0.5 ${META_TEXT}`}>
+          <div className={`mt-2 px-0.5 ${META_TEXT}`}>
             Tax of {formatINRCurrency(result.tax)} sits between gross and net maturity.
           </div>
-        </div>
+                </ChartPane>
+              ),
+            },
+            {
+              id: "ledger",
+              label: "Ledger",
+              icon: <TrendingUp className="h-3.5 w-3.5" />,
+              content: (
+                <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
 
-        <div className={`${RESULTS_RIGHT} gap-3`}>
           <div className="overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)]">
             <div className="border-b border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-2.5">
               <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
@@ -1019,22 +1340,35 @@ function IrrResults({
               <span className="ml-1">over the {payTerm} premium years</span>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
+                </div>
+              ),
+            },
+          ]}
+        />
+      </ResultsSection>
+    </Stack>
   );
 }
+
 
 function TpResults({
   result,
   yearsToMaturity,
   expectedReturnPct,
   termPremium,
+  openMilestones,
+  onToggleMilestones,
+  openAnalytics,
+  onToggleAnalytics,
 }: {
   result: TpResult;
   yearsToMaturity: number;
   expectedReturnPct: number;
   termPremium: number;
+  openMilestones: boolean;
+  onToggleMilestones: () => void;
+  openAnalytics: boolean;
+  onToggleAnalytics: () => void;
 }) {
   const keepIrrPct = Number.isFinite(result.keep.irr) ? result.keep.irr * 100 : null;
   const switchIrrPct = Number.isFinite(result.switch.irr) ? result.switch.irr * 100 : null;
@@ -1056,7 +1390,19 @@ function TpResults({
     pct == null ? "—" : formatPercent(pct, 2);
 
   return (
-    <div className="flex w-full flex-col gap-3">
+    <Stack>
+      <ResultsSection
+        sectionId="02"
+        title="Keep vs Switch Milestones"
+        description="Net outcomes, IRR, and the wealth impact of switching into term plus invest"
+        open={openMilestones}
+        onToggle={onToggleMilestones}
+        meta={
+          <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">
+            Horizon: {yearsToMaturity} Years
+          </span>
+        }
+      >
       <div className="grid w-full grid-cols-2 gap-2 min-[720px]:grid-cols-5">
         <div className="min-h-[5.25rem] min-w-0 [&>div]:h-full">
           <StatCard
@@ -1350,8 +1696,25 @@ function TpResults({
         </div>
       </div>
 
-      <div className={`${RESULTS_SPLIT} gap-3 lg:items-start`}>
-        <div className={`${RESULTS_LEFT} gap-3`}>
+      </ResultsSection>
+
+      <ResultsSection
+        sectionId="03"
+        title="Switch Analytics"
+        description="Keep versus switch outcomes, corpus path, funding mix, and strategy ledger"
+        open={openAnalytics}
+        onToggle={onToggleAnalytics}
+      >
+
+        <SegmentedChartControl
+          variant="pill"
+          tabs={[
+            {
+              id: "compare",
+              label: "Compare",
+              icon: <BarChart3 className="h-3.5 w-3.5" />,
+              content: (
+                <ChartPane>
           <CompareChart
             title="Keep vs switch outcomes"
             className="min-h-[260px] flex-none sm:min-h-[280px]"
@@ -1362,10 +1725,18 @@ function TpResults({
               { key: "switch", label: "Term + invest", color: "var(--app-chart-gain)" },
             ]}
           />
-          <div className={`-mt-1 px-0.5 ${META_TEXT}`}>
+          <div className={`mt-2 px-0.5 ${META_TEXT}`}>
             Final value under each strategy. Tax and term cost are shown separately.
           </div>
-
+                </ChartPane>
+              ),
+            },
+            {
+              id: "growth",
+              label: "Growth",
+              icon: <LineChart className="h-3.5 w-3.5" />,
+              content: (
+                <ChartPane>
           <GrowthChart
             title="Switched corpus over time"
             className="h-[300px] min-h-[300px] w-full flex-none sm:h-[340px] sm:min-h-[340px]"
@@ -1386,12 +1757,18 @@ function TpResults({
               return "";
             }}
           />
-          <div className={`-mt-1 px-0.5 ${META_TEXT}`}>
-            Year 0 surrender → year {yearsToMaturity} projected corpus.
+          <div className={`mt-2 px-0.5 ${META_TEXT}`}>
+            Year 0 surrender to year {yearsToMaturity} projected corpus.
           </div>
-        </div>
-
-        <div className={`${RESULTS_RIGHT} gap-3`}>
+                </ChartPane>
+              ),
+            },
+            {
+              id: "funding",
+              label: "Funding",
+              icon: <PieChart className="h-3.5 w-3.5" />,
+              content: (
+                <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           <CompositionChart
             title="Initial switch funding"
             showPercentages
@@ -1493,8 +1870,12 @@ function TpResults({
               {formatIrr(switchIrrPct)}
             </div>
           </div>
-        </div>
-      </div>
-    </div>
+                </div>
+              ),
+            },
+          ]}
+        />
+      </ResultsSection>
+    </Stack>
   );
 }

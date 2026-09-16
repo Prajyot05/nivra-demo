@@ -337,8 +337,8 @@ async function main() {
   }> = [
     {
       clerkUserId: "seed_nivra_admin",
-      email: "yash@nivra.app",
-      name: "Yash (Platform)",
+      email: process.env.PLATFORM_ADMIN_EMAIL?.trim() || "yashurade27@gmail.com",
+      name: "Yash Urade",
       role: UserRole.NIVRA_ADMIN,
       organizationId: null,
     },

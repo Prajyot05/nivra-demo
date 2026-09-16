@@ -6,6 +6,15 @@ export function isDatabaseConfigured(): boolean {
   return Boolean(process.env.DATABASE_URL?.trim());
 }
 
+/** Drop the cached client so the next getPrisma() opens a fresh connection (Neon idle close). */
+export function resetPrisma(): void {
+  const existing = globalForPrisma.prisma;
+  globalForPrisma.prisma = undefined;
+  if (existing) {
+    void existing.$disconnect().catch(() => undefined);
+  }
+}
+
 export function getPrisma(): PrismaClient | null {
   if (!isDatabaseConfigured()) return null;
   if (!globalForPrisma.prisma) {

@@ -45,6 +45,15 @@ export { COLOR_THEMES, getColorTheme } from "./color-themes";
 export type { ColorTheme, ColorThemeId } from "./color-themes";
 
 export { ClientProfileBar, BentoSection, BentoGroup, ComplianceFootnote } from "./bento-components";
+export {
+  ResultsSection,
+  ChartPane,
+  nameError,
+  ageError,
+  emailError,
+  phoneError,
+  rateError,
+} from "./results-section";
 
 /* Design system */
 export { Card, SectionTitle, SectionHeader } from "./card";

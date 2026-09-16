@@ -24,10 +24,14 @@ Five domain entities. Physical tables hang under them. The calculator engine sta
 ## Setup
 
 1. Copy `.env.example` → `.env`
-2. Create Neon project; set `DATABASE_URL` + `DIRECT_URL`
-3. Create Clerk app; set publishable + secret keys; webhook `session.created` → `/api/webhooks/clerk` with signing secret
-4. `npm run db:migrate` then `npm run db:seed`
-5. Set Clerk `publicMetadata.role` to `NIVRA_ADMIN` / `COMPANY_ADMIN` / `COMPANY_EMPLOYEE` (or assign in Neon after first login)
-6. Link company users to an `organizationId` in Neon
+2. Create a Neon project (or `npx neonctl auth` then `npx neonctl projects create --name nivra-demo`)
+3. Set `DATABASE_URL` (pooled) + `DIRECT_URL` (direct) in `.env`
+4. Create / link a Clerk app: `npx clerk auth login` then `npx clerk apps create nivra-demo` and `npx clerk init --app <id> --framework next -y`
+5. Keep `NEXT_PUBLIC_CLERK_SIGN_IN_URL=/login` (branded login page)
+6. Set `PLATFORM_ADMIN_EMAIL` to your email (default `yashurade27@gmail.com`)
+7. `npx prisma migrate deploy` then `npx prisma db seed`
+8. Optional: `node --env-file=.env --import tsx scripts/link-platform-admin.ts <clerkUserId>`
+9. In Clerk Dashboard → Webhooks, point `session.created` to `/api/webhooks/clerk` (use ngrok locally) and set `CLERK_WEBHOOK_SIGNING_SECRET`
+10. Sign in at `/login` with the platform admin email (email code or password)
 
 Without `DATABASE_URL`, admin pages fall back to dummy data and calculators stay usable for local Clerk testing.

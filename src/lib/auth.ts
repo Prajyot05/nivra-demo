@@ -1,6 +1,6 @@
 import { auth, currentUser, clerkClient } from "@clerk/nextjs/server";
 import { UserRole, UserStatus, type User } from "@prisma/client";
-import { getPrisma, isDatabaseConfigured } from "@/lib/db";
+import { getPrisma, isDatabaseConfigured, resetPrisma } from "@/lib/db";
 import { getEntitlements, type Entitlements } from "@/lib/entitlements";
 
 export type AppUser = User & {
@@ -19,6 +19,58 @@ export function roleFromClerkMetadata(
   return UserRole.COMPANY_EMPLOYEE;
 }
 
+function isPrismaConnectionError(error: unknown): boolean {
+  const msg = error instanceof Error ? error.message : String(error);
+  return (
+    msg.includes("Closed") ||
+    msg.includes("Can't reach database") ||
+    msg.includes("Connection terminated") ||
+    msg.includes("ECONNRESET") ||
+    msg.includes("server closed the connection")
+  );
+}
+
+async function loadUserByClerkId(clerkUserId: string): Promise<User | null> {
+  if (!isDatabaseConfigured()) return null;
+  try {
+    return await getPrisma()!.user.findUnique({ where: { clerkUserId } });
+  } catch (error) {
+    if (!isPrismaConnectionError(error)) throw error;
+    console.warn("Prisma connection closed; reconnecting for user lookup");
+    resetPrisma();
+    try {
+      return await getPrisma()!.user.findUnique({ where: { clerkUserId } });
+    } catch (retryError) {
+      console.warn("Prisma user lookup failed after reconnect", retryError);
+      return null;
+    }
+  }
+}
+
+function sessionFallbackUser(clerkUserId: string, email?: string, name?: string, role?: UserRole): User {
+  const platformEmail = process.env.PLATFORM_ADMIN_EMAIL?.trim().toLowerCase();
+  const resolvedEmail = email ?? `${clerkUserId}@session.local`;
+  const resolvedRole =
+    role ??
+    (platformEmail && resolvedEmail.toLowerCase() === platformEmail
+      ? UserRole.NIVRA_ADMIN
+      : UserRole.COMPANY_EMPLOYEE);
+
+  return {
+    id: `session_${clerkUserId}`,
+    clerkUserId,
+    email: resolvedEmail,
+    name: name || resolvedEmail,
+    role: resolvedRole,
+    organizationId: null,
+    status: UserStatus.ACTIVE,
+    lastLoginAt: new Date(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    deletedAt: null,
+  };
+}
+
 /**
  * Ensure a Neon User row exists for the signed-in Clerk user.
  * Organization is never created by Clerk — assign organizationId in Neon / admin.
@@ -27,81 +79,159 @@ export async function syncUserFromClerk(): Promise<User | null> {
   const { userId } = await auth();
   if (!userId) return null;
 
-  const clerkUser = await currentUser();
-  if (!clerkUser) return null;
+  let clerkUser: Awaited<ReturnType<typeof currentUser>> = null;
+  try {
+    clerkUser = await currentUser();
+  } catch (error) {
+    // Clerk Backend API can flake (rate limit / network). Do not fail calculate.
+    console.warn("Clerk currentUser() failed; falling back to Neon/session user", error);
+  }
+
+  if (!clerkUser) {
+    const existing = await loadUserByClerkId(userId);
+    if (existing) return existing;
+    return sessionFallbackUser(userId);
+  }
 
   const email =
     clerkUser.primaryEmailAddress?.emailAddress ??
     clerkUser.emailAddresses[0]?.emailAddress;
-  if (!email) return null;
+  if (!email) {
+    const existing = await loadUserByClerkId(userId);
+    if (existing) return existing;
+    return sessionFallbackUser(userId);
+  }
 
   const name =
     [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") ||
     email;
 
   if (!isDatabaseConfigured()) {
-    // Offline / no DB: ephemeral stand-in for UI wiring
-    return {
-      id: `local_${userId}`,
-      clerkUserId: userId,
+    return sessionFallbackUser(
+      userId,
       email,
       name,
-      role: roleFromClerkMetadata(clerkUser.publicMetadata as Record<string, unknown>),
-      organizationId: null,
-      status: UserStatus.ACTIVE,
-      lastLoginAt: new Date(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      deletedAt: null,
-    };
+      roleFromClerkMetadata(clerkUser.publicMetadata as Record<string, unknown>),
+    );
   }
 
-  const prisma = getPrisma()!;
   const role = roleFromClerkMetadata(
     clerkUser.publicMetadata as Record<string, unknown>,
   );
 
-  const existing = await prisma.user.findUnique({ where: { clerkUserId: userId } });
+  const runDb = async <T,>(fn: () => Promise<T>): Promise<T> => {
+    try {
+      return await fn();
+    } catch (error) {
+      if (!isPrismaConnectionError(error)) throw error;
+      console.warn("Prisma connection closed during user sync; reconnecting");
+      resetPrisma();
+      return fn();
+    }
+  };
 
-  if (existing) {
-    return prisma.user.update({
-      where: { id: existing.id },
-      data: {
-        email,
-        name,
-        // Do not overwrite role from metadata on every request once set in DB,
-        // unless DB role is still default employee and metadata elevates.
-        ...(existing.role === UserRole.COMPANY_EMPLOYEE &&
-        role !== UserRole.COMPANY_EMPLOYEE
-          ? { role }
-          : {}),
-        lastLoginAt: new Date(),
-        status: UserStatus.ACTIVE,
-      },
+  try {
+    return await runDb(async () => {
+      const prisma = getPrisma()!;
+      const existing = await prisma.user.findUnique({ where: { clerkUserId: userId } });
+
+      if (existing) {
+        return prisma.user.update({
+          where: { id: existing.id },
+          data: {
+            email,
+            name,
+            ...(existing.role === UserRole.COMPANY_EMPLOYEE &&
+            role !== UserRole.COMPANY_EMPLOYEE
+              ? { role }
+              : {}),
+            lastLoginAt: new Date(),
+            status: UserStatus.ACTIVE,
+          },
+        });
+      }
+
+      const byEmail = await prisma.user.findFirst({
+        where: { email: { equals: email, mode: "insensitive" }, deletedAt: null },
+      });
+      if (byEmail) {
+        const platformEmail = process.env.PLATFORM_ADMIN_EMAIL?.trim().toLowerCase();
+        const elevateToAdmin =
+          platformEmail && email.toLowerCase() === platformEmail
+            ? UserRole.NIVRA_ADMIN
+            : undefined;
+        return prisma.user.update({
+          where: { id: byEmail.id },
+          data: {
+            clerkUserId: userId,
+            email,
+            name,
+            ...(elevateToAdmin ? { role: elevateToAdmin } : {}),
+            ...(byEmail.role === UserRole.COMPANY_EMPLOYEE &&
+            role !== UserRole.COMPANY_EMPLOYEE
+              ? { role }
+              : {}),
+            lastLoginAt: new Date(),
+            status: UserStatus.ACTIVE,
+          },
+        });
+      }
+
+      const platformEmail = process.env.PLATFORM_ADMIN_EMAIL?.trim().toLowerCase();
+      const bootstrapRole =
+        platformEmail && email.toLowerCase() === platformEmail
+          ? UserRole.NIVRA_ADMIN
+          : role;
+
+      return prisma.user.create({
+        data: {
+          clerkUserId: userId,
+          email,
+          name,
+          role: bootstrapRole,
+          organizationId: null,
+          status: UserStatus.ACTIVE,
+          lastLoginAt: new Date(),
+        },
+      });
     });
+  } catch (error) {
+    console.warn("User sync to Neon failed; using session fallback", error);
+    return sessionFallbackUser(userId, email, name, role);
   }
-
-  return prisma.user.create({
-    data: {
-      clerkUserId: userId,
-      email,
-      name,
-      role,
-      organizationId: null,
-      status: UserStatus.ACTIVE,
-      lastLoginAt: new Date(),
-    },
-  });
 }
 
 export async function getCurrentAppUser(): Promise<AppUser | null> {
   const user = await syncUserFromClerk();
   if (!user) return null;
-  const entitlements = await getEntitlements({
-    role: user.role,
-    organizationId: user.organizationId,
-  });
-  return { ...user, entitlements };
+  try {
+    const entitlements = await getEntitlements({
+      role: user.role,
+      organizationId: user.organizationId,
+    });
+    return { ...user, entitlements };
+  } catch (error) {
+    console.warn("getEntitlements failed; allowing calculator use", error);
+    return {
+      ...user,
+      entitlements: {
+        role: user.role,
+        organizationId: user.organizationId,
+        organization: null,
+        tierLevel: 99,
+        tierName: "Degraded",
+        subscriptionStatus: null,
+        lockMode: "none",
+        softLockEndsAt: null,
+        canUseCalculators: true,
+        canGenerateReports: true,
+        allowedCalculatorIds: ["*"],
+        reportsGenerated: 0,
+        reportLimit: null,
+        reportsRemaining: null,
+      },
+    };
+  }
 }
 
 /**

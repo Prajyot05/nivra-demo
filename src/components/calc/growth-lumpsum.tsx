@@ -10,6 +10,7 @@ import {
   CHIP_OFF,
   CHIP_ON,
   ClientProfileBar,
+  ResultsSection,
   CompareChart,
   CompositionChart,
   ComplianceFootnote,
@@ -125,51 +126,6 @@ function rateError(value: number, label: string): string | undefined {
   if (value < 0) return `${label} cannot be negative.`;
   if (value > 100) return `${label} cannot exceed 100%.`;
   return undefined;
-}
-
-function CollapsibleSection({
-  sectionId,
-  title,
-  description,
-  open,
-  onToggle,
-  meta,
-  children,
-}: {
-  sectionId: string;
-  title: string;
-  description: string;
-  open: boolean;
-  onToggle: () => void;
-  meta?: ReactNode;
-  children: ReactNode;
-}) {
-  return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 lg:p-7">
-      <div className="flex flex-col gap-3 border-b border-slate-100 pb-5 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-emerald-700">
-              Section {sectionId}
-            </span>
-            <h2 className="text-base font-bold tracking-tight text-slate-900 sm:text-lg">{title}</h2>
-            <button
-              type="button"
-              onClick={onToggle}
-              aria-expanded={open}
-              className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600 transition hover:bg-slate-100"
-              title={open ? "Hide section" : "Show section"}
-            >
-              <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
-            </button>
-          </div>
-          <p className="mt-1 text-xs text-slate-500">{description}</p>
-        </div>
-        {meta}
-      </div>
-      {open ? <div className="mt-6">{children}</div> : null}
-    </section>
-  );
 }
 
 function AuditBreakdownTable({
@@ -621,7 +577,7 @@ export function GrowthLumpsum() {
             ) : null}
             {result ? (
               <Stack>
-                <CollapsibleSection
+                <ResultsSection
                   sectionId="02"
                   title="Growth Milestones"
                   description="Nominal maturity, purchasing power, and net outcome after tax"
@@ -715,9 +671,9 @@ export function GrowthLumpsum() {
                       </p>
                     </div>
                   ) : null}
-                </CollapsibleSection>
+                </ResultsSection>
 
-                <CollapsibleSection
+                <ResultsSection
                   sectionId="03"
                   title="Growth Analytics"
                   description="Corpus path, allocation mix, delay compare, and yearly audit ledger"
@@ -864,7 +820,7 @@ export function GrowthLumpsum() {
                       rows={yearRows}
                     />
                   </div>
-                </CollapsibleSection>
+                </ResultsSection>
 
                 <Card variant="warn">
                   <SectionTitle className="text-[var(--app-warn-text-strong)]">

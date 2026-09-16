@@ -123,17 +123,27 @@ export async function getEntitlements(input: {
     if (!isDatabaseConfigured()) {
       return { ...empty, canUseCalculators: true, canGenerateReports: true, allowedCalculatorIds: ["*"] };
     }
-    const prisma = getPrisma()!;
-    const all = await prisma.calculator.findMany({
-      where: { isActive: true },
-      select: { id: true },
-    });
-    return {
-      ...empty,
-      canUseCalculators: true,
-      canGenerateReports: true,
-      allowedCalculatorIds: all.map((c) => c.id),
-    };
+    try {
+      const prisma = getPrisma()!;
+      const all = await prisma.calculator.findMany({
+        where: { isActive: true },
+        select: { id: true },
+      });
+      return {
+        ...empty,
+        canUseCalculators: true,
+        canGenerateReports: true,
+        allowedCalculatorIds: all.map((c) => c.id),
+      };
+    } catch (error) {
+      console.warn("Admin calculator catalog lookup failed; allowing all ids", error);
+      return {
+        ...empty,
+        canUseCalculators: true,
+        canGenerateReports: true,
+        allowedCalculatorIds: ["*"],
+      };
+    }
   }
 
   if (!input.organizationId || !isDatabaseConfigured()) {

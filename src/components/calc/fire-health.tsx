@@ -1,14 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowDownLeft,
   ArrowUpRight,
+  BarChart3,
   Check,
   ChevronRight,
   Download,
   Flag,
+  LineChart,
   Loader2,
+  PieChart,
   Plus,
   Trash2,
 } from "lucide-react";
@@ -22,15 +25,21 @@ import {
   FIRE_PLANNER_REPORT_ID,
   FirePlannerDossier,
 } from "@/components/reports/fire-planner-dossier";
+import { DUMMY_REPORT_CONTACT } from "@/components/reports/executive-dossier";
 import {
   AgeInput,
+  BentoGroup,
+  BentoSection,
   BUTTON_DANGER,
   BUTTON_PRIMARY,
   BUTTON_SECONDARY,
   CARD,
   CARD_PAD,
+  ChartPane,
+  ClientProfileBar,
   ComboChart,
   CompareChart,
+  ComplianceFootnote,
   CompositionChart,
   Field,
   formatCompactINR,
@@ -41,29 +50,29 @@ import {
   PercentInput,
   PILL,
   ResultCard,
+  ResultsSection,
   RESULTS_LEFT,
   RESULTS_RIGHT,
   RESULTS_SPLIT,
   ScheduleTable,
   SECTION_TITLE,
   SelectInput,
+  SegmentedChartControl,
   StackedAreaChart,
   StatCard,
   StatusNote,
   TextInput,
   YearInput,
+  ageError,
+  emailError,
+  nameError,
+  phoneError,
+  rateError,
 } from "@nivra/ui";
 import { CalculatorPage } from "@/components/layout/calculator-page-with-nav";
 import { useCalculate } from "@/hooks/use-calculate";
 import { useCalculatorMode } from "@/hooks/use-calculator-mode";
 import { getCalculatorPageTitle } from "@/lib/calculator-nav";
-
-const FIRE_FORM_GRID =
-  "grid grid-cols-2 items-start gap-x-2.5 gap-y-2.5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6";
-
-/** Health form: fill the card width, but keep a floor so columns stay compact (not 3 giant fields). */
-const HEALTH_FORM_GRID =
-  "grid grid-cols-[repeat(auto-fill,minmax(8.75rem,1fr))] items-start gap-x-2.5 gap-y-2.5";
 
 const MODES = [
   { id: "fire", label: "FIRE" },
@@ -139,20 +148,6 @@ function newFireEvent(age = 50, incomeAmt = 0, expenseAmt = 10_000_000): FireEve
   };
 }
 
-function FormBand({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-2">
-        <div className="h-3 w-0.5 shrink-0 rounded-full bg-[var(--app-text-muted)]" />
-        <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
-          {title}
-        </div>
-      </div>
-      {children}
-    </div>
-  );
-}
-
 type FireResult = {
   activeYears: number;
   retiredYears: number;
@@ -211,6 +206,8 @@ export function FireHealthCalculator() {
 
   const [fireName, setFireName] = useState("Sanjay Gupta");
   const [age, setAge] = useState(40);
+  const [fireEmail, setFireEmail] = useState(DUMMY_REPORT_CONTACT.email);
+  const [firePhone, setFirePhone] = useState(DUMMY_REPORT_CONTACT.phone);
   const [retAge, setRetAge] = useState(55);
   const [survAge, setSurvAge] = useState(90);
   const [monthlyExp, setMonthlyExp] = useState(150_000);
@@ -238,6 +235,8 @@ export function FireHealthCalculator() {
 
   const [hName, setHName] = useState("Opinder Jain");
   const [hAge, setHAge] = useState(59);
+  const [hEmail, setHEmail] = useState(DUMMY_REPORT_CONTACT.email);
+  const [hPhone, setHPhone] = useState(DUMMY_REPORT_CONTACT.phone);
   const [hRet, setHRet] = useState(60);
   const [hSurv, setHSurv] = useState(90);
   const [hCorpus, setHCorpus] = useState(250_000_000);
@@ -251,16 +250,20 @@ export function FireHealthCalculator() {
   const [hBenefit, setHBenefit] = useState(0);
   const [healthEvents, setHealthEvents] = useState<HealthEventDraft[]>([newHealthEvent()]);
 
+  const [openAssumptions, setOpenAssumptions] = useState(true);
+  const [openMilestones, setOpenMilestones] = useState(true);
+  const [openAnalytics, setOpenAnalytics] = useState(true);
+
   const calculatorId = mode === "fire" ? "fire-planner" : "financial-health";
 
-  const fireNameError =
-    !fireName.trim() ? "Client name is required." : undefined;
-  const fireAgeError =
-    age < 0 || age > 120 ? "Enter a valid current age." : undefined;
+  const fireNameError = nameError(fireName);
+  const fireAgeError = ageError(age);
+  const fireEmailError = emailError(fireEmail);
+  const firePhoneError = phoneError(firePhone);
   const fireRetError =
     retAge <= age
       ? "Retirement age must be greater than current age."
-      : retAge > 120
+      : retAge > 100
         ? "Enter a valid retirement age."
         : undefined;
   const fireSurvError =
@@ -269,16 +272,11 @@ export function FireHealthCalculator() {
       : survAge > 120
         ? "Enter a valid surviving age."
         : undefined;
-  const fireInflError =
-    infl < 0 || infl > 100 ? "Inflation should be between 0 and 100%." : undefined;
-  const fireRetPctError =
-    ret < 0 || ret > 100 ? "Enter a valid pre-retirement return." : undefined;
-  const fireAfterError =
-    retAfter < 0 || retAfter > 100 ? "Enter a valid post-retirement return." : undefined;
-  const fireTaxError =
-    tax < 0 || tax > 100 ? "Tax should be between 0 and 100%." : undefined;
-  const fireStepUpError =
-    stepUp < 0 || stepUp > 100 ? "Step-up % cannot be negative." : undefined;
+  const fireInflError = rateError(infl, "Inflation");
+  const fireRetPctError = rateError(ret, "Pre-retirement return");
+  const fireAfterError = rateError(retAfter, "Post-retirement return");
+  const fireTaxError = rateError(tax, "Tax");
+  const fireStepUpError = rateError(stepUp, "Step-up");
   const fireStepEveryError =
     !Number.isInteger(stepUpEvery) || stepUpEvery < 1
       ? "Step-up frequency must be a positive whole number."
@@ -323,6 +321,8 @@ export function FireHealthCalculator() {
   const fireCanCalculate =
     !fireNameError &&
     !fireAgeError &&
+    !fireEmailError &&
+    !firePhoneError &&
     !fireRetError &&
     !fireSurvError &&
     !fireInflError &&
@@ -337,12 +337,14 @@ export function FireHealthCalculator() {
     fireEventErrorById.size === 0 &&
     (eventsMode === "None" || fireEvents.length > 0);
 
-  const hAgeError =
-    hAge < 0 || hAge > 120 ? "Enter a valid current age." : undefined;
+  const hNameError = nameError(hName);
+  const hAgeError = ageError(hAge);
+  const hEmailError = emailError(hEmail);
+  const hPhoneError = phoneError(hPhone);
   const hRetError =
     hRet < hAge
       ? "Retirement age must be on or after current age."
-      : hRet > 120
+      : hRet > 100
         ? "Enter a valid retirement age."
         : undefined;
   const hSurvError =
@@ -351,13 +353,12 @@ export function FireHealthCalculator() {
       : hSurv > 120
         ? "Enter a valid survival age."
         : undefined;
-  const hReturnError =
-    hReturn <= 0 || hReturn > 100 ? "Pre-retirement return must be above 0%." : undefined;
-  const hAfterError =
-    hAfter <= 0 || hAfter > 100 ? "Post-retirement return must be above 0%." : undefined;
-  const hTaxError = hTax < 0 || hTax > 100 ? "Tax should be between 0 and 100%." : undefined;
-  const hInflError =
-    hInfl < 0 || hInfl > 100 ? "Inflation should be between 0 and 100%." : undefined;
+  const hReturnError = rateError(hReturn, "Pre-retirement return") ??
+    (hReturn <= 0 ? "Pre-retirement return must be above 0%." : undefined);
+  const hAfterError = rateError(hAfter, "Post-retirement return") ??
+    (hAfter <= 0 ? "Post-retirement return must be above 0%." : undefined);
+  const hTaxError = rateError(hTax, "Tax");
+  const hInflError = rateError(hInfl, "Inflation");
   const eventErrorById = useMemo(() => {
     const map = new Map<string, string>();
     for (const ev of healthEvents) {
@@ -368,7 +369,10 @@ export function FireHealthCalculator() {
     return map;
   }, [healthEvents, hRet, hSurv]);
   const healthCanCalculate =
+    !hNameError &&
     !hAgeError &&
+    !hEmailError &&
+    !hPhoneError &&
     !hRetError &&
     !hSurvError &&
     !hReturnError &&
@@ -381,6 +385,47 @@ export function FireHealthCalculator() {
     hLife >= 0 &&
     hBenefit >= 0 &&
     eventErrorById.size === 0;
+
+  const fireFieldErrors = [
+    fireNameError,
+    fireAgeError,
+    fireEmailError,
+    firePhoneError,
+    fireRetError,
+    fireSurvError,
+    fireInflError,
+    fireRetPctError,
+    fireAfterError,
+    fireTaxError,
+    fireStepUpError,
+    fireStepEveryError,
+    fireLimitSipError,
+    fireDelayError,
+    fireMoneyError,
+    eventsMode === "Yes" && fireEvents.length === 0
+      ? "Add at least one major event, or set Major events to None."
+      : undefined,
+    fireEventErrorById.size > 0 ? "Fix highlighted event rows before calculating." : undefined,
+  ].filter((msg): msg is string => Boolean(msg));
+
+  const healthFieldErrors = [
+    hNameError,
+    hAgeError,
+    hEmailError,
+    hPhoneError,
+    hRetError,
+    hSurvError,
+    hReturnError,
+    hAfterError,
+    hTaxError,
+    hInflError,
+    hCorpus < 0 || hExp < 0 || hSav < 0 || hLife < 0 || hBenefit < 0
+      ? "Amounts cannot be negative."
+      : undefined,
+    eventErrorById.size > 0 ? "Fix highlighted event rows before calculating." : undefined,
+  ].filter((msg): msg is string => Boolean(msg));
+
+  const fieldErrors = mode === "fire" ? fireFieldErrors : healthFieldErrors;
 
   const input = useMemo(() => {
     if (mode === "fire") {
@@ -530,6 +575,61 @@ export function FireHealthCalculator() {
     }
   };
 
+  const resetDefaults = () => {
+    if (mode === "fire") {
+      setFireName("Sanjay Gupta");
+      setAge(40);
+      setFireEmail(DUMMY_REPORT_CONTACT.email);
+      setFirePhone(DUMMY_REPORT_CONTACT.phone);
+      setRetAge(55);
+      setSurvAge(90);
+      setMonthlyExp(150_000);
+      setLifestyle(1_500_000);
+      setMFactor("100");
+      setLFactor("100");
+      setInfl(5.75);
+      setRet(12);
+      setRetAfter(8);
+      setTax(12.5);
+      setC1Amt(5_000_000);
+      setC1Ret(9);
+      setC2Amt(3_500_000);
+      setC2Ret(12);
+      setC3Amt(0);
+      setC3Ret(0);
+      setCurSip(10_000);
+      setCurSipRet(10);
+      setLimitSip(0);
+      setStepUp(10);
+      setStepUpEvery(1);
+      setDelay(3);
+      setEventsMode("None");
+      setFireEvents([]);
+      return;
+    }
+    setHName("Opinder Jain");
+    setHAge(59);
+    setHEmail(DUMMY_REPORT_CONTACT.email);
+    setHPhone(DUMMY_REPORT_CONTACT.phone);
+    setHRet(60);
+    setHSurv(90);
+    setHCorpus(250_000_000);
+    setHExp(350_000);
+    setHSav(100_000);
+    setHLife(2_500_000);
+    setHInfl(5.75);
+    setHReturn(9.75);
+    setHAfter(8);
+    setHTax(12.5);
+    setHBenefit(0);
+    setHealthEvents([newHealthEvent()]);
+  };
+
+  const profileName = mode === "fire" ? fireName : hName;
+  const profileAge = mode === "fire" ? age : hAge;
+  const profileEmail = mode === "fire" ? fireEmail : hEmail;
+  const profilePhone = mode === "fire" ? firePhone : hPhone;
+
   return (
     <>
     <CalculatorPage
@@ -550,93 +650,159 @@ export function FireHealthCalculator() {
           {isDownloading ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
         </Button>
       }
+      header={
+        <ClientProfileBar
+          name={profileName}
+          age={profileAge}
+          email={profileEmail}
+          phone={profilePhone}
+          strategy={mode === "fire" ? "FIRE corpus & SIP path" : "Retirement runway check"}
+          goal={mode === "fire" ? "Financial independence" : "Financial health"}
+        />
+      }
       form={
         mode === "fire" ? (
-          <div className="flex flex-col gap-3">
-            <FormBand title="Profile & spending">
-              <div className={FIRE_FORM_GRID}>
-                <Field label="Client name" error={fireNameError}>
+          <BentoSection
+            sectionId="01"
+            title="Financial Assumptions & Modeling Suite"
+            description="Interactive engine for FIRE corpus, SIP path, delay cost, and major events"
+            collapsible
+            open={openAssumptions}
+            onToggle={() => setOpenAssumptions((v) => !v)}
+            actions={
+              <button
+                type="button"
+                onClick={resetDefaults}
+                className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 transition-all hover:bg-slate-100 hover:text-emerald-700"
+              >
+                Reset to Baseline
+              </button>
+            }
+          >
+            <BentoGroup
+              num="01"
+              title="Investor Profile"
+              colSpan={4}
+              footer={
+                <>
+                  <span>Age path:</span>
+                  <span className="font-bold text-slate-700">
+                    {age} → {retAge} → {survAge}
+                  </span>
+                </>
+              }
+            >
+              <div className="mb-4">
+                <Field label="Client Name" error={fireNameError}>
                   <TextInput
                     value={fireName}
                     onChange={(e) => setFireName(e.target.value)}
+                    className={fireNameError ? "border-[var(--app-danger)]" : undefined}
                   />
                 </Field>
+              </div>
+              <div className="mb-4">
                 <AgeInput value={age} onChange={setAge} error={fireAgeError} />
+              </div>
+              <div className="mb-4">
+                <Field label="Email" error={fireEmailError}>
+                  <TextInput
+                    type="email"
+                    value={fireEmail}
+                    onChange={(e) => setFireEmail(e.target.value)}
+                    placeholder="client@email.com"
+                    className={fireEmailError ? "border-[var(--app-danger)]" : undefined}
+                  />
+                </Field>
+              </div>
+              <div className="mb-4">
+                <Field label="Phone" error={firePhoneError}>
+                  <TextInput
+                    type="tel"
+                    value={firePhone}
+                    onChange={(e) => setFirePhone(e.target.value)}
+                    placeholder="+91 98765 43210"
+                    className={firePhoneError ? "border-[var(--app-danger)]" : undefined}
+                  />
+                </Field>
+              </div>
+              <div className="mb-4">
                 <YearInput
                   label="Retire age"
                   value={retAge}
                   onChange={setRetAge}
                   error={fireRetError}
                 />
-                <YearInput
-                  label="Survive age"
-                  value={survAge}
-                  onChange={setSurvAge}
-                  error={fireSurvError}
-                />
-                <MoneyInput
-                  label="Monthly exp."
-                  value={monthlyExp}
-                  onChange={setMonthlyExp}
-                />
-                <MoneyInput
-                  label="Lifestyle / yr"
-                  value={lifestyle}
-                  onChange={setLifestyle}
-                />
+              </div>
+              <YearInput
+                label="Survive age"
+                value={survAge}
+                onChange={setSurvAge}
+                error={fireSurvError}
+              />
+            </BentoGroup>
+
+            <BentoGroup
+              num="02"
+              title="Spending & Corpus Parameters"
+              colSpan={5}
+              footer={
+                <>
+                  <span>Horizon:</span>
+                  <span className="font-bold text-emerald-700">
+                    {Math.max(0, retAge - age)} active yrs
+                    {delay > 0 ? ` · ${delay} mo delay` : ""}
+                  </span>
+                </>
+              }
+            >
+              <div className="mb-3.5">
+                <MoneyInput label="Monthly exp." value={monthlyExp} onChange={setMonthlyExp} />
+              </div>
+              <div className="mb-3.5">
+                <MoneyInput label="Lifestyle / yr" value={lifestyle} onChange={setLifestyle} />
+              </div>
+              <div className="mb-3.5">
                 <SelectInput
                   label="Exp. @ ret"
                   value={mFactor}
                   onChange={setMFactor}
                   options={FACTOR_OPTIONS}
                 />
+              </div>
+              <div className="mb-3.5">
                 <SelectInput
                   label="Lifestyle @ ret"
                   value={lFactor}
                   onChange={setLFactor}
                   options={FACTOR_OPTIONS}
                 />
-                <PercentInput
-                  label="Return (pre)"
-                  value={ret}
-                  onChange={setRet}
-                  error={fireRetPctError}
-                />
-                <PercentInput
-                  label="Return (post)"
-                  value={retAfter}
-                  onChange={setRetAfter}
-                  error={fireAfterError}
-                />
-                <PercentInput
-                  label="Tax on gains"
-                  value={tax}
-                  onChange={setTax}
-                  error={fireTaxError}
-                />
-                <PercentInput
-                  label="Inflation"
-                  value={infl}
-                  onChange={setInfl}
-                  error={fireInflError}
-                />
               </div>
-            </FormBand>
-
-            <FormBand title="Corpus, SIP & delay">
-              <div className={FIRE_FORM_GRID}>
+              <div className="mb-3.5">
                 <MoneyInput label="Corpus 1" value={c1Amt} onChange={setC1Amt} />
+              </div>
+              <div className="mb-3.5">
                 <PercentInput label="C1 return" value={c1Ret} onChange={setC1Ret} />
+              </div>
+              <div className="mb-3.5">
                 <MoneyInput label="Corpus 2" value={c2Amt} onChange={setC2Amt} />
+              </div>
+              <div className="mb-3.5">
                 <PercentInput label="C2 return" value={c2Ret} onChange={setC2Ret} />
+              </div>
+              <div className="mb-3.5">
                 <MoneyInput label="Corpus 3" value={c3Amt} onChange={setC3Amt} />
+              </div>
+              <div className="mb-3.5">
                 <PercentInput label="C3 return" value={c3Ret} onChange={setC3Ret} />
+              </div>
+              <div className="mb-3.5">
                 <MoneyInput label="Current SIP" value={curSip} onChange={setCurSip} />
-                <PercentInput
-                  label="SIP return"
-                  value={curSipRet}
-                  onChange={setCurSipRet}
-                />
+              </div>
+              <div className="mb-3.5">
+                <PercentInput label="SIP return" value={curSipRet} onChange={setCurSipRet} />
+              </div>
+              <div className="mb-3.5">
                 <YearInput
                   label="Limit SIP yrs"
                   value={limitSip}
@@ -644,88 +810,206 @@ export function FireHealthCalculator() {
                   error={fireLimitSipError}
                   hint="0 = full"
                 />
+              </div>
+              <div className="mb-3.5">
                 <PercentInput
                   label="Step-up %"
                   value={stepUp}
                   onChange={setStepUp}
                   error={fireStepUpError}
                 />
+              </div>
+              <div className="mb-3.5">
                 <YearInput
                   label="Every (yrs)"
                   value={stepUpEvery}
                   onChange={setStepUpEvery}
                   error={fireStepEveryError}
                 />
+              </div>
+              <div className="mb-3.5">
                 <YearInput
                   label="Delay (mos)"
                   value={delay}
                   onChange={setDelay}
                   error={fireDelayError}
                 />
-                <SelectInput
-                  label="Major events"
-                  value={eventsMode}
-                  onChange={(v) => {
-                    const next = v === "Yes" ? "Yes" : "None";
-                    setEventsMode(next);
-                    if (next === "Yes" && fireEvents.length === 0) {
-                      setFireEvents([
-                        newFireEvent(Math.min(survAge, Math.max(age + 1, age + 5))),
-                      ]);
-                    }
-                  }}
-                  options={FIRE_EVENTS_OPTIONS}
+              </div>
+              <SelectInput
+                label="Major events"
+                value={eventsMode}
+                onChange={(v) => {
+                  const next = v === "Yes" ? "Yes" : "None";
+                  setEventsMode(next);
+                  if (next === "Yes" && fireEvents.length === 0) {
+                    setFireEvents([
+                      newFireEvent(Math.min(survAge, Math.max(age + 1, age + 5))),
+                    ]);
+                  }
+                }}
+                options={FIRE_EVENTS_OPTIONS}
+              />
+            </BentoGroup>
+
+            <BentoGroup
+              num="03"
+              title="Rate Assumptions"
+              subtitle="Return · Inflation · Tax"
+              colSpan={3}
+              footer={
+                <>
+                  <span>Tax drag:</span>
+                  <span className="font-bold text-emerald-700">{tax}%</span>
+                </>
+              }
+            >
+              <div className="mb-3.5">
+                <PercentInput
+                  label="Return (pre)"
+                  value={ret}
+                  onChange={setRet}
+                  error={fireRetPctError}
                 />
               </div>
-            </FormBand>
+              <div className="mb-3.5">
+                <PercentInput
+                  label="Return (post)"
+                  value={retAfter}
+                  onChange={setRetAfter}
+                  error={fireAfterError}
+                />
+              </div>
+              <div className="mb-3.5">
+                <PercentInput
+                  label="Tax on gains"
+                  value={tax}
+                  onChange={setTax}
+                  error={fireTaxError}
+                />
+              </div>
+              <PercentInput
+                label="Inflation"
+                value={infl}
+                onChange={setInfl}
+                error={fireInflError}
+              />
+            </BentoGroup>
 
             {eventsMode === "Yes" ? (
-              <FireEventTimeline
-                events={fireEvents}
-                currentAge={age}
-                retirementAge={retAge}
-                survivalAge={survAge}
-                eventErrorById={fireEventErrorById}
-                atCapacity={fireEvents.length >= MAX_FIRE_EVENTS}
-                onAdd={() =>
-                  setFireEvents((prev) => [
-                    ...prev,
-                    newFireEvent(
-                      Math.min(survAge, Math.max(age + 1, retAge - 1)),
-                    ),
-                  ])
+              <BentoGroup
+                num="02"
+                title="Major Events"
+                subtitle="Income & expense shocks"
+                colSpan={12}
+                footer={
+                  <>
+                    <span>Events:</span>
+                    <span className="font-bold text-emerald-700">{fireEvents.length}</span>
+                  </>
                 }
-                onPatch={(id, patch) =>
-                  setFireEvents((prev) =>
-                    prev.map((row) => (row.id === id ? { ...row, ...patch } : row)),
-                  )
-                }
-                onRemove={(id) =>
-                  setFireEvents((prev) => prev.filter((row) => row.id !== id))
-                }
-              />
+              >
+                <FireEventTimeline
+                  events={fireEvents}
+                  currentAge={age}
+                  retirementAge={retAge}
+                  survivalAge={survAge}
+                  eventErrorById={fireEventErrorById}
+                  atCapacity={fireEvents.length >= MAX_FIRE_EVENTS}
+                  onAdd={() =>
+                    setFireEvents((prev) => [
+                      ...prev,
+                      newFireEvent(
+                        Math.min(survAge, Math.max(age + 1, retAge - 1)),
+                      ),
+                    ])
+                  }
+                  onPatch={(id, patch) =>
+                    setFireEvents((prev) =>
+                      prev.map((row) => (row.id === id ? { ...row, ...patch } : row)),
+                    )
+                  }
+                  onRemove={(id) =>
+                    setFireEvents((prev) => prev.filter((row) => row.id !== id))
+                  }
+                />
+              </BentoGroup>
             ) : null}
-          </div>
+          </BentoSection>
         ) : (
-          <div className="flex flex-col gap-3">
-            <div className={HEALTH_FORM_GRID}>
-              <div className="col-span-2 min-w-0">
-                <Field label="Client Name">
+          <BentoSection
+            sectionId="01"
+            title="Financial Assumptions & Modeling Suite"
+            description="Interactive engine for retirement runway, spending, and health events"
+            collapsible
+            open={openAssumptions}
+            onToggle={() => setOpenAssumptions((v) => !v)}
+            actions={
+              <button
+                type="button"
+                onClick={resetDefaults}
+                className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 transition-all hover:bg-slate-100 hover:text-emerald-700"
+              >
+                Reset to Baseline
+              </button>
+            }
+          >
+            <BentoGroup
+              num="01"
+              title="Investor Profile"
+              colSpan={4}
+              footer={
+                <>
+                  <span>Age path:</span>
+                  <span className="font-bold text-slate-700">
+                    {hAge} → {hRet} → {hSurv}
+                  </span>
+                </>
+              }
+            >
+              <div className="mb-4">
+                <Field label="Client Name" error={hNameError}>
                   <TextInput
                     value={hName}
                     onChange={(e) => setHName(e.target.value)}
+                    className={hNameError ? "border-[var(--app-danger)]" : undefined}
                   />
                 </Field>
               </div>
-              <AgeInput value={hAge} onChange={setHAge} error={hAgeError} />
-              <YearInput
-                label="Retirement age"
-                value={hRet}
-                min={0}
-                max={120}
-                onChange={setHRet}
-                error={hRetError}
-              />
+              <div className="mb-4">
+                <AgeInput value={hAge} onChange={setHAge} error={hAgeError} />
+              </div>
+              <div className="mb-4">
+                <Field label="Email" error={hEmailError}>
+                  <TextInput
+                    type="email"
+                    value={hEmail}
+                    onChange={(e) => setHEmail(e.target.value)}
+                    placeholder="client@email.com"
+                    className={hEmailError ? "border-[var(--app-danger)]" : undefined}
+                  />
+                </Field>
+              </div>
+              <div className="mb-4">
+                <Field label="Phone" error={hPhoneError}>
+                  <TextInput
+                    type="tel"
+                    value={hPhone}
+                    onChange={(e) => setHPhone(e.target.value)}
+                    placeholder="+91 98765 43210"
+                    className={hPhoneError ? "border-[var(--app-danger)]" : undefined}
+                  />
+                </Field>
+              </div>
+              <div className="mb-4">
+                <YearInput
+                  label="Retirement age"
+                  value={hRet}
+                  min={0}
+                  max={120}
+                  onChange={setHRet}
+                  error={hRetError}
+                />
+              </div>
               <YearInput
                 label="Survival age"
                 value={hSurv}
@@ -734,100 +1018,161 @@ export function FireHealthCalculator() {
                 onChange={setHSurv}
                 error={hSurvError}
               />
-              <MoneyInput
-                label="Current corpus"
-                value={hCorpus}
-                onChange={setHCorpus}
-                align="right"
-              />
-              <MoneyInput
-                label="Monthly expense"
-                value={hExp}
-                onChange={setHExp}
-                align="right"
-              />
-              <MoneyInput
-                label="Monthly investment"
-                value={hSav}
-                onChange={setHSav}
-                align="right"
-              />
-              <MoneyInput
-                label="Lifestyle / year"
-                value={hLife}
-                onChange={setHLife}
-                align="right"
-              />
-              <PercentInput
-                label="Inflation"
-                value={hInfl}
-                onChange={setHInfl}
-                error={hInflError}
-              />
-              <PercentInput
-                label="Pre-ret. return"
-                value={hReturn}
-                onChange={setHReturn}
-                error={hReturnError}
-              />
-              <PercentInput
-                label="Post-ret. return"
-                value={hAfter}
-                onChange={setHAfter}
-                error={hAfterError}
-              />
-              <PercentInput
-                label="Tax after ret."
-                value={hTax}
-                onChange={setHTax}
-                error={hTaxError}
-              />
+            </BentoGroup>
+
+            <BentoGroup
+              num="02"
+              title="Corpus & Spending Parameters"
+              colSpan={5}
+              footer={
+                <>
+                  <span>Runway:</span>
+                  <span className="font-bold text-emerald-700">
+                    {Math.max(0, hSurv - hRet)} retired yrs
+                  </span>
+                </>
+              }
+            >
+              <div className="mb-3.5">
+                <MoneyInput
+                  label="Current corpus"
+                  value={hCorpus}
+                  onChange={setHCorpus}
+                  align="right"
+                />
+              </div>
+              <div className="mb-3.5">
+                <MoneyInput
+                  label="Monthly expense"
+                  value={hExp}
+                  onChange={setHExp}
+                  align="right"
+                />
+              </div>
+              <div className="mb-3.5">
+                <MoneyInput
+                  label="Monthly investment"
+                  value={hSav}
+                  onChange={setHSav}
+                  align="right"
+                />
+              </div>
+              <div className="mb-3.5">
+                <MoneyInput
+                  label="Lifestyle / year"
+                  value={hLife}
+                  onChange={setHLife}
+                  align="right"
+                />
+              </div>
               <MoneyInput
                 label="Retirement benefit"
                 value={hBenefit}
                 onChange={setHBenefit}
                 align="right"
               />
-            </div>
+            </BentoGroup>
 
-            <HealthEventTimeline
-              events={healthEvents}
-              retirementAge={hRet}
-              survivalAge={hSurv}
-              eventErrorById={eventErrorById}
-              atCapacity={healthEvents.length >= MAX_HEALTH_EVENTS}
-              onAdd={() =>
-                setHealthEvents((prev) => [
-                  ...prev,
-                  newHealthEvent(Math.min(hSurv, Math.max(hRet + 1, hRet + 2))),
-                ])
+            <BentoGroup
+              num="03"
+              title="Rate Assumptions"
+              subtitle="Return · Inflation · Tax"
+              colSpan={3}
+              footer={
+                <>
+                  <span>Tax drag:</span>
+                  <span className="font-bold text-emerald-700">{hTax}%</span>
+                </>
               }
-              onPatch={(id, patch) =>
-                setHealthEvents((prev) =>
-                  prev.map((row) => (row.id === id ? { ...row, ...patch } : row)),
-                )
+            >
+              <div className="mb-3.5">
+                <PercentInput
+                  label="Inflation"
+                  value={hInfl}
+                  onChange={setHInfl}
+                  error={hInflError}
+                />
+              </div>
+              <div className="mb-3.5">
+                <PercentInput
+                  label="Pre-ret. return"
+                  value={hReturn}
+                  onChange={setHReturn}
+                  error={hReturnError}
+                />
+              </div>
+              <div className="mb-3.5">
+                <PercentInput
+                  label="Post-ret. return"
+                  value={hAfter}
+                  onChange={setHAfter}
+                  error={hAfterError}
+                />
+              </div>
+              <PercentInput
+                label="Tax after ret."
+                value={hTax}
+                onChange={setHTax}
+                error={hTaxError}
+              />
+            </BentoGroup>
+
+            <BentoGroup
+              num="02"
+              title="Health Events"
+              subtitle="Post-retirement cashflows"
+              colSpan={12}
+              footer={
+                <>
+                  <span>Events:</span>
+                  <span className="font-bold text-emerald-700">{healthEvents.length}</span>
+                </>
               }
-              onRemove={(id) =>
-                setHealthEvents((prev) => prev.filter((row) => row.id !== id))
-              }
-            />
-          </div>
+            >
+              <HealthEventTimeline
+                events={healthEvents}
+                retirementAge={hRet}
+                survivalAge={hSurv}
+                eventErrorById={eventErrorById}
+                atCapacity={healthEvents.length >= MAX_HEALTH_EVENTS}
+                onAdd={() =>
+                  setHealthEvents((prev) => [
+                    ...prev,
+                    newHealthEvent(Math.min(hSurv, Math.max(hRet + 1, hRet + 2))),
+                  ])
+                }
+                onPatch={(id, patch) =>
+                  setHealthEvents((prev) =>
+                    prev.map((row) => (row.id === id ? { ...row, ...patch } : row)),
+                  )
+                }
+                onRemove={(id) =>
+                  setHealthEvents((prev) => prev.filter((row) => row.id !== id))
+                }
+              />
+            </BentoGroup>
+          </BentoSection>
         )
       }
       results={
         <div className="flex flex-col gap-3">
-          {mode === "fire" && !fireCanCalculate ? (
-            <StatusNote tone="error">
-              Fix the highlighted age, return, event, or amount fields before calculating.
-            </StatusNote>
-          ) : null}
-          {mode === "health" && !healthCanCalculate ? (
-            <StatusNote tone="error">
-              Fix the highlighted age, return, or event fields before calculating.
-            </StatusNote>
-          ) : null}
           {error ? <StatusNote tone="error">{error}</StatusNote> : null}
-          {loading && !result ? (
+          {fieldErrors.length > 0 ? (
+            <StatusNote tone="error">
+              <div className="flex flex-col gap-1">
+                <span className="font-semibold">
+                  Fix the inputs above to refresh the calculation
+                  {result ? ". Showing the last valid result." : "."}
+                </span>
+                <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[12px] font-normal">
+                  {fieldErrors.map((msg) => (
+                    <li key={msg}>{msg}</li>
+                  ))}
+                </ul>
+              </div>
+            </StatusNote>
+          ) : null}
+          {loading && !result && fieldErrors.length === 0 ? (
             <StatusNote tone="pending">Calculating…</StatusNote>
           ) : null}
           {fire ? (
@@ -839,6 +1184,10 @@ export function FireHealthCalculator() {
               delayMonths={delay}
               eventsEnabled={eventsMode === "Yes"}
               events={fireEvents}
+              openMilestones={openMilestones}
+              onToggleMilestones={() => setOpenMilestones((v) => !v)}
+              openAnalytics={openAnalytics}
+              onToggleAnalytics={() => setOpenAnalytics((v) => !v)}
             />
           ) : null}
           {health ? (
@@ -847,9 +1196,20 @@ export function FireHealthCalculator() {
               retirementAge={hRet}
               survivalAge={hSurv}
               events={healthEvents}
+              openMilestones={openMilestones}
+              onToggleMilestones={() => setOpenMilestones((v) => !v)}
+              openAnalytics={openAnalytics}
+              onToggleAnalytics={() => setOpenAnalytics((v) => !v)}
             />
           ) : null}
         </div>
+      }
+      footer={
+        <ComplianceFootnote>
+          Calculations shown are for illustration purposes only. FIRE and financial health
+          projections depend on assumed returns, inflation, tax, spending, and event schedules.
+          Actual market returns and longevity can differ.
+        </ComplianceFootnote>
       }
     />
     {mode === "fire" && fire ? (
@@ -857,6 +1217,8 @@ export function FireHealthCalculator() {
         data={{
           clientName: fireName,
           age,
+          email: fireEmail,
+          phone: firePhone,
           retirementAge: retAge,
           survivingAge: survAge,
           monthlyExpenses: monthlyExp,
@@ -913,6 +1275,8 @@ export function FireHealthCalculator() {
         data={{
           clientName: hName,
           age: hAge,
+          email: hEmail,
+          phone: hPhone,
           retirementAge: hRet,
           survivingAge: hSurv,
           currentCorpus: hCorpus,
@@ -925,12 +1289,12 @@ export function FireHealthCalculator() {
           taxPct: hTax,
           retirementBenefit: hBenefit,
           events: healthEvents
-            .filter((ev) => ev.amount > 0)
-            .map((ev) => ({
-              age: ev.age,
-              amount: ev.amount,
-              type: ev.type,
-            })),
+              .filter((ev) => ev.amount > 0)
+              .map((ev) => ({
+                age: ev.age,
+                amount: ev.amount,
+                type: ev.type,
+              })),
           activeYears: health.activeYears,
           retiredYears: health.retiredYears,
           corpusAtRetirement: health.corpusAtRetirement,
@@ -950,6 +1314,7 @@ export function FireHealthCalculator() {
     </>
   );
 }
+
 
 function HealthEventTimeline({
   events,
@@ -1573,6 +1938,10 @@ function FireResults({
   delayMonths,
   eventsEnabled,
   events,
+  openMilestones,
+  onToggleMilestones,
+  openAnalytics,
+  onToggleAnalytics,
 }: {
   result: FireResult;
   age: number;
@@ -1581,6 +1950,10 @@ function FireResults({
   delayMonths: number;
   eventsEnabled: boolean;
   events: FireEventDraft[];
+  openMilestones: boolean;
+  onToggleMilestones: () => void;
+  openAnalytics: boolean;
+  onToggleAnalytics: () => void;
 }) {
   const line = result.schedule.map((row) => ({
     year: row.age,
@@ -1670,6 +2043,18 @@ function FireResults({
 
   return (
     <div className="flex flex-col gap-4">
+      <ResultsSection
+        sectionId="02"
+        title="FIRE Funding Milestones"
+        description="Corpus required, surplus or SIP gap, and age path"
+        open={openMilestones}
+        onToggle={onToggleMilestones}
+        meta={
+          <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">
+            Age {age} → {retirementAge} → {survivalAge}
+          </span>
+        }
+      >
       <div className="flex flex-wrap items-center gap-2 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2">
         <span className={`${PILL} bg-[var(--app-std-bg)] text-[var(--app-std-text)]`}>
           {age} Now
@@ -1693,9 +2078,7 @@ function FireResults({
         )}
       </div>
 
-      <div className={RESULTS_SPLIT}>
-        <div className={RESULTS_LEFT}>
-          <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
+      <div className="mt-6 grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
             <StatCard
               title="Corpus required"
               value={result.corpusRequired}
@@ -1726,39 +2109,82 @@ function FireResults({
               hint={result.excess ? "Fully funded" : "Funding gap today"}
             />
           </div>
-          <GrowthChart
-            title="Corpus vs age"
-            data={line}
-            series={[{ key: "corpus", label: "Corpus", color: "var(--app-chart-gain)" }]}
-            referenceLines={[retireMarker]}
-          />
-          <StackedAreaChart
-            title="Contributions vs withdrawals"
-            data={area}
-            series={[
+      </ResultsSection>
+
+      <ResultsSection
+        sectionId="03"
+        title="FIRE Path Analytics"
+        description="Corpus journey, funding mix, delay cost, and age schedule"
+        open={openAnalytics}
+        onToggle={onToggleAnalytics}
+      >
+      <div className={RESULTS_SPLIT}>
+        <div className={RESULTS_LEFT}>
+          <SegmentedChartControl
+            variant="pill"
+            tabs={[
               {
-                key: "contribution",
-                label: "Contributions",
-                color: "var(--app-chart-invested)",
+                id: "corpus",
+                label: "Corpus",
+                icon: <LineChart className="w-4 h-4" />,
+                content: (
+                  <ChartPane>
+                    <GrowthChart
+                      title="Corpus vs age"
+                      data={line}
+                      series={[{ key: "corpus", label: "Corpus", color: "var(--app-chart-gain)" }]}
+                      referenceLines={[retireMarker]}
+                    />
+                  </ChartPane>
+                ),
               },
               {
-                key: "withdrawal",
-                label: "Withdrawals",
-                color: "var(--app-chart-tax)",
+                id: "flows",
+                label: "Flows",
+                icon: <BarChart3 className="w-4 h-4" />,
+                content: (
+                  <ChartPane>
+                    <StackedAreaChart
+                      title="Contributions vs withdrawals"
+                      data={area}
+                      series={[
+                        {
+                          key: "contribution",
+                          label: "Contributions",
+                          color: "var(--app-chart-invested)",
+                        },
+                        {
+                          key: "withdrawal",
+                          label: "Withdrawals",
+                          color: "var(--app-chart-tax)",
+                        },
+                      ]}
+                      lineOnlyKeys={["contribution"]}
+                      referenceLines={[retireMarker]}
+                    />
+                  </ChartPane>
+                ),
+              },
+              {
+                id: "mix",
+                label: "Gap mix",
+                icon: <PieChart className="w-4 h-4" />,
+                content: (
+                  <ChartPane>
+                    <CompositionChart
+                      title="Gap funding mix"
+                      slices={[
+                        { name: "Invested via SIP", value: invested, color: "var(--app-chart-invested)" },
+                        { name: "Investment gain", value: gain, color: "var(--app-chart-gain)" },
+                      ]}
+                      centerLabel="Additional funding gap"
+                      centerValue={result.balanceCorpus}
+                      centerValueDisplay={`₹${formatCompactINR(result.balanceCorpus)}`}
+                    />
+                  </ChartPane>
+                ),
               },
             ]}
-            lineOnlyKeys={["contribution"]}
-            referenceLines={[retireMarker]}
-          />
-          <CompositionChart
-            title="Gap funding mix"
-            slices={[
-              { name: "Invested via SIP", value: invested, color: "var(--app-chart-invested)" },
-              { name: "Investment gain", value: gain, color: "var(--app-chart-gain)" },
-            ]}
-            centerLabel="Additional funding gap"
-            centerValue={result.balanceCorpus}
-            centerValueDisplay={`₹${formatCompactINR(result.balanceCorpus)}`}
           />
         </div>
         <div className={RESULTS_RIGHT}>
@@ -1898,6 +2324,7 @@ function FireResults({
         ]}
         rows={result.schedule}
       />
+      </ResultsSection>
     </div>
   );
 }
@@ -1907,11 +2334,19 @@ function HealthResults({
   retirementAge,
   survivalAge,
   events,
+  openMilestones,
+  onToggleMilestones,
+  openAnalytics,
+  onToggleAnalytics,
 }: {
   result: HealthResult;
   retirementAge: number;
   survivalAge: number;
   events: HealthEventDraft[];
+  openMilestones: boolean;
+  onToggleMilestones: () => void;
+  openAnalytics: boolean;
+  onToggleAnalytics: () => void;
 }) {
   const combo = result.schedule.map((row) => ({
     age: row.age,
@@ -1966,6 +2401,18 @@ function HealthResults({
 
   return (
     <div className="flex flex-col gap-3">
+      <ResultsSection
+        sectionId="02"
+        title="Financial Health Milestones"
+        description="Corpus at retirement and runway through survival"
+        open={openMilestones}
+        onToggle={onToggleMilestones}
+        meta={
+          <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">
+            {retirementAge} → {survivalAge}
+          </span>
+        }
+      >
       <div className="flex flex-wrap items-center gap-2 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2">
         <StatusNote
           tone={result.funded ? healthTone : "warn"}
@@ -1991,9 +2438,7 @@ function HealthResults({
         </div>
       </div>
 
-      <div className={`${RESULTS_SPLIT} gap-3`}>
-        <div className={`${RESULTS_LEFT} gap-3`}>
-          <div className="grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
+      <div className="mt-6 grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
             <StatCard title="Corpus at retirement" value={result.corpusAtRetirement} tone="neutral" />
             <StatCard
               title={result.funded ? "Remaining at survival" : "Corpus when funds run out"}
@@ -2006,6 +2451,18 @@ function HealthResults({
               }
             />
           </div>
+      </ResultsSection>
+
+      <ResultsSection
+        sectionId="03"
+        title="Health Path Analytics"
+        description="Corpus vs expenses, gap mix, and age schedule"
+        open={openAnalytics}
+        onToggle={onToggleAnalytics}
+      >
+      <div className={`${RESULTS_SPLIT} gap-3`}>
+        <div className={`${RESULTS_LEFT} gap-3`}>
+          <ChartPane>
           <ComboChart
             title="Corpus and expenses vs age"
             className="min-h-[260px] sm:min-h-[300px]"
@@ -2020,6 +2477,7 @@ function HealthResults({
             ]}
             ageMarkers={ageMarkers}
           />
+          </ChartPane>
         </div>
         <div className={`${RESULTS_RIGHT} gap-3`}>
           <ResultCard
@@ -2104,6 +2562,7 @@ function HealthResults({
         ]}
         rows={result.schedule}
       />
+      </ResultsSection>
     </div>
   );
 }

@@ -2,30 +2,37 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  BarChart3,
   BookOpen,
   Calendar,
   Check,
   ChevronRight,
   Flag,
   GraduationCap,
+  PieChart,
   RotateCcw,
 } from "lucide-react";
 import {
+  AgeInput,
+  BentoGroup,
+  BentoSection,
   BUTTON_PRIMARY,
   BUTTON_SECONDARY,
   Card,
-  ClientHeader,
+  ChartPane,
+  ClientProfileBar,
   CompareChart,
+  ComplianceFootnote,
   Field,
   formatINRCurrency,
-  FormGrid,
   META_TEXT,
   MoneyInput,
   PercentInput,
   ResultCard,
-  ResultsSplit,
+  ResultsSection,
   ScheduleTable,
   SectionTitle,
+  SegmentedChartControl,
   STACK_TIGHT,
   Stack,
   StatCard,
@@ -34,6 +41,11 @@ import {
   StackedBarChart,
   TextInput,
   YearInput,
+  ageError,
+  emailError,
+  nameError,
+  phoneError,
+  rateError,
 } from "@nivra/ui";
 import { CalculatorPage } from "@/components/layout/calculator-page-with-nav";
 import { ReportDownloadButton } from "@/components/calc/report-download-button";
@@ -41,6 +53,7 @@ import {
   ChildEducationDossier,
   CHILD_EDUCATION_REPORT_ID,
 } from "@/components/reports/child-education-dossier";
+import { DUMMY_REPORT_CONTACT } from "@/components/reports/executive-dossier";
 import { useCalculate } from "@/hooks/use-calculate";
 import { generatePdfFromElement } from "@/lib/pdf-generator";
 
@@ -113,29 +126,29 @@ function isCollegeLabel(label: string) {
   return /college/i.test(label);
 }
 
-function interestError(value: number, label: string): string | undefined {
-  if (value > 100) return `${label} cannot exceed 100%.`;
-  if (value < 0) return `${label} cannot be negative.`;
+function childNameErrorMsg(value: string): string | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return "Child name is required.";
+  if (trimmed.length < 2) return "Enter at least 2 characters.";
+  if (trimmed.length > 80) return "Child name is too long (max 80 characters).";
   return undefined;
 }
 
-function FormBand({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-2">
-        <div className="h-3 w-0.5 shrink-0 rounded-full bg-[var(--app-text-muted)]" />
-        <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
-          {title}
-        </div>
-      </div>
-      {children}
-    </div>
-  );
+function childAgeErrorMsg(childAge: number, clientAge: number): string | undefined {
+  if (!Number.isFinite(childAge)) return "Child age must be a valid number.";
+  if (childAge < 0) return "Child age cannot be negative.";
+  if (childAge > 40) return "Child age cannot exceed 40 years.";
+  if (clientAge >= 18 && childAge > clientAge) {
+    return "Child age cannot exceed client age.";
+  }
+  return undefined;
 }
 
 export function ChildEducationPlanner() {
   const [name, setName] = useState("Mr. Anshu Kaul");
   const [age, setAge] = useState(35);
+  const [email, setEmail] = useState(DUMMY_REPORT_CONTACT.email);
+  const [phone, setPhone] = useState(DUMMY_REPORT_CONTACT.phone);
   const [childName, setChildName] = useState("Jitender Agarwal");
   const [childAge, setChildAge] = useState(5);
   const [returnPct, setReturnPct] = useState(12);
@@ -144,25 +157,31 @@ export function ChildEducationPlanner() {
   const [timelineKey, setTimelineKey] = useState(0);
   const [isDownloading, setIsDownloading] = useState(false);
 
-  const nameError = !name.trim() ? "Client name is required." : undefined;
-  const childNameError = !childName.trim() ? "Child name is required." : undefined;
-  const ageError = age < 1 ? "Client age must be a positive integer." : undefined;
-  const childAgeError =
-    childAge < 0
-      ? "Child age cannot be negative."
-      : age >= 1 && childAge > age
-        ? "Child age cannot exceed client age."
-        : undefined;
-  const returnError = interestError(returnPct, "Return");
-  const taxError = interestError(taxPct, "Tax on gains");
+  const [openAssumptions, setOpenAssumptions] = useState(true);
+  const [openMilestones, setOpenMilestones] = useState(true);
+  const [openAnalytics, setOpenAnalytics] = useState(true);
 
-  const canCalculate =
-    !nameError &&
-    !childNameError &&
-    !ageError &&
-    !childAgeError &&
-    !returnError &&
-    !taxError;
+  const clientNameError = nameError(name);
+  const clientAgeError = ageError(age);
+  const clientEmailError = emailError(email);
+  const clientPhoneError = phoneError(phone);
+  const childNameErr = childNameErrorMsg(childName);
+  const childAgeErr = childAgeErrorMsg(childAge, age);
+  const returnError = rateError(returnPct, "Return");
+  const taxError = rateError(taxPct, "Tax on gains");
+
+  const fieldErrors = [
+    clientNameError,
+    clientAgeError,
+    clientEmailError,
+    clientPhoneError,
+    childNameErr,
+    childAgeErr,
+    returnError,
+    taxError,
+  ].filter((msg): msg is string => Boolean(msg));
+
+  const canCalculate = fieldErrors.length === 0;
 
   const input = useMemo(
     () => ({
@@ -182,6 +201,19 @@ export function ChildEducationPlanner() {
     input,
     canCalculate,
   );
+
+  const resetDefaults = () => {
+    setName("Mr. Anshu Kaul");
+    setAge(35);
+    setEmail(DUMMY_REPORT_CONTACT.email);
+    setPhone(DUMMY_REPORT_CONTACT.phone);
+    setChildName("Jitender Agarwal");
+    setChildAge(5);
+    setReturnPct(12);
+    setTaxPct(12.5);
+    setCosts(DEFAULT_COSTS.map((row) => ({ ...row })));
+    setTimelineKey((k) => k + 1);
+  };
 
   const handleDownload = async () => {
     if (!result || isDownloading) return;
@@ -234,70 +266,176 @@ export function ChildEducationPlanner() {
             loading={isDownloading}
           />
         }
+        header={
+          <ClientProfileBar
+            name={name}
+            age={age}
+            email={email}
+            phone={phone}
+            strategy="Education corpus planning"
+            goal="Child education funding"
+          />
+        }
         form={
-          <div className={STACK_TIGHT}>
-            <FormBand title="Family & assumptions">
-              <FormGrid>
-                <ClientHeader
-                  name={name}
-                  age={age}
-                  onNameChange={setName}
-                  onAgeChange={setAge}
-                  nameError={nameError}
-                  ageError={ageError}
-                />
-                <div className="col-span-2 min-w-0">
-                  <Field label="Child name" error={childNameError}>
-                    <TextInput
-                      value={childName}
-                      onChange={(e) => setChildName(e.target.value)}
-                    />
-                  </Field>
-                </div>
-                <YearInput
-                  label="Child age"
-                  value={childAge}
-                  min={0}
-                  max={40}
-                  onChange={setChildAge}
-                  error={childAgeError}
-                />
+          <BentoSection
+            sectionId="01"
+            title="Financial Assumptions & Modeling Suite"
+            description="Interactive engine for school and college fee funding via lumpsum or SIP"
+            collapsible
+            open={openAssumptions}
+            onToggle={() => setOpenAssumptions((v) => !v)}
+            actions={
+              <button
+                type="button"
+                onClick={resetDefaults}
+                className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 transition-all hover:bg-slate-100 hover:text-emerald-700"
+              >
+                Reset to Baseline
+              </button>
+            }
+          >
+            <BentoGroup
+              num="01"
+              title="Investor Profile"
+              colSpan={4}
+              footer={
+                <>
+                  <span>Child:</span>
+                  <span className="font-bold text-slate-700">
+                    {childName.trim() || "Child"} · Age {childAge}
+                  </span>
+                </>
+              }
+            >
+              <div className="mb-4">
+                <Field label="Client Name" error={clientNameError}>
+                  <TextInput
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className={clientNameError ? "border-[var(--app-danger)]" : undefined}
+                  />
+                </Field>
+              </div>
+              <div className="mb-4">
+                <AgeInput value={age} onChange={setAge} error={clientAgeError} />
+              </div>
+              <div className="mb-4">
+                <Field label="Email" error={clientEmailError}>
+                  <TextInput
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="client@email.com"
+                    className={clientEmailError ? "border-[var(--app-danger)]" : undefined}
+                  />
+                </Field>
+              </div>
+              <div className="mb-4">
+                <Field label="Phone" error={clientPhoneError}>
+                  <TextInput
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+91 98765 43210"
+                    className={clientPhoneError ? "border-[var(--app-danger)]" : undefined}
+                  />
+                </Field>
+              </div>
+              <div className="mb-4">
+                <Field label="Child name" error={childNameErr}>
+                  <TextInput
+                    value={childName}
+                    onChange={(e) => setChildName(e.target.value)}
+                    className={childNameErr ? "border-[var(--app-danger)]" : undefined}
+                  />
+                </Field>
+              </div>
+              <YearInput
+                label="Child age"
+                value={childAge}
+                min={0}
+                max={40}
+                onChange={setChildAge}
+                error={childAgeErr}
+              />
+            </BentoGroup>
+
+            <BentoGroup
+              num="03"
+              title="Rate Assumptions"
+              subtitle="Return & Tax"
+              colSpan={3}
+              footer={
+                <>
+                  <span>Tax drag:</span>
+                  <span className="font-bold text-emerald-700">{taxPct}%</span>
+                </>
+              }
+            >
+              <div className="mb-3.5">
                 <PercentInput
                   label="Return (%)"
                   value={returnPct}
-                  onChange={setReturnPct}
+                  onChange={(v) => setReturnPct(Math.max(0, v))}
                   error={returnError}
                 />
-                <PercentInput
-                  label="Tax on gains (%)"
-                  value={taxPct}
-                  onChange={setTaxPct}
-                  error={taxError}
-                  wrapLabel
-                />
-              </FormGrid>
-            </FormBand>
+              </div>
+              <PercentInput
+                label="Tax on gains (%)"
+                value={taxPct}
+                onChange={(v) => setTaxPct(Math.max(0, v))}
+                error={taxError}
+                wrapLabel
+              />
+            </BentoGroup>
 
-            <EducationFeeTimeline
-              key={timelineKey}
-              costs={costs}
-              childAge={childAge}
-              childName={childName}
-              fundedYears={fundedYears}
-              schoolFunded={schoolFunded}
-              collegeFunded={collegeFunded}
-              onPatchCost={patchCost}
-              onReset={resetCosts}
-            />
-          </div>
+            <BentoGroup
+              num="02"
+              title="Education Fee Parameters"
+              subtitle="School & college cost timeline"
+              colSpan={12}
+              footer={
+                <>
+                  <span>Funded years:</span>
+                  <span className="font-bold text-emerald-700">
+                    {fundedYears} · {schoolFunded} school · {collegeFunded} college
+                  </span>
+                </>
+              }
+            >
+              <EducationFeeTimeline
+                key={timelineKey}
+                costs={costs}
+                childAge={childAge}
+                childName={childName}
+                fundedYears={fundedYears}
+                schoolFunded={schoolFunded}
+                collegeFunded={collegeFunded}
+                onPatchCost={patchCost}
+                onReset={resetCosts}
+              />
+            </BentoGroup>
+          </BentoSection>
         }
         results={
-          <Stack>
-            {!canCalculate ? (
-              <StatusNote tone="warn">Fix the highlighted inputs to calculate.</StatusNote>
-            ) : null}
+          <>
             {error ? <StatusNote tone="error">{error}</StatusNote> : null}
-            {loading && !result ? (
+            {!canCalculate ? (
+              <StatusNote tone="error">
+                <div className="flex flex-col gap-1">
+                  <span className="font-semibold">
+                    Fix the inputs above to refresh the calculation
+                    {result ? ". Showing the last valid result." : "."}
+                  </span>
+                  <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[12px] font-normal">
+                    {fieldErrors.map((msg) => (
+                      <li key={msg}>{msg}</li>
+                    ))}
+                  </ul>
+                </div>
+              </StatusNote>
+            ) : null}
+            {loading && !result && canCalculate ? (
               <StatusNote tone="pending">Calculating…</StatusNote>
             ) : null}
             {result ? (
@@ -306,9 +444,20 @@ export function ChildEducationPlanner() {
                 childName={childName}
                 childAge={childAge}
                 taxPct={taxPct}
+                openMilestones={openMilestones}
+                onToggleMilestones={() => setOpenMilestones((v) => !v)}
+                openAnalytics={openAnalytics}
+                onToggleAnalytics={() => setOpenAnalytics((v) => !v)}
               />
             ) : null}
-          </Stack>
+          </>
+        }
+        footer={
+          <ComplianceFootnote>
+            Calculations shown are for illustration purposes only. Education funding projections
+            depend on assumed returns, tax on gains at withdrawal, and the fee schedule entered.
+            Actual market returns and fee inflation can differ.
+          </ComplianceFootnote>
         }
       />
       {result ? (
@@ -316,6 +465,8 @@ export function ChildEducationPlanner() {
           data={{
             clientName: name,
             age,
+            email,
+            phone,
             childName,
             childAge,
             returnPct,
@@ -532,70 +683,68 @@ function EducationFeeTimeline({
     ) : null;
 
   return (
-    <FormBand title="Education fee timeline">
-      <div className="flex flex-col gap-2.5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-md border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-2 py-0.5 text-[11px] font-medium text-[var(--app-text-muted)]">
-              {fundedYears} funded · {schoolFunded} school · {collegeFunded} college
-            </span>
-            <span className={META_TEXT}>Click a year to edit fees.</span>
-          </div>
-          <button
-            type="button"
-            className={BUTTON_SECONDARY}
-            onClick={onReset}
-            title="Reset fee grid"
-          >
-            <RotateCcw className="size-3.5" />
-            Reset
-          </button>
+    <div className={STACK_TIGHT}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-md border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-2 py-0.5 text-[11px] font-medium text-[var(--app-text-muted)]">
+            {fundedYears} funded · {schoolFunded} school · {collegeFunded} college
+          </span>
+          <span className={META_TEXT}>Click a year to edit fees.</span>
         </div>
-
-        <FeePhaseRail
-          title="School education"
-          hint="Nursery to Class 12"
-          accent="school"
-          entries={schoolEntries}
-          childAge={childAge}
-          startLabel="Today"
-          startAge={childAge}
-          startSub={childName.trim() || "Child"}
-          endLabel="Class 12"
-          endAge={schoolLastAge}
-          meta={`${schoolFunded} funded · ${formatINRCurrency(schoolTotal)}`}
-          activeIndex={activeIndex}
-          openIndex={openIndex}
-          onToggle={togglePanel}
-          editPanel={!openIsCollege ? editPanel : null}
-        />
-
-        <FeePhaseRail
-          title="Higher education"
-          hint="College 1 to College 8"
-          accent="college"
-          entries={collegeEntries}
-          childAge={childAge}
-          startLabel="College"
-          startAge={collegeEntries[0]?.row.age ?? schoolLastAge + 1}
-          startSub="After school"
-          endLabel="Horizon"
-          endAge={collegeLastAge}
-          meta={`${collegeFunded} funded · ${formatINRCurrency(collegeTotal)}`}
-          activeIndex={activeIndex}
-          openIndex={openIndex}
-          onToggle={togglePanel}
-          editPanel={openIsCollege ? editPanel : null}
-        />
-
-        {!editPanel ? (
-          <p className={META_TEXT}>
-            Dashed dots are ₹0 slots. Past school years stay on the rail but do not create
-            withdrawals.
-          </p>
-        ) : null}
+        <button
+          type="button"
+          className={BUTTON_SECONDARY}
+          onClick={onReset}
+          title="Reset fee grid"
+        >
+          <RotateCcw className="size-3.5" />
+          Reset fees
+        </button>
       </div>
-    </FormBand>
+
+      <FeePhaseRail
+        title="School education"
+        hint="Nursery to Class 12"
+        accent="school"
+        entries={schoolEntries}
+        childAge={childAge}
+        startLabel="Today"
+        startAge={childAge}
+        startSub={childName.trim() || "Child"}
+        endLabel="Class 12"
+        endAge={schoolLastAge}
+        meta={`${schoolFunded} funded · ${formatINRCurrency(schoolTotal)}`}
+        activeIndex={activeIndex}
+        openIndex={openIndex}
+        onToggle={togglePanel}
+        editPanel={!openIsCollege ? editPanel : null}
+      />
+
+      <FeePhaseRail
+        title="Higher education"
+        hint="College 1 to College 8"
+        accent="college"
+        entries={collegeEntries}
+        childAge={childAge}
+        startLabel="College"
+        startAge={collegeEntries[0]?.row.age ?? schoolLastAge + 1}
+        startSub="After school"
+        endLabel="Horizon"
+        endAge={collegeLastAge}
+        meta={`${collegeFunded} funded · ${formatINRCurrency(collegeTotal)}`}
+        activeIndex={activeIndex}
+        openIndex={openIndex}
+        onToggle={togglePanel}
+        editPanel={openIsCollege ? editPanel : null}
+      />
+
+      {!editPanel ? (
+        <p className={META_TEXT}>
+          Dashed dots are ₹0 slots. Past school years stay on the rail but do not create
+          withdrawals.
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -780,11 +929,19 @@ function EducationResults({
   childName,
   childAge,
   taxPct,
+  openMilestones,
+  onToggleMilestones,
+  openAnalytics,
+  onToggleAnalytics,
 }: {
   result: EducationResult;
   childName: string;
   childAge: number;
   taxPct: number;
+  openMilestones: boolean;
+  onToggleMilestones: () => void;
+  openAnalytics: boolean;
+  onToggleAnalytics: () => void;
 }) {
   const schoolChart = result.costChart.filter((row) => !isCollegeLabel(row.classLabel));
   const collegeChart = result.costChart.filter((row) => isCollegeLabel(row.classLabel));
@@ -807,195 +964,285 @@ function EducationResults({
 
   return (
     <Stack>
-      <StatGrid>
-        <StatCard
-          title="Lumpsum required today"
-          value={result.lumpsum.lumpsum}
-          hint={`Peak ${formatINRCurrency(result.lumpsum.peakCorpus)}`}
-          tone="neutral"
-        />
-        <StatCard
-          title="Monthly SIP required"
-          value={result.sip.monthlySip}
-          tone="positive"
-          hint={`${result.sipYears} years of SIP funding`}
-        />
-      </StatGrid>
-
-      <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
-        <QuickStat
-          icon={BookOpen}
-          label="School start"
-          value={`Age ${childAge}`}
-          sub={childName.trim() || "Current age"}
-        />
-        <QuickStat
-          icon={GraduationCap}
-          label="College start"
-          value={firstCollege ? `Age ${firstCollege.age}` : "None"}
-          sub={firstCollege?.classLabel ?? "No college fees"}
-        />
-        <QuickStat
-          icon={Calendar}
-          label="Horizon"
-          value={`Age ${result.lastFeeAge}`}
-          sub={`${result.sipYears} SIP years`}
-        />
-        <QuickStat
-          icon={Flag}
-          label="Total withdrawal"
-          value={formatINRCurrency(result.totalWithdrawal)}
-          sub={`Tax ${taxPct}% on fees`}
-        />
-      </div>
-
-      {hasShortfall ? (
-        <StatusNote tone="error">
-          Funding shortfall detected
-          {shortfallRows[0]
-            ? ` from ${shortfallRows[0].classLabel} (age ${shortfallRows[0].age})`
-            : ""}
-          . SIP balance turns negative before fees end. Raise monthly SIP or add a lumpsum top-up.
-        </StatusNote>
-      ) : null}
-
-      <ResultsSplit
-        left={
-          <div className="flex min-h-0 flex-col gap-2.5">
-            <CompareChart
-              title="Lumpsum vs SIP"
-              data={result.compare}
-              series={[
-                { key: "lumpsum", label: "Lumpsum", color: "var(--app-chart-invested)" },
-                { key: "sip", label: "SIP", color: "var(--app-chart-gain)" },
-              ]}
-              className="min-h-[240px] h-[240px] flex-none sm:min-h-[260px] sm:h-[260px]"
-            />
-            <div className="grid grid-cols-1 gap-2.5 xl:grid-cols-2">
-              {schoolChart.length > 0 ? (
-                <StackedBarChart
-                  title="School costs"
-                  orientation="horizontal"
-                  totalLabel="Total withdrawal"
-                  className="min-h-[240px] h-[240px] flex-none"
-                  data={schoolChart.map((row) => ({
-                    category: row.classLabel,
-                    cost: row.cost,
-                    tax: row.tax,
-                  }))}
-                  series={[...costSeries]}
-                />
-              ) : null}
-              {collegeChart.length > 0 ? (
-                <StackedBarChart
-                  title="College costs"
-                  orientation="horizontal"
-                  totalLabel="Total withdrawal"
-                  className="min-h-[200px] h-[200px] flex-none"
-                  data={collegeChart.map((row) => ({
-                    category: row.classLabel,
-                    cost: row.cost,
-                    tax: row.tax,
-                  }))}
-                  series={[...costSeries]}
-                />
-              ) : null}
-            </div>
-          </div>
-        }
-        right={
-          <ResultCard
-            title="Plan summary"
-            items={[
-              {
-                label: "Lumpsum required today",
-                value: result.lumpsum.lumpsum,
-                highlight: true,
-              },
-              {
-                label: "Monthly SIP",
-                value: result.sip.monthlySip,
-                hint: `${result.sipYears} years`,
-                tone: "maturity",
-              },
-              { label: "SIP invested", value: result.sip.invested },
-              { label: "Peak corpus (SIP)", value: result.sip.peakCorpus, tone: "gain" },
-              { label: "Total withdrawal", value: result.totalWithdrawal, tone: "delay" },
-              { label: "Total tax drag", value: result.totalTax, tone: "tax" },
-            ]}
-          />
-        }
-      />
-
-      <ScheduleTable
-        caption="Education investment and withdrawal plan"
+      <ResultsSection
+        sectionId="02"
+        title="Education Funding Milestones"
+        description="Lumpsum today versus monthly SIP required to fund the fee schedule"
+        open={openMilestones}
+        onToggle={onToggleMilestones}
         meta={
-          <>
-            SIP{" "}
-            <span className="font-semibold text-[var(--app-text)]">
-              {formatINRCurrency(result.sip.monthlySip)}
-            </span>
-            <span className="mx-2 text-[var(--app-border)]">·</span>
-            Withdrawals{" "}
-            <span className="font-semibold text-[var(--app-text)]">
-              {formatINRCurrency(result.totalWithdrawal)}
-            </span>
-          </>
+          <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">
+            Horizon: Age {result.lastFeeAge} · {result.sipYears} SIP years
+          </span>
         }
-        zebra
-        dense
-        highlightLastRow
-        emphasizeRow={(row) => {
-          const r = row as EducationResult["schedule"][number];
-          if (r.age <= childAge) return false;
-          if (firstWithdrawal && r.age === firstWithdrawal.age) return true;
-          if (firstCollege && r.age === firstCollege.age) return true;
-          if (r.age === result.lastFeeAge) return true;
-          return false;
-        }}
-        dangerRow={(row) => {
-          const r = row as EducationResult["schedule"][number];
-          return r.age > childAge && r.sipBalance < -0.5;
-        }}
-        columns={[
-          { key: "age", header: "Age", sticky: true },
-          { key: "classLabel", header: "Class", format: "text" },
-          { key: "cost", header: "Edu. cost", format: "inr", align: "right", tone: "warn" },
-          { key: "tax", header: "Cap. gains", format: "inr", align: "right", tone: "warn" },
-          {
-            key: "withdrawal",
-            header: "Withdrawal",
-            format: "inr",
-            align: "right",
-            tone: "warn",
-          },
-          { key: "sipCorpus", header: "SIP corpus", format: "inr", align: "right", tone: "std" },
-          {
-            key: "sipBalance",
-            header: "SIP balance",
-            format: "inr",
-            align: "right",
-            tone: "std",
-            render: (value) => {
-              const n = typeof value === "number" ? value : Number(value);
-              if (!Number.isFinite(n)) return "";
-              return (
-                <span className={n < -0.5 ? "font-semibold text-[var(--app-danger)]" : undefined}>
-                  {formatINRCurrency(n)}
+      >
+        <StatGrid>
+          <StatCard
+            title="Lumpsum required today"
+            value={result.lumpsum.lumpsum}
+            hint={`Peak ${formatINRCurrency(result.lumpsum.peakCorpus)}`}
+            tone="neutral"
+            badge={
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                One-time
+              </span>
+            }
+            footer={
+              <div className="flex items-center justify-between">
+                <span>Invested path:</span>
+                <span className="font-semibold text-slate-700">
+                  {formatINRCurrency(result.lumpsum.invested)}
                 </span>
-              );
+              </div>
+            }
+          />
+          <StatCard
+            title="Monthly SIP required"
+            value={result.sip.monthlySip}
+            tone="positive"
+            hint={`${result.sipYears} years of SIP funding`}
+            badge={
+              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+                SIP
+              </span>
+            }
+            footer={
+              <div className="flex items-center justify-between">
+                <span>SIP invested:</span>
+                <span className="font-bold text-emerald-700">
+                  {formatINRCurrency(result.sip.invested)}
+                </span>
+              </div>
+            }
+          />
+        </StatGrid>
+
+        <div className="mt-6 grid grid-cols-2 gap-2 lg:grid-cols-4">
+          <QuickStat
+            icon={BookOpen}
+            label="School start"
+            value={`Age ${childAge}`}
+            sub={childName.trim() || "Current age"}
+          />
+          <QuickStat
+            icon={GraduationCap}
+            label="College start"
+            value={firstCollege ? `Age ${firstCollege.age}` : "None"}
+            sub={firstCollege?.classLabel ?? "No college fees"}
+          />
+          <QuickStat
+            icon={Calendar}
+            label="Horizon"
+            value={`Age ${result.lastFeeAge}`}
+            sub={`${result.sipYears} SIP years`}
+          />
+          <QuickStat
+            icon={Flag}
+            label="Total withdrawal"
+            value={formatINRCurrency(result.totalWithdrawal)}
+            sub={`Tax ${taxPct}% on fees`}
+          />
+        </div>
+
+        {hasShortfall ? (
+          <div className="mt-6">
+            <StatusNote tone="error">
+              Funding shortfall detected
+              {shortfallRows[0]
+                ? ` from ${shortfallRows[0].classLabel} (age ${shortfallRows[0].age})`
+                : ""}
+              . SIP balance turns negative before fees end. Raise monthly SIP or add a lumpsum
+              top-up.
+            </StatusNote>
+          </div>
+        ) : null}
+      </ResultsSection>
+
+      <ResultsSection
+        sectionId="03"
+        title="Education Analytics"
+        description="Lumpsum vs SIP compare, fee composition, plan summary, and withdrawal schedule"
+        open={openAnalytics}
+        onToggle={onToggleAnalytics}
+      >
+        <SegmentedChartControl
+          variant="pill"
+          tabs={[
+            {
+              id: "compare",
+              label: "Compare",
+              icon: <BarChart3 className="h-3.5 w-3.5" />,
+              content: (
+                <ChartPane>
+                  <CompareChart
+                    title="Lumpsum vs SIP"
+                    data={result.compare}
+                    series={[
+                      { key: "lumpsum", label: "Lumpsum", color: "var(--app-chart-invested)" },
+                      { key: "sip", label: "SIP", color: "var(--app-chart-gain)" },
+                    ]}
+                    className="min-h-[260px] h-[260px] flex-none sm:min-h-[300px] sm:h-[300px]"
+                  />
+                </ChartPane>
+              ),
             },
-          },
-          {
-            key: "lumpsumBalance",
-            header: "Lumpsum balance",
-            format: "inr",
-            align: "right",
-            tone: "step",
-          },
-        ]}
-        rows={result.schedule}
-      />
+            {
+              id: "costs",
+              label: "Fee mix",
+              icon: <PieChart className="h-3.5 w-3.5" />,
+              content: (
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                  {schoolChart.length > 0 ? (
+                    <ChartPane>
+                      <StackedBarChart
+                        title="School costs"
+                        orientation="horizontal"
+                        totalLabel="Total withdrawal"
+                        className="min-h-[240px] h-[240px] flex-none"
+                        data={schoolChart.map((row) => ({
+                          category: row.classLabel,
+                          cost: row.cost,
+                          tax: row.tax,
+                        }))}
+                        series={[...costSeries]}
+                      />
+                    </ChartPane>
+                  ) : null}
+                  {collegeChart.length > 0 ? (
+                    <ChartPane>
+                      <StackedBarChart
+                        title="College costs"
+                        orientation="horizontal"
+                        totalLabel="Total withdrawal"
+                        className="min-h-[200px] h-[200px] flex-none"
+                        data={collegeChart.map((row) => ({
+                          category: row.classLabel,
+                          cost: row.cost,
+                          tax: row.tax,
+                        }))}
+                        series={[...costSeries]}
+                      />
+                    </ChartPane>
+                  ) : null}
+                </div>
+              ),
+            },
+            {
+              id: "summary",
+              label: "Summary",
+              icon: <Flag className="h-3.5 w-3.5" />,
+              content: (
+                <ChartPane>
+                  <ResultCard
+                    title="Plan summary"
+                    items={[
+                      {
+                        label: "Lumpsum required today",
+                        value: result.lumpsum.lumpsum,
+                        highlight: true,
+                      },
+                      {
+                        label: "Monthly SIP",
+                        value: result.sip.monthlySip,
+                        hint: `${result.sipYears} years`,
+                        tone: "maturity",
+                      },
+                      { label: "SIP invested", value: result.sip.invested },
+                      { label: "Peak corpus (SIP)", value: result.sip.peakCorpus, tone: "gain" },
+                      {
+                        label: "Total withdrawal",
+                        value: result.totalWithdrawal,
+                        tone: "delay",
+                      },
+                      { label: "Total tax drag", value: result.totalTax, tone: "tax" },
+                    ]}
+                  />
+                </ChartPane>
+              ),
+            },
+          ]}
+        />
+
+        <div className="mt-8">
+          <ScheduleTable
+            caption="Education investment and withdrawal plan"
+            meta={
+              <>
+                SIP{" "}
+                <span className="font-semibold text-[var(--app-text)]">
+                  {formatINRCurrency(result.sip.monthlySip)}
+                </span>
+                <span className="mx-2 text-[var(--app-border)]">·</span>
+                Withdrawals{" "}
+                <span className="font-semibold text-[var(--app-text)]">
+                  {formatINRCurrency(result.totalWithdrawal)}
+                </span>
+              </>
+            }
+            zebra
+            dense
+            highlightLastRow
+            emphasizeRow={(row) => {
+              const r = row as EducationResult["schedule"][number];
+              if (r.age <= childAge) return false;
+              if (firstWithdrawal && r.age === firstWithdrawal.age) return true;
+              if (firstCollege && r.age === firstCollege.age) return true;
+              if (r.age === result.lastFeeAge) return true;
+              return false;
+            }}
+            dangerRow={(row) => {
+              const r = row as EducationResult["schedule"][number];
+              return r.age > childAge && r.sipBalance < -0.5;
+            }}
+            columns={[
+              { key: "age", header: "Age", sticky: true },
+              { key: "classLabel", header: "Class", format: "text" },
+              { key: "cost", header: "Edu. cost", format: "inr", align: "right", tone: "warn" },
+              { key: "tax", header: "Cap. gains", format: "inr", align: "right", tone: "warn" },
+              {
+                key: "withdrawal",
+                header: "Withdrawal",
+                format: "inr",
+                align: "right",
+                tone: "warn",
+              },
+              {
+                key: "sipCorpus",
+                header: "SIP corpus",
+                format: "inr",
+                align: "right",
+                tone: "std",
+              },
+              {
+                key: "sipBalance",
+                header: "SIP balance",
+                format: "inr",
+                align: "right",
+                tone: "std",
+                render: (value) => {
+                  const n = typeof value === "number" ? value : Number(value);
+                  if (!Number.isFinite(n)) return "";
+                  return (
+                    <span
+                      className={n < -0.5 ? "font-semibold text-[var(--app-danger)]" : undefined}
+                    >
+                      {formatINRCurrency(n)}
+                    </span>
+                  );
+                },
+              },
+              {
+                key: "lumpsumBalance",
+                header: "Lumpsum balance",
+                format: "inr",
+                align: "right",
+                tone: "step",
+              },
+            ]}
+            rows={result.schedule}
+          />
+        </div>
+      </ResultsSection>
     </Stack>
   );
 }

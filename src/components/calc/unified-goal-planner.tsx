@@ -5,21 +5,31 @@ import { PieChart, BarChart3, LineChart } from "lucide-react";
 import { generateCalculatorReport, generatePdfFromElement } from "@/lib/pdf-generator";
 import { playbookForPdf } from "@/lib/report-playbooks";
 import {
-  Card,
-  BentoSection,
+  AgeInput,
+  ageError,
   BentoGroup,
+  BentoSection,
+  Card,
+  ChartPane,
   ClientProfileBar,
   CompareChart,
   CompositionChart,
+  ComplianceFootnote,
+  emailError,
+  Field,
   formatINRCurrency,
   GrowthChart,
   META_TEXT,
   MICRO_LABEL,
   MoneyInput,
   ModeTabs,
+  nameError,
   PercentInput,
+  phoneError,
+  rateError,
   ResultCard,
   type ResultItem,
+  ResultsSection,
   ResultsSplit,
   ScheduleTable,
   SectionHeader,
@@ -30,15 +40,14 @@ import {
   StatCard,
   StatGrid,
   StatusNote,
+  TextInput,
   WaterfallChart,
   YearInput,
-  AgeInput,
-  Field,
-  TextInput,
 } from "@nivra/ui";
 import { CalculatorPage } from "@/components/layout/calculator-page-with-nav";
 import { ReportDownloadButton } from "@/components/calc/report-download-button";
 import { CompoundingResults } from "@/components/calc/goal-compounding-results";
+import { DUMMY_REPORT_CONTACT } from "@/components/reports/executive-dossier";
 import { useCalculate } from "@/hooks/use-calculate";
 import { useCalculatorMode } from "@/hooks/use-calculator-mode";
 import { getCalculatorPageTitle } from "@/lib/calculator-nav";
@@ -163,6 +172,8 @@ export function UnifiedGoalPlanner() {
   const compoundingLanding = mode === "compounding";
   const [name, setName] = useState("Mr. John Doe");
   const [age, setAge] = useState(30);
+  const [email, setEmail] = useState(DUMMY_REPORT_CONTACT.email);
+  const [phone, setPhone] = useState(DUMMY_REPORT_CONTACT.phone);
   const [goalAmount, setGoalAmount] = useState(compoundingLanding ? 5_000_000 : 10_000_000);
   const [tenureYears, setTenureYears] = useState(15);
   const [returnPct, setReturnPct] = useState(compoundingLanding ? 14 : 12);
@@ -178,9 +189,14 @@ export function UnifiedGoalPlanner() {
   const [investmentType, setInvestmentType] = useState<"one-time" | "sip">("one-time");
   const [stepSize, setStepSize] = useState(1_000_000);
 
-  const nameError = !name.trim() ? "Client Name required." : undefined;
-  const ageError =
-    age < 18 || age > 100 ? "Enter a valid age." : undefined;
+  const [openAssumptions, setOpenAssumptions] = useState(true);
+  const [openMilestones, setOpenMilestones] = useState(true);
+  const [openAnalytics, setOpenAnalytics] = useState(true);
+
+  const clientNameError = nameError(name);
+  const clientAgeError = ageError(age);
+  const clientEmailError = emailError(email);
+  const clientPhoneError = phoneError(phone);
   const goalError = goalAmount <= 0 ? "Enter your goal amount." : undefined;
   const tenureError =
     tenureYears < 1 || tenureYears > 50 ? "Tenure should be between 1 and 50 years." : undefined;
@@ -194,9 +210,8 @@ export function UnifiedGoalPlanner() {
         : undefined;
   const inflationError =
     inflationPct < 0 || inflationPct > 20 ? "Inflation should be between 0 and 20%." : undefined;
-  const taxError = taxPct < 0 || taxPct > 100 ? "Tax should be between 0 and 100%." : undefined;
-  const stepUpError =
-    stepUpPct < 0 || stepUpPct > 100 ? "Step-up should be between 0 and 100%." : undefined;
+  const taxError = rateError(taxPct, "Tax");
+  const stepUpError = rateError(stepUpPct, "Step-up");
   const corpusError = currentCorpus < 0 ? "Corpus cannot be negative." : undefined;
   const currentSipError = currentMonthlySip < 0 ? "Current SIP cannot be negative." : undefined;
   const extraLsError = extraLumpsum < 0 ? "Extra lumpsum cannot be negative." : undefined;
@@ -205,19 +220,45 @@ export function UnifiedGoalPlanner() {
       ? "Periodic investment amount is required."
       : undefined;
 
-  const canCalculate =
-    !nameError &&
-    !ageError &&
-    !goalError &&
-    !tenureError &&
-    !returnError &&
-    (mode === "compounding" || !inflationError) &&
-    !taxError &&
-    (mode === "compounding" ? true : !stepUpError) &&
-    (mode !== "current" && mode !== "ls-sip" ? true : !corpusError) &&
-    (mode !== "current" && mode !== "existing" ? true : !currentSipError) &&
-    (mode !== "ls-sip" ? true : !extraLsError) &&
-    (mode !== "periodic" ? true : !periodicAmountError);
+  const fieldErrors = [
+    clientNameError,
+    clientAgeError,
+    clientEmailError,
+    clientPhoneError,
+    goalError,
+    tenureError,
+    returnError,
+    mode === "compounding" ? undefined : inflationError,
+    taxError,
+    mode === "compounding" ? undefined : stepUpError,
+    mode === "current" || mode === "ls-sip" ? corpusError : undefined,
+    mode === "current" || mode === "existing" ? currentSipError : undefined,
+    mode === "ls-sip" ? extraLsError : undefined,
+    mode === "periodic" ? periodicAmountError : undefined,
+  ].filter((msg): msg is string => Boolean(msg));
+
+  const canCalculate = fieldErrors.length === 0;
+
+  const resetDefaults = () => {
+    setName("Mr. John Doe");
+    setAge(30);
+    setEmail(DUMMY_REPORT_CONTACT.email);
+    setPhone(DUMMY_REPORT_CONTACT.phone);
+    setGoalAmount(compoundingLanding ? 5_000_000 : 10_000_000);
+    setTenureYears(15);
+    setReturnPct(compoundingLanding ? 14 : 12);
+    setInflationPct(5.25);
+    setTaxPct(12.5);
+    setStepUpPct(10);
+    setUseInflAdj(!compoundingLanding);
+    setCurrentCorpus(500_000);
+    setCurrentMonthlySip(5_000);
+    setExtraLumpsum(200_000);
+    setPeriodicAmount(100_000);
+    setTimesPerYear(2);
+    setInvestmentType("one-time");
+    setStepSize(1_000_000);
+  };
 
   const input = useMemo(() => {
     const base = {
@@ -468,6 +509,8 @@ export function UnifiedGoalPlanner() {
         <ClientProfileBar
           name={name}
           age={age}
+          email={email}
+          phone={phone}
           goal={mode === "compounding" ? "Capital Growth" : useInflAdj ? "Inflation-Adjusted Target" : "Stated Target"}
           strategy={MODES.find(m => m.id === mode)?.label ?? "Goal Planner"}
         />
@@ -477,21 +520,68 @@ export function UnifiedGoalPlanner() {
           title="Financial Assumptions & Modeling Suite"
           description="Interactive multi-parameter engine configured with life-cycle compounding"
           sectionId="01"
+          collapsible
+          open={openAssumptions}
+          onToggle={() => setOpenAssumptions((v) => !v)}
+          actions={
+            <button
+              type="button"
+              onClick={resetDefaults}
+              className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 transition-all hover:bg-slate-100 hover:text-emerald-700"
+            >
+              Reset to Baseline
+            </button>
+          }
         >
-          <BentoGroup num="01" title="Investor Profile" subtitle="KYC Baseline" colSpan={4}>
-            <div className="flex flex-col gap-4">
-              <Field label="Client Name" error={nameError}>
+          <BentoGroup
+            num="01"
+            title="Investor Profile"
+            subtitle="KYC Baseline"
+            colSpan={4}
+            footer={
+              <>
+                <span>Age path:</span>
+                <span className="font-bold text-slate-700">
+                  {age} → {age + tenureYears}
+                </span>
+              </>
+            }
+          >
+            <div className="mb-4">
+              <Field label="Client Name" error={clientNameError}>
                 <TextInput
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className={
-                    nameError
-                      ? "border-[var(--app-danger)] focus-visible:ring-[var(--app-danger)]"
-                      : undefined
-                  }
+                  className={clientNameError ? "border-[var(--app-danger)]" : undefined}
                 />
               </Field>
-              <AgeInput value={age} onChange={setAge} error={ageError} />
+            </div>
+            <div className="mb-4">
+              <AgeInput value={age} onChange={setAge} error={clientAgeError} />
+            </div>
+            <div className="mb-4">
+              <Field label="Email" error={clientEmailError}>
+                <TextInput
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="client@email.com"
+                  className={clientEmailError ? "border-[var(--app-danger)]" : undefined}
+                />
+              </Field>
+            </div>
+            <div className="mb-4">
+              <Field label="Phone" error={clientPhoneError}>
+                <TextInput
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+91 98765 43210"
+                  className={clientPhoneError ? "border-[var(--app-danger)]" : undefined}
+                />
+              </Field>
+            </div>
+            <div className="mb-4">
               <MoneyInput
                 label="Goal amount"
                 value={goalAmount}
@@ -501,7 +591,7 @@ export function UnifiedGoalPlanner() {
               />
             </div>
             {mode !== "compounding" && (
-              <div className="flex flex-col gap-1.5 mt-4 pt-3 border-t border-slate-200/60">
+              <div className="flex flex-col gap-1.5 border-t border-slate-200/60 pt-3">
                 <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
                   Goal basis
                 </span>
@@ -667,18 +757,43 @@ export function UnifiedGoalPlanner() {
         <>
           {error ? <StatusNote tone="error">{error}</StatusNote> : null}
           {!canCalculate ? (
-            <StatusNote tone="warn">Fix the highlighted inputs to calculate.</StatusNote>
+            <StatusNote tone="error">
+              <div className="flex flex-col gap-1">
+                <span className="font-semibold">
+                  Fix the inputs above to refresh the calculation
+                  {result ? ". Showing the last valid result." : "."}
+                </span>
+                <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[12px] font-normal">
+                  {fieldErrors.map((msg) => (
+                    <li key={msg}>{msg}</li>
+                  ))}
+                </ul>
+              </div>
+            </StatusNote>
           ) : null}
-          {loading && !result ? <StatusNote tone="pending">Calculating…</StatusNote> : null}
+          {loading && !result && canCalculate ? (
+            <StatusNote tone="pending">Calculating…</StatusNote>
+          ) : null}
           {result ? (
             <GoalResults
               mode={mode}
               result={result}
               tenureYears={tenureYears}
               currentMonthlySip={currentMonthlySip}
+              openMilestones={openMilestones}
+              onToggleMilestones={() => setOpenMilestones((v) => !v)}
+              openAnalytics={openAnalytics}
+              onToggleAnalytics={() => setOpenAnalytics((v) => !v)}
             />
           ) : null}
         </>
+      }
+      footer={
+        <ComplianceFootnote>
+          Calculations shown are for illustration purposes only. Goal funding paths are modeled under
+          the stated return, inflation, and tax assumptions. Actual market returns and tax rules can
+          differ. Market investments are subject to risk.
+        </ComplianceFootnote>
       }
     />
     {mode === "ls-sip" &&
@@ -692,6 +807,8 @@ export function UnifiedGoalPlanner() {
         data={{
           clientName: name,
           age,
+          email,
+          phone,
           goalAmount,
           tenureYears,
           returnPct,
@@ -748,6 +865,8 @@ export function UnifiedGoalPlanner() {
         data={{
           clientName: name,
           age,
+          email,
+          phone,
           goalAmount,
           tenureYears,
           returnPct,
@@ -815,6 +934,8 @@ export function UnifiedGoalPlanner() {
         data={{
           clientName: name,
           age,
+          email,
+          phone,
           goalAmount,
           tenureYears,
           returnPct,
@@ -880,6 +1001,8 @@ export function UnifiedGoalPlanner() {
         data={{
           clientName: name,
           age,
+          email,
+          phone,
           goalAmount,
           tenureYears,
           returnPct,
@@ -951,6 +1074,8 @@ export function UnifiedGoalPlanner() {
         data={{
           clientName: name,
           age,
+          email,
+          phone,
           goalAmount,
           tenureYears,
           returnPct,
@@ -988,49 +1113,133 @@ export function UnifiedGoalPlanner() {
   );
 }
 
+function GoalResultSections({
+  milestones,
+  analytics,
+  openMilestones,
+  onToggleMilestones,
+  openAnalytics,
+  onToggleAnalytics,
+  tenureYears,
+}: {
+  milestones: ReactNode;
+  analytics: ReactNode;
+  openMilestones: boolean;
+  onToggleMilestones: () => void;
+  openAnalytics: boolean;
+  onToggleAnalytics: () => void;
+  tenureYears: number;
+}) {
+  return (
+    <Stack>
+      <ResultsSection
+        sectionId="02"
+        title="Goal Milestones"
+        description="Key funding outcomes for the selected goal mode"
+        open={openMilestones}
+        onToggle={onToggleMilestones}
+        meta={
+          <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">
+            Horizon: {tenureYears} Years
+          </span>
+        }
+      >
+        {milestones}
+      </ResultsSection>
+      <ResultsSection
+        sectionId="03"
+        title="Goal Analytics"
+        description="Charts, summaries, and yearly audit schedule"
+        open={openAnalytics}
+        onToggle={onToggleAnalytics}
+      >
+        {analytics}
+      </ResultsSection>
+    </Stack>
+  );
+}
+
 function GoalResults({
   mode,
   result,
   tenureYears,
   currentMonthlySip,
+  openMilestones,
+  onToggleMilestones,
+  openAnalytics,
+  onToggleAnalytics,
 }: {
   mode: Mode;
   result: GoalPlannerResult;
   tenureYears: number;
   currentMonthlySip: number;
+  openMilestones: boolean;
+  onToggleMilestones: () => void;
+  openAnalytics: boolean;
+  onToggleAnalytics: () => void;
 }) {
+  const sectionProps = {
+    openMilestones,
+    onToggleMilestones,
+    openAnalytics,
+    onToggleAnalytics,
+    tenureYears,
+  };
+
   if (mode === "ls-sip") {
-    return <LsSipResults result={result} tenureYears={tenureYears} />;
+    return <LsSipResults result={result} {...sectionProps} />;
   }
   if (mode === "current") {
-    return <CurrentInvestmentResults result={result} tenureYears={tenureYears} />;
+    return <CurrentInvestmentResults result={result} {...sectionProps} />;
   }
   if (mode === "existing") {
     return (
       <ExistingSipResults
         result={result}
-        tenureYears={tenureYears}
         currentMonthlySip={currentMonthlySip}
+        {...sectionProps}
       />
     );
   }
   if (mode === "periodic") {
-    return <PeriodicResults result={result} tenureYears={tenureYears} />;
+    return <PeriodicResults result={result} {...sectionProps} />;
   }
   if (mode === "compounding" && result.standard && result.lumpsum?.lumpsum != null) {
     return (
-      <CompoundingResults
-        tenureYears={tenureYears}
-        result={{
-          targetGoal: result.targetGoal,
-          extraYears: result.extraYears,
-          investmentType: result.investmentType,
-          stepSize: result.stepSize,
-          standard: result.standard,
-          lumpsum: result.lumpsum,
-          growthSteps: result.growthSteps,
-          schedule: result.schedule,
-        }}
+      <GoalResultSections
+        {...sectionProps}
+        milestones={
+          <StatGrid>
+            <StatCard title="Target goal" value={result.targetGoal} tone="neutral" />
+            <StatCard
+              title="Monthly SIP required"
+              value={result.standard.monthlySip}
+              hint="Every month for the full tenure"
+              tone="positive"
+            />
+            <StatCard
+              title="Lumpsum required"
+              value={result.lumpsum.lumpsum ?? 0}
+              hint="One-time amount today"
+              tone="neutral"
+            />
+          </StatGrid>
+        }
+        analytics={
+          <CompoundingResults
+            tenureYears={tenureYears}
+            result={{
+              targetGoal: result.targetGoal,
+              extraYears: result.extraYears,
+              investmentType: result.investmentType,
+              stepSize: result.stepSize,
+              standard: result.standard,
+              lumpsum: result.lumpsum,
+              growthSteps: result.growthSteps,
+              schedule: result.schedule,
+            }}
+          />
+        }
       />
     );
   }
@@ -1073,75 +1282,88 @@ function GoalResults({
   }
 
   return (
-    <Stack>
-      <GoalHero mode={mode} result={result} />
-      <ResultsSplit
-        left={renderGoalCharts(mode, result, tenureYears)}
-        right={
-          <>
-            <ResultCard
-              title={result.overfunded ? "Results · already funded" : "Goal summary"}
-              items={summaryItems}
+    <GoalResultSections
+      {...sectionProps}
+      milestones={<GoalHero mode={mode} result={result} />}
+      analytics={
+        <>
+          <ResultsSplit
+            left={renderGoalCharts(mode, result, tenureYears)}
+            right={
+              <>
+                <ResultCard
+                  title={result.overfunded ? "Results · already funded" : "Goal summary"}
+                  items={summaryItems}
+                />
+                {result.standard ? (
+                  <ResultCard
+                    title={mode === "sip" ? "Standard SIP" : "Additional SIP"}
+                    items={legItems(result.standard)}
+                  />
+                ) : null}
+                {result.stepUp ? (
+                  <ResultCard
+                    title={mode === "sip" ? "Step-up SIP" : "Additional step-up SIP"}
+                    items={legItems(result.stepUp)}
+                  />
+                ) : null}
+                {result.lumpsum?.lumpsum != null ? (
+                  <ResultCard title="Additional lumpsum today" items={legItems(result.lumpsum)} />
+                ) : null}
+              </>
+            }
+          />
+          <ScheduleTable
+            caption="Yearly schedule"
+            meta={`${result.schedule.length} years`}
+            zebra
+            columns={scheduleColumns(mode)}
+            rows={result.schedule}
+          />
+          {result.delays && result.delays.length > 0 ? (
+            <ScheduleTable
+              caption="Cost of delay"
+              meta="Later start, higher SIP"
+              columns={[
+                { key: "months", header: "Delay (months)", sticky: true },
+                {
+                  key: "sipRequired",
+                  header: "SIP required",
+                  format: "inr",
+                  align: "right",
+                  tone: "std",
+                },
+                {
+                  key: "extraInvested",
+                  header: "Extra invested",
+                  format: "inr",
+                  align: "right",
+                  tone: "warn",
+                },
+              ]}
+              rows={result.delays}
             />
-            {result.standard ? (
-              <ResultCard
-                title={mode === "sip" ? "Standard SIP" : "Additional SIP"}
-                items={legItems(result.standard)}
-              />
-            ) : null}
-            {result.stepUp ? (
-              <ResultCard
-                title={mode === "sip" ? "Step-up SIP" : "Additional step-up SIP"}
-                items={legItems(result.stepUp)}
-              />
-            ) : null}
-            {result.lumpsum?.lumpsum != null ? (
-              <ResultCard title="Additional lumpsum today" items={legItems(result.lumpsum)} />
-            ) : null}
-          </>
-        }
-      />
-      <ScheduleTable
-        caption="Yearly schedule"
-        meta={`${result.schedule.length} years`}
-        zebra
-        columns={scheduleColumns(mode)}
-        rows={result.schedule}
-      />
-      {result.delays && result.delays.length > 0 ? (
-        <ScheduleTable
-          caption="Cost of delay"
-          meta="Later start, higher SIP"
-          columns={[
-            { key: "months", header: "Delay (months)", sticky: true },
-            {
-              key: "sipRequired",
-              header: "SIP required",
-              format: "inr",
-              align: "right",
-              tone: "std",
-            },
-            {
-              key: "extraInvested",
-              header: "Extra invested",
-              format: "inr",
-              align: "right",
-              tone: "warn",
-            },
-          ]}
-          rows={result.delays}
-        />
-      ) : null}
-    </Stack>
+          ) : null}
+        </>
+      }
+    />
   );
 }
 
 function LsSipResults({
   result,
   tenureYears,
+  openMilestones,
+  onToggleMilestones,
+  openAnalytics,
+  onToggleAnalytics,
 }: {
   result: GoalPlannerResult;
   tenureYears: number;
+  openMilestones: boolean;
+  onToggleMilestones: () => void;
+  openAnalytics: boolean;
+  onToggleAnalytics: () => void;
 }) {
   const years = result.schedule.length || tenureYears;
   const mixSip = result.mixSip ?? 0;
@@ -1150,69 +1372,87 @@ function LsSipResults({
   const standard = result.standard;
 
   return (
-    <Stack>
-      <StatGrid>
-        <StatCard title="Target goal" value={result.targetGoal} tone="neutral" />
-        <StatCard title="Shortfall to fund" value={result.shortfall ?? 0} tone="negative" />
-        <StatCard title="Mix monthly SIP" value={mixSip} tone="positive" />
-      </StatGrid>
+    <GoalResultSections
+      openMilestones={openMilestones}
+      onToggleMilestones={onToggleMilestones}
+      openAnalytics={openAnalytics}
+      onToggleAnalytics={onToggleAnalytics}
+      tenureYears={tenureYears}
+      milestones={
+        <StatGrid>
+          <StatCard title="Target goal" value={result.targetGoal} tone="neutral" />
+          <StatCard title="Shortfall to fund" value={result.shortfall ?? 0} tone="negative" />
+          <StatCard title="Mix monthly SIP" value={mixSip} tone="positive" />
+        </StatGrid>
+      }
+      analytics={
+        <>
+          <ResultsSplit
+            left={renderGoalCharts("ls-sip", result, years)}
+            right={
+              <>
+                <ResultCard
+                  title={result.overfunded ? "Results · already funded" : "Goal summary"}
+                  items={[
+                    {
+                      label: "Target goal",
+                      value: result.targetGoal,
+                      highlight: true,
+                      tone: "maturity",
+                    },
+                    { label: "Inflation-adjusted goal", value: result.inflAdjGoal },
+                    {
+                      label: "Shortfall to fund",
+                      value: result.shortfall ?? 0,
+                      highlight: true,
+                      tone: "delay",
+                    },
+                    { label: "Credit from current corpus", value: result.existingCredit ?? 0 },
+                    { label: "All lumpsum (today)", value: allLumpsum },
+                    { label: "All SIP (monthly)", value: allSip },
+                    {
+                      label: "Mix remaining SIP",
+                      value: mixSip,
+                      highlight: true,
+                      tone: "gain",
+                    },
+                  ]}
+                />
+                {standard ? <LegMetricCard title="Additional SIP" leg={standard} /> : null}
+                {result.stepUp ? (
+                  <LegMetricCard title="Additional step-up SIP" leg={result.stepUp} />
+                ) : null}
+              </>
+            }
+          />
 
-      <ResultsSplit
-        left={renderGoalCharts("ls-sip", result, years)}
-        right={
-          <>
-            <ResultCard
-              title={result.overfunded ? "Results · already funded" : "Goal summary"}
-              items={[
-                {
-                  label: "Target goal",
-                  value: result.targetGoal,
-                  highlight: true,
-                  tone: "maturity",
-                },
-                { label: "Inflation-adjusted goal", value: result.inflAdjGoal },
-                {
-                  label: "Shortfall to fund",
-                  value: result.shortfall ?? 0,
-                  highlight: true,
-                  tone: "delay",
-                },
-                { label: "Credit from current corpus", value: result.existingCredit ?? 0 },
-                { label: "All lumpsum (today)", value: allLumpsum },
-                { label: "All SIP (monthly)", value: allSip },
-                {
-                  label: "Mix remaining SIP",
-                  value: mixSip,
-                  highlight: true,
-                  tone: "gain",
-                },
-              ]}
-            />
-            {standard ? <LegMetricCard title="Additional SIP" leg={standard} /> : null}
-            {result.stepUp ? (
-              <LegMetricCard title="Additional step-up SIP" leg={result.stepUp} />
-            ) : null}
-          </>
-        }
-      />
-
-      <ScheduleTable
-        caption="Yearly schedule"
-        meta={`${result.schedule.length} years`}
-        zebra
-        columns={scheduleColumns("ls-sip")}
-        rows={result.schedule}
-      />
-    </Stack>
+          <ScheduleTable
+            caption="Yearly schedule"
+            meta={`${result.schedule.length} years`}
+            zebra
+            columns={scheduleColumns("ls-sip")}
+            rows={result.schedule}
+          />
+        </>
+      }
+    />
   );
 }
 
 function PeriodicResults({
   result,
   tenureYears,
+  openMilestones,
+  onToggleMilestones,
+  openAnalytics,
+  onToggleAnalytics,
 }: {
   result: GoalPlannerResult;
   tenureYears: number;
+  openMilestones: boolean;
+  onToggleMilestones: () => void;
+  openAnalytics: boolean;
+  onToggleAnalytics: () => void;
 }) {
   const years = result.schedule.length || tenureYears;
   const periodic = result.periodic;
@@ -1228,121 +1468,141 @@ function PeriodicResults({
     (periodic ? Math.max(0, periodic.maturity - periodic.netCredit) : 0);
 
   return (
-    <Stack>
-      {result.overfunded ? (
-        <StatusNote tone="info">
-          Periodic investments already fund this goal. Additional SIP, step-up, and lumpsum are not
-          required.
-        </StatusNote>
-      ) : null}
+    <GoalResultSections
+      openMilestones={openMilestones}
+      onToggleMilestones={onToggleMilestones}
+      openAnalytics={openAnalytics}
+      onToggleAnalytics={onToggleAnalytics}
+      tenureYears={tenureYears}
+      milestones={
+        <>
+          {result.overfunded ? (
+            <StatusNote tone="info">
+              Periodic investments already fund this goal. Additional SIP, step-up, and lumpsum are not
+              required.
+            </StatusNote>
+          ) : null}
 
-      <StatGrid>
-        <StatCard title="Target goal" value={result.targetGoal} tone="neutral" />
-        <StatCard
-          title={result.overfunded ? "Periodic net credit" : "Shortfall to fund"}
-          value={result.overfunded ? (periodic?.netCredit ?? 0) : shortfall}
-          tone={result.overfunded ? "positive" : "negative"}
-        />
-        <StatCard
-          title="Additional SIP · monthly"
-          value={standard?.monthlySip ?? 0}
-          tone="positive"
-        />
-        <StatCard title="Step-up SIP · start" value={stepUp?.monthlySip ?? 0} tone="positive" />
-      </StatGrid>
-
-      <ResultsSplit
-        left={renderGoalCharts("periodic", result, years)}
-        right={
-          <>
-            <ResultCard
-              title={result.overfunded ? "Results · already funded" : "Goal summary"}
-              items={[
-                {
-                  label: "Target goal",
-                  value: result.targetGoal,
-                  highlight: true,
-                  tone: "maturity",
-                },
-                { label: "Inflation-adjusted goal", value: result.inflAdjGoal },
-                {
-                  label: "Shortfall to fund",
-                  value: shortfall,
-                  highlight: true,
-                  tone: "delay",
-                },
-                { label: "Periodic maturity", value: periodic?.maturity ?? 0 },
-                { label: "Periodic invested", value: periodic?.totalInvested ?? 0 },
-                {
-                  label: "Periodic gain",
-                  value: periodicGain,
-                  tone: "gain",
-                },
-                { label: "Periodic tax", value: periodicTax, tone: "tax" },
-                {
-                  label: "Periodic net credit",
-                  value: periodic?.netCredit ?? 0,
-                  highlight: true,
-                  tone: "inflation",
-                },
-                {
-                  label: "Periodic payments",
-                  displayValue: String(periodic?.payments ?? 0),
-                },
-              ]}
+          <StatGrid>
+            <StatCard title="Target goal" value={result.targetGoal} tone="neutral" />
+            <StatCard
+              title={result.overfunded ? "Periodic net credit" : "Shortfall to fund"}
+              value={result.overfunded ? (periodic?.netCredit ?? 0) : shortfall}
+              tone={result.overfunded ? "positive" : "negative"}
             />
-            {periodic ? (
-              <div className="flex min-h-[240px] flex-1 flex-col">
-                <CompositionChart
-                  title="Periodic mix"
-                  centerLabel="Maturity"
-                  centerValue={periodic.maturity}
-                  showPercentages
-                  size="lg"
-                  slices={[
+            <StatCard
+              title="Additional SIP · monthly"
+              value={standard?.monthlySip ?? 0}
+              tone="positive"
+            />
+            <StatCard title="Step-up SIP · start" value={stepUp?.monthlySip ?? 0} tone="positive" />
+          </StatGrid>
+        </>
+      }
+      analytics={
+        <>
+          <ResultsSplit
+            left={renderGoalCharts("periodic", result, years)}
+            right={
+              <>
+                <ResultCard
+                  title={result.overfunded ? "Results · already funded" : "Goal summary"}
+                  items={[
                     {
-                      name: "Periodic invested",
-                      value: periodic.totalInvested,
-                      color: "var(--app-chart-invested)",
+                      label: "Target goal",
+                      value: result.targetGoal,
+                      highlight: true,
+                      tone: "maturity",
+                    },
+                    { label: "Inflation-adjusted goal", value: result.inflAdjGoal },
+                    {
+                      label: "Shortfall to fund",
+                      value: shortfall,
+                      highlight: true,
+                      tone: "delay",
+                    },
+                    { label: "Periodic maturity", value: periodic?.maturity ?? 0 },
+                    { label: "Periodic invested", value: periodic?.totalInvested ?? 0 },
+                    {
+                      label: "Periodic gain",
+                      value: periodicGain,
+                      tone: "gain",
+                    },
+                    { label: "Periodic tax", value: periodicTax, tone: "tax" },
+                    {
+                      label: "Periodic net credit",
+                      value: periodic?.netCredit ?? 0,
+                      highlight: true,
+                      tone: "inflation",
                     },
                     {
-                      name: "Periodic gain",
-                      value: periodicGain,
-                      color: "var(--app-chart-gain)",
+                      label: "Periodic payments",
+                      displayValue: String(periodic?.payments ?? 0),
                     },
                   ]}
                 />
-              </div>
-            ) : null}
-          </>
-        }
-      />
+                {periodic ? (
+                  <div className="flex min-h-[240px] flex-1 flex-col">
+                    <CompositionChart
+                      title="Periodic mix"
+                      centerLabel="Maturity"
+                      centerValue={periodic.maturity}
+                      showPercentages
+                      size="lg"
+                      slices={[
+                        {
+                          name: "Periodic invested",
+                          value: periodic.totalInvested,
+                          color: "var(--app-chart-invested)",
+                        },
+                        {
+                          name: "Periodic gain",
+                          value: periodicGain,
+                          color: "var(--app-chart-gain)",
+                        },
+                      ]}
+                    />
+                  </div>
+                ) : null}
+              </>
+            }
+          />
 
-      <FundingPathsBoard
-        muted={Boolean(result.overfunded)}
-        lumpsum={lumpsum}
-        standard={standard}
-        stepUp={stepUp}
-      />
+          <FundingPathsBoard
+            muted={Boolean(result.overfunded)}
+            lumpsum={lumpsum}
+            standard={standard}
+            stepUp={stepUp}
+          />
 
-      <ScheduleTable
-        caption="Yearly schedule"
-        meta={`${result.schedule.length} years · periodic + remaining SIP`}
-        zebra
-        highlightLastRow
-        columns={scheduleColumns("periodic")}
-        rows={result.schedule}
-      />
-    </Stack>
+          <ScheduleTable
+            caption="Yearly schedule"
+            meta={`${result.schedule.length} years · periodic + remaining SIP`}
+            zebra
+            highlightLastRow
+            columns={scheduleColumns("periodic")}
+            rows={result.schedule}
+          />
+        </>
+      }
+    />
   );
 }
 
 function CurrentInvestmentResults({
   result,
   tenureYears,
+  openMilestones,
+  onToggleMilestones,
+  openAnalytics,
+  onToggleAnalytics,
 }: {
   result: GoalPlannerResult;
   tenureYears: number;
+  openMilestones: boolean;
+  onToggleMilestones: () => void;
+  openAnalytics: boolean;
+  onToggleAnalytics: () => void;
 }) {
   const years = result.schedule.length || tenureYears;
   const existing = result.existing;
@@ -1351,14 +1611,22 @@ function CurrentInvestmentResults({
   const lumpsum = result.lumpsum;
 
   return (
-    <Stack>
-      <StatGrid>
-        <StatCard title="Target goal" value={result.targetGoal} tone="neutral" />
-        <StatCard title="Shortfall to fund" value={result.shortfall ?? 0} tone="negative" />
-        <StatCard title="Additional SIP · monthly" value={standard?.monthlySip ?? 0} tone="positive" />
-        <StatCard title="Step-up SIP · start" value={stepUp?.monthlySip ?? 0} tone="positive" />
-      </StatGrid>
-
+    <GoalResultSections
+      openMilestones={openMilestones}
+      onToggleMilestones={onToggleMilestones}
+      openAnalytics={openAnalytics}
+      onToggleAnalytics={onToggleAnalytics}
+      tenureYears={tenureYears}
+      milestones={
+        <StatGrid>
+          <StatCard title="Target goal" value={result.targetGoal} tone="neutral" />
+          <StatCard title="Shortfall to fund" value={result.shortfall ?? 0} tone="negative" />
+          <StatCard title="Additional SIP · monthly" value={standard?.monthlySip ?? 0} tone="positive" />
+          <StatCard title="Step-up SIP · start" value={stepUp?.monthlySip ?? 0} tone="positive" />
+        </StatGrid>
+      }
+      analytics={
+        <>
       <ResultsSplit
         left={renderGoalCharts("current", result, years)}
         right={
@@ -1444,7 +1712,9 @@ function CurrentInvestmentResults({
         columns={scheduleColumns("current")}
         rows={result.schedule}
       />
-    </Stack>
+        </>
+      }
+    />
   );
 }
 
@@ -1452,10 +1722,18 @@ function ExistingSipResults({
   result,
   tenureYears,
   currentMonthlySip,
+  openMilestones,
+  onToggleMilestones,
+  openAnalytics,
+  onToggleAnalytics,
 }: {
   result: GoalPlannerResult;
   tenureYears: number;
   currentMonthlySip: number;
+  openMilestones: boolean;
+  onToggleMilestones: () => void;
+  openAnalytics: boolean;
+  onToggleAnalytics: () => void;
 }) {
   const [chartType, setChartType] = useState<"pie" | "bar">("pie");
   const years = result.schedule.length || tenureYears;
@@ -1474,56 +1752,66 @@ function ExistingSipResults({
   const combinedCorpus = sip1Fv + (standard?.maturity ?? 0);
 
   return (
-    <Stack>
-      <StatGrid>
-        <StatCard
-          title="Target goal"
-          value={result.targetGoal}
-          tone="neutral"
-          hint="Net after capital gains tax"
-        />
-        <StatCard
-          title="Existing SIP credit"
-          value={existing?.netCredit ?? 0}
-          tone="neutral"
-          hint="Keep current SIP running"
-        />
-        <StatCard
-          title="Additional SIP"
-          value={standard?.monthlySip ?? 0}
-          tone="positive"
-          hint="Extra flat monthly SIP"
-        />
-        <StatCard
-          title="Step-up SIP"
-          value={stepUp?.monthlySip ?? 0}
-          tone="positive"
-          hint="Starting monthly SIP"
-          footer={
-            stepUp?.endMonthlySip != null ? (
-              <>
-                Ending SIP after {years} years ·{" "}
-                <span className="font-semibold tabular-nums text-emerald-700">
-                  {formatINRCurrency(stepUp.endMonthlySip)}
-                </span>
-                /mo
-              </>
-            ) : undefined
-          }
-        />
-      </StatGrid>
+    <GoalResultSections
+      openMilestones={openMilestones}
+      onToggleMilestones={onToggleMilestones}
+      openAnalytics={openAnalytics}
+      onToggleAnalytics={onToggleAnalytics}
+      tenureYears={tenureYears}
+      milestones={
+        <>
+          <StatGrid>
+            <StatCard
+              title="Target goal"
+              value={result.targetGoal}
+              tone="neutral"
+              hint="Net after capital gains tax"
+            />
+            <StatCard
+              title="Existing SIP credit"
+              value={existing?.netCredit ?? 0}
+              tone="neutral"
+              hint="Keep current SIP running"
+            />
+            <StatCard
+              title="Additional SIP"
+              value={standard?.monthlySip ?? 0}
+              tone="positive"
+              hint="Extra flat monthly SIP"
+            />
+            <StatCard
+              title="Step-up SIP"
+              value={stepUp?.monthlySip ?? 0}
+              tone="positive"
+              hint="Starting monthly SIP"
+              footer={
+                stepUp?.endMonthlySip != null ? (
+                  <>
+                    Ending SIP after {years} years ·{" "}
+                    <span className="font-semibold tabular-nums text-emerald-700">
+                      {formatINRCurrency(stepUp.endMonthlySip)}
+                    </span>
+                    /mo
+                  </>
+                ) : undefined
+              }
+            />
+          </StatGrid>
 
-      {result.overfunded ? (
-        <StatusNote tone="info">
-          Existing SIP already covers the goal. Additional funding is not required.
-        </StatusNote>
-      ) : (
-        <StatusNote tone="info">
-          Shortfall to fund · {formatINRCurrency(result.shortfall ?? 0)}. Keep the current SIP of{" "}
-          {formatINRCurrency(currentMonthlySip)}/mo and add one of the paths below.
-        </StatusNote>
-      )}
-
+          {result.overfunded ? (
+            <StatusNote tone="info">
+              Existing SIP already covers the goal. Additional funding is not required.
+            </StatusNote>
+          ) : (
+            <StatusNote tone="info">
+              Shortfall to fund · {formatINRCurrency(result.shortfall ?? 0)}. Keep the current SIP of{" "}
+              {formatINRCurrency(currentMonthlySip)}/mo and add one of the paths below.
+            </StatusNote>
+          )}
+        </>
+      }
+      analytics={
+        <>
       <div className="grid grid-cols-1 items-stretch gap-4 xl:grid-cols-3">
         <div className="flex min-w-0 flex-col gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3.5 sm:p-4 xl:col-span-2">
           <div className="flex flex-wrap items-center gap-3">
@@ -1714,7 +2002,9 @@ function ExistingSipResults({
         columns={scheduleColumns("existing")}
         rows={result.schedule}
       />
-    </Stack>
+        </>
+      }
+    />
   );
 }
 
@@ -1971,24 +2261,37 @@ function renderGoalCharts(mode: Mode, result: GoalPlannerResult, tenureYears: nu
   const extra = goalExtraChart(mode, result, tenureYears);
   
   if (!extra) {
-    return <div className="flex min-h-[260px] flex-1 flex-col sm:min-h-[300px]">{req}</div>;
+    return (
+      <ChartPane>
+        <div className="flex min-h-[260px] flex-1 flex-col sm:min-h-[300px]">{req}</div>
+      </ChartPane>
+    );
   }
   
   return (
     <SegmentedChartControl
+      variant="pill"
       tabs={[
         {
           id: "required",
           label: "Funding",
-          icon: <PieChart className="w-4 h-4" />,
-          content: <div className="flex min-h-[260px] flex-1 flex-col sm:min-h-[300px]">{req}</div>
+          icon: <PieChart className="h-3.5 w-3.5" />,
+          content: (
+            <ChartPane>
+              <div className="flex min-h-[260px] flex-1 flex-col sm:min-h-[300px]">{req}</div>
+            </ChartPane>
+          ),
         },
         {
           id: "extra",
           label: "Comparison",
-          icon: <BarChart3 className="w-4 h-4" />,
-          content: <div className="flex min-h-[260px] flex-1 flex-col sm:min-h-[300px]">{extra}</div>
-        }
+          icon: <BarChart3 className="h-3.5 w-3.5" />,
+          content: (
+            <ChartPane>
+              <div className="flex min-h-[260px] flex-1 flex-col sm:min-h-[300px]">{extra}</div>
+            </ChartPane>
+          ),
+        },
       ]}
     />
   );
