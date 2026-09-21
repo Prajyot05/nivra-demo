@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { generatePdfFromElement } from "@/lib/pdf-generator";
 import {
   FINANCIAL_HEALTH_REPORT_ID,
@@ -12,9 +12,7 @@ import {
 } from "@/components/reports/fire-planner-dossier";
 import { DUMMY_REPORT_CONTACT } from "@/components/reports/executive-dossier";
 import {
-  ComboChart,
   formatINRCurrency,
-  StackedAreaChart,
   ageError,
   emailError,
   nameError,
@@ -25,9 +23,8 @@ import { CalculatorPage } from "@/components/layout/calculator-page-with-nav";
 import { ReportDownloadButton } from "@/components/calc/report-download-button";
 import { useCalculate } from "@/hooks/use-calculate";
 import { useCalculatorMode } from "@/hooks/use-calculator-mode";
-import { getCalculatorPageTitle } from "@/lib/calculator-nav";
+import { getCalculatorPageDescription, getCalculatorPageTitle } from "@/lib/calculator-nav";
 import {
-  ChartFrame,
   IconCalendar,
   IconChart,
   IconCheck,
@@ -55,9 +52,12 @@ import {
   WealthStatusNote,
   WealthTextField,
   WealthYearField,
-  WealthCompareBars,
   WealthGrowthLine,
   WealthMixDonut,
+  WealthAnalyticsChrome,
+  WealthFormPanel,
+  WealthLedgerShell,
+  wealthLedgerTheadClass,
   wealthChart,
   wealthMixColors,
   moneyCell,
@@ -144,6 +144,103 @@ const BTN_DANGER =
   "inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700 transition hover:bg-rose-100 disabled:opacity-50";
 const PILL = "inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-medium";
 const META_TEXT = "text-[11px] text-slate-500";
+
+function FireLedgerTable({
+  title,
+  subtitle,
+  columns = ["Metric", "Amount"],
+  rows,
+}: {
+  title: string;
+  subtitle: string;
+  columns?: string[];
+  rows: Array<{
+    label: string;
+    value: string;
+    delayed?: string;
+    tone?: "default" | "emerald" | "rose";
+    highlight?: boolean;
+    hint?: string;
+  }>;
+}) {
+  const threeCol = columns.length >= 3;
+  return (
+    <div className="space-y-2.5">
+      <div>
+        <div className="text-[12px] font-medium uppercase tracking-[0.14em] text-slate-400">
+          {title}
+        </div>
+        <p className="mt-1 text-[13px] leading-relaxed text-slate-500">{subtitle}</p>
+      </div>
+      <div className="overflow-x-auto">
+        <WealthLedgerShell className={threeCol ? "min-w-[32rem]" : "min-w-[24rem]"}>
+          <table className="w-full border-collapse text-left text-[13px] tabular-nums">
+            <thead>
+              <tr className={wealthLedgerTheadClass()}>
+                <th className="px-4 py-3.5 text-left text-[13px] font-medium text-slate-600">
+                  {columns[0]}
+                </th>
+                <th className="px-4 py-3.5 text-right text-[13px] font-medium text-emerald-700">
+                  {columns[1]}
+                </th>
+                {threeCol ? (
+                  <th className="px-4 py-3.5 text-right text-[13px] font-medium text-rose-700">
+                    {columns[2]}
+                  </th>
+                ) : null}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+              {rows.map((row) => (
+                <tr
+                  key={row.label}
+                  className={
+                    row.highlight
+                      ? "border-t border-emerald-200/80 bg-emerald-50/60"
+                      : "transition-colors hover:bg-slate-50/80"
+                  }
+                >
+                  <td className="px-4 py-3.5 text-[14px] text-slate-700">
+                    {row.highlight ? (
+                      <span className="inline-flex items-center rounded-md bg-emerald-600 px-2 py-0.5 text-[12px] font-semibold text-white">
+                        {row.label}
+                      </span>
+                    ) : (
+                      <span>
+                        {row.label}
+                        {row.hint ? (
+                          <span className="mt-0.5 block text-[12px] font-normal text-slate-400">
+                            {row.hint}
+                          </span>
+                        ) : null}
+                      </span>
+                    )}
+                  </td>
+                  <td
+                    className={
+                      row.tone === "rose"
+                        ? "px-4 py-3.5 text-right text-[14px] font-semibold tabular-nums text-rose-600"
+                        : row.tone === "emerald"
+                          ? "px-4 py-3.5 text-right text-[14px] font-semibold tabular-nums text-emerald-700"
+                          : "px-4 py-3.5 text-right text-[14px] font-medium tabular-nums text-slate-800"
+                    }
+                  >
+                    {row.value}
+                  </td>
+                  {threeCol ? (
+                    <td className="px-4 py-3.5 text-right text-[14px] font-semibold tabular-nums text-rose-600">
+                      {row.delayed ?? "—"}
+                    </td>
+                  ) : null}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </WealthLedgerShell>
+      </div>
+    </div>
+  );
+}
 
 function DetailPanel({
   title,
@@ -264,10 +361,28 @@ const FACTOR_OPTIONS = [
   { value: "30", label: "30%" },
 ];
 
-const EVENT_TYPE_OPTIONS = [
-  { value: "Expense", label: "Expense" },
-  { value: "Income", label: "Income" },
+const FLOW_TYPE_OPTIONS = [
+  { value: "Expense", label: "Expense (outflow)" },
+  { value: "Income", label: "Income (inflow)" },
 ];
+
+/** Same category set as Multi-Goal withdrawals. */
+const EVENT_KIND_OPTIONS = [
+  { value: "car", label: "Car" },
+  { value: "education", label: "Education" },
+  { value: "marriage", label: "Marriage" },
+  { value: "house", label: "House" },
+  { value: "vacation", label: "Vacation" },
+  { value: "medical", label: "Medical" },
+  { value: "retirement", label: "Retirement" },
+  { value: "custom", label: "Custom" },
+] as const;
+
+type EventKind = (typeof EVENT_KIND_OPTIONS)[number]["value"];
+
+const EVENT_KIND_LABEL: Record<EventKind, string> = Object.fromEntries(
+  EVENT_KIND_OPTIONS.map((o) => [o.value, o.label]),
+) as Record<EventKind, string>;
 
 const FIRE_EVENTS_OPTIONS = [
   { value: "None", label: "None" },
@@ -282,6 +397,7 @@ type HealthEventDraft = {
   age: number;
   amount: number;
   type: "Expense" | "Income";
+  kind: EventKind;
 };
 
 /** Excel event row: Age (P), Income (Q), Expense (R). */
@@ -290,23 +406,35 @@ type FireEventDraft = {
   age: number;
   income: number;
   expense: number;
+  kind: EventKind;
 };
 
-function newHealthEvent(age = 62, amount = 20_000_000): HealthEventDraft {
+function newHealthEvent(
+  age = 62,
+  amount = 20_000_000,
+  kind: EventKind = "house",
+): HealthEventDraft {
   return {
     id: `ev-${Math.random().toString(36).slice(2, 9)}`,
     age,
     amount,
     type: "Expense",
+    kind,
   };
 }
 
-function newFireEvent(age = 50, incomeAmt = 0, expenseAmt = 10_000_000): FireEventDraft {
+function newFireEvent(
+  age = 50,
+  incomeAmt = 0,
+  expenseAmt = 10_000_000,
+  kind: EventKind = "house",
+): FireEventDraft {
   return {
     id: `fev-${Math.random().toString(36).slice(2, 9)}`,
     age,
     income: incomeAmt,
     expense: expenseAmt,
+    kind,
   };
 }
 
@@ -811,11 +939,7 @@ export function FireHealthCalculator() {
     <>
       <CalculatorPage
         title={getCalculatorPageTitle("/fire", mode)}
-        description={
-          mode === "health"
-            ? "Plan your retirement corpus, spending needs, and long-term financial health."
-            : "Plan the corpus and SIP path needed to reach financial independence."
-        }
+        description={getCalculatorPageDescription("/fire", mode)}
         contentClassName={WEALTH_CONTENT_CLASS}
         actions={
           <ReportDownloadButton
@@ -843,20 +967,12 @@ export function FireHealthCalculator() {
         }
         form={
           <div ref={assumptionsRef} className="space-y-4">
-            <WealthSegmented
-              fullWidth
-              layoutId="fire-health-mode"
-              value={mode}
-              onChange={setMode}
-              options={MODES.map((m) => ({ id: m.id, label: m.label }))}
-            />
-
             {mode === "fire" ? (
               <WealthSection
                 id="assumptions"
                 badge="01 · Profile"
-                title="FIRE Assumptions"
-                subtitle="Corpus path, SIP funding, delay cost, and major life events"
+                title="Investor Profile and Assumptions"
+                subtitle="Client identity, corpus path, SIP funding, delay, and major life events"
                 open={openAssumptions}
                 onToggle={() => setOpenAssumptions((v) => !v)}
                 mark={
@@ -1102,8 +1218,8 @@ export function FireHealthCalculator() {
               <WealthSection
                 id="assumptions"
                 badge="01 · Profile"
-                title="Health Assumptions"
-                subtitle="Retirement runway, spending, and post-retirement health events"
+                title="Investor Profile and Assumptions"
+                subtitle="Client identity, retirement runway, spending, and post-retirement events"
                 open={openAssumptions}
                 onToggle={() => setOpenAssumptions((v) => !v)}
                 mark={
@@ -1451,6 +1567,155 @@ export function FireHealthCalculator() {
   );
 }
 
+type AgePathNode =
+  | {
+      kind: "anchor";
+      id: string;
+      label: string;
+      age: number;
+      tone: "emerald" | "slate";
+    }
+  | {
+      kind: "event";
+      id: string;
+      label: string;
+      age: number;
+      amountLabel: string;
+      hasError?: boolean;
+      expenseHeavy?: boolean;
+    };
+
+/**
+ * Left-to-right age rail — Education fee-path / Seed benefit timeline density,
+ * adapted to Nivra slate/emerald wealth chrome.
+ */
+function AgeEventPath({
+  nodes,
+  activeId,
+  openId,
+  onToggle,
+  empty,
+  editPanel,
+  panelRef,
+  footer,
+}: {
+  nodes: AgePathNode[];
+  activeId: string | null;
+  openId: string | null;
+  onToggle: (id: string) => void;
+  empty: ReactNode;
+  editPanel: ReactNode;
+  panelRef: RefObject<HTMLDivElement | null>;
+  footer?: ReactNode;
+}) {
+  const hasEvents = nodes.some((n) => n.kind === "event");
+  if (!hasEvents) {
+    return <>{empty}</>;
+  }
+
+  const eventCount = nodes.filter((n) => n.kind === "event").length;
+
+  return (
+    <div className="space-y-3 rounded-2xl border border-slate-200/80 bg-white p-3 sm:p-4">
+      <div className="custom-scrollbar w-full overflow-x-auto pb-1.5 pt-4">
+        <div
+          className="relative flex w-full items-start justify-between px-1 sm:px-2"
+          style={{
+            minWidth: `max(100%, ${4.25 + eventCount * 5.5 + 4.25}rem)`,
+          }}
+        >
+          <div
+            className="pointer-events-none absolute left-[2.125rem] right-[2.125rem] top-[1.125rem] h-0.5 bg-slate-200"
+            aria-hidden
+          />
+
+          {nodes.map((node) => {
+            if (node.kind === "anchor") {
+              const emerald = node.tone === "emerald";
+              return (
+                <div
+                  key={node.id}
+                  className="relative z-[1] flex w-[4.25rem] shrink-0 flex-col items-center"
+                >
+                  <div
+                    className={`flex size-9 items-center justify-center rounded-md border ${
+                      emerald
+                        ? "border-emerald-600 bg-emerald-700 text-white"
+                        : "border-slate-200 bg-slate-50 text-slate-500"
+                    }`}
+                  >
+                    {emerald ? (
+                      <IconChevron className="size-4 -rotate-90" />
+                    ) : (
+                      <IconFlag className="size-4" />
+                    )}
+                  </div>
+                  <div className="mt-1.5 text-center">
+                    <div className="text-[9px] font-medium uppercase tracking-wider text-slate-400">
+                      {node.label}
+                    </div>
+                    <div className="text-[11px] font-medium text-slate-900">Age {node.age}</div>
+                  </div>
+                </div>
+              );
+            }
+
+            const isActive = activeId === node.id;
+            const isOpen = openId === node.id;
+            return (
+              <div
+                key={node.id}
+                className="relative z-[1] flex w-[5rem] shrink-0 flex-col items-center"
+              >
+                <button
+                  type="button"
+                  data-event-dot
+                  className={`relative flex size-9 items-center justify-center rounded-md border transition ${
+                    node.hasError
+                      ? "border-rose-400 bg-rose-50 text-rose-600"
+                      : isOpen || isActive
+                        ? "border-emerald-500 bg-emerald-50 text-emerald-800 ring-4 ring-emerald-500/15"
+                        : node.expenseHeavy
+                          ? "border-amber-200 bg-white text-amber-700 hover:border-amber-400"
+                          : "border-emerald-200 bg-white text-emerald-700 hover:border-emerald-400"
+                  }`}
+                  onClick={() => onToggle(node.id)}
+                  title={`${node.label} · Age ${node.age} · ${node.amountLabel}`}
+                  aria-expanded={isOpen}
+                >
+                  {node.expenseHeavy ? (
+                    <IconArrowDown className="size-4" />
+                  ) : (
+                    <IconArrowUp className="size-4" />
+                  )}
+                  {isActive ? (
+                    <span className="absolute -bottom-1 left-1/2 size-1.5 -translate-x-1/2 rounded-full bg-emerald-600" />
+                  ) : null}
+                </button>
+                <div className="mt-1.5 max-w-[5rem] text-center">
+                  <div className="truncate text-[11px] font-medium text-slate-900">{node.label}</div>
+                  <div className="text-[9px] text-slate-500">Age {node.age}</div>
+                  <div className="truncate text-[9px] tabular-nums text-slate-400">
+                    {node.amountLabel}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {editPanel ? (
+        <div ref={panelRef} className="rounded-2xl border border-slate-200/80 bg-slate-50/60 p-3.5 sm:p-4">
+          {editPanel}
+        </div>
+      ) : (
+        footer
+      )}
+    </div>
+  );
+}
+
 function HealthEventTimeline({
   events,
   retirementAge,
@@ -1523,143 +1788,79 @@ function HealthEventTimeline({
   const openEvent = openId ? sorted.find((ev) => ev.id === openId) : null;
   const openError = openEvent ? eventErrorById.get(openEvent.id) : undefined;
 
+  const nodes: AgePathNode[] = [
+    {
+      kind: "anchor",
+      id: "retire",
+      label: "Retire",
+      age: retirementAge,
+      tone: "emerald",
+    },
+    ...sorted.map((ev) => ({
+      kind: "event" as const,
+      id: ev.id,
+      label: EVENT_KIND_LABEL[ev.kind],
+      age: ev.age,
+      amountLabel: formatINRCurrency(ev.amount),
+      hasError: eventErrorById.has(ev.id),
+      expenseHeavy: ev.type === "Expense",
+    })),
+    {
+      kind: "anchor",
+      id: "survive",
+      label: "Survive",
+      age: survivalAge,
+      tone: "slate" as const,
+    },
+  ];
+
   return (
-    <div className="space-y-2">
-      <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-        <div className="flex flex-wrap items-center gap-2.5">
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)] sm:text-xs">
-            Major financial events
-          </h3>
-          <span className="rounded-md border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-2 py-0.5 text-[11px] font-medium text-[var(--app-text-muted)]">
-            {events.length} / {MAX_HEALTH_EVENTS}
-          </span>
-          {sorted.length > 0 ? (
-            <span className={META_TEXT}>Click a dot to edit. Sorted by age.</span>
-          ) : null}
-        </div>
-        <button
-          type="button"
-          className={BTN_PRIMARY}
-          onClick={onAdd}
-          disabled={atCapacity}
-        >
+    <WealthFormPanel
+      title="Major financial events"
+      description={
+        sorted.length > 0
+          ? `Select a row to edit · sorted by age · ${events.length} / ${MAX_HEALTH_EVENTS}`
+          : `Add up to ${MAX_HEALTH_EVENTS} post-retirement cash flows`
+      }
+      aside={
+        <button type="button" className={BTN_PRIMARY} onClick={onAdd} disabled={atCapacity}>
           <IconPlus className="size-3.5" />
           Add event
         </button>
-      </div>
-
-      {events.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface-muted)] py-8 text-center">
-          <IconFlag className="mb-2 size-6 text-[var(--app-text-subtle)]" />
-          <p className="mb-3 text-[13px] text-[var(--app-text-muted)]">
-            No post-retirement events yet.
-          </p>
-          <button type="button" className={BTN_PRIMARY} onClick={onAdd} disabled={atCapacity}>
-            <IconPlus className="size-3.5" />
-            Add first event
-          </button>
-        </div>
-      ) : (
-        <div className="relative w-full">
-          <div className="custom-scrollbar w-full overflow-x-auto pb-3 pt-5">
-            <div
-              className="relative flex w-full items-start justify-between px-2 sm:px-4"
-              style={{
-                minWidth: `max(100%, ${5.5 + sorted.length * 7.25 + 5.5}rem)`,
-              }}
-            >
-              <div
-                className="pointer-events-none absolute left-[2.75rem] right-[2.75rem] top-[1.375rem] h-0.5 bg-[var(--app-border)]"
-                aria-hidden
-              />
-
-              <div className="relative z-[1] flex w-[5.5rem] shrink-0 flex-col items-center">
-                <div className="flex size-11 items-center justify-center rounded-full border-2 border-[var(--app-primary)] bg-[var(--app-primary)] text-[var(--app-primary-fg)]">
-                  <IconChevron className="size-5" />
-                </div>
-                <div className="mt-2 text-center">
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
-                    Retire
-                  </div>
-                  <div className="text-xs font-semibold text-[var(--app-text)]">
-                    Age {retirementAge}
-                  </div>
-                </div>
-              </div>
-
-              {sorted.map((ev) => {
-                const hasErr = eventErrorById.has(ev.id);
-                const isActive = activeId === ev.id;
-                const isOpen = openId === ev.id;
-                const isExpense = ev.type === "Expense";
-                const Icon = isExpense ? IconArrowDown : IconArrowUp;
-
-                return (
-                  <div
-                    key={ev.id}
-                    className="relative z-[1] flex w-[6.5rem] shrink-0 flex-col items-center"
-                  >
-                    <button
-                      type="button"
-                      data-event-dot
-                      className={`relative flex size-11 items-center justify-center rounded-full border-2 transition ${
-                        hasErr
-                          ? "border-[var(--app-danger)] bg-[var(--app-warn-bg)] text-[var(--app-danger)]"
-                          : isActive || isOpen
-                            ? "border-[var(--app-step-text)] bg-[var(--app-step-bg)] text-[var(--app-step-text-strong)] ring-4 ring-[var(--app-step-text)]/20"
-                            : isExpense
-                              ? "border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-warn-text)] hover:border-[var(--app-primary-soft)]"
-                              : "border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-step-text)] hover:border-[var(--app-primary-soft)]"
-                      }`}
-                      onClick={() => togglePanel(ev.id)}
-                      title={`${ev.type} · Age ${ev.age}`}
-                      aria-expanded={isOpen}
-                    >
-                      <Icon className="size-5" />
-                      {isActive ? (
-                        <span className="absolute -bottom-1 left-1/2 size-1.5 -translate-x-1/2 rounded-full bg-[var(--app-step-text)]" />
-                      ) : null}
-                    </button>
-                    <div className="mt-2 max-w-[6.5rem] text-center">
-                      <div className="truncate text-xs font-semibold text-[var(--app-text)]">
-                        {ev.type}
-                      </div>
-                      <div className="text-[10px] text-[var(--app-text-muted)]">Age {ev.age}</div>
-                      <div className="truncate text-[10px] tabular-nums text-[var(--app-text-subtle)]">
-                        {formatINRCurrency(ev.amount)}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-
-              <div className="relative z-[1] flex w-[5.5rem] shrink-0 flex-col items-center">
-                <div className="flex size-11 items-center justify-center rounded-full border-2 border-[var(--app-border)] bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]">
-                  <IconFlag className="size-5" />
-                </div>
-                <div className="mt-2 text-center">
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
-                    Survive
-                  </div>
-                  <div className="text-xs font-semibold text-[var(--app-text)]">
-                    Age {survivalAge}
-                  </div>
-                </div>
-              </div>
-            </div>
+      }
+    >
+      <AgeEventPath
+        nodes={nodes}
+        activeId={activeId}
+        openId={openId}
+        onToggle={togglePanel}
+        panelRef={panelRef}
+        empty={
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 py-8 text-center">
+            <WealthIconMark className="mb-3 h-9 w-9">
+              <IconFlag className="h-4 w-4" />
+            </WealthIconMark>
+            <p className="mb-3 text-[13px] text-slate-500">No post-retirement events yet.</p>
+            <button type="button" className={BTN_PRIMARY} onClick={onAdd} disabled={atCapacity}>
+              <IconPlus className="size-3.5" />
+              Add first event
+            </button>
           </div>
-
-          {openEvent ? (
-            <div
-              ref={panelRef}
-              className="relative z-20 mt-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3.5 shadow-md sm:p-4"
-            >
-              <div className="mb-3 flex flex-wrap items-start justify-between gap-2 border-b border-[var(--app-border)] pb-3">
+        }
+        footer={
+          <p className="text-[12px] leading-relaxed text-slate-500">
+            Expense events appear as Net Event Impact after retirement tax in the Age Path.
+          </p>
+        }
+        editPanel={
+          openEvent ? (
+            <>
+              <div className="mb-3 flex flex-wrap items-start justify-between gap-2 border-b border-slate-200/80 pb-3">
                 <div>
-                  <div className="text-sm font-semibold text-[var(--app-text)]">
-                    {openEvent.type} at age {openEvent.age}
+                  <div className="text-sm font-semibold text-slate-900">
+                    {EVENT_KIND_LABEL[openEvent.kind]} · {openEvent.type} at age {openEvent.age}
                   </div>
-                  <div className="text-[11px] text-[var(--app-text-muted)]">
+                  <div className="text-[11px] text-slate-500">
                     {formatINRCurrency(openEvent.amount)} · edit and keep on the age path
                   </div>
                 </div>
@@ -1676,18 +1877,13 @@ function HealthEventTimeline({
                     <IconTrash className="size-3.5" />
                     Remove
                   </button>
-                  <button
-                    type="button"
-                    className={BTN_SECONDARY}
-                    onClick={() => setOpenId(null)}
-                  >
+                  <button type="button" className={BTN_SECONDARY} onClick={() => setOpenId(null)}>
                     <IconCheck className="size-3.5" />
                     Done
                   </button>
                 </div>
               </div>
-
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <WealthYearField
                   label="Event age"
                   value={openEvent.age}
@@ -1697,16 +1893,23 @@ function HealthEventTimeline({
                   error={openError}
                   hint={!openError ? `After ${retirementAge}, on or before ${survivalAge}` : undefined}
                 />
+                <WealthSelectField
+                  label="Event type"
+                  value={openEvent.kind}
+                  options={[...EVENT_KIND_OPTIONS]}
+                  onChange={(value) =>
+                    onPatch(openEvent.id, { kind: value as EventKind })
+                  }
+                />
                 <WealthMoneyField
                   label="Amount"
                   value={openEvent.amount}
                   onChange={(amount) => onPatch(openEvent.id, { amount })}
-                 
                 />
                 <WealthSelectField
-                  label="Type"
+                  label="Flow"
                   value={openEvent.type}
-                  options={EVENT_TYPE_OPTIONS}
+                  options={FLOW_TYPE_OPTIONS}
                   onChange={(value) =>
                     onPatch(openEvent.id, {
                       type: value === "Income" ? "Income" : "Expense",
@@ -1714,15 +1917,11 @@ function HealthEventTimeline({
                   }
                 />
               </div>
-            </div>
-          ) : (
-            <p className={META_TEXT}>
-              Expense events appear as Net Event Impact after retirement tax in the Age Path.
-            </p>
-          )}
-        </div>
-      )}
-    </div>
+            </>
+          ) : null
+        }
+      />
+    </WealthFormPanel>
   );
 }
 
@@ -1752,7 +1951,6 @@ function FireEventTimeline({
     [events],
   );
 
-  /** Now → events + retire marker by age → Survive (same interaction model as multi-goal / Health). */
   const middle = useMemo(() => {
     type Node =
       | { kind: "retire"; sortAge: number }
@@ -1763,7 +1961,6 @@ function FireEventTimeline({
     ];
     nodes.sort((a, b) => {
       if (a.sortAge !== b.sortAge) return a.sortAge - b.sortAge;
-      // Same age: events first (pre-ret includes age === retire), then retire marker.
       if (a.kind !== b.kind) return a.kind === "event" ? -1 : 1;
       if (a.kind === "event" && b.kind === "event") {
         return a.ev.id.localeCompare(b.ev.id);
@@ -1824,177 +2021,103 @@ function FireEventTimeline({
   const openPhase =
     openEvent && openEvent.age <= retirementAge ? "Pre-retirement" : "Post-retirement";
 
+  const nodes: AgePathNode[] = [
+    {
+      kind: "anchor",
+      id: "now",
+      label: "Now",
+      age: currentAge,
+      tone: "emerald",
+    },
+    ...middle.flatMap((node): AgePathNode[] => {
+      if (node.kind === "retire") {
+        return [
+          {
+            kind: "anchor",
+            id: "retire",
+            label: "Retire",
+            age: retirementAge,
+            tone: "slate",
+          },
+        ];
+      }
+      const ev = node.ev;
+      const net = ev.expense - ev.income;
+      const expenseHeavy = net >= 0;
+      return [
+        {
+          kind: "event",
+          id: ev.id,
+          label: EVENT_KIND_LABEL[ev.kind],
+          age: ev.age,
+          amountLabel:
+            ev.income > 0 && ev.expense > 0
+              ? `Net ${formatINRCurrency(Math.abs(net))}`
+              : formatINRCurrency(ev.expense > 0 ? ev.expense : ev.income),
+          hasError: eventErrorById.has(ev.id),
+          expenseHeavy,
+        },
+      ];
+    }),
+    {
+      kind: "anchor",
+      id: "survive",
+      label: "Survive",
+      age: survivalAge,
+      tone: "slate",
+    },
+  ];
+
   return (
-    <div className="space-y-2">
-      <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-        <div className="flex flex-wrap items-center gap-2.5">
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)] sm:text-xs">
-            Event timeline
-          </h3>
-          <span className="rounded-md border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-2 py-0.5 text-[11px] font-medium text-[var(--app-text-muted)]">
-            {events.length} / {MAX_FIRE_EVENTS}
-          </span>
-          {sorted.length > 0 ? (
-            <span className={META_TEXT}>Click a dot to edit. Sorted by age.</span>
-          ) : null}
-        </div>
-        <button
-          type="button"
-          className={BTN_PRIMARY}
-          onClick={onAdd}
-          disabled={atCapacity}
-        >
+    <WealthFormPanel
+      title="Major financial events"
+      description={
+        sorted.length > 0
+          ? `Select a row to edit · sorted by age · ${events.length} / ${MAX_FIRE_EVENTS}`
+          : `Add up to ${MAX_FIRE_EVENTS} income or expense cash flows along the plan`
+      }
+      aside={
+        <button type="button" className={BTN_PRIMARY} onClick={onAdd} disabled={atCapacity}>
           <IconPlus className="size-3.5" />
           Add event
         </button>
-      </div>
-
-      {events.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface-muted)] py-8 text-center">
-          <IconFlag className="mb-2 size-6 text-[var(--app-text-subtle)]" />
-          <p className="mb-3 text-[13px] text-[var(--app-text-muted)]">
-            No major events yet. Add income or expense cash flows along the plan.
-          </p>
-          <button type="button" className={BTN_PRIMARY} onClick={onAdd} disabled={atCapacity}>
-            <IconPlus className="size-3.5" />
-            Add first event
-          </button>
-        </div>
-      ) : (
-        <div className="relative w-full">
-          <div className="custom-scrollbar w-full overflow-x-auto pb-3 pt-5">
-            <div
-              className="relative flex w-full items-start justify-between px-2 sm:px-4"
-              style={{
-                minWidth: `max(100%, ${5.5 + middle.length * 7.25 + 5.5}rem)`,
-              }}
-            >
-              <div
-                className="pointer-events-none absolute left-[2.75rem] right-[2.75rem] top-[1.375rem] h-0.5 bg-[var(--app-border)]"
-                aria-hidden
-              />
-
-              <div className="relative z-[1] flex w-[5.5rem] shrink-0 flex-col items-center">
-                <div className="flex size-11 items-center justify-center rounded-full border-2 border-[var(--app-primary)] bg-[var(--app-primary)] text-[var(--app-primary-fg)]">
-                  <IconChevron className="size-5" />
-                </div>
-                <div className="mt-2 text-center">
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
-                    Now
-                  </div>
-                  <div className="text-xs font-semibold text-[var(--app-text)]">
-                    Age {currentAge}
-                  </div>
-                </div>
-              </div>
-
-              {middle.map((node) => {
-                if (node.kind === "retire") {
-                  return (
-                    <div
-                      key="retire-marker"
-                      className="relative z-[1] flex w-[6.5rem] shrink-0 flex-col items-center"
-                    >
-                      <div className="flex size-11 items-center justify-center rounded-full border-2 border-[var(--app-step-text)] bg-[var(--app-step-bg)] text-sm font-bold text-[var(--app-step-text-strong)]">
-                        R
-                      </div>
-                      <div className="mt-2 max-w-[6.5rem] text-center">
-                        <div className="text-xs font-semibold text-[var(--app-text)]">Retire</div>
-                        <div className="text-[10px] text-[var(--app-text-muted)]">
-                          Age {retirementAge}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                }
-
-                const ev = node.ev;
-                const hasErr = eventErrorById.has(ev.id);
-                const isActive = activeId === ev.id;
-                const isOpen = openId === ev.id;
-                const net = ev.expense - ev.income;
-                const isExpenseHeavy = net >= 0;
-                const Icon = isExpenseHeavy ? IconArrowDown : IconArrowUp;
-                const label =
-                  ev.income > 0 && ev.expense > 0
-                    ? "Mixed"
-                    : ev.expense > 0
-                      ? "Expense"
-                      : ev.income > 0
-                        ? "Income"
-                        : "Event";
-                const phase = ev.age <= retirementAge ? "Pre" : "Post";
-
-                return (
-                  <div
-                    key={ev.id}
-                    className="relative z-[1] flex w-[6.5rem] shrink-0 flex-col items-center"
-                  >
-                    <button
-                      type="button"
-                      data-event-dot
-                      className={`relative flex size-11 items-center justify-center rounded-full border-2 transition ${
-                        hasErr
-                          ? "border-[var(--app-danger)] bg-[var(--app-warn-bg)] text-[var(--app-danger)]"
-                          : isActive || isOpen
-                            ? "border-[var(--app-step-text)] bg-[var(--app-step-bg)] text-[var(--app-step-text-strong)] ring-4 ring-[var(--app-step-text)]/20"
-                            : isExpenseHeavy
-                              ? "border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-warn-text)] hover:border-[var(--app-primary-soft)]"
-                              : "border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-step-text)] hover:border-[var(--app-primary-soft)]"
-                      }`}
-                      onClick={() => togglePanel(ev.id)}
-                      title={`${label} · Age ${ev.age} · ${phase}`}
-                      aria-expanded={isOpen}
-                    >
-                      <Icon className="size-5" />
-                      {isActive ? (
-                        <span className="absolute -bottom-1 left-1/2 size-1.5 -translate-x-1/2 rounded-full bg-[var(--app-step-text)]" />
-                      ) : null}
-                    </button>
-                    <div className="mt-2 max-w-[6.5rem] text-center">
-                      <div className="truncate text-xs font-semibold text-[var(--app-text)]">
-                        {label}
-                      </div>
-                      <div className="text-[10px] text-[var(--app-text-muted)]">
-                        Age {ev.age} · {phase}
-                      </div>
-                      <div className="truncate text-[10px] tabular-nums text-[var(--app-text-subtle)]">
-                        {ev.income > 0 && ev.expense > 0
-                          ? `Net ${formatINRCurrency(Math.abs(net))}`
-                          : formatINRCurrency(ev.expense > 0 ? ev.expense : ev.income)}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-
-              <div className="relative z-[1] flex w-[5.5rem] shrink-0 flex-col items-center">
-                <div className="flex size-11 items-center justify-center rounded-full border-2 border-[var(--app-border)] bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]">
-                  <IconFlag className="size-5" />
-                </div>
-                <div className="mt-2 text-center">
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
-                    Survive
-                  </div>
-                  <div className="text-xs font-semibold text-[var(--app-text)]">
-                    Age {survivalAge}
-                  </div>
-                </div>
-              </div>
-            </div>
+      }
+    >
+      <AgeEventPath
+        nodes={nodes}
+        activeId={activeId}
+        openId={openId}
+        onToggle={togglePanel}
+        panelRef={panelRef}
+        empty={
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 py-8 text-center">
+            <WealthIconMark className="mb-3 h-9 w-9">
+              <IconFlag className="h-4 w-4" />
+            </WealthIconMark>
+            <p className="mb-3 text-[13px] text-slate-500">
+              No major events yet. Add income or expense cash flows along the plan.
+            </p>
+            <button type="button" className={BTN_PRIMARY} onClick={onAdd} disabled={atCapacity}>
+              <IconPlus className="size-3.5" />
+              Add first event
+            </button>
           </div>
-
-          {openEvent ? (
-            <div
-              ref={panelRef}
-              className="relative z-20 mt-2 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3.5 shadow-md sm:p-4"
-            >
-              <div className="mb-3 flex flex-wrap items-start justify-between gap-2 border-b border-[var(--app-border)] pb-3">
+        }
+        footer={
+          <p className="text-[12px] leading-relaxed text-slate-500">
+            Pre-retirement expenses need SIP or lumpsum funding. Post-retirement events adjust
+            corpus drawdown.
+          </p>
+        }
+        editPanel={
+          openEvent ? (
+            <>
+              <div className="mb-3 flex flex-wrap items-start justify-between gap-2 border-b border-slate-200/80 pb-3">
                 <div>
-                  <div className="text-sm font-semibold text-[var(--app-text)]">
-                    Event at age {openEvent.age}
+                  <div className="text-sm font-semibold text-slate-900">
+                    {EVENT_KIND_LABEL[openEvent.kind]} at age {openEvent.age}
                   </div>
-                  <div className="text-[11px] text-[var(--app-text-muted)]">
+                  <div className="text-[11px] text-slate-500">
                     {openPhase}
                     {openEvent.income > 0 || openEvent.expense > 0
                       ? ` · net ${formatINRCurrency(Math.abs(openNet))} ${openNet >= 0 ? "expense" : "income"}`
@@ -2014,18 +2137,13 @@ function FireEventTimeline({
                     <IconTrash className="size-3.5" />
                     Remove
                   </button>
-                  <button
-                    type="button"
-                    className={BTN_SECONDARY}
-                    onClick={() => setOpenId(null)}
-                  >
+                  <button type="button" className={BTN_SECONDARY} onClick={() => setOpenId(null)}>
                     <IconCheck className="size-3.5" />
                     Done
                   </button>
                 </div>
               </div>
-
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <WealthYearField
                   label="Event age"
                   value={openEvent.age}
@@ -2039,29 +2157,30 @@ function FireEventTimeline({
                       : undefined
                   }
                 />
+                <WealthSelectField
+                  label="Event type"
+                  value={openEvent.kind}
+                  options={[...EVENT_KIND_OPTIONS]}
+                  onChange={(value) =>
+                    onPatch(openEvent.id, { kind: value as EventKind })
+                  }
+                />
                 <WealthMoneyField
                   label="Income"
                   value={openEvent.income}
                   onChange={(income) => onPatch(openEvent.id, { income })}
-                 
                 />
                 <WealthMoneyField
                   label="Expense"
                   value={openEvent.expense}
                   onChange={(expense) => onPatch(openEvent.id, { expense })}
-                 
                 />
               </div>
-            </div>
-          ) : (
-            <p className={META_TEXT}>
-              Pre-retirement expenses need SIP or lumpsum funding. Post-retirement events
-              adjust corpus drawdown.
-            </p>
-          )}
-        </div>
-      )}
-    </div>
+            </>
+          ) : null
+        }
+      />
+    </WealthFormPanel>
   );
 }
 
@@ -2107,21 +2226,16 @@ function FireResults({
   const invested = result.totalSipInvested;
   const gain = Math.max(0, result.balanceCorpus - invested);
   const activeEvents = events.filter((ev) => ev.income > 0 || ev.expense > 0);
-  const retireMarker = {
-    x: retirementAge,
-    label: "Retirement",
-    color: "var(--app-chart-tax)",
-  };
 
   const phaseBadge = (phase: string) => {
     const label =
       phase === "retire" ? "RETIRE" : phase === "post" ? "POST" : "PRE";
     const cls =
       phase === "retire"
-        ? "bg-[var(--app-step-bg)] text-[var(--app-step-text)]"
+        ? "bg-emerald-50 text-emerald-700"
         : phase === "post"
-          ? "bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]"
-          : "bg-[var(--app-std-bg)] text-[var(--app-std-text)]";
+          ? "bg-slate-100 text-slate-500"
+          : "bg-slate-800 text-white";
     return <span className={`${PILL} ${cls}`}>{label}</span>;
   };
 
@@ -2165,12 +2279,6 @@ function FireResults({
             : []),
         ]
       : []),
-    ...(delayMonths > 0 && result.delaySip > 0
-      ? [
-          { label: "Delay lumpsum", value: result.delayLumpsum },
-          { label: "Delay SIP", value: result.delaySip },
-        ]
-      : []),
   ];
 
   const surplusOrSip = result.excess
@@ -2196,12 +2304,12 @@ function FireResults({
           </span>
         }
       >
-        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2">
-          <span className={`${PILL} bg-[var(--app-std-bg)] text-[var(--app-std-text)]`}>
+        <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200/80 bg-slate-50/60 px-3 py-2.5">
+          <span className={`${PILL} bg-slate-800 text-white`}>
             {age} Now
           </span>
           <IconChevron className="size-3.5 -rotate-90 text-slate-400" />
-          <span className={`${PILL} bg-[var(--app-step-bg)] text-[var(--app-step-text)]`}>
+          <span className={`${PILL} bg-emerald-50 text-emerald-700`}>
             {retirementAge} Retire
           </span>
           <IconChevron className="size-3.5 -rotate-90 text-slate-400" />
@@ -2209,7 +2317,7 @@ function FireResults({
             {survivalAge} Survive
           </span>
           {eventsEnabled ? (
-            <span className={`${PILL} bg-[var(--app-warn-bg)] text-[var(--app-warn-text)]`}>
+            <span className={`${PILL} bg-amber-50 text-amber-800`}>
               {activeEvents.length} event{activeEvents.length === 1 ? "" : "s"}
             </span>
           ) : (
@@ -2268,7 +2376,7 @@ function FireResults({
       <WealthSection
         badge="03 · Analytics"
         title="FIRE Path Analytics"
-        subtitle="Corpus journey, funding mix, and delay cost charts"
+        subtitle="Corpus journey, funding mix, and delay cost"
         open={openAnalytics}
         onToggle={onToggleAnalytics}
         mark={
@@ -2277,59 +2385,90 @@ function FireResults({
           </WealthIconMark>
         }
       >
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:items-start">
-          <div className="space-y-4 lg:col-span-7">
-            <WealthSegmented
-              variant="underline"
-              layoutId="fire-analytics-tab"
-              value={analyticsTab}
-              onChange={setAnalyticsTab}
-              options={[
-                {
-                  id: "corpus",
-                  label: "Corpus",
-                  icon: <IconChart className="h-3.5 w-3.5" />,
-                },
-                {
-                  id: "flows",
-                  label: "Flows",
-                  icon: <IconTimeline className="h-3.5 w-3.5" />,
-                },
-                {
-                  id: "mix",
-                  label: "Gap mix",
-                  icon: <IconDonut className="h-3.5 w-3.5" />,
-                },
-              ]}
-            />
+        <div className="space-y-5">
+          <WealthAnalyticsChrome
+            tabs={
+              <WealthSegmented
+                variant="underline"
+                layoutId="fire-analytics-tab"
+                value={analyticsTab}
+                onChange={setAnalyticsTab}
+                options={[
+                  {
+                    id: "corpus",
+                    label: "Corpus",
+                    icon: <IconChart className="h-3.5 w-3.5" />,
+                  },
+                  {
+                    id: "flows",
+                    label: "Flows",
+                    icon: <IconTimeline className="h-3.5 w-3.5" />,
+                  },
+                  {
+                    id: "mix",
+                    label: "Gap mix",
+                    icon: <IconDonut className="h-3.5 w-3.5" />,
+                  },
+                ]}
+              />
+            }
+          >
             {analyticsTab === "corpus" ? (
               <WealthGrowthLine
                 data={line}
-                xTick={(v) => `Age ${v}`}
-                series={[{ key: "corpus", label: "Corpus", color: wealthChart.stepUp, kind: "area" }]}
+                xTick={(v) => String(v)}
+                xTicks={(() => {
+                  if (line.length === 0) return undefined;
+                  const first = Number(line[0]!.year);
+                  const last = Number(line[line.length - 1]!.year);
+                  const ticks: number[] = [];
+                  for (let age = first; age <= last; age += 1) {
+                    if (
+                      age === first ||
+                      age === last ||
+                      age === retirementAge ||
+                      age % 5 === 0
+                    ) {
+                      ticks.push(age);
+                    }
+                  }
+                  return ticks;
+                })()}
+                markers={[
+                  {
+                    x: retirementAge,
+                    label: `Retire ${retirementAge}`,
+                    color: wealthChart.stepUp,
+                  },
+                ]}
+                series={[
+                  { key: "corpus", label: "Corpus", color: wealthChart.stepUp, kind: "area" },
+                ]}
               />
             ) : null}
             {analyticsTab === "flows" ? (
-              <ChartFrame>
-                <StackedAreaChart
-                  title="Contributions vs withdrawals"
-                  data={area}
-                  series={[
-                    {
-                      key: "contribution",
-                      label: "Contributions",
-                      color: "var(--app-chart-invested)",
-                    },
-                    {
-                      key: "withdrawal",
-                      label: "Withdrawals",
-                      color: "var(--app-chart-tax)",
-                    },
-                  ]}
-                  lineOnlyKeys={["contribution"]}
-                  referenceLines={[retireMarker]}
-                />
-              </ChartFrame>
+              <WealthGrowthLine
+                data={area.map((row) => ({
+                  year: row.year,
+                  contribution: row.contribution,
+                  withdrawal: row.withdrawal,
+                }))}
+                xTick={(v) => `Age ${v}`}
+                series={[
+                  {
+                    key: "contribution",
+                    label: "Contributions",
+                    color: wealthChart.invested,
+                    kind: "area",
+                  },
+                  {
+                    key: "withdrawal",
+                    label: "Withdrawals",
+                    color: wealthChart.tax,
+                    kind: "line",
+                  },
+                ]}
+              />
             ) : null}
             {analyticsTab === "mix" ? (
               <WealthMixDonut
@@ -2350,82 +2489,69 @@ function FireResults({
                 ]}
               />
             ) : null}
-          </div>
+          </WealthAnalyticsChrome>
 
-          <div className="flex flex-col gap-3 lg:col-span-5">
-            <WealthResultCard
+          <div className="space-y-5">
+            <FireLedgerTable
               title={result.excess ? "Results · overfunded" : "FIRE summary"}
-              accent={result.excess}
-              items={summaryItems}
+              subtitle={`${result.activeYears} active years · ${result.retiredYears} retired years · age ${age} to ${survivalAge}`}
+              rows={[
+                {
+                  label: "Corpus required",
+                  value: formatINRCurrency(result.corpusRequired),
+                  tone: "emerald",
+                  highlight: true,
+                },
+                {
+                  label: "Current corpus at retirement",
+                  value: formatINRCurrency(result.currentAtRetirement),
+                },
+                {
+                  label: result.excess ? "Surplus" : "Additional lumpsum",
+                  value: formatINRCurrency(
+                    result.excess
+                      ? result.currentAtRetirement +
+                          result.eventsCorpusAtRetirement -
+                          result.corpusRequired
+                      : result.additionalLumpsum,
+                  ),
+                  tone: result.excess ? "emerald" : "rose",
+                },
+                {
+                  label: "Monthly SIP",
+                  value: formatINRCurrency(result.monthlySip),
+                  tone: "emerald",
+                },
+                ...summaryItems.map((item) => ({
+                  label: item.label,
+                  value: formatINRCurrency(item.value ?? 0),
+                  hint: item.hint,
+                })),
+              ]}
             />
 
             {delayMonths > 0 ? (
-              <div className="space-y-3 rounded-2xl border border-slate-200/80 bg-white p-4">
-                <div className="text-sm font-semibold text-slate-900">
-                  Start now vs delay {delayMonths} mo
-                </div>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-2.5">
-                    <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-                      Lumpsum
-                    </div>
-                    <div className="mt-1.5 space-y-1 text-xs">
-                      <div className="flex justify-between gap-2">
-                        <span className="text-slate-500">Start now</span>
-                        <span className="font-semibold tabular-nums">
-                          {formatINRCurrency(result.additionalLumpsum)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between gap-2">
-                        <span className="text-slate-500">Delayed</span>
-                        <span className="font-semibold tabular-nums">
-                          {formatINRCurrency(delayLumpsum)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-2.5">
-                    <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-                      Monthly SIP
-                    </div>
-                    <div className="mt-1.5 space-y-1 text-xs">
-                      <div className="flex justify-between gap-2">
-                        <span className="text-slate-500">Start now</span>
-                        <span className="font-semibold tabular-nums">
-                          {formatINRCurrency(result.monthlySip)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between gap-2">
-                        <span className="text-slate-500">Delayed</span>
-                        <span className="font-semibold tabular-nums">
-                          {formatINRCurrency(delaySipVal)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <FireLedgerTable
+                title="Delay cost"
+                subtitle={`Starting ${delayMonths} months later raises the capital needed to hit the same goal`}
+                columns={["Metric", "Start now", "Delayed"]}
+                rows={[
+                  {
+                    label: "Lumpsum",
+                    value: formatINRCurrency(result.additionalLumpsum),
+                    delayed: formatINRCurrency(delayLumpsum),
+                    tone: "default",
+                  },
+                  {
+                    label: "Monthly SIP",
+                    value: formatINRCurrency(result.monthlySip),
+                    delayed: formatINRCurrency(delaySipVal),
+                    tone: "rose",
+                    highlight: true,
+                  },
+                ]}
+              />
             ) : null}
-
-            <WealthCompareBars
-              showBarLabels
-              data={[
-                {
-                  category: "Lumpsum",
-                  now: result.additionalLumpsum,
-                  delayed: delayLumpsum,
-                },
-                {
-                  category: "Monthly SIP",
-                  now: result.monthlySip,
-                  delayed: delaySipVal,
-                },
-              ]}
-              series={[
-                { key: "now", label: "Start now", color: wealthChart.invested },
-                { key: "delayed", label: "Delayed", color: wealthChart.tax },
-              ]}
-            />
           </div>
         </div>
       </WealthSection>
@@ -2544,25 +2670,49 @@ function HealthResults({
   openSchedule: boolean;
   onToggleSchedule: () => void;
 }) {
-  const combo = result.schedule.map((row) => ({
-    age: row.age,
+  const pathData = result.schedule.map((row) => ({
+    year: row.age,
     corpus: row.corpus,
     expense: row.yearlyExpense,
   }));
 
   const activeEvents = events.filter((ev) => ev.amount > 0);
-  const ageMarkers = [
-    {
-      age: retirementAge,
-      label: `Retire ${retirementAge}`,
-      color: "var(--app-step-text)",
-    },
-    ...activeEvents.slice(0, 2).map((ev) => ({
-      age: ev.age,
-      label: `Evt ${ev.age}`,
-      color: "var(--app-warn-text)",
-    })),
-  ];
+  const [healthTab, setHealthTab] = useState<"path" | "mix">("path");
+
+  const pathTicks = (() => {
+    if (pathData.length === 0) return undefined;
+    const first = Number(pathData[0]!.year);
+    const last = Number(pathData[pathData.length - 1]!.year);
+    const ticks: number[] = [];
+    for (let age = first; age <= last; age += 1) {
+      if (age === first || age === last || age === retirementAge || age % 5 === 0) {
+        ticks.push(age);
+      }
+    }
+    return ticks;
+  })();
+
+  const pathMarkers = (() => {
+    const markers: Array<{ x: number; label: string; color?: string }> = [
+      {
+        x: retirementAge,
+        label: `Retire ${retirementAge}`,
+        color: wealthChart.stepUp,
+      },
+    ];
+    const seen = new Set<number>([retirementAge]);
+    for (const ev of activeEvents) {
+      if (seen.has(ev.age)) continue;
+      seen.add(ev.age);
+      markers.push({
+        x: ev.age,
+        label: EVENT_KIND_LABEL[ev.kind],
+        color: ev.type === "Expense" ? wealthChart.tax : wealthChart.invested,
+      });
+      if (markers.length >= 3) break;
+    }
+    return markers;
+  })();
 
   const gapDisplay =
     result.gapAtRetirement <= 0
@@ -2586,10 +2736,10 @@ function HealthResults({
       phase === "retire" ? "RETIRE" : phase === "post" ? "POST" : "PRE";
     const cls =
       phase === "retire"
-        ? "bg-[var(--app-step-bg)] text-[var(--app-step-text)]"
+        ? "bg-emerald-50 text-emerald-700"
         : phase === "post"
-          ? "bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]"
-          : "bg-[var(--app-std-bg)] text-[var(--app-std-text)]";
+          ? "bg-slate-100 text-slate-500"
+          : "bg-slate-800 text-white";
     return <span className={`${PILL} ${cls}`}>{label}</span>;
   };
 
@@ -2612,7 +2762,7 @@ function HealthResults({
           </span>
         }
       >
-        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2">
+        <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200/80 bg-slate-50/60 px-3 py-2.5">
           <WealthStatusNote
             tone={result.funded ? "success" : "error"}
             className="min-w-0 flex-1 border-0 bg-transparent px-0 py-0"
@@ -2620,14 +2770,11 @@ function HealthResults({
             {result.message}
           </WealthStatusNote>
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className={`${PILL} bg-[var(--app-step-bg)] text-[var(--app-step-text)]`}>
+            <span className={`${PILL} bg-emerald-50 text-emerald-700`}>
               {retirementAge} Retire
             </span>
             {activeEvents.map((ev) => (
-              <span
-                key={ev.id}
-                className={`${PILL} bg-[var(--app-warn-bg)] text-[var(--app-warn-text)]`}
-              >
+              <span key={ev.id} className={`${PILL} bg-amber-50 text-amber-800`}>
                 {ev.age} · {formatINRCurrency(ev.amount)}
               </span>
             ))}
@@ -2679,27 +2826,90 @@ function HealthResults({
           </WealthIconMark>
         }
       >
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:items-start">
-          <div className="lg:col-span-7">
-            <ChartFrame height="h-[280px] sm:h-[340px]">
-              <ComboChart
-                title="Corpus and expenses vs age"
-                className="min-h-[260px] sm:min-h-[300px]"
-                data={combo}
-                bars={[{ key: "corpus", label: "Corpus", color: "var(--app-chart-invested)" }]}
-                lines={[
+        <div className="space-y-5">
+          <WealthAnalyticsChrome
+            tabs={
+              <WealthSegmented
+                variant="underline"
+                layoutId="health-analytics-tab"
+                value={healthTab}
+                onChange={setHealthTab}
+                options={[
                   {
-                    key: "expense",
-                    label: "Annual Retirement Expense",
-                    color: "var(--app-chart-tax)",
+                    id: "path",
+                    label: "Age path",
+                    icon: <IconChart className="h-3.5 w-3.5" />,
+                  },
+                  {
+                    id: "mix",
+                    label: "Gap mix",
+                    icon: <IconDonut className="h-3.5 w-3.5" />,
                   },
                 ]}
-                ageMarkers={ageMarkers}
               />
-            </ChartFrame>
-          </div>
-          <div className="flex flex-col gap-3 lg:col-span-5">
-            <WealthResultCard title="Health summary" items={[
+            }
+          >
+            {healthTab === "path" ? (
+              <div className="space-y-2">
+                <p className="px-1 text-[13px] font-medium text-slate-700">
+                  Corpus and expenses vs age
+                </p>
+                <WealthGrowthLine
+                  data={pathData}
+                  xTick={(v) => String(v)}
+                  xTicks={pathTicks}
+                  markers={pathMarkers}
+                  height="h-[300px] sm:h-[360px]"
+                  series={[
+                    {
+                      key: "corpus",
+                      label: "Corpus",
+                      color: wealthChart.stepUp,
+                      kind: "area",
+                    },
+                    {
+                      key: "expense",
+                      label: "Annual retirement expense",
+                      color: wealthChart.tax,
+                      kind: "line",
+                    },
+                  ]}
+                />
+              </div>
+            ) : (
+              <WealthMixDonut
+                title="Savings vs retirement gap"
+                centerLabel={
+                  !result.funded
+                    ? "Shortfall"
+                    : result.gapAtRetirement > 0
+                      ? "Funded"
+                      : "Fully Funded"
+                }
+                centerValue={result.corpusAtRetirement}
+                slices={[
+                  {
+                    name: "Corpus at retirement",
+                    value: result.corpusAtRetirement,
+                    color: wealthMixColors.invested,
+                  },
+                  ...(result.gapAtRetirement > 0
+                    ? [
+                        {
+                          name: "Gap",
+                          value: result.gapAtRetirement,
+                          color: wealthMixColors.tax,
+                        },
+                      ]
+                    : []),
+                ]}
+              />
+            )}
+          </WealthAnalyticsChrome>
+
+          <WealthResultCard
+            title="Health summary"
+            items={[
               { label: "Corpus at retirement", value: result.corpusAtRetirement },
               {
                 label: "Remaining at survival",
@@ -2710,35 +2920,8 @@ function HealthResults({
               { label: "Monthly expense @ ret+1", value: result.monthlyExpAtRetPlus1 },
               { label: "Lifestyle @ ret+1", value: result.lifestyleAtRetPlus1 },
               gapDisplay,
-            ]} />
-            <WealthMixDonut
-              title="Savings vs retirement gap"
-              centerLabel={
-                !result.funded
-                  ? "Shortfall"
-                  : result.gapAtRetirement > 0
-                    ? "Funded"
-                    : "Fully Funded"
-              }
-              centerValue={result.corpusAtRetirement}
-              slices={[
-                {
-                  name: "Corpus at retirement",
-                  value: result.corpusAtRetirement,
-                  color: wealthMixColors.invested,
-                },
-                ...(result.gapAtRetirement > 0
-                  ? [
-                      {
-                        name: "Gap",
-                        value: result.gapAtRetirement,
-                        color: wealthMixColors.tax,
-                      },
-                    ]
-                  : []),
-              ]}
-            />
-          </div>
+            ]}
+          />
         </div>
       </WealthSection>
 

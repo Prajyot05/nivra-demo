@@ -24,7 +24,7 @@ import {
 import { CalculatorPage } from "@/components/layout/calculator-page-with-nav";
 import { useCalculate } from "@/hooks/use-calculate";
 import { useCalculatorMode } from "@/hooks/use-calculator-mode";
-import { getCalculatorPageTitle } from "@/lib/calculator-nav";
+import { getCalculatorPageDescription, getCalculatorPageTitle } from "@/lib/calculator-nav";
 import {
   IconCalendar,
   IconChart,
@@ -441,11 +441,7 @@ export function InsuranceCalculator() {
     <>
       <CalculatorPage
         title={getCalculatorPageTitle("/insurance", mode)}
-        description={
-          mode === "irr"
-            ? "Compare policy maturity, net returns after tax, and full-term XIRR."
-            : "Compare keeping the policy versus surrendering into term cover plus investment."
-        }
+        description={getCalculatorPageDescription("/insurance", mode)}
         contentClassName={WEALTH_CONTENT_CLASS}
         actions={
           <ReportDownloadButton
@@ -1215,7 +1211,7 @@ function IrrResults({
           ]}
         />
 
-        <div className="mt-4">
+        <div className="mt-5 pt-0.5">
           {tab === "mix" ? (
             <WealthMixDonut
               title="Gross maturity mix"
@@ -1802,7 +1798,7 @@ function TpResults({
           ]}
         />
 
-        <div className="mt-4">
+        <div className="mt-5 pt-0.5">
           {tab === "compare" ? (
             <div>
               <WealthCompareBars

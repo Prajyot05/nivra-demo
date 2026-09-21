@@ -84,7 +84,7 @@ export function WealthSection({
             transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
             className="overflow-hidden"
           >
-            <div className={cn("px-6 py-0", contentClassName)}>{children}</div>
+            <div className={cn("px-6 pb-6 pt-5", contentClassName)}>{children}</div>
           </motion.div>
         ) : null}
       </AnimatePresence>

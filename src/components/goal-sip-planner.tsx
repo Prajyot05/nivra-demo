@@ -18,6 +18,10 @@ import { ReportDownloadButton } from "@/components/calc/report-download-button";
 import { GoalSipDossier, GOAL_SIP_REPORT_ID } from "@/components/reports/goal-sip-dossier";
 import { DUMMY_REPORT_CONTACT } from "@/components/reports/executive-dossier";
 import { generatePdfFromElement } from "@/lib/pdf-generator";
+import {
+  getCalculatorPageDescription,
+  getCalculatorPageTitle,
+} from "@/lib/calculator-nav";
 import { WealthHero } from "@/components/wealth/wealth-hero";
 import { WealthSection } from "@/components/wealth/wealth-section";
 import { WealthMetricCard } from "@/components/wealth/wealth-metric-card";
@@ -209,8 +213,8 @@ export function GoalSipPlanner() {
   return (
     <>
       <CalculatorPage
-        title="Nivra Wealth"
-        description="Goal SIP and Step-Up simulation for advisor-led planning"
+        title={getCalculatorPageTitle("/")}
+        description={getCalculatorPageDescription("/")}
         contentClassName="mx-auto flex w-full max-w-[94rem] flex-col gap-5 sm:gap-6"
         actions={
           <ReportDownloadButton

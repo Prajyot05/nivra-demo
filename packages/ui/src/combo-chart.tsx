@@ -81,7 +81,7 @@ export function ComboChart({
               <Legend wrapperStyle={{ fontSize: "12px", color: "var(--app-text-muted)" }} />
               {(ageMarkers ?? []).map((marker, index) => (
                 <ReferenceLine
-                  key={`${marker.age}-${marker.label}`}
+                  key={`age-marker-${index}-${marker.age}`}
                   x={marker.age}
                   stroke={marker.color ?? "var(--app-text-subtle)"}
                   strokeDasharray="4 4"

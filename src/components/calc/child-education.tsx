@@ -20,6 +20,10 @@ import {
 } from "@/components/reports/child-education-dossier";
 import { DUMMY_REPORT_CONTACT } from "@/components/reports/executive-dossier";
 import { useCalculate } from "@/hooks/use-calculate";
+import {
+  getCalculatorPageDescription,
+  getCalculatorPageTitle,
+} from "@/lib/calculator-nav";
 import { generatePdfFromElement } from "@/lib/pdf-generator";
 import {
   ChartFrame,
@@ -275,8 +279,8 @@ export function ChildEducationPlanner() {
   return (
     <>
       <CalculatorPage
-        title="Nivra Wealth"
-        description="Child education funding via lumpsum or monthly SIP"
+        title={getCalculatorPageTitle("/education")}
+        description={getCalculatorPageDescription("/education")}
         contentClassName={WEALTH_CONTENT_CLASS}
         actions={
           <ReportDownloadButton
@@ -1096,7 +1100,7 @@ function EducationResults({
         </div>
 
         {hasShortfall ? (
-          <div className="mt-4">
+          <div className="mt-5 pt-0.5">
             <StatusNote tone="error">
               <span className="inline-flex items-start gap-2">
                 <IconAlert className="mt-0.5 h-4 w-4 shrink-0" />
@@ -1150,7 +1154,7 @@ function EducationResults({
           ]}
         />
 
-        <div className="mt-4">
+        <div className="mt-5">
           {analyticsTab === "compare" ? (
             <WealthCompareBars
               data={result.compare}

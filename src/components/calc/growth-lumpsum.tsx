@@ -14,8 +14,7 @@ import {
 } from "@/components/reports/one-time-investment-dossier";
 import { DUMMY_REPORT_CONTACT } from "@/components/reports/executive-dossier";
 import { useCalculate } from "@/hooks/use-calculate";
-import { useCalculatorMode } from "@/hooks/use-calculator-mode";
-import { getCalculatorPageTitle } from "@/lib/calculator-nav";
+import { getCalculatorPageDescription, getCalculatorPageTitle } from "@/lib/calculator-nav";
 import { generatePdfFromElement } from "@/lib/pdf-generator";
 import {
   IconCalendar,
@@ -26,7 +25,6 @@ import {
   IconRates,
   IconRefresh,
   IconSip,
-  IconStepUp,
   IconTarget,
   IconTax,
   moneyCell,
@@ -49,6 +47,7 @@ import {
   WealthProfileGrid,
   WealthSection,
   WealthSegmented,
+  WealthAnalyticsChrome,
   WealthStatusNote,
   WealthTextField,
   WealthYearField,
@@ -66,9 +65,6 @@ const AMOUNT_PRESETS = [
 ];
 const YEARS_MAX = 100;
 const YEARS_SLIDER_MAX = 40;
-
-const GROWTH_MODE_IDS = ["sip", "stepup", "lumpsum", "periodic"] as const;
-type GrowthMode = (typeof GROWTH_MODE_IDS)[number];
 
 type YearRow = {
   year: number;
@@ -172,7 +168,6 @@ function buildAuditRows(result: LumpsumResult, delayMonths: number): AuditRow[] 
 }
 
 export function GrowthLumpsum() {
-  const [mode, setMode] = useCalculatorMode(GROWTH_MODE_IDS, "lumpsum");
   const [name, setName] = useState("Mr. Anshu Kaul");
   const [age, setAge] = useState(30);
   const [email, setEmail] = useState(DUMMY_REPORT_CONTACT.email);
@@ -305,43 +300,13 @@ export function GrowthLumpsum() {
     <>
       <CalculatorPage
         title={getCalculatorPageTitle("/growth", "lumpsum")}
-        description="One-time lumpsum compounding with inflation, tax, and cost of delay."
+        description={getCalculatorPageDescription("/growth", "lumpsum")}
         contentClassName={WEALTH_CONTENT_CLASS}
         actions={
           <ReportDownloadButton
             onClick={handleDownload}
             disabled={!result}
             loading={isDownloading}
-          />
-        }
-        modes={
-          <WealthSegmented
-            fullWidth
-            layoutId="growth-mode-pill"
-            value={mode}
-            onChange={(id) => setMode(id as GrowthMode)}
-            options={[
-              {
-                id: "sip",
-                label: "SIP",
-                icon: <IconSip className="h-3.5 w-3.5" />,
-              },
-              {
-                id: "stepup",
-                label: "Step-up",
-                icon: <IconStepUp className="h-3.5 w-3.5" />,
-              },
-              {
-                id: "lumpsum",
-                label: "Lumpsum",
-                icon: <IconChart className="h-3.5 w-3.5" />,
-              },
-              {
-                id: "periodic",
-                label: "Periodic",
-                icon: <IconCalendar className="h-3.5 w-3.5" />,
-              },
-            ]}
           />
         }
         header={
@@ -658,36 +623,37 @@ export function GrowthLumpsum() {
                   }
                 >
                   <div className="space-y-5">
-                    <div className="overflow-x-auto pb-1">
-                      <WealthSegmented
-                        layoutId="lumpsum-analytics-underline"
-                        variant="underline"
-                        value={activeChartTab}
-                        onChange={(id) => setChartTab(id)}
-                        options={[
-                          {
-                            id: "growth",
-                            label: "Growth",
-                            icon: <IconChart className="h-3.5 w-3.5" />,
-                          },
-                          {
-                            id: "allocation",
-                            label: "Corpus Mix",
-                            icon: <IconDonut className="h-3.5 w-3.5" />,
-                          },
-                          ...(hasDelay
-                            ? [
-                                {
-                                  id: "delay" as const,
-                                  label: "Delay",
-                                  icon: <IconDelay className="h-3.5 w-3.5" />,
-                                },
-                              ]
-                            : []),
-                        ]}
-                      />
-                    </div>
-
+                    <WealthAnalyticsChrome
+                      tabs={
+                        <WealthSegmented
+                          layoutId="lumpsum-analytics-underline"
+                          variant="underline"
+                          value={activeChartTab}
+                          onChange={(id) => setChartTab(id)}
+                          options={[
+                            {
+                              id: "growth",
+                              label: "Growth",
+                              icon: <IconChart className="h-3.5 w-3.5" />,
+                            },
+                            {
+                              id: "allocation",
+                              label: "Corpus Mix",
+                              icon: <IconDonut className="h-3.5 w-3.5" />,
+                            },
+                            ...(hasDelay
+                              ? [
+                                  {
+                                    id: "delay" as const,
+                                    label: "Delay",
+                                    icon: <IconDelay className="h-3.5 w-3.5" />,
+                                  },
+                                ]
+                              : []),
+                          ]}
+                        />
+                      }
+                    >
                     <AnimatePresence mode="wait">
                       <motion.div
                         key={activeChartTab}
@@ -777,6 +743,7 @@ export function GrowthLumpsum() {
                         ) : null}
                       </motion.div>
                     </AnimatePresence>
+                    </WealthAnalyticsChrome>
                   </div>
                 </WealthSection>
 

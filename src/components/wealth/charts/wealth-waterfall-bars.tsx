@@ -20,8 +20,12 @@ export type WealthWaterfallStep = {
   kind?: "increase" | "decrease" | "total";
 };
 
+const VOID_PATTERN_ID = "wealth-waterfall-void";
+
 /**
  * Waterfall build-up chart using the same ChartFrame chrome as WealthCompareBars.
+ * Offset (carried-forward) space uses a soft slate hatch so Additional sits clearly
+ * above Existing credit.
  */
 export function WealthWaterfallBars({
   steps,
@@ -54,6 +58,8 @@ export function WealthWaterfallBars({
     };
   });
 
+  const hasVoid = data.some((row) => row.offset > 0);
+
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-4 px-1">
@@ -65,6 +71,19 @@ export function WealthWaterfallBars({
           <span className="h-2 w-2 rounded-full" style={{ background: wealthChart.stepUp }} />
           Target
         </span>
+        {hasVoid ? (
+          <span className="inline-flex items-center gap-2 text-xs font-medium text-slate-500">
+            <span
+              className="inline-block h-2.5 w-4 rounded-sm border border-slate-300"
+              style={{
+                backgroundImage:
+                  "repeating-linear-gradient(-45deg, #F8FAFC, #F8FAFC 2px, #CBD5E1 2px, #CBD5E1 3.5px)",
+              }}
+              aria-hidden
+            />
+            Carried forward
+          </span>
+        ) : null}
       </div>
       <ChartFrame height={height} className="overflow-hidden">
         <ResponsiveContainer width="100%" height="100%">
@@ -73,6 +92,25 @@ export function WealthWaterfallBars({
             margin={{ top: 22, right: 12, left: 4, bottom: 8 }}
             barCategoryGap="28%"
           >
+            <defs>
+              <pattern
+                id={VOID_PATTERN_ID}
+                width="7"
+                height="7"
+                patternUnits="userSpaceOnUse"
+                patternTransform="rotate(45)"
+              >
+                <rect width="7" height="7" fill="#F8FAFC" />
+                <line
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="7"
+                  stroke="#CBD5E1"
+                  strokeWidth="2.5"
+                />
+              </pattern>
+            </defs>
             <CartesianGrid stroke="#F1F5F9" vertical={false} />
             <XAxis
               dataKey="category"
@@ -94,7 +132,9 @@ export function WealthWaterfallBars({
                 if (!active || !payload?.length) return null;
                 const row = payload.find((p) => p.dataKey === "amount");
                 const signed = Number(
-                  (row?.payload as { signed?: number } | undefined)?.signed ?? row?.value ?? 0,
+                  (row?.payload as { signed?: number } | undefined)?.signed ??
+                    row?.value ??
+                    0,
                 );
                 return (
                   <ChartTooltipCard
@@ -104,7 +144,8 @@ export function WealthWaterfallBars({
                         name: "Amount",
                         value: signed,
                         color:
-                          (row?.payload as { kind?: string } | undefined)?.kind === "total"
+                          (row?.payload as { kind?: string } | undefined)?.kind ===
+                          "total"
                             ? wealthChart.stepUp
                             : wealthChart.invested,
                       },
@@ -113,7 +154,18 @@ export function WealthWaterfallBars({
                 );
               }}
             />
-            <Bar dataKey="offset" stackId="wf" fill="transparent" maxBarSize={48} />
+            <Bar dataKey="offset" stackId="wf" maxBarSize={48}>
+              {data.map((row) => (
+                <Cell
+                  key={`${row.category}-offset`}
+                  fill={
+                    row.offset > 0 ? `url(#${VOID_PATTERN_ID})` : "transparent"
+                  }
+                  stroke={row.offset > 0 ? "#E2E8F0" : "transparent"}
+                  strokeWidth={row.offset > 0 ? 1 : 0}
+                />
+              ))}
+            </Bar>
             <Bar dataKey="amount" stackId="wf" radius={[6, 6, 2, 2]} maxBarSize={48}>
               {data.map((row) => (
                 <Cell
@@ -132,7 +184,8 @@ export function WealthWaterfallBars({
         </ResponsiveContainer>
       </ChartFrame>
       <p className="px-1 text-[11px] text-slate-400">
-        Build-up to target · values shown as {formatINRCurrency(running)} at the final step
+        Build-up to target · values shown as {formatINRCurrency(running)} at the
+        final step
       </p>
     </div>
   );

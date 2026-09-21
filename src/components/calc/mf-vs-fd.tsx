@@ -15,6 +15,10 @@ import {
 } from "@/components/reports/mf-vs-fd-dossier";
 import { DUMMY_REPORT_CONTACT } from "@/components/reports/executive-dossier";
 import { useCalculate } from "@/hooks/use-calculate";
+import {
+  getCalculatorPageDescription,
+  getCalculatorPageTitle,
+} from "@/lib/calculator-nav";
 import { generatePdfFromElement } from "@/lib/pdf-generator";
 import {
   IconChart,
@@ -38,6 +42,7 @@ import {
   WealthAuditLedger,
   WealthProfileGrid,
   WealthSegmented,
+  WealthAnalyticsChrome,
   WealthSection,
   WealthTextField,
   WealthYearField,
@@ -472,8 +477,8 @@ export function MfVsFd() {
   return (
     <>
       <CalculatorPage
-        title="Mutual Fund vs Fixed Deposit"
-        description="Short-horizon post-tax compare of mutual funds vs fixed deposits (365-day count)."
+        title={getCalculatorPageTitle("/mf-fd")}
+        description={getCalculatorPageDescription("/mf-fd")}
         contentClassName={WEALTH_CONTENT_CLASS}
         actions={
           <ReportDownloadButton
@@ -770,27 +775,28 @@ export function MfVsFd() {
                   }
                 >
                   <div className="space-y-4">
-                    <div className="overflow-x-auto pb-1">
-                      <WealthSegmented
-                        layoutId="mf-fd-analytics-underline"
-                        variant="underline"
-                        value={analyticsTab}
-                        onChange={setAnalyticsTab}
-                        options={[
-                          {
-                            id: "mix",
-                            label: "Corpus Mix",
-                            icon: <IconDonut className="h-3.5 w-3.5" />,
-                          },
-                          {
-                            id: "compare",
-                            label: "Compare",
-                            icon: <IconChart className="h-3.5 w-3.5" />,
-                          },
-                        ]}
-                      />
-                    </div>
-
+                    <WealthAnalyticsChrome
+                      tabs={
+                        <WealthSegmented
+                          layoutId="mf-fd-analytics-underline"
+                          variant="underline"
+                          value={analyticsTab}
+                          onChange={setAnalyticsTab}
+                          options={[
+                            {
+                              id: "mix",
+                              label: "Corpus Mix",
+                              icon: <IconDonut className="h-3.5 w-3.5" />,
+                            },
+                            {
+                              id: "compare",
+                              label: "Compare",
+                              icon: <IconChart className="h-3.5 w-3.5" />,
+                            },
+                          ]}
+                        />
+                      }
+                    >
                     <AnimatePresence mode="wait">
                       <motion.div
                         key={analyticsTab}
@@ -855,6 +861,7 @@ export function MfVsFd() {
                         ) : null}
                       </motion.div>
                     </AnimatePresence>
+                    </WealthAnalyticsChrome>
                   </div>
                 </WealthSection>
 

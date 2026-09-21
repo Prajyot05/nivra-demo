@@ -51,6 +51,7 @@ export { ChartFrame, ChartTooltipCard, chartAxisTick, chartGrid } from "./wealth
 export { WEALTH_CONTENT_CLASS, WealthStatusNote } from "./wealth-shell";
 export { WealthAnalyticsPanel } from "./charts/wealth-analytics-panel";
 export type { AnalyticsTab } from "./charts/wealth-analytics-panel";
+export { WealthAnalyticsChrome } from "./charts/wealth-analytics-chrome";
 export { CorpusMixPanel } from "./charts/corpus-mix-panel";
 export { WealthMixDonut, wealthMixColors } from "./charts/wealth-mix-donut";
 export type { WealthMixSlice } from "./charts/wealth-mix-donut";
@@ -59,7 +60,7 @@ export type { WealthComparePoint } from "./charts/wealth-compare-bars";
 export { WealthWaterfallBars } from "./charts/wealth-waterfall-bars";
 export type { WealthWaterfallStep } from "./charts/wealth-waterfall-bars";
 export { WealthGrowthLine, wealthGrowthColors } from "./charts/wealth-growth-line";
-export type { WealthSeries } from "./charts/wealth-growth-line";
+export type { WealthSeries, WealthGrowthMarker } from "./charts/wealth-growth-line";
 export { GrowthCompareChart } from "./charts/growth-compare-chart";
 export { WealthTimelineChart } from "./charts/wealth-timeline-chart";
 export { InflationImpactChart } from "./charts/inflation-impact-chart";

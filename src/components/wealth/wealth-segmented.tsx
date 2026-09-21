@@ -23,7 +23,10 @@ export function WealthSegmented<T extends string>({
 }) {
   if (variant === "underline") {
     return (
-      <div className="flex gap-1 overflow-x-auto border-b border-slate-200" role="tablist">
+      <div
+        className="flex gap-1.5 overflow-x-auto border-b border-slate-200"
+        role="tablist"
+      >
         {options.map((opt) => {
           const active = opt.id === value;
           return (
@@ -34,8 +37,10 @@ export function WealthSegmented<T extends string>({
               aria-selected={active}
               onClick={() => onChange(opt.id)}
               className={cn(
-                "relative inline-flex shrink-0 items-center gap-1.5 px-3 pb-3 pt-1 text-sm transition-colors duration-150",
-                active ? "font-semibold text-slate-900" : "font-medium text-slate-500 hover:text-slate-800",
+                "relative inline-flex shrink-0 items-center gap-1.5 px-3.5 pb-3.5 pt-2.5 text-sm transition-colors duration-150",
+                active
+                  ? "font-semibold text-slate-900"
+                  : "font-medium text-slate-500 hover:text-slate-800",
               )}
             >
               {opt.icon}
@@ -43,7 +48,7 @@ export function WealthSegmented<T extends string>({
               {active ? (
                 <motion.span
                   layoutId={layoutId}
-                  className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-emerald-500"
+                  className="absolute inset-x-2.5 -bottom-px h-0.5 rounded-full bg-emerald-500"
                   transition={{ type: "spring", stiffness: 420, damping: 34 }}
                 />
               ) : null}

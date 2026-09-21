@@ -31,7 +31,7 @@ import {
 } from "@/components/reports/sip-stepup-calculator-dossier";
 import { useCalculate } from "@/hooks/use-calculate";
 import { useCalculatorMode } from "@/hooks/use-calculator-mode";
-import { getCalculatorPageTitle } from "@/lib/calculator-nav";
+import { getCalculatorPageDescription, getCalculatorPageTitle } from "@/lib/calculator-nav";
 import {
   IconCalendar,
   IconChart,
@@ -61,6 +61,7 @@ import {
   WealthProfileGrid,
   WealthSection,
   WealthSegmented,
+  WealthAnalyticsChrome,
   WealthStatusNote,
   WealthTextField,
   WealthYearField,
@@ -191,60 +192,19 @@ const CALCULATOR_ID: Record<Exclude<Mode, "lumpsum">, string> = {
   periodic: "growth-periodic",
 };
 
-function GrowthModeTabs({
-  mode,
-  onModeChange,
-}: {
-  mode: Mode;
-  onModeChange: (next: Mode) => void;
-}) {
-  return (
-    <WealthSegmented
-      fullWidth
-      layoutId="growth-mode-pill"
-      value={mode}
-      onChange={onModeChange}
-      options={[
-        {
-          id: "sip",
-          label: "SIP",
-          icon: <IconSip className="h-3.5 w-3.5" />,
-        },
-        {
-          id: "stepup",
-          label: "Step-up",
-          icon: <IconStepUp className="h-3.5 w-3.5" />,
-        },
-        {
-          id: "lumpsum",
-          label: "Lumpsum",
-          icon: <IconChart className="h-3.5 w-3.5" />,
-        },
-        {
-          id: "periodic",
-          label: "Periodic",
-          icon: <IconCalendar className="h-3.5 w-3.5" />,
-        },
-      ]}
-    />
-  );
-}
-
 export function InvestmentGrowth() {
   const [mode, setMode] = useCalculatorMode(MODE_IDS, "lumpsum");
   if (mode === "lumpsum") {
     return <GrowthLumpsum />;
   }
 
-  return <InvestmentGrowthModes mode={mode} onModeChange={setMode} />;
+  return <InvestmentGrowthModes mode={mode} />;
 }
 
 function InvestmentGrowthModes({
   mode,
-  onModeChange,
 }: {
   mode: Exclude<Mode, "lumpsum">;
-  onModeChange: (next: Mode) => void;
 }) {
   const [name, setName] = useState("Mr. Anshu Kaul");
   const [age, setAge] = useState(30);
@@ -503,7 +463,7 @@ function InvestmentGrowthModes({
     <>
       <CalculatorPage
         title={getCalculatorPageTitle("/growth", mode)}
-        description={meta.description}
+        description={getCalculatorPageDescription("/growth", mode)}
         contentClassName={WEALTH_CONTENT_CLASS}
         actions={
           <ReportDownloadButton
@@ -512,7 +472,6 @@ function InvestmentGrowthModes({
             loading={isDownloading}
           />
         }
-        modes={<GrowthModeTabs mode={mode} onModeChange={onModeChange} />}
         header={
           <WealthHero
             clientName={name}
@@ -1254,27 +1213,28 @@ function GrowthResults({
         }
       >
         <div className="space-y-5">
-          <div className="overflow-x-auto pb-1">
-            <WealthSegmented
-              layoutId={`growth-analytics-underline-${mode}`}
-              variant="underline"
-              value={chartTab}
-              onChange={setChartTab}
-              options={[
-                {
-                  id: "growth",
-                  label: "Growth",
-                  icon: <IconChart className="h-3.5 w-3.5" />,
-                },
-                {
-                  id: "allocation",
-                  label: "Corpus Mix",
-                  icon: <IconDonut className="h-3.5 w-3.5" />,
-                },
-              ]}
-            />
-          </div>
-
+          <WealthAnalyticsChrome
+            tabs={
+              <WealthSegmented
+                layoutId={`growth-analytics-underline-${mode}`}
+                variant="underline"
+                value={chartTab}
+                onChange={setChartTab}
+                options={[
+                  {
+                    id: "growth",
+                    label: "Growth",
+                    icon: <IconChart className="h-3.5 w-3.5" />,
+                  },
+                  {
+                    id: "allocation",
+                    label: "Corpus Mix",
+                    icon: <IconDonut className="h-3.5 w-3.5" />,
+                  },
+                ]}
+              />
+            }
+          >
           <AnimatePresence mode="wait">
             <motion.div
               key={chartTab}
@@ -1362,6 +1322,7 @@ function GrowthResults({
               )}
             </motion.div>
           </AnimatePresence>
+          </WealthAnalyticsChrome>
         </div>
       </WealthSection>
 

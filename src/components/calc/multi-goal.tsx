@@ -26,7 +26,7 @@ import {
 } from "@/components/reports/multi-goal-assign-dossier";
 import { useCalculate } from "@/hooks/use-calculate";
 import { useCalculatorMode } from "@/hooks/use-calculator-mode";
-import { getCalculatorPageTitle } from "@/lib/calculator-nav";
+import { getCalculatorPageDescription, getCalculatorPageTitle } from "@/lib/calculator-nav";
 import {
   WEALTH_CONTENT_CLASS,
   WealthSection,
@@ -821,7 +821,7 @@ export function MultiGoalCalculator() {
     <>
     <CalculatorPage
       title={getCalculatorPageTitle("/multi-goal", mode)}
-      description="Corpus assignment and SIP required for timed withdrawals across multiple goals."
+      description={getCalculatorPageDescription("/multi-goal", mode)}
       contentClassName={WEALTH_CONTENT_CLASS}
       actions={
         <ReportDownloadButton
@@ -877,13 +877,6 @@ export function MultiGoalCalculator() {
       }
       form={
         <div ref={assumptionsRef} className="space-y-5">
-          <WealthSegmented
-            fullWidth
-            layoutId="multi-goal-mode"
-            value={mode}
-            onChange={setMode}
-            options={MODES.map((m) => ({ id: m.id, label: m.label }))}
-          />
         {mode === "assign" ? (
 
           <WealthSection
@@ -1485,7 +1478,7 @@ function AssignDashboard({
           </WealthIconMark>
         }
       >
-        <div className="space-y-4">
+        <div className="space-y-5 pt-1">
           <WealthSegmented
             variant="underline"
             fullWidth
@@ -2201,7 +2194,7 @@ function WithdrawalsDashboard({
           </WealthIconMark>
         }
       >
-        <div className="space-y-4">
+        <div className="space-y-5 pt-1">
           <WealthSegmented
             variant="underline"
             fullWidth

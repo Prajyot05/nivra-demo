@@ -6,6 +6,7 @@ import {
   CartesianGrid,
   ComposedChart,
   Line,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -24,6 +25,12 @@ export type WealthSeries = {
   dashed?: boolean;
 };
 
+export type WealthGrowthMarker = {
+  x: number | string;
+  label: string;
+  color?: string;
+};
+
 /**
  * Multi-series growth / path chart matching Goal SIP Compare/Timeline chrome.
  */
@@ -33,12 +40,17 @@ export function WealthGrowthLine({
   xTick = (v: string | number) => `Y${v}`,
   series,
   height = "h-[320px] sm:h-[380px]",
+  /** Explicit x-axis tick values (e.g. every 5th age). */
+  xTicks,
+  markers,
 }: {
   data: Array<Record<string, string | number>>;
   xKey?: string;
   xTick?: (v: string | number) => string;
   series: WealthSeries[];
   height?: string;
+  xTicks?: Array<string | number>;
+  markers?: WealthGrowthMarker[];
 }) {
   const gid = useId().replace(/:/g, "");
 
@@ -58,10 +70,22 @@ export function WealthGrowthLine({
             {s.label}
           </span>
         ))}
+        {(markers ?? []).map((m) => (
+          <span
+            key={`${m.x}-${m.label}`}
+            className="inline-flex items-center gap-2 text-xs font-medium text-slate-500"
+          >
+            <span
+              className="h-0 w-3.5 border-t-2 border-dashed"
+              style={{ borderColor: m.color ?? wealthChart.stepUp }}
+            />
+            {m.label}
+          </span>
+        ))}
       </div>
       <ChartFrame height={height}>
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+          <ComposedChart data={data} margin={{ top: 16, right: 8, left: 0, bottom: 0 }}>
             <defs>
               {series
                 .filter((s) => (s.kind ?? "area") === "area")
@@ -80,6 +104,8 @@ export function WealthGrowthLine({
               tickLine={false}
               tickFormatter={xTick}
               interval="preserveStartEnd"
+              ticks={xTicks}
+              minTickGap={28}
             />
             <YAxis
               tick={chartAxisTick}
@@ -104,6 +130,22 @@ export function WealthGrowthLine({
                 );
               }}
             />
+            {(markers ?? []).map((m, i) => (
+              <ReferenceLine
+                key={`marker-${i}-${m.x}`}
+                x={m.x}
+                stroke={m.color ?? wealthChart.stepUp}
+                strokeDasharray="4 4"
+                strokeOpacity={0.85}
+                label={{
+                  value: m.label,
+                  position: i % 2 === 0 ? "insideTopLeft" : "insideTopRight",
+                  fill: "#64748B",
+                  fontSize: 10,
+                  fontWeight: 600,
+                }}
+              />
+            ))}
             {series.map((s, i) =>
               (s.kind ?? "area") === "area" ? (
                 <Area

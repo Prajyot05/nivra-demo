@@ -21,7 +21,7 @@ import {
 import { DUMMY_REPORT_CONTACT } from "@/components/reports/executive-dossier";
 import { useCalculate } from "@/hooks/use-calculate";
 import { useCalculatorMode } from "@/hooks/use-calculator-mode";
-import { getCalculatorPageTitle } from "@/lib/calculator-nav";
+import { getCalculatorPageDescription, getCalculatorPageTitle } from "@/lib/calculator-nav";
 import {
   DelayCostCards,
   IconCalendar,
@@ -55,6 +55,7 @@ import {
   WealthStatusNote,
   WealthTextField,
   WealthYearField,
+  WealthAnalyticsChrome,
   WealthCompareBars,
   WealthGrowthLine,
   WealthMixDonut,
@@ -119,54 +120,6 @@ const MODE_FULL_LABEL: Record<Mode, string> = Object.fromEntries(
   MODE_META.map((m) => [m.id, m.fullLabel]),
 ) as Record<Mode, string>;
 
-function GoalsModeTabs({
-  mode,
-  onModeChange,
-}: {
-  mode: Mode;
-  onModeChange: (next: Mode) => void;
-}) {
-  return (
-    <WealthSegmented
-      fullWidth
-      layoutId="goals-mode-pill"
-      value={mode}
-      onChange={onModeChange}
-      options={[
-        {
-          id: "sip",
-          label: "SIP vs Step",
-          icon: <IconSip className="h-3.5 w-3.5" />,
-        },
-        {
-          id: "current",
-          label: "Current",
-          icon: <IconTarget className="h-3.5 w-3.5" />,
-        },
-        {
-          id: "ls-sip",
-          label: "LS + SIP",
-          icon: <IconChart className="h-3.5 w-3.5" />,
-        },
-        {
-          id: "existing",
-          label: "Existing",
-          icon: <IconRates className="h-3.5 w-3.5" />,
-        },
-        {
-          id: "periodic",
-          label: "Periodic",
-          icon: <IconCalendar className="h-3.5 w-3.5" />,
-        },
-        {
-          id: "compounding",
-          label: "Steps",
-          icon: <IconStepUp className="h-3.5 w-3.5" />,
-        },
-      ]}
-    />
-  );
-}
 const FREQUENCY_OPTIONS = [
   { value: "1", label: "1 · Yearly" },
   { value: "2", label: "2 · Half-yearly" },
@@ -597,11 +550,7 @@ export function UnifiedGoalPlanner() {
     <>
     <CalculatorPage
       title={getCalculatorPageTitle("/goals", mode)}
-      description={
-        mode === "compounding"
-          ? "Required SIP or lumpsum so net after tax hits the goal, plus the time to each wealth step."
-          : "Six goal modes. Additional SIP / lumpsum / step-up are solved so net after tax hits the goal."
-      }
+      description={getCalculatorPageDescription("/goals", mode)}
       contentClassName={WEALTH_CONTENT_CLASS}
       actions={
         <ReportDownloadButton
@@ -610,7 +559,6 @@ export function UnifiedGoalPlanner() {
           loading={isDownloading}
         />
       }
-      modes={<GoalsModeTabs mode={mode} onModeChange={setMode} />}
       header={
         <WealthHero
           clientName={name}
@@ -1395,49 +1343,6 @@ function GoalSummaryCard({
   );
 }
 
-function SummaryRows({
-  title,
-  rows,
-}: {
-  title: string;
-  rows: Array<{ label: string; value: number | string; emphasize?: boolean }>;
-}) {
-  return (
-    <div className="rounded-2xl border border-slate-200/80 bg-white px-4 py-4 shadow-[0_1px_2px_rgba(15,23,42,0.03),0_8px_24px_rgba(15,23,42,0.04)] sm:px-5">
-      <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-slate-400">
-        {title}
-      </div>
-      <dl className="mt-3.5 divide-y divide-slate-100">
-        {rows.map((row) => (
-          <div
-            key={row.label}
-            className="flex items-baseline justify-between gap-4 py-2.5 first:pt-0 last:pb-0"
-          >
-            <dt className="text-[14px] leading-snug text-slate-500">{row.label}</dt>
-            <dd
-              className={
-                row.emphasize
-                  ? "text-[14px] font-semibold tabular-nums tracking-tight text-emerald-700"
-                  : "text-[14px] font-medium tabular-nums tracking-tight text-slate-900"
-              }
-            >
-              {typeof row.value === "number" ? formatINRCurrency(row.value) : row.value}
-            </dd>
-          </div>
-        ))}
-      </dl>
-    </div>
-  );
-}
-
-function AnalyticsSplit({ left, right }: { left: ReactNode; right: ReactNode }) {
-  return (
-    <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-12">
-      <div className="min-w-0 overflow-hidden xl:col-span-7">{left}</div>
-      <div className="flex min-w-0 flex-col gap-3 xl:col-span-5">{right}</div>
-    </div>
-  );
-}
 
 const MODE_AUDIT_HINT: Record<Mode, string> = {
   sip: "Flat vs step-up SIP paths",
@@ -1801,22 +1706,19 @@ function GoalResults({
         milestones={
           <MetricGrid>
             <WealthMetricCard
-              title="Target Goal"
-              value={result.targetGoal}
-              description="Net after capital gains tax"
-              tone="accent"
-              mark={
-                <WealthIconMark className="h-7 w-7">
-                  <IconTarget className="h-3.5 w-3.5" />
-                </WealthIconMark>
-              }
-            />
-            <WealthMetricCard
               title="Monthly SIP"
               value={result.standard.monthlySip}
               description="Every month for the full tenure"
               tone="positive"
               badge="SIP"
+              footer={
+                <>
+                  Net ·{" "}
+                  <span className="font-semibold tabular-nums text-emerald-700">
+                    {formatINRCurrency(result.standard.netAfterTax)}
+                  </span>
+                </>
+              }
               mark={
                 <WealthIconMark tone="emerald" className="h-7 w-7">
                   <IconSip className="h-3.5 w-3.5" />
@@ -1829,9 +1731,38 @@ function GoalResults({
               description="One-time amount today"
               tone="neutral"
               badge="One Time"
+              footer={
+                <>
+                  Net ·{" "}
+                  <span className="font-semibold tabular-nums text-emerald-700">
+                    {formatINRCurrency(result.lumpsum.netAfterTax)}
+                  </span>
+                </>
+              }
               mark={
                 <WealthIconMark className="h-7 w-7">
                   <IconStepUp className="h-3.5 w-3.5" />
+                </WealthIconMark>
+              }
+            />
+            <WealthMetricCard
+              title="Target Goal"
+              value={result.targetGoal}
+              description="Net after capital gains tax"
+              tone="accent"
+              footer={
+                result.stepSize != null ? (
+                  <>
+                    Step size ·{" "}
+                    <span className="font-semibold tabular-nums text-slate-700">
+                      {formatINRCurrency(result.stepSize)}
+                    </span>
+                  </>
+                ) : undefined
+              }
+              mark={
+                <WealthIconMark className="h-7 w-7">
+                  <IconTarget className="h-3.5 w-3.5" />
                 </WealthIconMark>
               }
             />
@@ -1852,7 +1783,8 @@ function GoalResults({
             }}
           />
         }
-        analyticsSubtitle="SIP vs lumpsum path and wealth-step crossings"
+        analyticsSubtitle="SIP vs lumpsum growth, mix, and funding paths"
+        milestonesSubtitle="Required SIP, lumpsum today, and target corpus"
         auditTitle="Growth Steps Ledger"
         audit={
           <GoalAuditBlock mode="compounding" result={result} tenureYears={tenureYears}>
@@ -1961,8 +1893,8 @@ function LsSipResults({
   onToggleSchedule,
   openDelay,
   onToggleDelay,
-  chartTab,
-  onChartTabChange,
+  chartTab: _chartTab,
+  onChartTabChange: _onChartTabChange,
 }: {
   result: GoalPlannerResult;
   tenureYears: number;
@@ -1977,11 +1909,21 @@ function LsSipResults({
   chartTab: "funding" | "compare";
   onChartTabChange: (tab: "funding" | "compare") => void;
 }) {
+  const [localTab, setLocalTab] = useState<"funding" | "compare">("funding");
+  void _chartTab;
+  void _onChartTabChange;
+
   const years = result.schedule.length || tenureYears;
   const mixSip = result.mixSip ?? 0;
   const allSip = result.allSip ?? 0;
   const allLumpsum = result.allLumpsum ?? 0;
   const standard = result.standard;
+  const stepUp = result.stepUp;
+  const shortfall = result.shortfall ?? 0;
+
+  const fundingChart = goalRequiredChart("ls-sip", result);
+  const compareChart = goalExtraChart("ls-sip", result, years);
+  const activeChart = localTab === "compare" ? compareChart : fundingChart;
 
   return (
     <GoalResultSections
@@ -1999,10 +1941,19 @@ function LsSipResults({
       milestones={
         <MetricGrid>
           <WealthMetricCard
-            title="Target Goal"
-            value={result.targetGoal}
-            description="Net after capital gains tax"
-            tone="accent"
+            title="Shortfall"
+            value={shortfall}
+            description="Amount still needing funding after current credit"
+            badge="Gap"
+            tone="neutral"
+            footer={
+              <>
+                Current credit ·{" "}
+                <span className="font-semibold tabular-nums text-slate-700">
+                  {formatINRCurrency(result.existingCredit ?? 0)}
+                </span>
+              </>
+            }
             mark={
               <WealthIconMark className="h-7 w-7">
                 <IconTarget className="h-3.5 w-3.5" />
@@ -2010,56 +1961,131 @@ function LsSipResults({
             }
           />
           <WealthMetricCard
-            title="Shortfall"
-            value={result.shortfall ?? 0}
-            description="Amount still needing funding"
-            tone="neutral"
-            badge="Gap"
-          />
-          <WealthMetricCard
             title="Mix Monthly SIP"
             value={mixSip}
             description="Remaining SIP with extra lumpsum applied"
+            badge="Mix"
             tone="positive"
+            footer={
+              <>
+                All SIP ·{" "}
+                <span className="font-semibold tabular-nums text-slate-700">
+                  {formatINRCurrency(allSip)}
+                </span>
+                /mo
+              </>
+            }
             mark={
               <WealthIconMark tone="emerald" className="h-7 w-7">
                 <IconSip className="h-3.5 w-3.5" />
               </WealthIconMark>
             }
           />
+          <WealthMetricCard
+            title="All Lumpsum"
+            value={allLumpsum}
+            description="Fund the goal with one lumpsum today"
+            badge="One Time"
+            tone="positive"
+            footer={
+              result.extraLumpsum != null ? (
+                <>
+                  Extra lumpsum in mix ·{" "}
+                  <span className="font-semibold tabular-nums text-slate-700">
+                    {formatINRCurrency(result.extraLumpsum)}
+                  </span>
+                </>
+              ) : undefined
+            }
+            mark={
+              <WealthIconMark tone="emerald" className="h-7 w-7">
+                <IconStepUp className="h-3.5 w-3.5" />
+              </WealthIconMark>
+            }
+          />
         </MetricGrid>
       }
       analytics={
-        <AnalyticsSplit
-          left={renderGoalCharts("ls-sip", result, years, chartTab, onChartTabChange)}
-          right={
-            <>
-              <SummaryRows
-                title={result.overfunded ? "Results · already funded" : "Goal summary"}
-                rows={[
-                  { label: "Target goal", value: result.targetGoal, emphasize: true },
-                  { label: "Inflation-adjusted goal", value: result.inflAdjGoal },
-                  { label: "Shortfall to fund", value: result.shortfall ?? 0, emphasize: true },
-                  { label: "Credit from current corpus", value: result.existingCredit ?? 0 },
-                  { label: "All lumpsum (today)", value: allLumpsum },
-                  { label: "All SIP (monthly)", value: allSip },
-                  { label: "Mix remaining SIP", value: mixSip, emphasize: true },
+        <div className="space-y-5">
+          <WealthAnalyticsChrome
+            tabs={
+              <WealthSegmented
+                variant="underline"
+                layoutId="ls-sip-chart-tabs"
+                value={localTab}
+                onChange={setLocalTab}
+                options={[
+                  {
+                    id: "funding",
+                    label: "Funding",
+                    icon: <IconDonut className="h-3.5 w-3.5" />,
+                  },
+                  {
+                    id: "compare",
+                    label: "Comparison",
+                    icon: <IconChart className="h-3.5 w-3.5" />,
+                  },
                 ]}
               />
+            }
+          >
+            <div className="min-w-0 overflow-hidden">{activeChart}</div>
+          </WealthAnalyticsChrome>
+
+          <div className="space-y-5">
+            <ModeSummaryTable
+              title="Goal summary"
+              subtitle="All-LS, all-SIP, and mix remaining SIP against the target"
+              rows={[
+                {
+                  label: "Shortfall to fund",
+                  value: formatINRCurrency(shortfall),
+                  tone: "rose",
+                  highlight: true,
+                },
+                {
+                  label: "Target goal (net)",
+                  value: formatINRCurrency(result.targetGoal),
+                  tone: "emerald",
+                },
+                {
+                  label: "Credit from current corpus",
+                  value: formatINRCurrency(result.existingCredit ?? 0),
+                  tone: "emerald",
+                },
+                {
+                  label: "All lumpsum (today)",
+                  value: formatINRCurrency(allLumpsum),
+                },
+                {
+                  label: "All SIP (monthly)",
+                  value: formatINRCurrency(allSip),
+                },
+                {
+                  label: "Mix remaining SIP",
+                  value: formatINRCurrency(mixSip),
+                  tone: "emerald",
+                },
+                {
+                  label: "Horizon",
+                  value: `${tenureYears} year${tenureYears === 1 ? "" : "s"}`,
+                },
+              ]}
+            />
+
+            <div className="grid grid-cols-1 items-stretch gap-3 lg:grid-cols-2">
               {standard ? <LegMetricCard title="Additional SIP" leg={standard} /> : null}
-              {result.stepUp ? (
-                <LegMetricCard title="Additional step-up SIP" leg={result.stepUp} />
-              ) : null}
-            </>
-          }
-        />
+              {stepUp ? <LegMetricCard title="Additional step-up SIP" leg={stepUp} /> : null}
+            </div>
+          </div>
+        </div>
       }
       audit={
         <GoalAuditBlock mode="ls-sip" result={result} tenureYears={tenureYears}>
           <GoalScheduleTable mode="ls-sip" rows={result.schedule} />
         </GoalAuditBlock>
       }
-      milestonesSubtitle="Target, shortfall, and mix remaining SIP"
+      milestonesSubtitle="Shortfall, mix SIP, and all-lumpsum path"
       analyticsSubtitle="Corpus mix and all-LS vs all-SIP vs mix"
       auditTitle="LS + SIP Options Ledger"
     />
@@ -2077,8 +2103,8 @@ function PeriodicResults({
   onToggleSchedule,
   openDelay,
   onToggleDelay,
-  chartTab,
-  onChartTabChange,
+  chartTab: _chartTab,
+  onChartTabChange: _onChartTabChange,
 }: {
   result: GoalPlannerResult;
   tenureYears: number;
@@ -2093,6 +2119,10 @@ function PeriodicResults({
   chartTab: "funding" | "compare";
   onChartTabChange: (tab: "funding" | "compare") => void;
 }) {
+  const [localTab, setLocalTab] = useState<"funding" | "compare" | "mix">("funding");
+  void _chartTab;
+  void _onChartTabChange;
+
   const years = result.schedule.length || tenureYears;
   const periodic = result.periodic;
   const standard = result.standard;
@@ -2105,6 +2135,38 @@ function PeriodicResults({
   const periodicTax =
     periodic?.tax ??
     (periodic ? Math.max(0, periodic.maturity - periodic.netCredit) : 0);
+
+  const fundingChart = goalRequiredChart("periodic", result);
+  const compareChart = goalExtraChart("periodic", result, years);
+  const mixChart = periodic ? (
+    <WealthMixDonut
+      title="Periodic mix"
+      centerLabel="Maturity"
+      centerValue={periodic.maturity}
+      tax={periodicTax}
+      net={periodic.netCredit}
+      netLabel="Net credit"
+      slices={[
+        {
+          name: "Periodic invested",
+          value: periodic.totalInvested,
+          color: wealthMixColors.invested,
+        },
+        {
+          name: "Periodic gain",
+          value: periodicGain,
+          color: wealthMixColors.gain,
+        },
+      ]}
+    />
+  ) : null;
+
+  const activeChart =
+    localTab === "compare"
+      ? compareChart
+      : localTab === "mix"
+        ? mixChart
+        : fundingChart;
 
   return (
     <GoalResultSections
@@ -2129,10 +2191,23 @@ function PeriodicResults({
           ) : null}
           <MetricGrid>
             <WealthMetricCard
-              title="Target Goal"
-              value={result.targetGoal}
-              description="Net after capital gains tax"
-              tone="accent"
+              title={result.overfunded ? "Periodic Net Credit" : "Shortfall"}
+              value={result.overfunded ? (periodic?.netCredit ?? 0) : shortfall}
+              description={
+                result.overfunded
+                  ? "Credit already covering the goal"
+                  : "Amount still needing funding after periodic credit"
+              }
+              badge={result.overfunded ? "Covered" : "Gap"}
+              tone="neutral"
+              footer={
+                <>
+                  Periodic credit ·{" "}
+                  <span className="font-semibold tabular-nums text-slate-700">
+                    {formatINRCurrency(periodic?.netCredit ?? 0)}
+                  </span>
+                </>
+              }
               mark={
                 <WealthIconMark className="h-7 w-7">
                   <IconTarget className="h-3.5 w-3.5" />
@@ -2140,20 +2215,25 @@ function PeriodicResults({
               }
             />
             <WealthMetricCard
-              title={result.overfunded ? "Periodic Net Credit" : "Shortfall"}
-              value={result.overfunded ? (periodic?.netCredit ?? 0) : shortfall}
-              description={
-                result.overfunded
-                  ? "Credit already covering the goal"
-                  : "Amount still needing funding"
-              }
-              tone="neutral"
-            />
-            <WealthMetricCard
               title="Additional SIP"
               value={standard?.monthlySip ?? 0}
-              description="Monthly SIP still required"
+              description="Flat monthly SIP to close the shortfall"
+              badge="Flat"
               tone="positive"
+              footer={
+                standard ? (
+                  <>
+                    Invested ·{" "}
+                    <span className="font-semibold tabular-nums text-slate-700">
+                      {formatINRCurrency(standard.invested)}
+                    </span>
+                    {" · Net "}
+                    <span className="font-semibold tabular-nums text-emerald-700">
+                      {formatINRCurrency(standard.netAfterTax)}
+                    </span>
+                  </>
+                ) : undefined
+              }
               mark={
                 <WealthIconMark tone="emerald" className="h-7 w-7">
                   <IconSip className="h-3.5 w-3.5" />
@@ -2164,7 +2244,26 @@ function PeriodicResults({
               title="Step-up SIP"
               value={stepUp?.monthlySip ?? 0}
               description="Starting monthly SIP with annual step-up"
+              badge="Step-up"
               tone="positive"
+              footer={
+                stepUp?.endMonthlySip != null ? (
+                  <>
+                    Ends at ·{" "}
+                    <span className="font-semibold tabular-nums text-emerald-700">
+                      {formatINRCurrency(stepUp.endMonthlySip)}
+                    </span>
+                    /mo
+                  </>
+                ) : lumpsum?.lumpsum != null ? (
+                  <>
+                    Or lumpsum today ·{" "}
+                    <span className="font-semibold tabular-nums text-slate-700">
+                      {formatINRCurrency(lumpsum.lumpsum)}
+                    </span>
+                  </>
+                ) : undefined
+              }
               mark={
                 <WealthIconMark tone="emerald" className="h-7 w-7">
                   <IconStepUp className="h-3.5 w-3.5" />
@@ -2176,56 +2275,83 @@ function PeriodicResults({
       }
       analytics={
         <div className="space-y-5">
-          <AnalyticsSplit
-            left={renderGoalCharts("periodic", result, years, chartTab, onChartTabChange)}
-            right={
-              <>
-                <SummaryRows
-                  title={result.overfunded ? "Results · already funded" : "Goal summary"}
-                  rows={[
-                    { label: "Target goal", value: result.targetGoal, emphasize: true },
-                    { label: "Inflation-adjusted goal", value: result.inflAdjGoal },
-                    { label: "Shortfall to fund", value: shortfall, emphasize: true },
-                    { label: "Periodic maturity", value: periodic?.maturity ?? 0 },
-                    { label: "Periodic invested", value: periodic?.totalInvested ?? 0 },
-                    { label: "Periodic gain", value: periodicGain },
-                    { label: "Periodic tax", value: periodicTax },
-                    {
-                      label: "Periodic net credit",
-                      value: periodic?.netCredit ?? 0,
-                      emphasize: true,
-                    },
-                    { label: "Periodic payments", value: String(periodic?.payments ?? 0) },
-                  ]}
-                />
-                {periodic ? (
-                  <WealthMixDonut
-                    title="Periodic mix"
-                    centerLabel="Maturity"
-                    centerValue={periodic.maturity}
-                    slices={[
-                      {
-                        name: "Periodic invested",
-                        value: periodic.totalInvested,
-                        color: wealthMixColors.invested,
-                      },
-                      {
-                        name: "Periodic gain",
-                        value: periodicGain,
-                        color: wealthMixColors.gain,
-                      },
-                    ]}
-                  />
-                ) : null}
-              </>
+          <WealthAnalyticsChrome
+            tabs={
+              <WealthSegmented
+                variant="underline"
+                layoutId="periodic-chart-tabs"
+                value={localTab}
+                onChange={setLocalTab}
+                options={[
+                  {
+                    id: "funding",
+                    label: "Funding",
+                    icon: <IconChart className="h-3.5 w-3.5" />,
+                  },
+                  {
+                    id: "compare",
+                    label: "Comparison",
+                    icon: <IconRates className="h-3.5 w-3.5" />,
+                  },
+                  {
+                    id: "mix",
+                    label: "Periodic Mix",
+                    icon: <IconDonut className="h-3.5 w-3.5" />,
+                  },
+                ]}
+              />
             }
-          />
-          <FundingPathsBoard
-            muted={Boolean(result.overfunded)}
-            lumpsum={lumpsum}
-            standard={standard}
-            stepUp={stepUp}
-          />
+          >
+            <div className="min-w-0 overflow-hidden">{activeChart}</div>
+          </WealthAnalyticsChrome>
+
+          <div className="space-y-5">
+            <ModeSummaryTable
+              title="Goal summary"
+              subtitle="Periodic credit, shortfall, and the remaining funding paths"
+              rows={[
+                {
+                  label: "Shortfall to fund",
+                  value: formatINRCurrency(shortfall),
+                  tone: "rose",
+                  highlight: true,
+                },
+                {
+                  label: "Target goal (net)",
+                  value: formatINRCurrency(result.targetGoal),
+                  tone: "emerald",
+                },
+                {
+                  label: "Periodic net credit",
+                  value: formatINRCurrency(periodic?.netCredit ?? 0),
+                  tone: "emerald",
+                },
+                {
+                  label: "Periodic maturity",
+                  value: formatINRCurrency(periodic?.maturity ?? 0),
+                },
+                {
+                  label: "Periodic invested",
+                  value: formatINRCurrency(periodic?.totalInvested ?? 0),
+                },
+                {
+                  label: "Periodic payments",
+                  value: String(periodic?.payments ?? 0),
+                },
+                {
+                  label: "Horizon",
+                  value: `${tenureYears} year${tenureYears === 1 ? "" : "s"}`,
+                },
+              ]}
+            />
+
+            <FundingPathsBoard
+              muted={Boolean(result.overfunded)}
+              lumpsum={lumpsum}
+              standard={standard}
+              stepUp={stepUp}
+            />
+          </div>
         </div>
       }
       audit={
@@ -2406,8 +2532,8 @@ function CurrentInvestmentResults({
       }
       analytics={
         <div className="space-y-5">
-          <div className="space-y-3">
-            <div className="overflow-x-auto pb-1">
+          <WealthAnalyticsChrome
+            tabs={
               <WealthSegmented
                 variant="underline"
                 layoutId="current-chart-tabs"
@@ -2431,9 +2557,10 @@ function CurrentInvestmentResults({
                   },
                 ]}
               />
-            </div>
+            }
+          >
             <div className="min-w-0 overflow-hidden">{activeChart}</div>
-          </div>
+          </WealthAnalyticsChrome>
 
           <div className="space-y-5">
             <CurrentSummaryCard
@@ -2459,6 +2586,81 @@ function CurrentInvestmentResults({
       analyticsSubtitle="Waterfall, capital compare, and SIP mix"
       auditTitle="Current Investment Ledger"
     />
+  );
+}
+
+function ModeSummaryTable({
+  title,
+  subtitle,
+  rows,
+}: {
+  title: string;
+  subtitle: string;
+  rows: Array<{
+    label: string;
+    value: string;
+    tone?: "default" | "emerald" | "rose";
+    highlight?: boolean;
+  }>;
+}) {
+  return (
+    <div className="space-y-2.5">
+      <div>
+        <div className="text-[12px] font-medium uppercase tracking-[0.14em] text-slate-400">
+          {title}
+        </div>
+        <p className="mt-1 text-[13px] leading-relaxed text-slate-500">{subtitle}</p>
+      </div>
+      <div className="overflow-x-auto">
+        <WealthLedgerShell className="min-w-[24rem]">
+          <table className="w-full border-collapse text-left text-[13px] tabular-nums">
+            <thead>
+              <tr className={wealthLedgerTheadClass()}>
+                <th className="px-4 py-3.5 text-left text-[13px] font-medium text-slate-600">
+                  Metric
+                </th>
+                <th className="px-4 py-3.5 text-right text-[13px] font-medium text-emerald-700">
+                  Amount
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+              {rows.map((row) => (
+                <tr
+                  key={row.label}
+                  className={
+                    row.highlight
+                      ? "border-t border-emerald-200/80 bg-emerald-50/60"
+                      : "transition-colors hover:bg-slate-50/80"
+                  }
+                >
+                  <td className="px-4 py-3.5 text-[14px] text-slate-700">
+                    {row.highlight ? (
+                      <span className="inline-flex items-center rounded-md bg-emerald-600 px-2 py-0.5 text-[12px] font-semibold text-white">
+                        {row.label}
+                      </span>
+                    ) : (
+                      row.label
+                    )}
+                  </td>
+                  <td
+                    className={
+                      row.tone === "rose"
+                        ? "px-4 py-3.5 text-right text-[14px] font-semibold tabular-nums text-rose-600"
+                        : row.tone === "emerald"
+                          ? "px-4 py-3.5 text-right text-[14px] font-semibold tabular-nums text-emerald-700"
+                          : "px-4 py-3.5 text-right text-[14px] font-medium tabular-nums text-slate-800"
+                    }
+                  >
+                    {row.value}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </WealthLedgerShell>
+      </div>
+    </div>
   );
 }
 
@@ -2527,65 +2729,11 @@ function CurrentSummaryCard({
   );
 
   return (
-    <div className="space-y-2.5">
-      <div>
-        <div className="text-[12px] font-medium uppercase tracking-[0.14em] text-slate-400">
-          Goal summary
-        </div>
-        <p className="mt-1 text-[13px] leading-relaxed text-slate-500">
-          Shortfall after existing credit, with the target corpus on the goal date
-        </p>
-      </div>
-      <div className="overflow-x-auto">
-        <WealthLedgerShell className="min-w-[24rem]">
-          <table className="w-full border-collapse text-left text-[13px] tabular-nums">
-            <thead>
-              <tr className={wealthLedgerTheadClass()}>
-                <th className="px-4 py-3.5 text-left text-[13px] font-medium text-slate-600">
-                  Metric
-                </th>
-                <th className="px-4 py-3.5 text-right text-[13px] font-medium text-emerald-700">
-                  Amount
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-              {rows.map((row) => (
-                <tr
-                  key={row.label}
-                  className={
-                    row.highlight
-                      ? "border-t border-emerald-200/80 bg-emerald-50/60"
-                      : "transition-colors hover:bg-slate-50/80"
-                  }
-                >
-                  <td className="px-4 py-3.5 text-[14px] text-slate-700">
-                    {row.highlight ? (
-                      <span className="inline-flex items-center rounded-md bg-emerald-600 px-2 py-0.5 text-[12px] font-semibold text-white">
-                        {row.label}
-                      </span>
-                    ) : (
-                      row.label
-                    )}
-                  </td>
-                  <td
-                    className={
-                      row.tone === "rose"
-                        ? "px-4 py-3.5 text-right text-[14px] font-semibold tabular-nums text-rose-600"
-                        : row.tone === "emerald"
-                          ? "px-4 py-3.5 text-right text-[14px] font-semibold tabular-nums text-emerald-700"
-                          : "px-4 py-3.5 text-right text-[14px] font-medium tabular-nums text-slate-800"
-                    }
-                  >
-                    {row.value}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </WealthLedgerShell>
-      </div>
-    </div>
+    <ModeSummaryTable
+      title="Goal summary"
+      subtitle="Shortfall after existing credit, with the target corpus on the goal date"
+      rows={rows}
+    />
   );
 }
 
@@ -2618,7 +2766,7 @@ function ExistingSipResults({
   chartTab: "funding" | "compare";
   onChartTabChange: (tab: "funding" | "compare") => void;
 }) {
-  const [localChart, setLocalChart] = useState<"pie" | "bar">("pie");
+  const [localTab, setLocalTab] = useState<"funding" | "compare">("funding");
   void _chartTab;
   void _onChartTabChange;
   const years = result.schedule.length || tenureYears;
@@ -2635,6 +2783,68 @@ function ExistingSipResults({
   const sip2Tax = standard?.tax ?? 0;
   const sip2Net = standard?.netAfterTax ?? 0;
   const combinedCorpus = sip1Fv + (standard?.maturity ?? 0);
+
+  const fundingChart = (
+    <WealthMixDonut
+      title="SIP1 + SIP2 corpus mix"
+      centerLabel="Combined"
+      centerValue={combinedCorpus}
+      tax={standard ? sip2Tax : undefined}
+      net={standard ? sip2Net : undefined}
+      netLabel="Add. net"
+      slices={[
+        {
+          name: "Existing invested",
+          value: sip1Invested,
+          color: wealthMixColors.invested,
+        },
+        {
+          name: "Existing gain",
+          value: sip1Gain,
+          color: wealthMixColors.secondary,
+        },
+        {
+          name: "Additional invested",
+          value: sip2Invested,
+          color: wealthMixColors.secondaryGain,
+        },
+        {
+          name: "Additional gain",
+          value: sip2Gain,
+          color: wealthMixColors.gain,
+        },
+      ]}
+    />
+  );
+
+  const compareChart = (
+    <WealthCompareBars
+      showBarLabels
+      data={[
+        {
+          category: "Monthly SIP",
+          existing: currentMonthlySip,
+          additional: standard?.monthlySip ?? 0,
+        },
+        {
+          category: "Invested",
+          existing: sip1Invested,
+          additional: sip2Invested,
+        },
+        {
+          category: "Corpus",
+          existing: sip1Fv,
+          additional: standard?.maturity ?? 0,
+        },
+      ]}
+      series={[
+        { key: "existing", label: "Existing", color: wealthChart.standard },
+        { key: "additional", label: "Additional", color: wealthChart.stepUp },
+      ]}
+    />
+  );
+
+  const activeChart = localTab === "compare" ? compareChart : fundingChart;
 
   return (
     <GoalResultSections
@@ -2653,10 +2863,20 @@ function ExistingSipResults({
         <div className="space-y-4">
           <MetricGrid>
             <WealthMetricCard
-              title="Target Goal"
-              value={result.targetGoal}
-              description="Net after capital gains tax"
-              tone="accent"
+              title="Existing SIP Credit"
+              value={existing?.netCredit ?? 0}
+              description="Keep current SIP running"
+              badge="Credit"
+              tone="neutral"
+              footer={
+                <>
+                  Current SIP ·{" "}
+                  <span className="font-semibold tabular-nums text-slate-700">
+                    {formatINRCurrency(currentMonthlySip)}
+                  </span>
+                  /mo
+                </>
+              }
               mark={
                 <WealthIconMark className="h-7 w-7">
                   <IconTarget className="h-3.5 w-3.5" />
@@ -2664,16 +2884,25 @@ function ExistingSipResults({
               }
             />
             <WealthMetricCard
-              title="Existing SIP Credit"
-              value={existing?.netCredit ?? 0}
-              description="Keep current SIP running"
-              tone="neutral"
-            />
-            <WealthMetricCard
               title="Additional SIP"
               value={standard?.monthlySip ?? 0}
               description="Extra flat monthly SIP"
+              badge="Flat"
               tone="positive"
+              footer={
+                standard ? (
+                  <>
+                    Invested ·{" "}
+                    <span className="font-semibold tabular-nums text-slate-700">
+                      {formatINRCurrency(standard.invested)}
+                    </span>
+                    {" · Net "}
+                    <span className="font-semibold tabular-nums text-emerald-700">
+                      {formatINRCurrency(standard.netAfterTax)}
+                    </span>
+                  </>
+                ) : undefined
+              }
               mark={
                 <WealthIconMark tone="emerald" className="h-7 w-7">
                   <IconSip className="h-3.5 w-3.5" />
@@ -2683,12 +2912,13 @@ function ExistingSipResults({
             <WealthMetricCard
               title="Step-up SIP"
               value={stepUp?.monthlySip ?? 0}
-              description="Starting monthly SIP"
+              description="Starting monthly SIP with annual step-up"
+              badge="Step-up"
               tone="positive"
               footer={
                 stepUp?.endMonthlySip != null ? (
                   <>
-                    Ending SIP after {years} years ·{" "}
+                    Ends at ·{" "}
                     <span className="font-semibold tabular-nums text-emerald-700">
                       {formatINRCurrency(stepUp.endMonthlySip)}
                     </span>
@@ -2717,104 +2947,77 @@ function ExistingSipResults({
       }
       analytics={
         <div className="space-y-5">
-          <div className="overflow-x-auto pb-1">
-            <WealthSegmented
-              variant="underline"
-              layoutId="existing-chart-pill"
-              value={localChart}
-              onChange={(id) => setLocalChart(id)}
-              options={[
-                {
-                  id: "pie",
-                  label: "Mix",
-                  icon: <IconDonut className="h-3.5 w-3.5" />,
-                },
-                {
-                  id: "bar",
-                  label: "Compare",
-                  icon: <IconChart className="h-3.5 w-3.5" />,
-                },
-              ]}
-            />
-          </div>
-
-          <AnalyticsSplit
-            left={
-              localChart === "pie" ? (
-                <WealthMixDonut
-                  title="SIP1 + SIP2 corpus mix"
-                  centerLabel="Combined"
-                  centerValue={combinedCorpus}
-                  tax={standard ? sip2Tax : undefined}
-                  net={standard ? sip2Net : undefined}
-                  netLabel="Add. net"
-                  slices={[
-                    {
-                      name: "Existing invested",
-                      value: sip1Invested,
-                      color: wealthMixColors.invested,
-                    },
-                    {
-                      name: "Existing gain",
-                      value: sip1Gain,
-                      color: wealthMixColors.secondary,
-                    },
-                    {
-                      name: "Additional invested",
-                      value: sip2Invested,
-                      color: wealthMixColors.secondaryGain,
-                    },
-                    {
-                      name: "Additional gain",
-                      value: sip2Gain,
-                      color: wealthMixColors.gain,
-                    },
-                  ]}
-                />
-              ) : (
-                <WealthCompareBars
-                  showBarLabels
-                  data={[
-                    {
-                      category: "Monthly SIP",
-                      existing: currentMonthlySip,
-                      additional: standard?.monthlySip ?? 0,
-                    },
-                    {
-                      category: "Invested",
-                      existing: sip1Invested,
-                      additional: sip2Invested,
-                    },
-                    {
-                      category: "Corpus",
-                      existing: sip1Fv,
-                      additional: standard?.maturity ?? 0,
-                    },
-                  ]}
-                  series={[
-                    { key: "existing", label: "Existing", color: wealthChart.standard },
-                    { key: "additional", label: "Additional", color: wealthChart.stepUp },
-                  ]}
-                />
-              )
-            }
-            right={
-              <SummaryRows
-                title={result.overfunded ? "Results · already funded" : "Goal summary"}
-                rows={[
-                  { label: "Target goal", value: result.targetGoal, emphasize: true },
-                  { label: "Shortfall", value: result.shortfall ?? 0, emphasize: true },
-                  { label: "Existing credit", value: existing?.netCredit ?? 0 },
-                  { label: "Existing FV", value: sip1Fv },
-                  { label: "Additional SIP", value: standard?.monthlySip ?? 0 },
-                  { label: "Step-up SIP", value: stepUp?.monthlySip ?? 0 },
-                  { label: "Lumpsum today", value: lumpsum?.lumpsum ?? 0 },
+          <WealthAnalyticsChrome
+            tabs={
+              <WealthSegmented
+                variant="underline"
+                layoutId="existing-chart-tabs"
+                value={localTab}
+                onChange={setLocalTab}
+                options={[
+                  {
+                    id: "funding",
+                    label: "Funding",
+                    icon: <IconDonut className="h-3.5 w-3.5" />,
+                  },
+                  {
+                    id: "compare",
+                    label: "Comparison",
+                    icon: <IconChart className="h-3.5 w-3.5" />,
+                  },
                 ]}
               />
             }
-          />
+          >
+            <div className="min-w-0 overflow-hidden">{activeChart}</div>
+          </WealthAnalyticsChrome>
 
-          <FundingPathsBoard lumpsum={lumpsum} standard={standard} stepUp={stepUp} />
+          <div className="space-y-5">
+            <ModeSummaryTable
+              title="Goal summary"
+              subtitle="Existing SIP credit with additional funding needed to hit the goal"
+              rows={[
+                {
+                  label: "Shortfall to fund",
+                  value: formatINRCurrency(result.shortfall ?? 0),
+                  tone: "rose",
+                  highlight: true,
+                },
+                {
+                  label: "Target goal (net)",
+                  value: formatINRCurrency(result.targetGoal),
+                  tone: "emerald",
+                },
+                {
+                  label: "Existing credit",
+                  value: formatINRCurrency(existing?.netCredit ?? 0),
+                  tone: "emerald",
+                },
+                {
+                  label: "Existing FV",
+                  value: formatINRCurrency(sip1Fv),
+                },
+                {
+                  label: "Additional SIP",
+                  value: formatINRCurrency(standard?.monthlySip ?? 0),
+                },
+                {
+                  label: "Step-up SIP",
+                  value: formatINRCurrency(stepUp?.monthlySip ?? 0),
+                },
+                {
+                  label: "Lumpsum today",
+                  value: formatINRCurrency(lumpsum?.lumpsum ?? 0),
+                },
+                {
+                  label: "Horizon",
+                  value: `${years} year${years === 1 ? "" : "s"}`,
+                },
+              ]}
+            />
+
+            <FundingPathsBoard lumpsum={lumpsum} standard={standard} stepUp={stepUp} />
+          </div>
         </div>
       }
       audit={
@@ -3082,32 +3285,35 @@ function renderGoalCharts(
   const extra = goalExtraChart(mode, result, tenureYears);
 
   if (!extra) {
-    return <div className="min-w-0">{req}</div>;
+    return <div className="min-w-0 overflow-hidden pt-1">{req}</div>;
   }
 
   const active = chartTab === "compare" ? extra : req;
   return (
-    <div className="space-y-3">
-      <WealthSegmented
-        variant="underline"
-        layoutId={`goal-chart-${mode}`}
-        value={chartTab}
-        onChange={(id) => onChartTabChange?.(id)}
-        options={[
-          {
-            id: "funding",
-            label: "Funding",
-            icon: <IconDonut className="h-3.5 w-3.5" />,
-          },
-          {
-            id: "compare",
-            label: "Comparison",
-            icon: <IconChart className="h-3.5 w-3.5" />,
-          },
-        ]}
-      />
-      <div className="min-w-0">{active}</div>
-    </div>
+    <WealthAnalyticsChrome
+      tabs={
+        <WealthSegmented
+          variant="underline"
+          layoutId={`goal-chart-${mode}`}
+          value={chartTab}
+          onChange={(id) => onChartTabChange?.(id)}
+          options={[
+            {
+              id: "funding",
+              label: "Funding",
+              icon: <IconDonut className="h-3.5 w-3.5" />,
+            },
+            {
+              id: "compare",
+              label: "Comparison",
+              icon: <IconChart className="h-3.5 w-3.5" />,
+            },
+          ]}
+        />
+      }
+    >
+      <div className="min-w-0 overflow-hidden">{active}</div>
+    </WealthAnalyticsChrome>
   );
 }
 

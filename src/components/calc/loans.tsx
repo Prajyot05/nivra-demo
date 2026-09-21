@@ -39,7 +39,7 @@ import { CalculatorPage } from "@/components/layout/calculator-page-with-nav";
 import { ReportDownloadButton } from "@/components/calc/report-download-button";
 import { useCalculate } from "@/hooks/use-calculate";
 import { useCalculatorMode } from "@/hooks/use-calculator-mode";
-import { getCalculatorPageTitle } from "@/lib/calculator-nav";
+import { getCalculatorPageDescription, getCalculatorPageTitle } from "@/lib/calculator-nav";
 import {
   ChartFrame,
   IconCalendar,
@@ -823,7 +823,7 @@ export function LoansCalculator() {
     <>
     <CalculatorPage
       title={getCalculatorPageTitle("/loans", mode)}
-      description={MODE_COPY[mode].description}
+      description={getCalculatorPageDescription("/loans", mode)}
       contentClassName={WEALTH_CONTENT_CLASS}
       actions={
         <ReportDownloadButton
@@ -849,14 +849,6 @@ export function LoansCalculator() {
       }
       form={
         <div ref={assumptionsRef} className="space-y-4">
-          <WealthSegmented
-            fullWidth
-            layoutId="loan-mode-pill"
-            value={mode}
-            onChange={setMode}
-            options={MODES.map((m) => ({ id: m.id, label: m.label }))}
-          />
-
           <WealthSection
             id="assumptions"
             badge="01 · Profile"
@@ -1935,7 +1927,7 @@ function EmiResults({
             { id: "balance", label: "Balance", icon: <IconTimeline className="h-3.5 w-3.5" /> },
           ]}
         />
-        <div className="mt-4">
+        <div className="mt-5 pt-0.5">
           {chartTab === "payments" ? (
             <WealthGrowthLine
               data={result.schedule.map((row) => ({
@@ -3077,7 +3069,7 @@ function RecoveryResults({
             },
           ]}
         />
-        <div className="mt-4">
+        <div className="mt-5 pt-0.5">
           <WealthDataTable
             rows={compareRows}
             getRowKey={(row) => row.label}

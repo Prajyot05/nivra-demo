@@ -9,6 +9,7 @@ import {
   IconTax,
   IconTimeline,
 } from "../wealth-icons";
+import { WealthAnalyticsChrome } from "./wealth-analytics-chrome";
 import { CorpusMixPanel } from "./corpus-mix-panel";
 import { GrowthCompareChart } from "./growth-compare-chart";
 import { WealthCompareBars } from "./wealth-compare-bars";
@@ -80,8 +81,8 @@ export function WealthAnalyticsPanel({
   });
 
   return (
-    <div className="space-y-4">
-      <div className="overflow-x-auto pb-1">
+    <WealthAnalyticsChrome
+      tabs={
         <WealthSegmented
           value={tab}
           onChange={onTabChange}
@@ -115,8 +116,8 @@ export function WealthAnalyticsPanel({
             },
           ]}
         />
-      </div>
-
+      }
+    >
       <AnimatePresence mode="wait">
         <motion.div
           key={tab}
@@ -191,6 +192,6 @@ export function WealthAnalyticsPanel({
           ) : null}
         </motion.div>
       </AnimatePresence>
-    </div>
+    </WealthAnalyticsChrome>
   );
 }
