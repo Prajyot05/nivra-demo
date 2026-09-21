@@ -2,45 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  BarChart3,
-  BookOpen,
-  Calendar,
-  Check,
-  ChevronRight,
-  Flag,
-  GraduationCap,
-  PieChart,
-  RotateCcw,
-} from "lucide-react";
-import {
-  AgeInput,
-  BentoGroup,
-  BentoSection,
-  BUTTON_PRIMARY,
-  BUTTON_SECONDARY,
-  Card,
-  ChartPane,
-  ClientProfileBar,
-  CompareChart,
-  ComplianceFootnote,
-  Field,
   formatINRCurrency,
-  META_TEXT,
-  MoneyInput,
-  PercentInput,
-  ResultCard,
-  ResultsSection,
-  ScheduleTable,
-  SectionTitle,
-  SegmentedChartControl,
-  STACK_TIGHT,
-  Stack,
-  StatCard,
-  StatGrid,
-  StatusNote,
+  parseDigits,
   StackedBarChart,
-  TextInput,
-  YearInput,
+  StatusNote,
   ageError,
   emailError,
   nameError,
@@ -56,7 +21,50 @@ import {
 import { DUMMY_REPORT_CONTACT } from "@/components/reports/executive-dossier";
 import { useCalculate } from "@/hooks/use-calculate";
 import { generatePdfFromElement } from "@/lib/pdf-generator";
+import {
+  ChartFrame,
+  IconAlert,
+  IconBook,
+  IconCalendar,
+  IconChart,
+  IconCheck,
+  IconChevron,
+  IconDonut,
+  IconFlag,
+  IconGrad,
+  IconPerson,
+  IconRefresh,
+  IconSip,
+  IconTarget,
+  IconTimeline,
+  moneyCell,
+  WEALTH_CONTENT_CLASS,
+  WealthCompareBars,
+  WealthDataTable,
+  WealthDisclaimer,
+  WealthFieldShell,
+  wealthChart,
+  wealthInputClass,
+  WealthHero,
+  WealthIconMark,
+  WealthMetricCard,
+  WealthMoneyField,
+  WealthProfileGrid,
+  WealthSection,
+  WealthSegmented,
+  WEALTH_MONEY_PRESETS_DEFAULT,
+} from "@/components/wealth";
 
+const FEE_MIN = 1_000;
+const FEE_MAX = 5_00_00_000;
+const FEE_PRESETS = [
+  { label: "₹25k", value: 25_000 },
+  { label: "₹50k", value: 50_000 },
+  { label: "₹1L", value: 1_00_000 },
+  { label: "₹5L", value: 5_00_000 },
+  { label: "₹25L", value: 25_00_000 },
+  { label: "₹50L", value: 50_00_000 },
+];
 const DEFAULT_COSTS = [
   { age: 3, classLabel: "Nursery", cost: 20_000 },
   { age: 4, classLabel: "LKG", cost: 21_600 },
@@ -121,6 +129,7 @@ type EducationResult = {
 };
 
 type CostEntry = { row: CostRow; index: number };
+type AnalyticsTab = "compare" | "costs" | "summary";
 
 function isCollegeLabel(label: string) {
   return /college/i.test(label);
@@ -160,6 +169,10 @@ export function ChildEducationPlanner() {
   const [openAssumptions, setOpenAssumptions] = useState(true);
   const [openMilestones, setOpenMilestones] = useState(true);
   const [openAnalytics, setOpenAnalytics] = useState(true);
+  const [openSchedule, setOpenSchedule] = useState(true);
+  const [analyticsTab, setAnalyticsTab] = useState<AnalyticsTab>("compare");
+
+  const assumptionsRef = useRef<HTMLDivElement>(null);
 
   const clientNameError = nameError(name);
   const clientAgeError = ageError(age);
@@ -235,6 +248,11 @@ export function ChildEducationPlanner() {
     }
   };
 
+  const scrollToAssumptions = () => {
+    setOpenAssumptions(true);
+    assumptionsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const patchCost = (index: number, cost: number) => {
     setCosts((prev) =>
       prev.map((row, i) => (i === index ? { ...row, cost: Math.max(0, cost) } : row)),
@@ -257,8 +275,9 @@ export function ChildEducationPlanner() {
   return (
     <>
       <CalculatorPage
-        title="Child Education Planner"
-        description="Fund future school and college fees with a lumpsum today or a monthly SIP."
+        title="Nivra Wealth"
+        description="Child education funding via lumpsum or monthly SIP"
+        contentClassName={WEALTH_CONTENT_CLASS}
         actions={
           <ReportDownloadButton
             onClick={handleDownload}
@@ -267,155 +286,153 @@ export function ChildEducationPlanner() {
           />
         }
         header={
-          <ClientProfileBar
-            name={name}
+          <WealthHero
+            clientName={name}
             age={age}
             email={email}
             phone={phone}
+            goalLabel={childName.trim() || "Child education"}
+            tenure={result?.sipYears ?? Math.max(0, (result?.lastFeeAge ?? childAge) - childAge)}
             strategy="Education corpus planning"
-            goal="Child education funding"
+            targetCorpus={canCalculate && result ? result.totalWithdrawal : 0}
+            monthlySip={canCalculate && result ? result.sip.monthlySip : 0}
+            realReturnPct={returnPct}
+            onEdit={scrollToAssumptions}
           />
         }
         form={
-          <BentoSection
-            sectionId="01"
-            title="Financial Assumptions & Modeling Suite"
-            description="Interactive engine for school and college fee funding via lumpsum or SIP"
-            collapsible
-            open={openAssumptions}
-            onToggle={() => setOpenAssumptions((v) => !v)}
-            actions={
-              <button
-                type="button"
-                onClick={resetDefaults}
-                className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 transition-all hover:bg-slate-100 hover:text-emerald-700"
-              >
-                Reset to Baseline
-              </button>
-            }
-          >
-            <BentoGroup
-              num="01"
-              title="Investor Profile"
-              colSpan={4}
-              footer={
-                <>
-                  <span>Child:</span>
-                  <span className="font-bold text-slate-700">
-                    {childName.trim() || "Child"} · Age {childAge}
-                  </span>
-                </>
+          <div ref={assumptionsRef}>
+            <WealthSection
+              id="assumptions"
+              badge="01 · Profile"
+              title="Investor Profile and Fee Schedule"
+              subtitle="Client identity, child details, return assumptions, and year-wise education costs"
+              open={openAssumptions}
+              onToggle={() => setOpenAssumptions((v) => !v)}
+              mark={
+                <WealthIconMark>
+                  <IconPerson />
+                </WealthIconMark>
+              }
+              actions={
+                <button
+                  type="button"
+                  onClick={resetDefaults}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
+                >
+                  <IconRefresh className="h-3.5 w-3.5" />
+                  Reset
+                </button>
               }
             >
-              <div className="mb-4">
-                <Field label="Client Name" error={clientNameError}>
-                  <TextInput
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className={clientNameError ? "border-[var(--app-danger)]" : undefined}
-                  />
-                </Field>
+              <div className="py-2">
+                <WealthProfileGrid>
+                  <WealthFieldShell label="Client name" error={clientNameError}>
+                    <input
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className={wealthInputClass}
+                      autoComplete="name"
+                    />
+                  </WealthFieldShell>
+                  <WealthFieldShell
+                    label="Age"
+                    suffix="Years"
+                    error={clientAgeError}
+                  >
+                    <input
+                      inputMode="numeric"
+                      value={String(age)}
+                      onChange={(e) => setAge(Math.round(parseDigits(e.target.value)))}
+                      className={`${wealthInputClass} !pr-14`}
+                    />
+                  </WealthFieldShell>
+                  <WealthFieldShell label="Email" error={clientEmailError}>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="client@email.com"
+                      className={wealthInputClass}
+                      autoComplete="email"
+                    />
+                  </WealthFieldShell>
+                  <WealthFieldShell label="Phone" error={clientPhoneError}>
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="+91 98765 43210"
+                      className={wealthInputClass}
+                      autoComplete="tel"
+                    />
+                  </WealthFieldShell>
+                  <WealthFieldShell label="Child name" error={childNameErr}>
+                    <input
+                      value={childName}
+                      onChange={(e) => setChildName(e.target.value)}
+                      className={wealthInputClass}
+                    />
+                  </WealthFieldShell>
+                  <WealthFieldShell
+                    label="Child age"
+                    suffix="Years"
+                    error={childAgeErr}
+                  >
+                    <input
+                      inputMode="numeric"
+                      value={String(childAge)}
+                      onChange={(e) => {
+                        const next = Math.round(parseDigits(e.target.value));
+                        setChildAge(Math.min(40, Math.max(0, next)));
+                      }}
+                      className={`${wealthInputClass} !pr-14`}
+                    />
+                  </WealthFieldShell>
+                  <WealthFieldShell label="Expected return" suffix="%" error={returnError}>
+                    <input
+                      inputMode="decimal"
+                      value={String(returnPct)}
+                      onChange={(e) => setReturnPct(Math.max(0, parseDigits(e.target.value)))}
+                      className={`${wealthInputClass} !pr-8`}
+                    />
+                  </WealthFieldShell>
+                  <WealthFieldShell label="Tax on gains" suffix="%" error={taxError}>
+                    <input
+                      inputMode="decimal"
+                      value={String(taxPct)}
+                      onChange={(e) => setTaxPct(Math.max(0, parseDigits(e.target.value)))}
+                      className={`${wealthInputClass} !pr-8`}
+                    />
+                  </WealthFieldShell>
+                  <div className="min-w-0">
+                    <div className="mb-1.5 text-sm text-slate-600">Phase mix</div>
+                    <div className="flex h-[42px] items-center justify-between rounded-lg bg-slate-50 px-3 ring-1 ring-slate-200">
+                      <span className="text-xs text-slate-500">
+                        {schoolFunded} school · {collegeFunded} college
+                      </span>
+                      <span className="text-sm font-medium tabular-nums text-emerald-700">
+                        {taxPct}% tax drag
+                      </span>
+                    </div>
+                  </div>
+                  <div className="min-w-0 sm:col-span-2 xl:col-span-3">
+                    <EducationFeeTimeline
+                      key={timelineKey}
+                      costs={costs}
+                      childAge={childAge}
+                      childName={childName}
+                      fundedYears={fundedYears}
+                      schoolFunded={schoolFunded}
+                      collegeFunded={collegeFunded}
+                      onPatchCost={patchCost}
+                      onReset={resetCosts}
+                    />
+                  </div>
+                </WealthProfileGrid>
               </div>
-              <div className="mb-4">
-                <AgeInput value={age} onChange={setAge} error={clientAgeError} />
-              </div>
-              <div className="mb-4">
-                <Field label="Email" error={clientEmailError}>
-                  <TextInput
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="client@email.com"
-                    className={clientEmailError ? "border-[var(--app-danger)]" : undefined}
-                  />
-                </Field>
-              </div>
-              <div className="mb-4">
-                <Field label="Phone" error={clientPhoneError}>
-                  <TextInput
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+91 98765 43210"
-                    className={clientPhoneError ? "border-[var(--app-danger)]" : undefined}
-                  />
-                </Field>
-              </div>
-              <div className="mb-4">
-                <Field label="Child name" error={childNameErr}>
-                  <TextInput
-                    value={childName}
-                    onChange={(e) => setChildName(e.target.value)}
-                    className={childNameErr ? "border-[var(--app-danger)]" : undefined}
-                  />
-                </Field>
-              </div>
-              <YearInput
-                label="Child age"
-                value={childAge}
-                min={0}
-                max={40}
-                onChange={setChildAge}
-                error={childAgeErr}
-              />
-            </BentoGroup>
-
-            <BentoGroup
-              num="03"
-              title="Rate Assumptions"
-              subtitle="Return & Tax"
-              colSpan={3}
-              footer={
-                <>
-                  <span>Tax drag:</span>
-                  <span className="font-bold text-emerald-700">{taxPct}%</span>
-                </>
-              }
-            >
-              <div className="mb-3.5">
-                <PercentInput
-                  label="Return (%)"
-                  value={returnPct}
-                  onChange={(v) => setReturnPct(Math.max(0, v))}
-                  error={returnError}
-                />
-              </div>
-              <PercentInput
-                label="Tax on gains (%)"
-                value={taxPct}
-                onChange={(v) => setTaxPct(Math.max(0, v))}
-                error={taxError}
-                wrapLabel
-              />
-            </BentoGroup>
-
-            <BentoGroup
-              num="02"
-              title="Education Fee Parameters"
-              subtitle="School & college cost timeline"
-              colSpan={12}
-              footer={
-                <>
-                  <span>Funded years:</span>
-                  <span className="font-bold text-emerald-700">
-                    {fundedYears} · {schoolFunded} school · {collegeFunded} college
-                  </span>
-                </>
-              }
-            >
-              <EducationFeeTimeline
-                key={timelineKey}
-                costs={costs}
-                childAge={childAge}
-                childName={childName}
-                fundedYears={fundedYears}
-                schoolFunded={schoolFunded}
-                collegeFunded={collegeFunded}
-                onPatchCost={patchCost}
-                onReset={resetCosts}
-              />
-            </BentoGroup>
-          </BentoSection>
+            </WealthSection>
+          </div>
         }
         results={
           <>
@@ -448,18 +465,51 @@ export function ChildEducationPlanner() {
                 onToggleMilestones={() => setOpenMilestones((v) => !v)}
                 openAnalytics={openAnalytics}
                 onToggleAnalytics={() => setOpenAnalytics((v) => !v)}
+                openSchedule={openSchedule}
+                onToggleSchedule={() => setOpenSchedule((v) => !v)}
+                analyticsTab={analyticsTab}
+                onAnalyticsTabChange={setAnalyticsTab}
               />
             ) : null}
           </>
         }
         footer={
-          <ComplianceFootnote>
-            Calculations shown are for illustration purposes only. Education funding projections
-            depend on assumed returns, tax on gains at withdrawal, and the fee schedule entered.
-            Actual market returns and fee inflation can differ.
-          </ComplianceFootnote>
+          <WealthDisclaimer
+            notes={[
+              "Fee inflation compounds the future education cost faster than headline tuition suggests.",
+              "Tax is applied on gains only when corpus is withdrawn for fees.",
+              "Projections are illustrative. Actual market returns and fee inflation can differ.",
+            ]}
+          >
+            Figures are for illustration only. Education funding depends on assumed returns, tax on
+            gains at withdrawal, and the fee schedule entered. Markets carry risk; past performance
+            does not guarantee future results.
+          </WealthDisclaimer>
         }
       />
+
+      {result ? (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/80 bg-white/95 p-3 backdrop-blur sm:hidden">
+          <div className="mx-auto flex max-w-[94rem] gap-2">
+            <button
+              type="button"
+              onClick={handleDownload}
+              disabled={isDownloading}
+              className="flex-1 rounded-[14px] bg-emerald-700 py-3 text-sm font-medium text-white disabled:opacity-50"
+            >
+              {isDownloading ? "Exporting…" : "Export PDF"}
+            </button>
+            <button
+              type="button"
+              onClick={scrollToAssumptions}
+              className="rounded-[14px] border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700"
+            >
+              Edit
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       {result ? (
         <ChildEducationDossier
           data={{
@@ -600,28 +650,16 @@ function EducationFeeTimeline({
     openRow && openIndex != null ? (
       <div
         ref={panelRef}
-        className="relative z-20 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3 shadow-md sm:p-3.5"
+        className="relative z-20 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-[0_8px_24px_rgba(15,23,42,0.06)] sm:p-3.5"
       >
-        <div className="mb-2.5 flex flex-wrap items-start justify-between gap-2 border-b border-[var(--app-border)] pb-2.5">
+        <div className="mb-2.5 flex flex-wrap items-start justify-between gap-2 border-b border-slate-100 pb-2.5">
           <div className="flex items-center gap-2.5">
-            <div
-              className={`flex size-8 items-center justify-center rounded-lg ${
-                openIsCollege
-                  ? "bg-[var(--app-step-bg)] text-[var(--app-step-text)]"
-                  : "bg-[var(--app-std-bg)] text-[var(--app-std-text)]"
-              }`}
-            >
-              {openIsCollege ? (
-                <GraduationCap className="size-4" />
-              ) : (
-                <BookOpen className="size-4" />
-              )}
-            </div>
+            <WealthIconMark tone={openIsCollege ? "emerald" : "slate"}>
+              {openIsCollege ? <IconGrad /> : <IconBook />}
+            </WealthIconMark>
             <div>
-              <div className="text-sm font-semibold text-[var(--app-text)]">
-                {openRow.classLabel}
-              </div>
-              <div className="text-[11px] text-[var(--app-text-muted)]">
+              <div className="text-sm font-medium text-slate-900">{openRow.classLabel}</div>
+              <div className="text-[11px] text-slate-500">
                 Age {openRow.age}
                 {openIsPast
                   ? " · already passed (not withdrawn in this plan)"
@@ -634,28 +672,28 @@ function EducationFeeTimeline({
           <div className="flex flex-wrap gap-1.5">
             <button
               type="button"
-              className={BUTTON_SECONDARY}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
               onClick={() => setOpenIndex(null)}
             >
               Close
             </button>
             <button
               type="button"
-              className={BUTTON_PRIMARY}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-emerald-800"
               onClick={() => markDoneAndAdvance(openIndex)}
             >
-              <Check className="size-3.5" />
+              <IconCheck className="h-3.5 w-3.5" />
               Done · Next
             </button>
           </div>
         </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <MoneyInput
+          <WealthMoneyField
             label="Education cost"
             value={openRow.cost}
-            onChange={(cost) => onPatchCost(openIndex, cost)}
-            align="right"
+            onChange={(v) => onPatchCost(openIndex, Math.max(0, v))}
+            max={FEE_MAX}
             hint={
               openIsPast
                 ? "Past years do not create withdrawals."
@@ -663,15 +701,22 @@ function EducationFeeTimeline({
                   ? "College fee for this year (₹0 keeps the slot)."
                   : "School fee for this year."
             }
+            slider={{
+              min: FEE_MIN,
+              max: FEE_MAX,
+              step: 10_000,
+              scale: "log",
+              presets: FEE_PRESETS,
+            }}
           />
-          <div className="rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-2">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
+          <div className="rounded-xl border border-slate-200/80 bg-slate-50 px-3 py-2.5">
+            <div className="text-[10px] font-medium uppercase tracking-[0.14em] text-slate-400">
               Phase
             </div>
-            <div className="mt-1 text-sm font-semibold text-[var(--app-text)]">
+            <div className="mt-1 text-sm font-medium text-slate-900">
               {openIsCollege ? "Higher education" : "School education"}
             </div>
-            <div className={`mt-0.5 ${META_TEXT}`}>
+            <div className="mt-0.5 text-xs text-slate-500">
               {formatINRCurrency(openRow.cost)}
               {!openIsPast && openRow.cost > 0
                 ? " will be grossed up for tax on gains at withdrawal"
@@ -683,21 +728,21 @@ function EducationFeeTimeline({
     ) : null;
 
   return (
-    <div className={STACK_TIGHT}>
+    <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded-md border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-2 py-0.5 text-[11px] font-medium text-[var(--app-text-muted)]">
+          <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-500">
             {fundedYears} funded · {schoolFunded} school · {collegeFunded} college
           </span>
-          <span className={META_TEXT}>Click a year to edit fees.</span>
+          <span className="text-xs text-slate-400">Click a year to edit fees.</span>
         </div>
         <button
           type="button"
-          className={BUTTON_SECONDARY}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
           onClick={onReset}
           title="Reset fee grid"
         >
-          <RotateCcw className="size-3.5" />
+          <IconRefresh className="h-3.5 w-3.5" />
           Reset fees
         </button>
       </div>
@@ -739,7 +784,7 @@ function EducationFeeTimeline({
       />
 
       {!editPanel ? (
-        <p className={META_TEXT}>
+        <p className="text-xs text-slate-400">
           Dashed dots are ₹0 slots. Past school years stay on the rail but do not create
           withdrawals.
         </p>
@@ -782,29 +827,21 @@ function FeePhaseRail({
   editPanel: React.ReactNode;
 }) {
   const college = accent === "college";
-  const StartIcon = college ? GraduationCap : ChevronRight;
-  const EndIcon = Flag;
-  const PhaseIcon = college ? GraduationCap : BookOpen;
+  const PhaseIcon = college ? IconGrad : IconBook;
 
   return (
-    <Card className="gap-2" padding="tight">
+    <div className="space-y-3 rounded-2xl border border-slate-200/80 bg-white p-3 sm:p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
-          <div
-            className={`flex size-7 shrink-0 items-center justify-center rounded-lg ${
-              college
-                ? "bg-[var(--app-step-bg)] text-[var(--app-step-text)]"
-                : "bg-[var(--app-std-bg)] text-[var(--app-std-text)]"
-            }`}
-          >
-            <PhaseIcon className="size-3.5" />
-          </div>
+          <WealthIconMark tone={college ? "emerald" : "slate"}>
+            <PhaseIcon className="h-3.5 w-3.5" />
+          </WealthIconMark>
           <div className="min-w-0">
-            <SectionTitle as="h2">{title}</SectionTitle>
-            <div className={META_TEXT}>{hint}</div>
+            <div className="text-sm font-medium text-slate-900">{title}</div>
+            <div className="text-[11px] text-slate-500">{hint}</div>
           </div>
         </div>
-        <span className="rounded-md border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-2 py-0.5 text-[11px] font-medium tabular-nums text-[var(--app-text-muted)]">
+        <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium tabular-nums text-slate-500">
           {meta}
         </span>
       </div>
@@ -817,35 +854,35 @@ function FeePhaseRail({
           }}
         >
           <div
-            className="pointer-events-none absolute left-[2.125rem] right-[2.125rem] top-[1.125rem] h-0.5 bg-[var(--app-border)]"
+            className="pointer-events-none absolute left-[2.125rem] right-[2.125rem] top-[1.125rem] h-0.5 bg-slate-200"
             aria-hidden
           />
 
           <div className="relative z-[1] flex w-[4.25rem] shrink-0 flex-col items-center">
             <div
-              className={`flex size-9 items-center justify-center rounded-full border-2 ${
+              className={`flex size-9 items-center justify-center rounded-md border ${
                 college
-                  ? "border-[var(--app-step-text)]/40 bg-[var(--app-step-bg)] text-[var(--app-step-text)]"
-                  : "border-[var(--app-primary)] bg-[var(--app-primary)] text-[var(--app-primary-fg)]"
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                  : "border-emerald-600 bg-emerald-700 text-white"
               }`}
             >
-              <StartIcon className="size-4" />
+              {college ? (
+                <IconGrad className="size-4" />
+              ) : (
+                <IconChevron className="size-4 -rotate-90" />
+              )}
             </div>
             <div className="mt-1.5 text-center">
-              <div className="text-[9px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
+              <div className="text-[9px] font-medium uppercase tracking-wider text-slate-400">
                 {startLabel}
               </div>
-              <div className="text-[11px] font-semibold text-[var(--app-text)]">
-                Age {startAge}
-              </div>
-              <div className="max-w-[4.25rem] truncate text-[9px] text-[var(--app-text-subtle)]">
-                {startSub}
-              </div>
+              <div className="text-[11px] font-medium text-slate-900">Age {startAge}</div>
+              <div className="max-w-[4.25rem] truncate text-[9px] text-slate-400">{startSub}</div>
             </div>
           </div>
 
           {entries.map(({ row, index }) => {
-            const Icon = college ? GraduationCap : BookOpen;
+            const Icon = college ? IconGrad : IconBook;
             const isPast = row.age <= childAge;
             const isFunded = row.cost > 0;
             const isActive = activeIndex === index;
@@ -860,18 +897,18 @@ function FeePhaseRail({
                 <button
                   type="button"
                   data-fee-dot
-                  className={`relative flex size-9 items-center justify-center rounded-full border-2 transition ${
+                  className={`relative flex size-9 items-center justify-center rounded-md border transition ${
                     isOpen || isActive
                       ? college
-                        ? "border-[var(--app-step-text)] bg-[var(--app-step-bg)] text-[var(--app-step-text-strong)] ring-4 ring-[var(--app-step-text)]/20"
-                        : "border-[var(--app-std-text)] bg-[var(--app-std-bg)] text-[var(--app-std-text)] ring-4 ring-[var(--app-std-text)]/15"
+                        ? "border-emerald-500 bg-emerald-50 text-emerald-800 ring-4 ring-emerald-500/15"
+                        : "border-slate-500 bg-slate-100 text-slate-800 ring-4 ring-slate-500/10"
                       : isPast
-                        ? "border-[var(--app-border)] bg-[var(--app-surface-muted)] text-[var(--app-text-subtle)]"
+                        ? "border-slate-200 bg-slate-50 text-slate-300"
                         : isFunded
                           ? college
-                            ? "border-[var(--app-step-text)]/50 bg-[var(--app-surface)] text-[var(--app-step-text)] hover:border-[var(--app-step-text)]"
-                            : "border-[var(--app-std-text)]/40 bg-[var(--app-surface)] text-[var(--app-std-text)] hover:border-[var(--app-std-text)]"
-                          : "border-dashed border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-text-subtle)] hover:border-[var(--app-primary-soft)]"
+                            ? "border-emerald-200 bg-white text-emerald-700 hover:border-emerald-400"
+                            : "border-slate-300 bg-white text-slate-600 hover:border-slate-500"
+                          : "border-dashed border-slate-300 bg-white text-slate-300 hover:border-emerald-300"
                   }`}
                   onClick={() => onToggle(index)}
                   title={`${row.classLabel} · Age ${row.age} · ${formatINRCurrency(row.cost)}`}
@@ -881,17 +918,17 @@ function FeePhaseRail({
                   {isActive ? (
                     <span
                       className={`absolute -bottom-1 left-1/2 size-1.5 -translate-x-1/2 rounded-full ${
-                        college ? "bg-[var(--app-step-text)]" : "bg-[var(--app-std-text)]"
+                        college ? "bg-emerald-600" : "bg-slate-600"
                       }`}
                     />
                   ) : null}
                 </button>
                 <div className="mt-1.5 max-w-[4.75rem] text-center">
-                  <div className="truncate text-[11px] font-semibold text-[var(--app-text)]">
+                  <div className="truncate text-[11px] font-medium text-slate-900">
                     {row.classLabel}
                   </div>
-                  <div className="text-[9px] text-[var(--app-text-muted)]">Age {row.age}</div>
-                  <div className="truncate text-[9px] tabular-nums text-[var(--app-text-subtle)]">
+                  <div className="text-[9px] text-slate-500">Age {row.age}</div>
+                  <div className="truncate text-[9px] tabular-nums text-slate-400">
                     {isPast
                       ? "past"
                       : isFunded
@@ -904,23 +941,21 @@ function FeePhaseRail({
           })}
 
           <div className="relative z-[1] flex w-[4.25rem] shrink-0 flex-col items-center">
-            <div className="flex size-9 items-center justify-center rounded-full border-2 border-[var(--app-border)] bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]">
-              <EndIcon className="size-4" />
+            <div className="flex size-9 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-400">
+              <IconFlag className="size-4" />
             </div>
             <div className="mt-1.5 text-center">
-              <div className="text-[9px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
+              <div className="text-[9px] font-medium uppercase tracking-wider text-slate-400">
                 {endLabel}
               </div>
-              <div className="text-[11px] font-semibold text-[var(--app-text)]">
-                Age {endAge}
-              </div>
+              <div className="text-[11px] font-medium text-slate-900">Age {endAge}</div>
             </div>
           </div>
         </div>
       </div>
 
       {editPanel}
-    </Card>
+    </div>
   );
 }
 
@@ -933,6 +968,10 @@ function EducationResults({
   onToggleMilestones,
   openAnalytics,
   onToggleAnalytics,
+  openSchedule,
+  onToggleSchedule,
+  analyticsTab,
+  onAnalyticsTabChange,
 }: {
   result: EducationResult;
   childName: string;
@@ -942,6 +981,10 @@ function EducationResults({
   onToggleMilestones: () => void;
   openAnalytics: boolean;
   onToggleAnalytics: () => void;
+  openSchedule: boolean;
+  onToggleSchedule: () => void;
+  analyticsTab: AnalyticsTab;
+  onAnalyticsTabChange: (tab: AnalyticsTab) => void;
 }) {
   const schoolChart = result.costChart.filter((row) => !isCollegeLabel(row.classLabel));
   const collegeChart = result.costChart.filter((row) => isCollegeLabel(row.classLabel));
@@ -963,81 +1006,89 @@ function EducationResults({
   ] as const;
 
   return (
-    <Stack>
-      <ResultsSection
-        sectionId="02"
+    <div className="space-y-5">
+      <WealthSection
+        badge="02 · Milestones"
         title="Education Funding Milestones"
-        description="Lumpsum today versus monthly SIP required to fund the fee schedule"
+        subtitle="Lumpsum today versus monthly SIP required to fund the fee schedule"
         open={openMilestones}
         onToggle={onToggleMilestones}
-        meta={
+        mark={
+          <WealthIconMark tone="emerald">
+            <IconTarget />
+          </WealthIconMark>
+        }
+        actions={
           <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">
             Horizon: Age {result.lastFeeAge} · {result.sipYears} SIP years
           </span>
         }
       >
-        <StatGrid>
-          <StatCard
-            title="Lumpsum required today"
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <WealthMetricCard
+            title="Lumpsum today"
             value={result.lumpsum.lumpsum}
-            hint={`Peak ${formatINRCurrency(result.lumpsum.peakCorpus)}`}
+            description="One-time corpus required at the start"
+            badge="One-time"
             tone="neutral"
-            badge={
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
-                One-time
-              </span>
-            }
+            trend={`Peak ${formatINRCurrency(result.lumpsum.peakCorpus)}`}
             footer={
-              <div className="flex items-center justify-between">
-                <span>Invested path:</span>
-                <span className="font-semibold text-slate-700">
+              <>
+                Invested path ·{" "}
+                <span className="font-semibold tabular-nums text-slate-700">
                   {formatINRCurrency(result.lumpsum.invested)}
                 </span>
-              </div>
+              </>
+            }
+            mark={
+              <WealthIconMark className="h-7 w-7">
+                <IconTarget className="h-3.5 w-3.5" />
+              </WealthIconMark>
             }
           />
-          <StatCard
-            title="Monthly SIP required"
+          <WealthMetricCard
+            title="Monthly SIP"
             value={result.sip.monthlySip}
+            description={`${result.sipYears} years of SIP funding`}
+            badge="SIP"
             tone="positive"
-            hint={`${result.sipYears} years of SIP funding`}
-            badge={
-              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
-                SIP
-              </span>
-            }
             footer={
-              <div className="flex items-center justify-between">
-                <span>SIP invested:</span>
-                <span className="font-bold text-emerald-700">
+              <>
+                SIP invested ·{" "}
+                <span className="font-semibold tabular-nums text-emerald-700">
                   {formatINRCurrency(result.sip.invested)}
                 </span>
-              </div>
+              </>
+            }
+            mark={
+              <WealthIconMark tone="emerald" className="h-7 w-7">
+                <IconSip className="h-3.5 w-3.5" />
+              </WealthIconMark>
             }
           />
-        </StatGrid>
+        </div>
 
-        <div className="mt-6 grid grid-cols-2 gap-2 lg:grid-cols-4">
+        <div className="mt-4 grid grid-cols-2 gap-2 lg:grid-cols-4">
           <QuickStat
-            icon={BookOpen}
+            icon={<IconBook className="h-3.5 w-3.5" />}
             label="School start"
             value={`Age ${childAge}`}
             sub={childName.trim() || "Current age"}
           />
           <QuickStat
-            icon={GraduationCap}
+            icon={<IconGrad className="h-3.5 w-3.5" />}
             label="College start"
             value={firstCollege ? `Age ${firstCollege.age}` : "None"}
             sub={firstCollege?.classLabel ?? "No college fees"}
           />
           <QuickStat
-            icon={Calendar}
+            icon={<IconCalendar className="h-3.5 w-3.5" />}
             label="Horizon"
             value={`Age ${result.lastFeeAge}`}
             sub={`${result.sipYears} SIP years`}
           />
           <QuickStat
-            icon={Flag}
+            icon={<IconFlag className="h-3.5 w-3.5" />}
             label="Total withdrawal"
             value={formatINRCurrency(result.totalWithdrawal)}
             sub={`Tax ${taxPct}% on fees`}
@@ -1045,233 +1096,292 @@ function EducationResults({
         </div>
 
         {hasShortfall ? (
-          <div className="mt-6">
+          <div className="mt-4">
             <StatusNote tone="error">
-              Funding shortfall detected
-              {shortfallRows[0]
-                ? ` from ${shortfallRows[0].classLabel} (age ${shortfallRows[0].age})`
-                : ""}
-              . SIP balance turns negative before fees end. Raise monthly SIP or add a lumpsum
-              top-up.
+              <span className="inline-flex items-start gap-2">
+                <IconAlert className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>
+                  Funding shortfall detected
+                  {shortfallRows[0]
+                    ? ` from ${shortfallRows[0].classLabel} (age ${shortfallRows[0].age})`
+                    : ""}
+                  . SIP balance turns negative before fees end. Raise monthly SIP or add a lumpsum
+                  top-up.
+                </span>
+              </span>
             </StatusNote>
           </div>
         ) : null}
-      </ResultsSection>
+      </WealthSection>
 
-      <ResultsSection
-        sectionId="03"
+      <WealthSection
+        badge="03 · Analytics"
         title="Education Analytics"
-        description="Lumpsum vs SIP compare, fee composition, plan summary, and withdrawal schedule"
+        subtitle="Lumpsum vs SIP compare, fee composition, and plan summary"
         open={openAnalytics}
         onToggle={onToggleAnalytics}
+        mark={
+          <WealthIconMark>
+            <IconChart />
+          </WealthIconMark>
+        }
       >
-        <SegmentedChartControl
-          variant="pill"
-          tabs={[
+        <WealthSegmented
+          variant="underline"
+          layoutId="education-analytics-tab"
+          value={analyticsTab}
+          onChange={onAnalyticsTabChange}
+          options={[
             {
               id: "compare",
               label: "Compare",
-              icon: <BarChart3 className="h-3.5 w-3.5" />,
-              content: (
-                <ChartPane>
-                  <CompareChart
-                    title="Lumpsum vs SIP"
-                    data={result.compare}
-                    series={[
-                      { key: "lumpsum", label: "Lumpsum", color: "var(--app-chart-invested)" },
-                      { key: "sip", label: "SIP", color: "var(--app-chart-gain)" },
-                    ]}
-                    className="min-h-[260px] h-[260px] flex-none sm:min-h-[300px] sm:h-[300px]"
-                  />
-                </ChartPane>
-              ),
+              icon: <IconChart className="h-3.5 w-3.5" />,
             },
             {
               id: "costs",
               label: "Fee mix",
-              icon: <PieChart className="h-3.5 w-3.5" />,
-              content: (
-                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                  {schoolChart.length > 0 ? (
-                    <ChartPane>
-                      <StackedBarChart
-                        title="School costs"
-                        orientation="horizontal"
-                        totalLabel="Total withdrawal"
-                        className="min-h-[240px] h-[240px] flex-none"
-                        data={schoolChart.map((row) => ({
-                          category: row.classLabel,
-                          cost: row.cost,
-                          tax: row.tax,
-                        }))}
-                        series={[...costSeries]}
-                      />
-                    </ChartPane>
-                  ) : null}
-                  {collegeChart.length > 0 ? (
-                    <ChartPane>
-                      <StackedBarChart
-                        title="College costs"
-                        orientation="horizontal"
-                        totalLabel="Total withdrawal"
-                        className="min-h-[200px] h-[200px] flex-none"
-                        data={collegeChart.map((row) => ({
-                          category: row.classLabel,
-                          cost: row.cost,
-                          tax: row.tax,
-                        }))}
-                        series={[...costSeries]}
-                      />
-                    </ChartPane>
-                  ) : null}
-                </div>
-              ),
+              icon: <IconDonut className="h-3.5 w-3.5" />,
             },
             {
               id: "summary",
               label: "Summary",
-              icon: <Flag className="h-3.5 w-3.5" />,
-              content: (
-                <ChartPane>
-                  <ResultCard
-                    title="Plan summary"
-                    items={[
-                      {
-                        label: "Lumpsum required today",
-                        value: result.lumpsum.lumpsum,
-                        highlight: true,
-                      },
-                      {
-                        label: "Monthly SIP",
-                        value: result.sip.monthlySip,
-                        hint: `${result.sipYears} years`,
-                        tone: "maturity",
-                      },
-                      { label: "SIP invested", value: result.sip.invested },
-                      { label: "Peak corpus (SIP)", value: result.sip.peakCorpus, tone: "gain" },
-                      {
-                        label: "Total withdrawal",
-                        value: result.totalWithdrawal,
-                        tone: "delay",
-                      },
-                      { label: "Total tax drag", value: result.totalTax, tone: "tax" },
-                    ]}
-                  />
-                </ChartPane>
-              ),
+              icon: <IconTimeline className="h-3.5 w-3.5" />,
             },
           ]}
         />
 
-        <div className="mt-8">
-          <ScheduleTable
-            caption="Education investment and withdrawal plan"
-            meta={
-              <>
-                SIP{" "}
-                <span className="font-semibold text-[var(--app-text)]">
-                  {formatINRCurrency(result.sip.monthlySip)}
-                </span>
-                <span className="mx-2 text-[var(--app-border)]">·</span>
-                Withdrawals{" "}
-                <span className="font-semibold text-[var(--app-text)]">
-                  {formatINRCurrency(result.totalWithdrawal)}
-                </span>
-              </>
-            }
-            zebra
-            dense
-            highlightLastRow
-            emphasizeRow={(row) => {
-              const r = row as EducationResult["schedule"][number];
-              if (r.age <= childAge) return false;
-              if (firstWithdrawal && r.age === firstWithdrawal.age) return true;
-              if (firstCollege && r.age === firstCollege.age) return true;
-              if (r.age === result.lastFeeAge) return true;
-              return false;
-            }}
-            dangerRow={(row) => {
-              const r = row as EducationResult["schedule"][number];
-              return r.age > childAge && r.sipBalance < -0.5;
-            }}
-            columns={[
-              { key: "age", header: "Age", sticky: true },
-              { key: "classLabel", header: "Class", format: "text" },
-              { key: "cost", header: "Edu. cost", format: "inr", align: "right", tone: "warn" },
-              { key: "tax", header: "Cap. gains", format: "inr", align: "right", tone: "warn" },
-              {
-                key: "withdrawal",
-                header: "Withdrawal",
-                format: "inr",
-                align: "right",
-                tone: "warn",
-              },
-              {
-                key: "sipCorpus",
-                header: "SIP corpus",
-                format: "inr",
-                align: "right",
-                tone: "std",
-              },
-              {
-                key: "sipBalance",
-                header: "SIP balance",
-                format: "inr",
-                align: "right",
-                tone: "std",
-                render: (value) => {
-                  const n = typeof value === "number" ? value : Number(value);
-                  if (!Number.isFinite(n)) return "";
-                  return (
-                    <span
-                      className={n < -0.5 ? "font-semibold text-[var(--app-danger)]" : undefined}
-                    >
-                      {formatINRCurrency(n)}
-                    </span>
-                  );
-                },
-              },
-              {
-                key: "lumpsumBalance",
-                header: "Lumpsum balance",
-                format: "inr",
-                align: "right",
-                tone: "step",
-              },
-            ]}
-            rows={result.schedule}
-          />
+        <div className="mt-4">
+          {analyticsTab === "compare" ? (
+            <WealthCompareBars
+              data={result.compare}
+              series={[
+                { key: "lumpsum", label: "Lumpsum", color: wealthChart.invested },
+                { key: "sip", label: "SIP", color: wealthChart.stepUp },
+              ]}
+            />
+          ) : null}
+
+          {analyticsTab === "costs" ? (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {schoolChart.length > 0 ? (
+                <ChartFrame height="h-[260px]">
+                  <StackedBarChart
+                    title="School costs"
+                    orientation="horizontal"
+                    totalLabel="Total withdrawal"
+                    className="h-full min-h-0"
+                    data={schoolChart.map((row) => ({
+                      category: row.classLabel,
+                      cost: row.cost,
+                      tax: row.tax,
+                    }))}
+                    series={[...costSeries]}
+                  />
+                </ChartFrame>
+              ) : null}
+              {collegeChart.length > 0 ? (
+                <ChartFrame height="h-[220px]">
+                  <StackedBarChart
+                    title="College costs"
+                    orientation="horizontal"
+                    totalLabel="Total withdrawal"
+                    className="h-full min-h-0"
+                    data={collegeChart.map((row) => ({
+                      category: row.classLabel,
+                      cost: row.cost,
+                      tax: row.tax,
+                    }))}
+                    series={[...costSeries]}
+                  />
+                </ChartFrame>
+              ) : null}
+            </div>
+          ) : null}
+
+          {analyticsTab === "summary" ? (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <SummaryRow label="Lumpsum required today" value={result.lumpsum.lumpsum} accent />
+              <SummaryRow
+                label="Monthly SIP"
+                value={result.sip.monthlySip}
+                hint={`${result.sipYears} years`}
+              />
+              <SummaryRow label="SIP invested" value={result.sip.invested} />
+              <SummaryRow label="Peak corpus (SIP)" value={result.sip.peakCorpus} />
+              <SummaryRow label="Total withdrawal" value={result.totalWithdrawal} />
+              <SummaryRow label="Total tax drag" value={result.totalTax} />
+            </div>
+          ) : null}
         </div>
-      </ResultsSection>
-    </Stack>
+      </WealthSection>
+
+      <WealthSection
+        badge="04 · Schedule"
+        title="Education Withdrawal Schedule"
+        subtitle="Year-wise fees, tax, SIP corpus, and lumpsum balance"
+        open={openSchedule}
+        onToggle={onToggleSchedule}
+        mark={
+          <WealthIconMark>
+            <IconCalendar />
+          </WealthIconMark>
+        }
+      >
+        <WealthDataTable
+          rows={result.schedule}
+          getRowKey={(row) => `${row.age}-${row.classLabel}`}
+          filterPlaceholder="Filter by age or class…"
+          summary={[
+            { label: "SIP monthly", value: formatINRCurrency(result.sip.monthlySip) },
+            {
+              label: "Withdrawals",
+              value: formatINRCurrency(result.totalWithdrawal),
+              tone: "std",
+            },
+            {
+              label: "Tax drag",
+              value: formatINRCurrency(result.totalTax),
+              tone: "std",
+            },
+            {
+              label: "SIP invested",
+              value: formatINRCurrency(result.sip.invested),
+              tone: "step",
+            },
+          ]}
+          columns={[
+            {
+              key: "age",
+              header: "Age",
+              sticky: true,
+              searchValue: (row) => String(row.age),
+              render: (row) => row.age,
+            },
+            {
+              key: "classLabel",
+              header: "Class",
+              searchValue: (row) => row.classLabel,
+              render: (row) => (
+                <span
+                  className={
+                    firstWithdrawal?.age === row.age ||
+                    firstCollege?.age === row.age ||
+                    row.age === result.lastFeeAge
+                      ? "font-medium text-emerald-800"
+                      : undefined
+                  }
+                >
+                  {row.classLabel}
+                </span>
+              ),
+            },
+            {
+              key: "cost",
+              header: "Edu. cost",
+              align: "right",
+              tone: "amber",
+              render: (row) => moneyCell(row.cost),
+            },
+            {
+              key: "tax",
+              header: "Cap. gains",
+              align: "right",
+              tone: "amber",
+              render: (row) => moneyCell(row.tax),
+            },
+            {
+              key: "withdrawal",
+              header: "Withdrawal",
+              align: "right",
+              tone: "amber",
+              render: (row) => moneyCell(row.withdrawal),
+            },
+            {
+              key: "sipCorpus",
+              header: "SIP corpus",
+              align: "right",
+              tone: "emerald",
+              render: (row) => moneyCell(row.sipCorpus),
+            },
+            {
+              key: "sipBalance",
+              header: "SIP balance",
+              align: "right",
+              tone: "emerald",
+              render: (row) => {
+                const n = row.sipBalance;
+                if (row.age > childAge && n < -0.5) {
+                  return (
+                    <span className="font-semibold text-rose-700">{formatINRCurrency(n)}</span>
+                  );
+                }
+                return moneyCell(n);
+              },
+            },
+            {
+              key: "lumpsumBalance",
+              header: "Lumpsum balance",
+              align: "right",
+              render: (row) => moneyCell(row.lumpsumBalance),
+            },
+          ]}
+        />
+      </WealthSection>
+    </div>
   );
 }
 
 function QuickStat({
-  icon: Icon,
+  icon,
   label,
   value,
   sub,
 }: {
-  icon: React.ElementType;
+  icon: React.ReactNode;
   label: string;
   value: string;
   sub?: string;
 }) {
   return (
-    <Card className="h-full gap-2" padding="tight">
+    <div className="rounded-2xl border border-slate-200/80 bg-white p-3 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
       <div className="flex items-center gap-2">
-        <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]">
-          <Icon className="size-3.5" />
+        <WealthIconMark className="h-7 w-7">{icon}</WealthIconMark>
+        <div className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+          {label}
         </div>
-        <SectionTitle>{label}</SectionTitle>
       </div>
-      <div className="min-w-0">
-        <div className="break-words text-[14px] font-semibold leading-snug text-[var(--app-text)] sm:text-[15px]">
-          {value}
-        </div>
-        {sub ? <div className={`mt-0.5 ${META_TEXT}`}>{sub}</div> : null}
+      <div className="mt-2 break-words text-[14px] font-medium leading-snug text-slate-900 sm:text-[15px]">
+        {value}
       </div>
-    </Card>
+      {sub ? <div className="mt-0.5 text-xs text-slate-400">{sub}</div> : null}
+    </div>
+  );
+}
+
+function SummaryRow({
+  label,
+  value,
+  hint,
+  accent,
+}: {
+  label: string;
+  value: number;
+  hint?: string;
+  accent?: boolean;
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200/80 bg-white px-4 py-3">
+      <div className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+        {label}
+      </div>
+      <div
+        className={`mt-1.5 text-[20px] font-medium tabular-nums tracking-tight ${
+          accent ? "text-emerald-800" : "text-slate-900"
+        }`}
+      >
+        {formatINRCurrency(value)}
+      </div>
+      {hint ? <div className="mt-0.5 text-xs text-slate-400">{hint}</div> : null}
+    </div>
   );
 }

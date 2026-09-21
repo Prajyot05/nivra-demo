@@ -6,7 +6,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -158,47 +158,97 @@
   scrollbar-color: var(--color-border) transparent;
 }
 
-/* Emerald amount / tenure range slider (Stitch-aligned) */
-.nivra-range-slider {
+/* Emerald amount / tenure range — Trulia thin track, light brand fill */
+.nivra-range-slider,
+.wealth-range-slider {
   appearance: none;
   -webkit-appearance: none;
-  height: 6px;
-  border-radius: 9999px;
-  background: #e2e8f0;
+  width: 100%;
+  height: 20px;
+  margin: 0;
+  background: transparent;
   outline: none;
+  cursor: pointer;
+  touch-action: none;
 }
 
-.nivra-range-slider::-webkit-slider-thumb {
+.nivra-range-slider::-webkit-slider-runnable-track,
+.wealth-range-slider::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 9999px;
+  background: #e2e8f0; /* slate-200 */
+}
+
+.wealth-range-slider::-webkit-slider-runnable-track {
+  background: linear-gradient(
+    to right,
+    #10b981 0%,
+    #10b981 var(--wealth-slider-pct, 0%),
+    #e2e8f0 var(--wealth-slider-pct, 0%),
+    #e2e8f0 100%
+  ); /* emerald-500 */
+}
+
+.nivra-range-slider::-webkit-slider-thumb,
+.wealth-range-slider::-webkit-slider-thumb {
   appearance: none;
   -webkit-appearance: none;
-  height: 18px;
-  width: 18px;
+  height: 14px;
+  width: 14px;
+  margin-top: -5.5px;
   border-radius: 50%;
-  background: #059669;
-  cursor: pointer;
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.22);
-  transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  background: #ffffff;
+  cursor: grab;
+  border: 2px solid #10b981;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  transition: box-shadow 0.15s ease;
 }
 
-.nivra-range-slider::-webkit-slider-thumb:hover {
-  transform: scale(1.15);
-  box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.28);
+.nivra-range-slider::-webkit-slider-thumb:active,
+.wealth-range-slider::-webkit-slider-thumb:active {
+  cursor: grabbing;
 }
 
-.nivra-range-slider::-moz-range-thumb {
-  height: 18px;
-  width: 18px;
-  border-radius: 50%;
-  background: #059669;
-  cursor: pointer;
-  border: none;
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.22);
+.nivra-range-slider::-webkit-slider-thumb:hover,
+.wealth-range-slider::-webkit-slider-thumb:hover {
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.06),
+    0 0 0 3px rgba(16, 185, 129, 0.12);
 }
 
-.nivra-range-slider::-moz-range-track {
-  height: 6px;
+.nivra-range-slider:focus-visible::-webkit-slider-thumb,
+.wealth-range-slider:focus-visible::-webkit-slider-thumb {
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.06),
+    0 0 0 3px rgba(16, 185, 129, 0.18);
+}
+
+.nivra-range-slider::-moz-range-track,
+.wealth-range-slider::-moz-range-track {
+  height: 3px;
   border-radius: 9999px;
   background: #e2e8f0;
+}
+
+.wealth-range-slider::-moz-range-track {
+  background: linear-gradient(
+    to right,
+    #10b981 0%,
+    #10b981 var(--wealth-slider-pct, 0%),
+    #e2e8f0 var(--wealth-slider-pct, 0%),
+    #e2e8f0 100%
+  );
+}
+
+.nivra-range-slider::-moz-range-thumb,
+.wealth-range-slider::-moz-range-thumb {
+  height: 14px;
+  width: 14px;
+  border-radius: 50%;
+  background: #ffffff;
+  cursor: grab;
+  border: 2px solid #10b981;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
 }
 
 /* Executive dossier print / Export to PDF */

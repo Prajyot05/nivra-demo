@@ -67,7 +67,7 @@ export const growthPeriodicSchema = z.object({
 
 export const goalSipSchema = z.object({
   ...clientFields,
-  goalAmount: money,
+  goalAmount: money.max(1000_00_00_000), // ₹1,000 Cr
   tenureYears: z.number().positive().max(75),
   returnPct: pct,
   inflationPct: pct,

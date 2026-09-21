@@ -1,56 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Copy,
-  Plus,
-  RotateCcw,
-  Trash2,
-  Car,
-  GraduationCap,
-  Gem,
-  Sunset,
-  Home,
-  Plane,
-  Target,
-  Calendar,
-  Check,
-  ChevronRight,
-} from "lucide-react";
 import { generatePdfFromElement } from "@/lib/pdf-generator";
 import {
-  AgeInput,
-  BentoGroup,
-  BentoSection,
-  BUTTON_DANGER,
-  BUTTON_PRIMARY,
-  BUTTON_SECONDARY,
-  Card,
-  ChartPane,
-  ClientProfileBar,
-  CompareChart,
-  ComplianceFootnote,
-  CompositionChart,
-  Field,
   formatINRCurrency,
-  META_TEXT,
-  MoneyInput,
-  PercentInput,
-  PILL,
-  ResultCard,
-  ResultsSection,
-  ScheduleTable,
-  SectionTitle,
-  SelectInput,
-  SegmentedChartControl,
   StackedBarChart,
-  Stack,
-  StatCard,
-  StatGrid,
   StatusNote,
-  TextInput,
   WithdrawalPathChart,
-  YearInput,
   ageError,
   emailError,
   nameError,
@@ -71,7 +27,117 @@ import {
 import { useCalculate } from "@/hooks/use-calculate";
 import { useCalculatorMode } from "@/hooks/use-calculator-mode";
 import { getCalculatorPageTitle } from "@/lib/calculator-nav";
-import { PieChart, BarChart3, LineChart } from "lucide-react";
+import {
+  WEALTH_CONTENT_CLASS,
+  WealthSection,
+  WealthProfileGrid,
+  WealthMoneyField,
+  WealthPercentField,
+  WealthYearField,
+  WealthAgeField,
+  WealthTextField,
+  WealthFieldShell,
+  wealthInputClass,
+  WealthMetricCard,
+  WealthSegmented,
+  ChartFrame,
+  WealthCompareBars,
+  WealthDisclaimer,
+  WealthDataTable,
+  WealthHero,
+  WealthMixDonut,
+  moneyCell,
+  WealthIconMark,
+  IconPerson,
+  IconTarget,
+  IconChart,
+  IconCalendar,
+  IconRefresh,
+  IconGrad,
+  IconCheck,
+  IconChevron,
+  IconDonut,
+  IconTimeline,
+  wealthChart,
+  wealthMixColors,
+  WEALTH_MONEY_PRESETS_DEFAULT,
+  WEALTH_YEAR_PRESETS_DEFAULT,
+} from "@/components/wealth";
+
+const CORPUS_MIN = 10_000;
+const CORPUS_MAX = 10_00_00_000;
+const ST_YEARS_MAX = 20;
+
+type MiniIconProps = { className?: string };
+function IconPlus({ className }: MiniIconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
+      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+function IconTrash({ className }: MiniIconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
+      <path d="M6 7h12M9 7V5.5h6V7M8 7l.8 12h6.4L16 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function IconCopy({ className }: MiniIconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
+      <path d="M8 8h10v12H8z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+      <path d="M6 16V4.5h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function IconCar({ className }: MiniIconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
+      <path d="M4 14.5h16l-1.5-5.5H5.5L4 14.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+      <path d="M6.5 17a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM17.5 17a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  );
+}
+function IconHome({ className }: MiniIconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
+      <path d="m4 11 8-6.5L20 11v8.5H4V11Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function IconGem({ className }: MiniIconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
+      <path d="M7 7h10l3 4-8 8-8-8 3-4Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function IconSunset({ className }: MiniIconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
+      <path d="M4 16h16M6 16a6 6 0 0 1 12 0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M12 6v2M5.5 9.5l1.5 1.5M18.5 9.5 17 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+function IconPlane({ className }: MiniIconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
+      <path d="M4 13.5 20 8.5l-3.5 7-4-.8-2.2 3.3-.8-3.5L4 13.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+const BTN_SECONDARY =
+  "inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50 disabled:opacity-50";
+const BTN_PRIMARY =
+  "inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-emerald-800 disabled:opacity-50";
+const BTN_DANGER =
+  "inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700 transition hover:bg-rose-100 disabled:opacity-50";
+const PILL =
+  "inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-medium";
+const META_TEXT = "text-[11px] text-slate-500";
 
 const MODES = [
   { id: "assign", label: "Corpus assign" },
@@ -93,13 +159,13 @@ type GoalCategory =
   | "custom";
 
 const GOAL_CATEGORIES: Array<{ id: GoalCategory; label: string; icon: React.ElementType; color: string }> = [
-  { id: "car", label: "Car", icon: Car, color: "bg-[var(--app-std-bg)] text-[var(--app-std-text)]" },
-  { id: "education", label: "Education", icon: GraduationCap, color: "bg-[var(--app-std-bg)] text-[var(--app-std-text)]" },
-  { id: "marriage", label: "Marriage", icon: Gem, color: "bg-[var(--app-step-bg)] text-[var(--app-step-text)]" },
-  { id: "retirement", label: "Retirement", icon: Sunset, color: "bg-[var(--app-warn-bg)] text-[var(--app-warn-text)]" },
-  { id: "house", label: "House", icon: Home, color: "bg-[var(--app-step-bg)] text-[var(--app-step-text)]" },
-  { id: "vacation", label: "Vacation", icon: Plane, color: "bg-[var(--app-std-bg)] text-[var(--app-std-text)]" },
-  { id: "custom", label: "Custom", icon: Target, color: "bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]" },
+  { id: "car", label: "Car", icon: IconCar, color: "bg-[var(--app-std-bg)] text-[var(--app-std-text)]" },
+  { id: "education", label: "Education", icon: IconGrad, color: "bg-[var(--app-std-bg)] text-[var(--app-std-text)]" },
+  { id: "marriage", label: "Marriage", icon: IconGem, color: "bg-[var(--app-step-bg)] text-[var(--app-step-text)]" },
+  { id: "retirement", label: "Retirement", icon: IconSunset, color: "bg-[var(--app-warn-bg)] text-[var(--app-warn-text)]" },
+  { id: "house", label: "House", icon: IconHome, color: "bg-[var(--app-step-bg)] text-[var(--app-step-text)]" },
+  { id: "vacation", label: "Vacation", icon: IconPlane, color: "bg-[var(--app-std-bg)] text-[var(--app-std-text)]" },
+  { id: "custom", label: "Custom", icon: IconTarget, color: "bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]" },
 ];
 
 const CATEGORY_OPTIONS = GOAL_CATEGORIES.map((c) => ({
@@ -275,12 +341,12 @@ function ConfirmResetDialog({
       >
         <div className="flex items-start gap-3">
           <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-[var(--app-warn-border)] bg-[var(--app-warn-bg)] text-[var(--app-warn-text-strong)]">
-            <RotateCcw className="size-5" />
+            <IconRefresh className="size-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <SectionTitle as="h3" strong className="pt-0.5">
+            <h3 className="text-sm font-semibold text-slate-900 pt-0.5">
               <span id="reset-goals-title">Reset goals</span>
-            </SectionTitle>
+            </h3>
             <p
               id="reset-goals-desc"
               className="mt-2 text-[13px] leading-relaxed text-[var(--app-text-muted)]"
@@ -291,11 +357,11 @@ function ConfirmResetDialog({
           </div>
         </div>
         <div className="mt-5 flex flex-wrap justify-end gap-2 border-t border-[var(--app-border)] pt-4">
-          <button type="button" className={BUTTON_SECONDARY} onClick={onCancel}>
+          <button type="button" className={BTN_SECONDARY} onClick={onCancel}>
             Cancel
           </button>
-          <button type="button" className={BUTTON_PRIMARY} onClick={onConfirm}>
-            <RotateCcw className="size-3.5" />
+          <button type="button" className={BTN_PRIMARY} onClick={onConfirm}>
+            <IconRefresh className="size-3.5" />
             Reset goals
           </button>
         </div>
@@ -305,7 +371,7 @@ function ConfirmResetDialog({
 }
 
 export function MultiGoalCalculator() {
-  const [mode] = useCalculatorMode(MODE_IDS, "withdrawals");
+  const [mode, setMode] = useCalculatorMode(MODE_IDS, "withdrawals");
   const [name, setName] = useState("Janardhan");
   const [age, setAge] = useState(43);
   const [email, setEmail] = useState(DUMMY_REPORT_CONTACT.email);
@@ -335,6 +401,7 @@ export function MultiGoalCalculator() {
   const [openAssumptions, setOpenAssumptions] = useState(true);
   const [openMilestones, setOpenMilestones] = useState(true);
   const [openAnalytics, setOpenAnalytics] = useState(true);
+  const [openSchedule, setOpenSchedule] = useState(true);
 
   const assignNameError = nameError(name);
   const assignAgeError = ageError(age);
@@ -730,12 +797,32 @@ export function MultiGoalCalculator() {
   const profileAge = mode === "assign" ? age : wAge;
   const profileEmail = mode === "assign" ? email : wEmail;
   const profilePhone = mode === "assign" ? phone : wPhone;
+  const assumptionsRef = useRef<HTMLDivElement>(null);
+
+  const scrollToAssumptions = () => {
+    setOpenAssumptions(true);
+    assumptionsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const heroPrimary =
+    mode === "assign"
+      ? (assignResult?.totalMonthlySip ?? 0)
+      : (withdrawResult?.startMonthlySip ?? 0);
+  const heroSecondary =
+    mode === "assign"
+      ? (assignResult?.totalAssigned ?? 0)
+      : (withdrawResult?.totalWithdrawn ?? 0);
+  const heroTertiary =
+    mode === "assign"
+      ? (assignResult?.totalLumpsum ?? 0)
+      : (withdrawResult?.totalInvested ?? 0);
 
   return (
     <>
     <CalculatorPage
       title={getCalculatorPageTitle("/multi-goal", mode)}
       description="Corpus assignment and SIP required for timed withdrawals across multiple goals."
+      contentClassName={WEALTH_CONTENT_CLASS}
       actions={
         <ReportDownloadButton
           onClick={handleDownload}
@@ -744,339 +831,282 @@ export function MultiGoalCalculator() {
         />
       }
       header={
-        <ClientProfileBar
-          name={profileName}
+        <WealthHero
+          clientName={profileName}
           age={profileAge}
           email={profileEmail}
           phone={profilePhone}
-          strategy={
-            mode === "assign" ? "Corpus assignment across goals" : "SIP for timed withdrawals"
+          goalLabel={mode === "assign" ? "Corpus assign" : "Withdrawals"}
+          tenure={
+            mode === "assign"
+              ? Math.max(1, ...goals.map((g) => g.years), 1)
+              : Math.max(
+                  1,
+                  ...withdrawalGoals.map((g) => Math.max(0, g.atAge - wAge)),
+                  1,
+                )
           }
-          goal={mode === "assign" ? "Multi-goal funding mix" : "Withdrawal path funding"}
+          strategy={mode === "assign" ? "Multi-goal corpus" : "SIP with withdrawals"}
+          onEdit={scrollToAssumptions}
+          metrics={[
+            {
+              label: "Monthly SIP",
+              value: heroPrimary,
+              kind: "currency",
+              tone: "emerald",
+              mark: (
+                <WealthIconMark tone="emerald" className="h-6 w-6">
+                  <IconTarget className="h-3.5 w-3.5" />
+                </WealthIconMark>
+              ),
+            },
+            {
+              label: mode === "assign" ? "Assigned" : "Withdrawn",
+              value: heroSecondary,
+              kind: "currency",
+              tone: "slate",
+            },
+            {
+              label: mode === "assign" ? "Lumpsum need" : "Invested",
+              value: heroTertiary,
+              kind: "currency",
+              tone: "slate",
+            },
+          ]}
         />
       }
       form={
-        mode === "assign" ? (
-          <BentoSection
-            sectionId="01"
+        <div ref={assumptionsRef} className="space-y-5">
+          <WealthSegmented
+            fullWidth
+            layoutId="multi-goal-mode"
+            value={mode}
+            onChange={setMode}
+            options={MODES.map((m) => ({ id: m.id, label: m.label }))}
+          />
+        {mode === "assign" ? (
+
+          <WealthSection
+            badge="01 · Profile"
             title="Financial Assumptions & Modeling Suite"
-            description="Interactive engine for corpus assignment across short-term and long-term goals"
-            collapsible
+            subtitle="Interactive engine for corpus assignment across short-term and long-term goals"
             open={openAssumptions}
             onToggle={() => setOpenAssumptions((v) => !v)}
+            mark={
+              <WealthIconMark>
+                <IconPerson />
+              </WealthIconMark>
+            }
             actions={
-              <button
+<button
                 type="button"
                 onClick={resetDefaults}
                 className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 transition-all hover:bg-slate-100 hover:text-emerald-700"
               >
-                Reset to Baseline
+                <IconRefresh className="h-3.5 w-3.5" />
+                Reset
               </button>
             }
           >
-            <BentoGroup
-              num="01"
-              title="Investor Profile"
-              colSpan={4}
-              footer={
-                <>
-                  <span>Age path:</span>
-                  <span className="font-bold text-slate-700">
-                    {age} → {age + Math.max(0, ...goals.map((g) => g.years))}
-                  </span>
-                </>
-              }
-            >
-              <div className="mb-4">
-                <Field label="Client Name" error={assignNameError}>
-                  <TextInput
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className={assignNameError ? "border-[var(--app-danger)]" : undefined}
-                  />
-                </Field>
-              </div>
-              <div className="mb-4">
-                <AgeInput value={age} onChange={setAge} error={assignAgeError} />
-              </div>
-              <div className="mb-4">
-                <Field label="Email" error={assignEmailError}>
-                  <TextInput
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="client@email.com"
-                    className={assignEmailError ? "border-[var(--app-danger)]" : undefined}
-                  />
-                </Field>
-              </div>
-              <Field label="Phone" error={assignPhoneError}>
-                <TextInput
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+91 98765 43210"
-                  className={assignPhoneError ? "border-[var(--app-danger)]" : undefined}
+            <div className="py-2">
+              <WealthProfileGrid>
+                <WealthTextField
+                  label="Client Name"
+                  value={name}
+                  onChange={(v) => setName(v)}
+                  error={assignNameError}
                 />
-              </Field>
-            </BentoGroup>
-
-            <BentoGroup
-              num="02"
-              title="Corpus Parameters"
-              colSpan={5}
-              footer={
-                <>
-                  <span>ST bucket:</span>
-                  <span className="font-bold text-emerald-700">
-                    ≤ {stYears} yr{stYears === 1 ? "" : "s"}
-                    {delay > 0 ? ` · ${delay} mo delay` : ""}
-                  </span>
-                </>
-              }
-            >
-              <div className="mb-4">
-                <MoneyInput
+                <WealthAgeField value={age} onChange={setAge} error={assignAgeError} />
+                <WealthTextField
+                  label="Email"
+                  value={email}
+                  onChange={(v) => setEmail(v)}
+                  error={assignEmailError}
+                  type="email"
+                  placeholder="client@email.com"
+                />
+                <WealthTextField
+                  label="Phone"
+                  value={phone}
+                  onChange={(v) => setPhone(v)}
+                  error={assignPhoneError}
+                  type="tel"
+                  placeholder="+91 98765 43210"
+                />
+                <WealthMoneyField
                   label="Current corpus"
                   value={corpus}
                   onChange={setCorpus}
                   error={corpusError}
-                  align="right"
+                  max={CORPUS_MAX}
+                  slider={{
+                    min: CORPUS_MIN,
+                    max: CORPUS_MAX,
+                    step: 1_00_000,
+                    scale: "log",
+                    presets: WEALTH_MONEY_PRESETS_DEFAULT,
+                  }}
                 />
-              </div>
-              <div className="mb-4">
-                <YearInput
+                <WealthYearField
                   label="ST years"
                   value={stYears}
                   min={1}
-                  max={20}
+                  max={ST_YEARS_MAX}
                   onChange={setStYears}
                   error={stYearsError}
+                  slider={{
+                    min: 1,
+                    max: ST_YEARS_MAX,
+                    step: 1,
+                    presets: WEALTH_YEAR_PRESETS_DEFAULT.filter((p) => p.value <= ST_YEARS_MAX),
+                  }}
                 />
-              </div>
-              <YearInput
-                label="Delay (mos)"
-                value={delay}
-                min={0}
-                max={120}
-                onChange={setDelay}
-                error={delayError}
-                hint="Investment starts after X months"
-              />
-            </BentoGroup>
-
-            <BentoGroup
-              num="03"
-              title="Rate Assumptions"
-              subtitle="ST / LT · Inflation · Tax"
-              colSpan={3}
-              footer={
-                <>
-                  <span>Tax drag:</span>
-                  <span className="font-bold text-emerald-700">{tax}%</span>
-                </>
-              }
-            >
-              <div className="mb-3.5">
-                <PercentInput
+                <WealthYearField
+                  label="Delay (mos)"
+                  value={delay}
+                  min={0}
+                  max={120}
+                  onChange={setDelay}
+                  error={delayError}
+                  hint="Investment starts after X months"
+                />
+                <WealthPercentField
                   label="ST return (%)"
                   value={stRet}
                   onChange={setStRet}
                   hint="Short-Term Goals"
                   error={stRetError}
                 />
-              </div>
-              <div className="mb-3.5">
-                <PercentInput
+                <WealthPercentField
                   label="LT return (%)"
                   value={ltRet}
                   onChange={setLtRet}
                   hint="Long-Term Goals"
                   error={ltRetError}
                 />
-              </div>
-              <div className="mb-3.5">
-                <PercentInput
+                <WealthPercentField
                   label="Corpus ret. (%)"
                   value={corpusRet}
                   onChange={setCorpusRet}
                   error={corpusRetError}
                 />
-              </div>
-              <div className="mb-3.5">
-                <PercentInput
+                <WealthPercentField
                   label="Inflation (%)"
                   value={infl}
                   onChange={setInfl}
                   error={inflError}
                 />
-              </div>
-              <PercentInput
-                label="Tax (%)"
-                value={tax}
-                onChange={setTax}
-                error={taxAssignError}
-              />
-            </BentoGroup>
-
-            <BentoGroup
-              num="02"
-              title="Goal Timeline"
-              subtitle="Assign corpus across goals"
-              colSpan={12}
-              footer={
-                <>
-                  <span>Active goals:</span>
-                  <span className="font-bold text-emerald-700">
-                    {validAssignGoals.length} / {goals.length}
-                  </span>
-                </>
-              }
-            >
-              <AssignGoalEditTimeline
-                key={assignTimelineKey}
-                goals={sortedAssignGoals}
-                stYears={stYears}
-                resultRows={assignResult?.goals ?? []}
-                errors={assignGoalErrors}
-                warnings={assignGoalWarnings}
-                onPatch={patchAssignGoal}
-                onDuplicate={duplicateAssignGoal}
-                onRemove={removeAssignGoal}
-                onRequestReset={() => setAssignResetOpen(true)}
-                atCapacity={goals.length >= MAX_ASSIGN_GOALS}
-              />
-            </BentoGroup>
-          </BentoSection>
+                <WealthPercentField
+                  label="Tax (%)"
+                  value={tax}
+                  onChange={setTax}
+                  error={taxAssignError}
+                />
+                <div className="col-span-full min-w-0">
+                  <AssignGoalEditTimeline
+                    key={assignTimelineKey}
+                    goals={sortedAssignGoals}
+                    stYears={stYears}
+                    resultRows={assignResult?.goals ?? []}
+                    errors={assignGoalErrors}
+                    warnings={assignGoalWarnings}
+                    onPatch={patchAssignGoal}
+                    onDuplicate={duplicateAssignGoal}
+                    onRemove={removeAssignGoal}
+                    onRequestReset={() => setAssignResetOpen(true)}
+                    atCapacity={goals.length >= MAX_ASSIGN_GOALS}
+                  />
+                </div>
+              </WealthProfileGrid>
+            </div>
+          </WealthSection>
         ) : (
-          <BentoSection
-            sectionId="01"
+          <WealthSection
+            badge="01 · Profile"
             title="Financial Assumptions & Modeling Suite"
-            description="Interactive engine for SIP required across timed withdrawal goals"
-            collapsible
+            subtitle="Interactive engine for SIP required across timed withdrawal goals"
             open={openAssumptions}
             onToggle={() => setOpenAssumptions((v) => !v)}
+            mark={
+              <WealthIconMark>
+                <IconPerson />
+              </WealthIconMark>
+            }
             actions={
-              <button
+<button
                 type="button"
                 onClick={resetDefaults}
                 className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 transition-all hover:bg-slate-100 hover:text-emerald-700"
               >
-                Reset to Baseline
+                <IconRefresh className="h-3.5 w-3.5" />
+                Reset
               </button>
             }
           >
-            <BentoGroup
-              num="01"
-              title="Investor Profile"
-              colSpan={4}
-              footer={
-                <>
-                  <span>Age path:</span>
-                  <span className="font-bold text-slate-700">
-                    {wAge} →{" "}
-                    {Math.max(wAge, ...withdrawalGoals.map((g) => g.atAge), wAge)}
-                  </span>
-                </>
-              }
-            >
-              <div className="mb-4">
-                <Field label="Client Name" error={withdrawNameError}>
-                  <TextInput
-                    value={wName}
-                    onChange={(e) => setWName(e.target.value)}
-                    className={withdrawNameError ? "border-[var(--app-danger)]" : undefined}
-                  />
-                </Field>
-              </div>
-              <div className="mb-4">
-                <AgeInput value={wAge} onChange={setWAge} error={withdrawAgeError} />
-              </div>
-              <div className="mb-4">
-                <Field label="Email" error={withdrawEmailError}>
-                  <TextInput
-                    type="email"
-                    value={wEmail}
-                    onChange={(e) => setWEmail(e.target.value)}
-                    placeholder="client@email.com"
-                    className={withdrawEmailError ? "border-[var(--app-danger)]" : undefined}
-                  />
-                </Field>
-              </div>
-              <Field label="Phone" error={withdrawPhoneError}>
-                <TextInput
-                  type="tel"
-                  value={wPhone}
-                  onChange={(e) => setWPhone(e.target.value)}
-                  placeholder="+91 98765 43210"
-                  className={withdrawPhoneError ? "border-[var(--app-danger)]" : undefined}
+            <div className="py-2">
+              <WealthProfileGrid>
+                <WealthTextField
+                  label="Client Name"
+                  value={wName}
+                  onChange={(v) => setWName(v)}
+                  error={withdrawNameError}
                 />
-              </Field>
-            </BentoGroup>
-
-            <BentoGroup
-              num="03"
-              title="Rate Assumptions"
-              subtitle="Return & Tax"
-              colSpan={8}
-              footer={
-                <>
-                  <span>Tax drag:</span>
-                  <span className="font-bold text-emerald-700">{wTax}%</span>
-                </>
-              }
-            >
-              <p className={`mb-3.5 ${META_TEXT}`}>
-                All returns compounded annualised. Tax evaluated at withdrawal.
-              </p>
-              <div className="mb-3.5">
-                <PercentInput
+                <WealthAgeField value={wAge} onChange={setWAge} error={withdrawAgeError} />
+                <WealthTextField
+                  label="Email"
+                  value={wEmail}
+                  onChange={(v) => setWEmail(v)}
+                  error={withdrawEmailError}
+                  type="email"
+                  placeholder="client@email.com"
+                />
+                <WealthTextField
+                  label="Phone"
+                  value={wPhone}
+                  onChange={(v) => setWPhone(v)}
+                  error={withdrawPhoneError}
+                  type="tel"
+                  placeholder="+91 98765 43210"
+                />
+                <div className="col-span-full min-w-0">
+                  <p className={META_TEXT}>
+                    All returns compounded annualised. Tax evaluated at withdrawal.
+                  </p>
+                </div>
+                <WealthPercentField
                   label="Expected return (%)"
                   value={wRet}
                   onChange={(v) => setWRet(Math.max(0, v))}
                   hint={returnHint}
                   error={wRetError}
                 />
-              </div>
-              <PercentInput
-                label="Tax (%)"
-                value={wTax}
-                onChange={(v) => setWTax(Math.min(100, Math.max(0, v)))}
-                error={taxError}
-              />
-            </BentoGroup>
-
-            <BentoGroup
-              num="02"
-              title="Withdrawal Goals"
-              subtitle="Timed payout schedule"
-              colSpan={12}
-              footer={
-                <>
-                  <span>Valid goals:</span>
-                  <span className="font-bold text-emerald-700">
-                    {validWithdrawalGoals.length} / {withdrawalGoals.length}
-                  </span>
-                </>
-              }
-            >
-              <GoalEditTimeline
-                key={timelineKey}
-                goals={sortedWithdrawalGoals}
-                clientAge={wAge}
-                resultRows={withdrawResult?.rows ?? []}
-                errors={goalErrors}
-                warnings={goalWarnings}
-                onPatch={patchWithdrawalGoal}
-                onDuplicate={duplicateWithdrawalGoal}
-                onRemove={removeWithdrawalGoal}
-                onAdd={addWithdrawalGoal}
-                onRequestReset={() => setResetConfirmOpen(true)}
-                atCapacity={withdrawalGoals.length >= MAX_GOALS}
-              />
-            </BentoGroup>
-          </BentoSection>
-        )
+                <WealthPercentField
+                  label="Tax (%)"
+                  value={wTax}
+                  onChange={(v) => setWTax(Math.min(100, Math.max(0, v)))}
+                  error={taxError}
+                />
+                <div className="col-span-full min-w-0">
+                  <GoalEditTimeline
+                    key={timelineKey}
+                    goals={sortedWithdrawalGoals}
+                    clientAge={wAge}
+                    resultRows={withdrawResult?.rows ?? []}
+                    errors={goalErrors}
+                    warnings={goalWarnings}
+                    onPatch={patchWithdrawalGoal}
+                    onDuplicate={duplicateWithdrawalGoal}
+                    onRemove={removeWithdrawalGoal}
+                    onAdd={addWithdrawalGoal}
+                    onRequestReset={() => setResetConfirmOpen(true)}
+                    atCapacity={withdrawalGoals.length >= MAX_GOALS}
+                  />
+                </div>
+              </WealthProfileGrid>
+            </div>
+          </WealthSection>
+        )}
+        </div>
       }
       results={
         <>
@@ -1116,6 +1146,8 @@ export function MultiGoalCalculator() {
               onToggleMilestones={() => setOpenMilestones((v) => !v)}
               openAnalytics={openAnalytics}
               onToggleAnalytics={() => setOpenAnalytics((v) => !v)}
+              openSchedule={openSchedule}
+              onToggleSchedule={() => setOpenSchedule((v) => !v)}
             />
           ) : null}
           {mode === "withdrawals" && withdrawResult ? (
@@ -1126,6 +1158,8 @@ export function MultiGoalCalculator() {
               onToggleMilestones={() => setOpenMilestones((v) => !v)}
               openAnalytics={openAnalytics}
               onToggleAnalytics={() => setOpenAnalytics((v) => !v)}
+              openSchedule={openSchedule}
+              onToggleSchedule={() => setOpenSchedule((v) => !v)}
             />
           ) : null}
           <ConfirmResetDialog
@@ -1149,11 +1183,17 @@ export function MultiGoalCalculator() {
         </>
       }
       footer={
-        <ComplianceFootnote>
-          Calculations shown are for illustration purposes only. Multi-goal projections depend on
-          assumed returns, inflation, tax, corpus assignment rules, and the goal schedule entered.
-          Actual market returns and timing can differ.
-        </ComplianceFootnote>
+        <WealthDisclaimer
+          notes={[
+            "Corpus assignment follows the schedule and priority rules entered for each goal.",
+            "Inflation and tax assumptions apply uniformly unless a goal overrides them.",
+            "Projections are illustrative. Actual market returns and withdrawal timing can differ.",
+          ]}
+        >
+          Figures are for illustration only. Multi-goal projections depend on assumed returns,
+          inflation, tax, corpus assignment rules, and the goal schedule entered. Markets carry
+          risk; past performance does not guarantee future results.
+        </WealthDisclaimer>
       }
     />
     {mode === "withdrawals" && withdrawResult ? (
@@ -1277,12 +1317,16 @@ function AssignDashboard({
   onToggleMilestones,
   openAnalytics,
   onToggleAnalytics,
+  openSchedule,
+  onToggleSchedule,
 }: {
   result: AssignResult;
   openMilestones: boolean;
   onToggleMilestones: () => void;
   openAnalytics: boolean;
   onToggleAnalytics: () => void;
+  openSchedule: boolean;
+  onToggleSchedule: () => void;
 }) {
   const rows = result.goals;
   const active = rows.filter((g) => g.amount > 0 && g.years > 0);
@@ -1293,9 +1337,9 @@ function AssignDashboard({
   const stCount = active.filter((g) => g.bucket === "ST").length;
   const ltCount = active.filter((g) => g.bucket === "LT").length;
   const maxYears = active.reduce((m, g) => Math.max(m, g.years), 0);
-  const totalDelayCost = active.reduce((s, g) => s + (g.delayCost ?? 0), 0);
   const hasAssigned = result.totalAssigned > 0;
   const hasUnassigned = result.unassignedCorpus > 0;
+  const [chartTab, setChartTab] = useState<"sip" | "lumpsum" | "mix">("sip");
 
   const sipCompare = active.map((g) => ({
     category: g.name,
@@ -1326,301 +1370,293 @@ function AssignDashboard({
     {
       name: "Assigned corpus",
       value: result.totalAssigned,
-      color: "var(--app-chart-invested)",
+      color: wealthMixColors.invested,
     },
     {
       name: "Remaining lumpsum",
       value: result.totalLumpsum,
-      color: "var(--app-chart-gain)",
+      color: wealthMixColors.gain,
     },
     {
       name: "Unused Corpus Remaining",
       value: result.unassignedCorpus,
-      color: "var(--app-chart-tax)",
+      color: wealthMixColors.tax,
     },
   ].filter((s) => s.value > 0);
 
   return (
-    <Stack>
-      <ResultsSection
-        sectionId="02"
+    <div className="space-y-5">
+      <WealthSection
+        badge="02 · Milestones"
         title="Corpus Assignment Milestones"
-        description="Combined SIP, lumpsum, and corpus allocation across goals"
+        subtitle="Combined SIP, lumpsum, and corpus allocation across goals"
         open={openMilestones}
         onToggle={onToggleMilestones}
-        meta={
-          <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">
-            {active.length} goals · {stCount} ST · {ltCount} LT
-          </span>
+        mark={
+          <WealthIconMark tone="emerald">
+            <IconTarget />
+          </WealthIconMark>
         }
       >
-        <StatGrid>
-          <StatCard
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <WealthMetricCard
             title="Total Investment Per Month"
             value={result.totalMonthlySip}
-            tone="positive"
-            hint={
+            description={
               highestSip
                 ? `Highest: ${formatINRCurrency(highestSip.monthlySip)}/mo (${highestSip.name})`
                 : "Combined monthly SIP across goals"
             }
+            tone="positive"
           />
-          <StatCard
+          <WealthMetricCard
             title="Total Investment (One-Time)"
             value={result.totalLumpsum}
+            description={largest ? `Largest goal · ${largest.name}` : "One-time investment alternative"}
             tone="neutral"
-            hint={largest ? `Largest goal · ${largest.name}` : "One-time investment alternative"}
           />
-          <StatCard
+          <WealthMetricCard
             title="Total Investment (SIP)"
             value={result.totalSipInvested}
+            description="Total SIP capital over the horizon"
             tone="neutral"
-            hint="Total SIP capital over the horizon"
           />
-          <StatCard
+          <WealthMetricCard
             title="Corpus Assigned"
             value={result.totalAssigned}
+            description="Amount of current corpus allocated to goals."
             tone="positive"
-            hint="Amount of current corpus allocated to goals."
           />
           {hasUnassigned ? (
-            <StatCard
+            <WealthMetricCard
               title="Unused Corpus Remaining"
               value={result.unassignedCorpus}
+              description="Corpus not yet allocated to a goal"
               tone="neutral"
-              hint="Corpus not yet allocated to a goal"
             />
           ) : null}
-        </StatGrid>
+        </div>
 
         <div className="mt-6 grid grid-cols-2 gap-2.5 lg:grid-cols-4">
           <QuickStat
-            icon={soonest ? (CATEGORY_META[inferCategory(soonest.name)] || CATEGORY_META.custom).icon : Target}
+            icon={
+              soonest
+                ? (CATEGORY_META[inferCategory(soonest.name)] || CATEGORY_META.custom).icon
+                : IconTarget
+            }
             label="Soonest"
             value={soonest ? soonest.name : "-"}
             sub={soonest ? `${soonest.years} years` : undefined}
           />
           <QuickStat
-            icon={largest ? (CATEGORY_META[inferCategory(largest.name)] || CATEGORY_META.custom).icon : Target}
+            icon={
+              largest
+                ? (CATEGORY_META[inferCategory(largest.name)] || CATEGORY_META.custom).icon
+                : IconTarget
+            }
             label="Largest"
             value={largest ? largest.name : "-"}
             sub={largest ? formatINRCurrency(largest.amount) : undefined}
           />
-          <QuickStat icon={Target} label="Goals" value={`${active.length}`} sub={`${stCount} ST · ${ltCount} LT`} />
-          <QuickStat icon={Calendar} label="Horizon" value={`${maxYears} yrs`} sub="Longest goal term" />
+          <QuickStat
+            icon={IconTarget}
+            label="Goals"
+            value={`${active.length}`}
+            sub={`${stCount} ST · ${ltCount} LT`}
+          />
+          <QuickStat
+            icon={IconCalendar}
+            label="Horizon"
+            value={`${maxYears} yrs`}
+            sub="Longest goal term"
+          />
         </div>
-      </ResultsSection>
+      </WealthSection>
 
-      <ResultsSection
-        sectionId="03"
+      <WealthSection
+        badge="03 · Analytics"
         title="Allocation Analytics"
-        description="SIP by goal, funding mix, and allocation schedule"
+        subtitle="SIP by goal, lumpsum stack, and funding mix"
         open={openAnalytics}
         onToggle={onToggleAnalytics}
+        mark={
+          <WealthIconMark>
+            <IconChart />
+          </WealthIconMark>
+        }
       >
-        <SegmentedChartControl
-          variant="pill"
-          tabs={[
+        <div className="space-y-4">
+          <WealthSegmented
+            variant="underline"
+            fullWidth
+            layoutId="assign-chart-tab"
+            value={chartTab}
+            onChange={setChartTab}
+            options={[
+              { id: "sip", label: "Monthly SIP", icon: <IconChart className="h-4 w-4" /> },
+              { id: "lumpsum", label: "Lumpsum", icon: <IconChart className="h-4 w-4" /> },
+              { id: "mix", label: "Funding mix", icon: <IconDonut className="h-4 w-4" /> },
+            ]}
+          />
+          {chartTab === "sip" ? (
+            <WealthCompareBars
+              showBarLabels
+              data={sipCompare}
+              series={[{ key: "amount", label: "Monthly SIP", color: wealthChart.invested }]}
+            />
+          ) : null}
+          {chartTab === "lumpsum" ? (
+            <ChartFrame>
+              <StackedBarChart
+                title="Corpus assigned vs remaining lumpsum"
+                className="min-h-[290px] w-full flex-1 sm:min-h-[310px]"
+                data={result.compare.map((row) => ({
+                  category: row.category,
+                  assigned: row.assigned,
+                  remaining: row.remaining,
+                }))}
+                series={[
+                  { key: "assigned", label: "Assigned", color: wealthChart.invested },
+                  { key: "remaining", label: "Remaining LS", color: wealthChart.standard },
+                ]}
+              />
+            </ChartFrame>
+          ) : null}
+          {chartTab === "mix" ? (
+            <>
+              {fundingSlices.length === 0 ? (
+                <div className="flex h-full min-h-[220px] flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center">
+                  <div className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                    Funding mix
+                  </div>
+                  <p className="mt-3 text-[13px] text-slate-500">No corpus assigned yet</p>
+                  <p className={`mt-1 ${META_TEXT}`}>Add current corpus or goals to see the mix.</p>
+                </div>
+              ) : (
+                <div className="relative flex h-full flex-col">
+                  {!hasAssigned ? (
+                    <p className="mb-2 text-[11px] font-medium text-amber-700">
+                      No corpus assigned yet · 100% remaining lumpsum path
+                    </p>
+                  ) : null}
+                  <WealthMixDonut
+                    title="Funding mix"
+                    centerLabel={hasAssigned ? "Need" : "Remaining"}
+                    centerValue={
+                      hasAssigned
+                        ? result.totalAssigned + result.totalLumpsum
+                        : result.totalLumpsum
+                    }
+                    slices={fundingSlices}
+                  />
+                </div>
+              )}
+            </>
+          ) : null}
+        </div>
+      </WealthSection>
+
+      <WealthSection
+        badge="04 · Schedule"
+        title="Goal Allocation Schedule"
+        subtitle="Per-goal assigned corpus, SIP, lumpsum, and invested capital"
+        open={openSchedule}
+        onToggle={onToggleSchedule}
+        mark={
+          <WealthIconMark>
+            <IconCalendar />
+          </WealthIconMark>
+        }
+      >
+        <WealthDataTable
+          rows={tableRows}
+          getRowKey={(row) => `${row.name}-${row.years}`}
+          filterPlaceholder="Filter goals…"
+          summary={[
+            { label: "Goals", value: String(tableRows.length) },
             {
-              id: "sip",
               label: "Monthly SIP",
-              icon: <BarChart3 className="w-4 h-4" />,
-              content: (
-                <ChartPane>
-                  <CompareChart
-                    title="Monthly SIP by goal"
-                    data={sipCompare}
-                    series={[{ key: "amount", label: "Monthly SIP", color: "var(--app-chart-invested)" }]}
-                    showBarLabels
-                    showLegend={false}
-                    className="min-h-[290px] w-full flex-1 sm:min-h-[310px]"
-                  />
-                </ChartPane>
-              ),
+              value: formatINRCurrency(result.totalMonthlySip),
+              tone: "step",
             },
             {
-              id: "lumpsum",
+              label: "Assigned",
+              value: formatINRCurrency(result.totalAssigned),
+              tone: "std",
+            },
+            {
               label: "Lumpsum",
-              icon: <BarChart3 className="w-4 h-4" />,
-              content: (
-                <ChartPane>
-                  <StackedBarChart
-                    title="Corpus assigned vs remaining lumpsum"
-                    className="min-h-[290px] w-full flex-1 sm:min-h-[310px]"
-                    data={result.compare.map((row) => ({
-                      category: row.category,
-                      assigned: row.assigned,
-                      remaining: row.remaining,
-                    }))}
-                    series={[
-                      { key: "assigned", label: "Assigned", color: "var(--app-chart-invested)" },
-                      { key: "remaining", label: "Remaining LS", color: "var(--app-chart-b)" },
-                    ]}
-                  />
-                </ChartPane>
+              value: formatINRCurrency(result.totalLumpsum),
+            },
+          ]}
+          note="Each row is one funded goal. Assigned is corpus allocated today; Monthly SIP and Lumpsum are alternate paths to close the remaining need."
+          columns={[
+            {
+              key: "name",
+              header: "Goal",
+              sticky: true,
+              searchValue: (row) => row.name,
+              render: (row) => (
+                <GoalNameWithFunding name={row.name} status={row.fundingStatus} />
               ),
             },
             {
-              id: "mix",
-              label: "Funding mix",
-              icon: <PieChart className="w-4 h-4" />,
-              content: (
-                <ChartPane>
-                  {fundingSlices.length === 0 ? (
-                    <Card variant="empty" className="h-full min-h-[220px] items-center justify-center text-center">
-                      <SectionTitle>Funding mix</SectionTitle>
-                      <p className="mt-3 text-[13px] text-[var(--app-text-muted)]">
-                        No corpus assigned yet
-                      </p>
-                      <p className={`mt-1 ${META_TEXT}`}>
-                        Add current corpus or goals to see the mix.
-                      </p>
-                    </Card>
-                  ) : (
-                    <div className="relative flex h-full flex-col">
-                      {!hasAssigned ? (
-                        <p className="mb-2 text-[11px] font-medium text-[var(--app-warn-text)]">
-                          No corpus assigned yet · 100% remaining lumpsum path
-                        </p>
-                      ) : null}
-                      <CompositionChart
-                        title="Funding mix"
-                        centerLabel={hasAssigned ? "Need" : "Remaining"}
-                        centerValue={
-                          hasAssigned
-                            ? result.totalAssigned + result.totalLumpsum
-                            : result.totalLumpsum
-                        }
-                        showPercentages
-                        size="lg"
-                        slices={fundingSlices}
-                      />
-                    </div>
-                  )}
-                </ChartPane>
-              ),
+              key: "years",
+              header: "Years",
+              align: "right",
+              searchValue: (row) => String(row.years),
+              render: (row) => row.years,
+            },
+            {
+              key: "bucket",
+              header: "Bucket",
+              searchValue: (row) => row.bucket,
+              render: (row) => row.bucket,
+            },
+            {
+              key: "amount",
+              header: "Goal amount",
+              align: "right",
+              tone: "amber",
+              render: (row) => moneyCell(row.amount),
+            },
+            {
+              key: "inflAdjGoal",
+              header: "Infl-adj",
+              align: "right",
+              tone: "amber",
+              render: (row) => moneyCell(row.inflAdjGoal),
+            },
+            {
+              key: "assigned",
+              header: "Assigned",
+              align: "right",
+              tone: "emerald",
+              render: (row) => moneyCell(row.assigned),
+            },
+            {
+              key: "monthlySip",
+              header: "Monthly SIP",
+              align: "right",
+              render: (row) => moneyCell(row.monthlySip),
+            },
+            {
+              key: "lumpsum",
+              header: "Lumpsum",
+              align: "right",
+              tone: "amber",
+              render: (row) => moneyCell(row.lumpsum),
+            },
+            {
+              key: "sipInvested",
+              header: "SIP invested",
+              align: "right",
+              render: (row) => moneyCell(row.sipInvested),
             },
           ]}
         />
-
-        <div className="mt-6">
-          <ResultCard
-            title="Allocation summary"
-            items={[
-              {
-                label: "Total Investment Per Month",
-                value: result.totalMonthlySip,
-                highlight: true,
-                tone: "inflation",
-              },
-              {
-                label: "Total Investment (SIP)",
-                value: result.totalSipInvested,
-                tone: "default",
-              },
-              {
-                label: "Total Investment (One-Time)",
-                value: result.totalLumpsum,
-                tone: "default",
-              },
-              {
-                label: "Corpus Assigned",
-                value: result.totalAssigned,
-                highlight: hasAssigned,
-                tone: "gain",
-                hint: "Amount of current corpus allocated to goals.",
-              },
-              ...(hasUnassigned
-                ? [
-                    {
-                      label: "Unused Corpus Remaining",
-                      value: result.unassignedCorpus,
-                      highlight: true,
-                      tone: "delay" as const,
-                    },
-                  ]
-                : []),
-              ...(totalDelayCost > 0
-                ? [
-                    {
-                      label: "Cost of Delay",
-                      value: totalDelayCost,
-                      highlight: true,
-                      tone: "delay" as const,
-                    },
-                  ]
-                : []),
-            ]}
-          />
-        </div>
-
-        <div className="mt-6">
-          <ScheduleTable
-            caption="Goal allocation"
-            meta={`${tableRows.length} goals`}
-            zebra
-            columns={[
-              {
-                key: "name",
-                header: "Goal",
-                sticky: true,
-                render: (_value, row) => (
-                  <GoalNameWithFunding
-                    name={String(row.name ?? "")}
-                    status={row.fundingStatus as AssignFundingStatus}
-                  />
-                ),
-              },
-              { key: "years", header: "Years", align: "right" },
-              { key: "bucket", header: "Bucket", format: "text" },
-              {
-                key: "amount",
-                header: "Goal amount",
-                format: "inr",
-                align: "right",
-                tone: "warn",
-              },
-              {
-                key: "inflAdjGoal",
-                header: "Infl-adj",
-                format: "inr",
-                align: "right",
-                tone: "warn",
-              },
-              {
-                key: "assigned",
-                header: "Assigned",
-                format: "inr",
-                align: "right",
-                tone: "step",
-              },
-              {
-                key: "monthlySip",
-                header: "Monthly SIP",
-                format: "inr",
-                align: "right",
-                tone: "std",
-              },
-              {
-                key: "lumpsum",
-                header: "Lumpsum",
-                format: "inr",
-                align: "right",
-                tone: "warn",
-              },
-              {
-                key: "sipInvested",
-                header: "SIP invested",
-                format: "inr",
-                align: "right",
-                tone: "std",
-              },
-            ]}
-            rows={tableRows}
-          />
-        </div>
-      </ResultsSection>
-    </Stack>
+      </WealthSection>
+    </div>
   );
 }
 
@@ -1737,10 +1773,10 @@ function AssignGoalEditTimeline({
   const doneCount = sorted.filter((g) => doneIds.has(g.id)).length;
 
   return (
-    <Card className="gap-3">
+    <div className="space-y-3 rounded-2xl border border-slate-200/80 bg-white p-4">
       <div className="flex flex-col justify-between gap-2.5 sm:flex-row sm:items-center">
         <div className="flex flex-wrap items-center gap-2.5">
-          <SectionTitle as="h2">Goal timeline</SectionTitle>
+          <h2 className="text-sm font-semibold text-slate-900">Goal timeline</h2>
           <span className="rounded-md border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-2 py-0.5 text-[11px] font-medium text-[var(--app-text-muted)]">
             {goals.length} / {MAX_ASSIGN_GOALS}
           </span>
@@ -1753,11 +1789,11 @@ function AssignGoalEditTimeline({
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            className={BUTTON_SECONDARY}
+            className={BTN_SECONDARY}
             onClick={onRequestReset}
             title="Reset Goals"
           >
-            <RotateCcw className="size-3.5" />
+            <IconRefresh className="size-3.5" />
             Reset
           </button>
         </div>
@@ -1765,7 +1801,7 @@ function AssignGoalEditTimeline({
 
       {goals.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-[var(--app-border)] bg-[var(--app-surface-muted)] py-10 text-center">
-          <Target className="mb-2.5 size-7 text-[var(--app-text-subtle)]" />
+          <IconTarget className="mb-2.5 size-7 text-[var(--app-text-subtle)]" />
           <p className="mb-1 text-[13px] text-[var(--app-text-muted)]">No goals added.</p>
           <p className={META_TEXT}>Use Reset to restore the sample goals.</p>
         </div>
@@ -1785,7 +1821,7 @@ function AssignGoalEditTimeline({
 
               <div className="relative z-[1] flex w-[5.5rem] shrink-0 flex-col items-center">
                 <div className="flex size-11 items-center justify-center rounded-full border-2 border-[var(--app-primary)] bg-[var(--app-primary)] text-[var(--app-primary-fg)]">
-                  <ChevronRight className="size-5" />
+                  <IconChevron className="size-5 -rotate-90" />
                 </div>
                 <div className="mt-2 text-center">
                   <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
@@ -1826,7 +1862,7 @@ function AssignGoalEditTimeline({
                       title={`${goal.name} · Year ${goal.years}`}
                       aria-expanded={isOpen}
                     >
-                      {isDone && !hasErr ? <Check className="size-5" /> : <Icon className="size-5" />}
+                      {isDone && !hasErr ? <IconCheck className="size-5" /> : <Icon className="size-5" />}
                       {isActive ? (
                         <span className="absolute -bottom-1 left-1/2 size-1.5 -translate-x-1/2 rounded-full bg-[var(--app-step-text)]" />
                       ) : null}
@@ -1908,16 +1944,16 @@ function AssignGoalEditTimeline({
                 <div className="flex flex-wrap gap-1.5">
                   <button
                     type="button"
-                    className={BUTTON_SECONDARY}
+                    className={BTN_SECONDARY}
                     onClick={() => onDuplicate(openGoal.id)}
                     disabled={atCapacity}
                   >
-                    <Copy className="size-3.5" />
+                    <IconCopy className="size-3.5" />
                     Duplicate
                   </button>
                   <button
                     type="button"
-                    className={BUTTON_DANGER}
+                    className={BTN_DANGER}
                     onClick={() => {
                       const id = openGoal.id;
                       setOpenId(null);
@@ -1929,55 +1965,60 @@ function AssignGoalEditTimeline({
                       });
                     }}
                   >
-                    <Trash2 className="size-3.5" />
+                    <IconTrash className="size-3.5" />
                     Remove
                   </button>
                   <button
                     type="button"
-                    className={BUTTON_PRIMARY}
+                    className={BTN_PRIMARY}
                     onClick={() => markDoneAndAdvance(openGoal.id)}
                   >
-                    <Check className="size-3.5" />
+                    <IconCheck className="size-3.5" />
                     Reviewed · Next
                   </button>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <SelectInput
-                  label="Category"
-                  value={openGoal.category}
-                  options={CATEGORY_OPTIONS}
-                  onChange={(value) => {
-                    const category = value as GoalCategory;
-                    const newMeta = CATEGORY_META[category];
-                    const prevMeta = CATEGORY_META[openGoal.category];
-                    const shouldRename =
-                      !openGoal.name.trim() ||
-                      openGoal.name === prevMeta.label ||
-                      openGoal.name.startsWith("Goal ");
-                    onPatch(openGoal.id, {
-                      category,
-                      ...(shouldRename ? { name: newMeta.label } : {}),
-                    });
-                  }}
+                <WealthFieldShell label="Category">
+                  <select
+                    value={openGoal.category}
+                    onChange={(e) => {
+                      const category = e.target.value as GoalCategory;
+                      const newMeta = CATEGORY_META[category];
+                      const prevMeta = CATEGORY_META[openGoal.category];
+                      const shouldRename =
+                        !openGoal.name.trim() ||
+                        openGoal.name === prevMeta.label ||
+                        openGoal.name.startsWith("Goal ");
+                      onPatch(openGoal.id, {
+                        category,
+                        ...(shouldRename ? { name: newMeta.label } : {}),
+                      });
+                    }}
+                    className={wealthInputClass}
+                  >
+                    {CATEGORY_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                </WealthFieldShell>
+                <WealthTextField
+                  label="Goal name"
+                  value={openGoal.name}
+                  onChange={(name) => onPatch(openGoal.id, { name })}
+                  placeholder="Goal name"
+                  error={openErr?.name}
                 />
-                <Field label="Goal name" error={openErr?.name}>
-                  <TextInput
-                    value={openGoal.name}
-                    onChange={(e) => onPatch(openGoal.id, { name: e.target.value })}
-                    placeholder="Goal name"
-                    className={openErr?.name ? "border-[var(--app-danger)]" : undefined}
-                  />
-                </Field>
-                <MoneyInput
+                <WealthMoneyField
                   label="Amount"
                   value={openGoal.amount}
                   onChange={(amount) => onPatch(openGoal.id, { amount })}
                   error={openErr?.amount}
-                  align="right"
                 />
-                <YearInput
+                <WealthYearField
                   label="Years"
                   value={openGoal.years}
                   min={0}
@@ -1991,7 +2032,7 @@ function AssignGoalEditTimeline({
           ) : null}
         </div>
       )}
-    </Card>
+    </div>
   );
 }
 
@@ -2003,6 +2044,8 @@ function WithdrawalsDashboard({
   onToggleMilestones,
   openAnalytics,
   onToggleAnalytics,
+  openSchedule,
+  onToggleSchedule,
 }: {
   clientAge: number;
   result: WithdrawResult;
@@ -2010,6 +2053,8 @@ function WithdrawalsDashboard({
   onToggleMilestones: () => void;
   openAnalytics: boolean;
   onToggleAnalytics: () => void;
+  openSchedule: boolean;
+  onToggleSchedule: () => void;
 }) {
   const rows = result.rows;
   const maxAge = rows.reduce((m, r) => Math.max(m, r.atAge), clientAge);
@@ -2061,43 +2106,72 @@ function WithdrawalsDashboard({
 
   const totalSip = rows.reduce((s, r) => s + r.monthlySip, 0);
   const totalInvestedRows = rows.reduce((s, r) => s + r.invested, 0);
+  const [chartTab, setChartTab] = useState<"path" | "withdrawals">("path");
 
   return (
-    <Stack>
-      <ResultsSection
-        sectionId="02"
+    <div className="space-y-5">
+      <WealthSection
+        badge="02 · Milestones"
         title="Withdrawal Funding Milestones"
-        description="Start SIP, total investment, and tax across timed goals"
+        subtitle="Start SIP, total investment, and tax across timed goals"
         open={openMilestones}
         onToggle={onToggleMilestones}
-        meta={
-          <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">
-            Age {clientAge} → {maxAge} · {rows.length} goals
-          </span>
+        mark={
+          <WealthIconMark tone="emerald">
+            <IconTarget />
+          </WealthIconMark>
         }
       >
-        <StatGrid>
-          <StatCard title="Start monthly SIP" value={result.startMonthlySip} tone="positive" />
-          <StatCard title="Total goals value" value={result.totalWithdrawn} tone="neutral" />
-          <StatCard title="Total investment" value={result.totalInvested} tone="neutral" />
-          <StatCard title="Total tax" value={result.totalTax} tone="negative" />
-        </StatGrid>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <WealthMetricCard
+            title="Start monthly SIP"
+            value={result.startMonthlySip}
+            description="Required starting SIP"
+            tone="positive"
+          />
+          <WealthMetricCard
+            title="Total goals value"
+            value={result.totalWithdrawn}
+            description="Sum of planned withdrawals"
+            tone="neutral"
+          />
+          <WealthMetricCard
+            title="Total investment"
+            value={result.totalInvested}
+            description="Capital contributed"
+            tone="neutral"
+          />
+          <WealthMetricCard
+            title="Total tax"
+            value={result.totalTax}
+            description="Estimated tax on gains"
+            tone="accent"
+          />
+        </div>
 
         <div className="mt-6 grid grid-cols-2 gap-2.5 lg:grid-cols-4">
           <QuickStat
-            icon={earliest ? (CATEGORY_META[inferCategory(earliest.name)] || CATEGORY_META.custom).icon : Target}
+            icon={
+              earliest
+                ? (CATEGORY_META[inferCategory(earliest.name)] || CATEGORY_META.custom).icon
+                : IconTarget
+            }
             label="Earliest"
             value={earliest ? earliest.name : "-"}
             sub={earliest ? `Age ${earliest.atAge}` : undefined}
           />
           <QuickStat
-            icon={largest ? (CATEGORY_META[inferCategory(largest.name)] || CATEGORY_META.custom).icon : Target}
+            icon={
+              largest
+                ? (CATEGORY_META[inferCategory(largest.name)] || CATEGORY_META.custom).icon
+                : IconTarget
+            }
             label="Largest"
             value={largest ? largest.name : "-"}
             sub={largest ? formatINRCurrency(largest.amount) : undefined}
           />
           <QuickStat
-            icon={Target}
+            icon={IconTarget}
             label="Goals"
             value={`${rows.length}`}
             sub={
@@ -2107,138 +2181,146 @@ function WithdrawalsDashboard({
             }
           />
           <QuickStat
-            icon={Calendar}
+            icon={IconCalendar}
             label="Duration"
             value={`${durationYears} yrs`}
             sub={`Age ${clientAge} to ${maxAge}`}
           />
         </div>
-      </ResultsSection>
+      </WealthSection>
 
-      <ResultsSection
-        sectionId="03"
+      <WealthSection
+        badge="03 · Analytics"
         title="Withdrawal Path Analytics"
-        description="Corpus journey, payout bars, and SIP schedule"
+        subtitle="Corpus journey and payout bars by age"
         open={openAnalytics}
         onToggle={onToggleAnalytics}
+        mark={
+          <WealthIconMark>
+            <IconChart />
+          </WealthIconMark>
+        }
       >
-        <SegmentedChartControl
-          variant="pill"
-          tabs={[
+        <div className="space-y-4">
+          <WealthSegmented
+            variant="underline"
+            fullWidth
+            layoutId="withdraw-chart-tab"
+            value={chartTab}
+            onChange={setChartTab}
+            options={[
+              { id: "path", label: "Path", icon: <IconTimeline className="h-4 w-4" /> },
+              {
+                id: "withdrawals",
+                label: "Withdrawals",
+                icon: <IconChart className="h-4 w-4" />,
+              },
+            ]}
+          />
+          {chartTab === "path" ? (
+            <ChartFrame>
+              <WithdrawalPathChart
+                data={pathData}
+                milestones={milestones}
+                title="Corpus over age"
+              />
+            </ChartFrame>
+          ) : (
+            <WealthCompareBars
+              showBarLabels
+              data={compareData}
+              series={[{ key: "corpus", label: "Corpus", color: wealthChart.stepUp }]}
+            />
+          )}
+        </div>
+      </WealthSection>
+
+      <WealthSection
+        badge="04 · Schedule"
+        title="Withdrawal Goal Schedule"
+        subtitle="Per-goal SIP, invested capital, and corpus at withdrawal age"
+        open={openSchedule}
+        onToggle={onToggleSchedule}
+        mark={
+          <WealthIconMark>
+            <IconCalendar />
+          </WealthIconMark>
+        }
+      >
+        <WealthDataTable
+          rows={tableRows}
+          getRowKey={(row, i) => `${row.goal}-${row.atAge}-${i}`}
+          filterPlaceholder="Filter goals…"
+          summary={[
+            { label: "Goals", value: String(rows.length) },
             {
-              id: "path",
-              label: "Path",
-              icon: <LineChart className="w-4 h-4" />,
-              content: (
-                <ChartPane>
-                  <WithdrawalPathChart
-                    data={pathData}
-                    milestones={milestones}
-                    title="Corpus over age"
-                  />
-                </ChartPane>
-              ),
+              label: "Combined SIP",
+              value: formatINRCurrency(totalSip),
+              tone: "step",
             },
             {
-              id: "withdrawals",
-              label: "Withdrawals",
-              icon: <BarChart3 className="w-4 h-4" />,
-              content: (
-                <ChartPane>
-                  <CompareChart
-                    title="Corpus by withdrawal age"
-                    data={compareData}
-                    series={[{ key: "corpus", label: "Corpus", color: "var(--app-chart-gain)" }]}
-                    showBarLabels
-                    showLegend={false}
-                    className="h-[280px] w-full sm:h-[300px]"
-                  />
-                </ChartPane>
-              ),
+              label: "Invested",
+              value: formatINRCurrency(totalInvestedRows),
+              tone: "std",
+            },
+            {
+              label: "Duration",
+              value: `${durationYears} yrs`,
+            },
+          ]}
+          note="Each row is one withdrawal goal. Monthly SIP funds that goal until the withdrawal age; corpus at withdrawal is the projected balance just before payout."
+          columns={[
+            {
+              key: "goal",
+              header: "Goal",
+              sticky: true,
+              searchValue: (row) => row.goal,
+              render: (row) => row.goal,
+            },
+            {
+              key: "atAge",
+              header: "Withdrawal Age",
+              align: "right",
+              searchValue: (row) => String(row.atAge),
+              render: (row) => row.atAge,
+            },
+            {
+              key: "amount",
+              header: "Goal Amount",
+              align: "right",
+              tone: "amber",
+              render: (row) => moneyCell(row.amount),
+            },
+            {
+              key: "monthlySip",
+              header: "Monthly SIP",
+              align: "right",
+              render: (row) => moneyCell(row.monthlySip),
+            },
+            {
+              key: "invested",
+              header: "Total Invested",
+              align: "right",
+              render: (row) => moneyCell(row.invested),
+            },
+            {
+              key: "peakCorpus",
+              header: "Corpus at Withdrawal",
+              align: "right",
+              tone: "emerald",
+              render: (row) => moneyCell(row.peakCorpus),
+            },
+            {
+              key: "yearsLabel",
+              header: "Years Available",
+              align: "right",
+              tone: "emerald",
+              render: (row) => row.yearsLabel,
             },
           ]}
         />
-
-        <div className="mt-6">
-          <ResultCard
-            title="Totals"
-            items={[
-              {
-                label: "Start monthly SIP",
-                value: result.startMonthlySip,
-                tone: "maturity",
-                highlight: true,
-              },
-              { label: "Total goals value", value: result.totalWithdrawn, tone: "gain" },
-              { label: "Total invested", value: result.totalInvested },
-              { label: "Total tax", value: result.totalTax, tone: "tax" },
-              {
-                label: "Number of goals",
-                displayValue: String(rows.length),
-              },
-              {
-                label: "Investment duration",
-                displayValue: `${durationYears} years`,
-              },
-            ]}
-          />
-        </div>
-
-        <div className="mt-6">
-          <ScheduleTable
-            caption="Withdrawal SIP schedule"
-            meta={
-              <>
-                Combined SIP{" "}
-                <span className="font-semibold text-[var(--app-text)]">
-                  {formatINRCurrency(totalSip)}
-                </span>
-                <span className="mx-2 text-[var(--app-border)]">·</span>
-                Invested{" "}
-                <span className="font-semibold text-[var(--app-text)]">
-                  {formatINRCurrency(totalInvestedRows)}
-                </span>
-              </>
-            }
-            zebra
-            columns={[
-              { key: "goal", header: "Goal", sticky: true },
-              { key: "atAge", header: "Withdrawal Age", align: "right" },
-              {
-                key: "amount",
-                header: "Goal Amount",
-                format: "inr",
-                align: "right",
-                tone: "warn",
-              },
-              {
-                key: "monthlySip",
-                header: "Monthly SIP",
-                format: "inr",
-                align: "right",
-                tone: "std",
-              },
-              {
-                key: "invested",
-                header: "Total Invested",
-                format: "inr",
-                align: "right",
-                tone: "std",
-              },
-              {
-                key: "peakCorpus",
-                header: "Corpus at Withdrawal",
-                format: "inr",
-                align: "right",
-                tone: "step",
-              },
-              { key: "yearsLabel", header: "Years Available", align: "right", tone: "step" },
-            ]}
-            rows={tableRows}
-          />
-        </div>
-      </ResultsSection>
-    </Stack>
+      </WealthSection>
+    </div>
   );
 }
 
@@ -2254,12 +2336,12 @@ function QuickStat({
   sub?: string;
 }) {
   return (
-    <Card className="h-full gap-2.5">
+    <div className="flex h-full flex-col gap-2.5 rounded-2xl border border-slate-200/80 bg-white p-4">
       <div className="flex items-center gap-2.5">
         <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]">
           <Icon className="size-4" />
         </div>
-        <SectionTitle>{label}</SectionTitle>
+        <div className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</div>
       </div>
       <div className="min-w-0">
         <div className="break-words text-[15px] font-semibold leading-snug text-[var(--app-text)] sm:text-base">
@@ -2267,7 +2349,7 @@ function QuickStat({
         </div>
         {sub ? <div className={`mt-1 ${META_TEXT}`}>{sub}</div> : null}
       </div>
-    </Card>
+    </div>
   );
 }
 
@@ -2384,10 +2466,10 @@ function GoalEditTimeline({
   const doneCount = sorted.filter((g) => doneIds.has(g.id)).length;
 
   return (
-    <Card className="gap-3">
+    <div className="space-y-3 rounded-2xl border border-slate-200/80 bg-white p-4">
       <div className="flex flex-col justify-between gap-2.5 sm:flex-row sm:items-center">
         <div className="flex flex-wrap items-center gap-2.5">
-          <SectionTitle as="h2">Goal timeline</SectionTitle>
+          <h2 className="text-sm font-semibold text-slate-900">Goal timeline</h2>
           <span className="rounded-md border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-2 py-0.5 text-[11px] font-medium text-[var(--app-text-muted)]">
             {goals.length} / {MAX_GOALS}
           </span>
@@ -2400,21 +2482,21 @@ function GoalEditTimeline({
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            className={BUTTON_SECONDARY}
+            className={BTN_SECONDARY}
             onClick={onRequestReset}
             title="Reset Goals"
           >
-            <RotateCcw className="size-3.5" />
+            <IconRefresh className="size-3.5" />
             Reset
           </button>
           <button
             type="button"
-            className={BUTTON_PRIMARY}
+            className={BTN_PRIMARY}
             onClick={onAdd}
             disabled={atCapacity}
             title="Add Goal"
           >
-            <Plus className="size-3.5" />
+            <IconPlus className="size-3.5" />
             Add Goal
           </button>
         </div>
@@ -2422,10 +2504,10 @@ function GoalEditTimeline({
 
       {goals.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-[var(--app-border)] bg-[var(--app-surface-muted)] py-10 text-center">
-          <Target className="mb-2.5 size-7 text-[var(--app-text-subtle)]" />
+          <IconTarget className="mb-2.5 size-7 text-[var(--app-text-subtle)]" />
           <p className="mb-3 text-[13px] text-[var(--app-text-muted)]">No withdrawal goals added.</p>
-          <button type="button" className={BUTTON_PRIMARY} onClick={onAdd}>
-            <Plus className="size-3.5" />
+          <button type="button" className={BTN_PRIMARY} onClick={onAdd}>
+            <IconPlus className="size-3.5" />
             Add First Goal
           </button>
         </div>
@@ -2446,7 +2528,7 @@ function GoalEditTimeline({
 
               <div className="relative z-[1] flex w-[5.5rem] shrink-0 flex-col items-center">
                 <div className="flex size-11 items-center justify-center rounded-full border-2 border-[var(--app-primary)] bg-[var(--app-primary)] text-[var(--app-primary-fg)]">
-                  <ChevronRight className="size-5" />
+                  <IconChevron className="size-5 -rotate-90" />
                 </div>
                 <div className="mt-2 text-center">
                   <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
@@ -2488,7 +2570,7 @@ function GoalEditTimeline({
                       title={`${goal.name} · Age ${goal.atAge}`}
                       aria-expanded={isOpen}
                     >
-                      {isDone && !hasErr ? <Check className="size-5" /> : <Icon className="size-5" />}
+                      {isDone && !hasErr ? <IconCheck className="size-5" /> : <Icon className="size-5" />}
                       {isActive ? (
                         <span className="absolute -bottom-1 left-1/2 size-1.5 -translate-x-1/2 rounded-full bg-[var(--app-step-text)]" />
                       ) : null}
@@ -2539,16 +2621,16 @@ function GoalEditTimeline({
                 <div className="flex flex-wrap gap-1.5">
                   <button
                     type="button"
-                    className={BUTTON_SECONDARY}
+                    className={BTN_SECONDARY}
                     onClick={() => onDuplicate(openGoal.id)}
                     disabled={atCapacity}
                   >
-                    <Copy className="size-3.5" />
+                    <IconCopy className="size-3.5" />
                     Duplicate
                   </button>
                   <button
                     type="button"
-                    className={BUTTON_DANGER}
+                    className={BTN_DANGER}
                     onClick={() => {
                       const id = openGoal.id;
                       setOpenId(null);
@@ -2560,53 +2642,59 @@ function GoalEditTimeline({
                       });
                     }}
                   >
-                    <Trash2 className="size-3.5" />
+                    <IconTrash className="size-3.5" />
                     Remove
                   </button>
                   <button
                     type="button"
-                    className={BUTTON_PRIMARY}
+                    className={BTN_PRIMARY}
                     onClick={() => markDoneAndAdvance(openGoal.id)}
                   >
-                    <Check className="size-3.5" />
+                    <IconCheck className="size-3.5" />
                     Done · Next
                   </button>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <SelectInput
-                  label="Category"
-                  value={openGoal.category}
-                  options={CATEGORY_OPTIONS}
-                  onChange={(value) => {
-                    const category = value as GoalCategory;
-                    const newMeta = CATEGORY_META[category];
-                    const prevMeta = CATEGORY_META[openGoal.category];
-                    const shouldRename =
-                      !openGoal.name.trim() ||
-                      openGoal.name === prevMeta.label ||
-                      openGoal.name.startsWith("Goal ");
-                    onPatch(openGoal.id, {
-                      category,
-                      ...(shouldRename ? { name: newMeta.label } : {}),
-                    });
-                  }}
+                <WealthFieldShell label="Category">
+                  <select
+                    value={openGoal.category}
+                    onChange={(e) => {
+                      const category = e.target.value as GoalCategory;
+                      const newMeta = CATEGORY_META[category];
+                      const prevMeta = CATEGORY_META[openGoal.category];
+                      const shouldRename =
+                        !openGoal.name.trim() ||
+                        openGoal.name === prevMeta.label ||
+                        openGoal.name.startsWith("Goal ");
+                      onPatch(openGoal.id, {
+                        category,
+                        ...(shouldRename ? { name: newMeta.label } : {}),
+                      });
+                    }}
+                    className={wealthInputClass}
+                  >
+                    {CATEGORY_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                </WealthFieldShell>
+                <WealthTextField
+                  label="Goal name"
+                  value={openGoal.name}
+                  onChange={(name) => onPatch(openGoal.id, { name })}
+                  placeholder="Goal name"
                 />
-                <Field label="Goal name">
-                  <TextInput
-                    value={openGoal.name}
-                    onChange={(e) => onPatch(openGoal.id, { name: e.target.value })}
-                    placeholder="Goal name"
-                  />
-                </Field>
-                <MoneyInput
+                <WealthMoneyField
                   label="Amount"
                   value={openGoal.amount}
                   onChange={(amount) => onPatch(openGoal.id, { amount })}
                   error={openErr?.amount}
                 />
-                <YearInput
+                <WealthYearField
                   label="At age"
                   value={openGoal.atAge}
                   min={1}
@@ -2620,6 +2708,6 @@ function GoalEditTimeline({
           ) : null}
         </div>
       )}
-    </Card>
+    </div>
   );
 }

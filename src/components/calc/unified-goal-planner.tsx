@@ -1,56 +1,88 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
-import { PieChart, BarChart3, LineChart } from "lucide-react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import { generateCalculatorReport, generatePdfFromElement } from "@/lib/pdf-generator";
 import { playbookForPdf } from "@/lib/report-playbooks";
 import {
-  AgeInput,
   ageError,
-  BentoGroup,
-  BentoSection,
-  Card,
-  ChartPane,
-  ClientProfileBar,
-  CompareChart,
-  CompositionChart,
-  ComplianceFootnote,
   emailError,
-  Field,
   formatINRCurrency,
-  GrowthChart,
-  META_TEXT,
-  MICRO_LABEL,
-  MoneyInput,
-  ModeTabs,
+  formatPercent,
   nameError,
-  PercentInput,
   phoneError,
   rateError,
-  ResultCard,
-  type ResultItem,
-  ResultsSection,
-  ResultsSplit,
-  ScheduleTable,
-  SectionHeader,
-  SectionTitle,
-  SelectInput,
-  SegmentedChartControl,
-  Stack,
-  StatCard,
-  StatGrid,
-  StatusNote,
-  TextInput,
-  WaterfallChart,
-  YearInput,
 } from "@nivra/ui";
 import { CalculatorPage } from "@/components/layout/calculator-page-with-nav";
 import { ReportDownloadButton } from "@/components/calc/report-download-button";
-import { CompoundingResults } from "@/components/calc/goal-compounding-results";
+import {
+  CompoundingAnalytics,
+  CompoundingSchedule,
+} from "@/components/calc/goal-compounding-results";
 import { DUMMY_REPORT_CONTACT } from "@/components/reports/executive-dossier";
 import { useCalculate } from "@/hooks/use-calculate";
 import { useCalculatorMode } from "@/hooks/use-calculator-mode";
 import { getCalculatorPageTitle } from "@/lib/calculator-nav";
+import {
+  DelayCostCards,
+  IconCalendar,
+  IconChart,
+  IconDelay,
+  IconDonut,
+  IconPerson,
+  IconRates,
+  IconRefresh,
+  IconSip,
+  IconStepUp,
+  IconTarget,
+  moneyCell,
+  WEALTH_CONTENT_CLASS,
+  WealthAgeField,
+  WealthAuditChip,
+  WealthAuditLedger,
+  WealthDataTable,
+  WealthLedgerShell,
+  wealthLedgerTheadClass,
+  WealthDisclaimer,
+  WealthHero,
+  WealthIconMark,
+  WealthMetricCard,
+  WealthMoneyField,
+  WealthPercentField,
+  WealthProfileGrid,
+  WealthSection,
+  WealthSegmented,
+  WealthSelectField,
+  WealthStatusNote,
+  WealthTextField,
+  WealthYearField,
+  WealthCompareBars,
+  WealthGrowthLine,
+  WealthMixDonut,
+  WealthWaterfallBars,
+  wealthChart,
+  wealthMixColors,
+  type WealthAuditRow,
+  type WealthTableColumn,
+  WEALTH_GOAL_PRESETS_DEFAULT,
+  WEALTH_MONEY_PRESETS_DEFAULT,
+  WEALTH_YEAR_PRESETS_DEFAULT,
+} from "@/components/wealth";
+
+const GOAL_AMOUNT_MIN = 10_000;
+const GOAL_AMOUNT_MAX = 10_00_00_000;
+const SIP_AMOUNT_MIN = 1_000;
+const SIP_AMOUNT_MAX = 10_00_000;
+const SIP_AMOUNT_PRESETS = [
+  { label: "₹5k", value: 5_000 },
+  { label: "₹10k", value: 10_000 },
+  { label: "₹25k", value: 25_000 },
+  { label: "₹50k", value: 50_000 },
+  { label: "₹1L", value: 1_00_000 },
+  { label: "₹2L", value: 2_00_000 },
+];
+const CORPUS_AMOUNT_MIN = 10_000;
+const CORPUS_AMOUNT_MAX = 10_00_00_000;
+const YEARS_SLIDER_MAX = 40;
 import {
   GOAL_LS_SIP_REPORT_ID,
   GoalLsSipDossier,
@@ -72,17 +104,69 @@ import {
   GoalCompoundingDossier,
 } from "@/components/reports/goal-compounding-dossier";
 
-const MODES = [
-  { id: "sip", label: "SIP vs Step-up" },
-  { id: "current", label: "Current investment" },
-  { id: "ls-sip", label: "LS + SIP options" },
-  { id: "existing", label: "Existing SIP" },
-  { id: "periodic", label: "Periodic lumpsum" },
-  { id: "compounding", label: "Growth steps" },
+const MODE_META = [
+  { id: "sip", label: "SIP vs Step", fullLabel: "SIP vs Step-up" },
+  { id: "current", label: "Current", fullLabel: "Current investment" },
+  { id: "ls-sip", label: "LS + SIP", fullLabel: "LS + SIP options" },
+  { id: "existing", label: "Existing", fullLabel: "Existing SIP" },
+  { id: "periodic", label: "Periodic", fullLabel: "Periodic lumpsum" },
+  { id: "compounding", label: "Steps", fullLabel: "Growth steps" },
 ] as const;
 
-type Mode = (typeof MODES)[number]["id"];
-const MODE_IDS = MODES.map((m) => m.id);
+type Mode = (typeof MODE_META)[number]["id"];
+const MODE_IDS = MODE_META.map((m) => m.id);
+const MODE_FULL_LABEL: Record<Mode, string> = Object.fromEntries(
+  MODE_META.map((m) => [m.id, m.fullLabel]),
+) as Record<Mode, string>;
+
+function GoalsModeTabs({
+  mode,
+  onModeChange,
+}: {
+  mode: Mode;
+  onModeChange: (next: Mode) => void;
+}) {
+  return (
+    <WealthSegmented
+      fullWidth
+      layoutId="goals-mode-pill"
+      value={mode}
+      onChange={onModeChange}
+      options={[
+        {
+          id: "sip",
+          label: "SIP vs Step",
+          icon: <IconSip className="h-3.5 w-3.5" />,
+        },
+        {
+          id: "current",
+          label: "Current",
+          icon: <IconTarget className="h-3.5 w-3.5" />,
+        },
+        {
+          id: "ls-sip",
+          label: "LS + SIP",
+          icon: <IconChart className="h-3.5 w-3.5" />,
+        },
+        {
+          id: "existing",
+          label: "Existing",
+          icon: <IconRates className="h-3.5 w-3.5" />,
+        },
+        {
+          id: "periodic",
+          label: "Periodic",
+          icon: <IconCalendar className="h-3.5 w-3.5" />,
+        },
+        {
+          id: "compounding",
+          label: "Steps",
+          icon: <IconStepUp className="h-3.5 w-3.5" />,
+        },
+      ]}
+    />
+  );
+}
 const FREQUENCY_OPTIONS = [
   { value: "1", label: "1 · Yearly" },
   { value: "2", label: "2 · Half-yearly" },
@@ -168,7 +252,7 @@ type GoalPlannerResult = {
 };
 
 export function UnifiedGoalPlanner() {
-  const [mode] = useCalculatorMode(MODE_IDS, "current");
+  const [mode, setMode] = useCalculatorMode(MODE_IDS, "current");
   const compoundingLanding = mode === "compounding";
   const [name, setName] = useState("Mr. John Doe");
   const [age, setAge] = useState(30);
@@ -192,6 +276,10 @@ export function UnifiedGoalPlanner() {
   const [openAssumptions, setOpenAssumptions] = useState(true);
   const [openMilestones, setOpenMilestones] = useState(true);
   const [openAnalytics, setOpenAnalytics] = useState(true);
+  const [openSchedule, setOpenSchedule] = useState(true);
+  const [openDelay, setOpenDelay] = useState(true);
+  const [chartTab, setChartTab] = useState<"funding" | "compare">("funding");
+  const assumptionsRef = useRef<HTMLDivElement>(null);
 
   const clientNameError = nameError(name);
   const clientAgeError = ageError(age);
@@ -425,9 +513,7 @@ export function UnifiedGoalPlanner() {
       return;
     }
 
-    const modeLabel =
-      MODES.find((m) => m.id === mode)?.label ??
-      String(mode);
+    const modeLabel = MODE_FULL_LABEL[mode] ?? String(mode);
 
     const headlines = [
       { label: "Target Goal", value: result.targetGoal, highlight: true as const, hint: useInflAdj ? "Inflation-adjusted goal used" : "Nominal goal used" },
@@ -489,6 +575,24 @@ export function UnifiedGoalPlanner() {
     });
   };
 
+
+  const realReturnPct = ((1 + returnPct / 100) / (1 + inflationPct / 100) - 1) * 100;
+
+  const scrollToAssumptions = () => {
+    setOpenAssumptions(true);
+    assumptionsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const heroMonthlySip = (() => {
+    if (!result) return 0;
+    if (mode === "sip") return result.stepUp?.monthlySip ?? result.standard?.monthlySip ?? 0;
+    if (mode === "ls-sip") return result.mixSip ?? 0;
+    if (mode === "compounding") return result.standard?.monthlySip ?? 0;
+    return result.standard?.monthlySip ?? 0;
+  })();
+
+  const heroTarget = canCalculate && result ? result.targetGoal : goalAmount;
+
   return (
     <>
     <CalculatorPage
@@ -498,6 +602,7 @@ export function UnifiedGoalPlanner() {
           ? "Required SIP or lumpsum so net after tax hits the goal, plus the time to each wealth step."
           : "Six goal modes. Additional SIP / lumpsum / step-up are solved so net after tax hits the goal."
       }
+      contentClassName={WEALTH_CONTENT_CLASS}
       actions={
         <ReportDownloadButton
           onClick={handleDownload}
@@ -505,259 +610,272 @@ export function UnifiedGoalPlanner() {
           loading={isDownloading}
         />
       }
+      modes={<GoalsModeTabs mode={mode} onModeChange={setMode} />}
       header={
-        <ClientProfileBar
-          name={name}
+        <WealthHero
+          clientName={name}
           age={age}
           email={email}
           phone={phone}
-          goal={mode === "compounding" ? "Capital Growth" : useInflAdj ? "Inflation-Adjusted Target" : "Stated Target"}
-          strategy={MODES.find(m => m.id === mode)?.label ?? "Goal Planner"}
+          goalLabel={
+            mode === "compounding"
+              ? "Capital Growth"
+              : useInflAdj
+                ? "Inflation-Adjusted"
+                : "Stated Goal"
+          }
+          tenure={tenureYears}
+          strategy={MODE_FULL_LABEL[mode]}
+          targetCorpus={heroTarget}
+          monthlySip={canCalculate ? heroMonthlySip : 0}
+          realReturnPct={realReturnPct}
+          onEdit={scrollToAssumptions}
         />
       }
       form={
-        <BentoSection
-          title="Financial Assumptions & Modeling Suite"
-          description="Interactive multi-parameter engine configured with life-cycle compounding"
-          sectionId="01"
-          collapsible
-          open={openAssumptions}
-          onToggle={() => setOpenAssumptions((v) => !v)}
-          actions={
-            <button
-              type="button"
-              onClick={resetDefaults}
-              className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 transition-all hover:bg-slate-100 hover:text-emerald-700"
-            >
-              Reset to Baseline
-            </button>
-          }
-        >
-          <BentoGroup
-            num="01"
-            title="Investor Profile"
-            subtitle="KYC Baseline"
-            colSpan={4}
-            footer={
-              <>
-                <span>Age path:</span>
-                <span className="font-bold text-slate-700">
-                  {age} → {age + tenureYears}
-                </span>
-              </>
+        <div ref={assumptionsRef}>
+          <WealthSection
+            id="assumptions"
+            badge="01 · Profile"
+            title="Investor Profile and Assumptions"
+            subtitle="Client identity, goal mode inputs, tenure, and market rate settings"
+            open={openAssumptions}
+            onToggle={() => setOpenAssumptions((v) => !v)}
+            mark={
+              <WealthIconMark>
+                <IconPerson />
+              </WealthIconMark>
+            }
+            actions={
+              <button
+                type="button"
+                onClick={resetDefaults}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
+              >
+                <IconRefresh className="h-3.5 w-3.5" />
+                Reset
+              </button>
             }
           >
-            <div className="mb-4">
-              <Field label="Client Name" error={clientNameError}>
-                <TextInput
+            <div className="py-2">
+              <WealthProfileGrid>
+                <WealthTextField
+                  label="Client name"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className={clientNameError ? "border-[var(--app-danger)]" : undefined}
+                  onChange={setName}
+                  error={clientNameError}
+                  autoComplete="name"
                 />
-              </Field>
-            </div>
-            <div className="mb-4">
-              <AgeInput value={age} onChange={setAge} error={clientAgeError} />
-            </div>
-            <div className="mb-4">
-              <Field label="Email" error={clientEmailError}>
-                <TextInput
+                <WealthAgeField
+                  value={age}
+                  onChange={setAge}
+                  error={clientAgeError}
+                />
+                <WealthTextField
+                  label="Email"
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={setEmail}
+                  error={clientEmailError}
                   placeholder="client@email.com"
-                  className={clientEmailError ? "border-[var(--app-danger)]" : undefined}
+                  autoComplete="email"
                 />
-              </Field>
-            </div>
-            <div className="mb-4">
-              <Field label="Phone" error={clientPhoneError}>
-                <TextInput
+                <WealthTextField
+                  label="Phone"
                   type="tel"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={setPhone}
+                  error={clientPhoneError}
                   placeholder="+91 98765 43210"
-                  className={clientPhoneError ? "border-[var(--app-danger)]" : undefined}
+                  autoComplete="tel"
                 />
-              </Field>
-            </div>
-            <div className="mb-4">
-              <MoneyInput
-                label="Goal amount"
-                value={goalAmount}
-                onChange={setGoalAmount}
-                error={goalError}
-                align="right"
-              />
-            </div>
-            {mode !== "compounding" && (
-              <div className="flex flex-col gap-1.5 border-t border-slate-200/60 pt-3">
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-                  Goal basis
-                </span>
-                <ModeTabs
-                  fullWidth
-                  tabs={[
-                    { id: "raw", label: "Stated" },
-                    { id: "infl", label: "Inflation-adj" },
-                  ]}
-                  value={useInflAdj ? "infl" : "raw"}
-                  onChange={(id) => setUseInflAdj(id === "infl")}
+                <WealthMoneyField
+                  label="Goal amount"
+                  value={goalAmount}
+                  onChange={setGoalAmount}
+                  error={goalError}
+                  max={GOAL_AMOUNT_MAX}
+                  slider={{
+                    min: GOAL_AMOUNT_MIN,
+                    max: GOAL_AMOUNT_MAX,
+                    step: 1_00_000,
+                    scale: "log",
+                    presets: WEALTH_GOAL_PRESETS_DEFAULT,
+                  }}
                 />
-              </div>
-            )}
-          </BentoGroup>
-
-          <BentoGroup 
-            num="02" 
-            title="Accumulation Engine" 
-            subtitle="Parameters"
-            colSpan={5}
-            footer={
-               mode !== "compounding" ? (
-                 <>
-                   <span>Total Target:</span>
-                   <span className="font-bold text-brand-700">
-                     {canCalculate && result ? formatINRCurrency(result.targetGoal) : "-"}
-                   </span>
-                 </>
-               ) : undefined
-            }
-          >
-            <div className="flex flex-col gap-4">
-              <YearInput
-                label="Investment Tenure (yrs)"
-                value={tenureYears}
-                min={1}
-                max={50}
-                onChange={setTenureYears}
-                error={tenureError}
-                hint="Max 50 years"
-              />
-              {mode !== "compounding" && (
-                <PercentInput
-                  label="Step-up (%)"
-                  value={stepUpPct}
-                  onChange={setStepUpPct}
-                  error={stepUpError}
-                  hint="Annual SIP Increase"
-                />
-              )}
-              {mode === "periodic" && (
-                <>
-                  <MoneyInput
-                    label="Periodic amt"
-                    value={periodicAmount}
-                    onChange={setPeriodicAmount}
-                    error={periodicAmountError}
-                    align="right"
-                  />
-                  <SelectInput
-                    label="How often"
-                    value={String(timesPerYear)}
-                    onChange={(value) => setTimesPerYear(Number(value))}
-                    options={FREQUENCY_OPTIONS}
-                    hint={`${formatINRCurrency(periodicAmount * timesPerYear)} / year`}
-                  />
-                </>
-              )}
-              {(mode === "current" || mode === "ls-sip") && (
-                <MoneyInput
-                  label="Current corpus"
-                  value={currentCorpus}
-                  onChange={setCurrentCorpus}
-                  error={corpusError}
-                  align="right"
-                />
-              )}
-              {(mode === "current" || mode === "existing") && (
-                <MoneyInput
-                  label="Current SIP"
-                  value={currentMonthlySip}
-                  onChange={setCurrentMonthlySip}
-                  error={currentSipError}
-                  align="right"
-                />
-              )}
-              {mode === "ls-sip" && (
-                <MoneyInput
-                  label="Extra lumpsum"
-                  value={extraLumpsum}
-                  onChange={setExtraLumpsum}
-                  error={extraLsError}
-                  align="right"
-                />
-              )}
-              {mode === "compounding" && (
-                <>
-                  <div className="flex flex-col gap-1.5">
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-                      Investment for growth steps
-                    </span>
-                    <ModeTabs
+                {mode !== "compounding" ? (
+                  <div className="min-w-0">
+                    <div className="mb-1.5 text-sm text-slate-600">Goal basis</div>
+                    <WealthSegmented
                       fullWidth
-                      tabs={[
-                        { id: "one-time", label: "One Time" },
-                        { id: "sip", label: "SIP" },
+                      layoutId="goals-basis-pill"
+                      value={useInflAdj ? "infl" : "raw"}
+                      onChange={(id) => setUseInflAdj(id === "infl")}
+                      options={[
+                        { id: "raw", label: "Stated" },
+                        { id: "infl", label: "Inflation adj." },
                       ]}
-                      value={investmentType}
-                      onChange={(id) => setInvestmentType(id === "sip" ? "sip" : "one-time")}
                     />
                   </div>
-                  <SelectInput
-                    label="Growth step size"
-                    value={String(stepSize)}
-                    onChange={(value) => setStepSize(Number(value))}
-                    options={COMPOUNDING_STEP_OPTIONS}
-                    hint="10K, 1L, 10L, or 1Cr milestones"
+                ) : null}
+                <WealthYearField
+                  label="Investment tenure"
+                  value={tenureYears}
+                  onChange={setTenureYears}
+                  min={1}
+                  max={50}
+                  error={tenureError}
+                  hint="Max 50 years"
+                  slider={{
+                    min: 1,
+                    max: YEARS_SLIDER_MAX,
+                    step: 1,
+                    presets: WEALTH_YEAR_PRESETS_DEFAULT,
+                  }}
+                />
+                {mode !== "compounding" ? (
+                  <WealthPercentField
+                    label="Annual step-up"
+                    value={stepUpPct}
+                    onChange={setStepUpPct}
+                    error={stepUpError}
+                    hint="Applied to Step-Up SIP each year"
                   />
-                </>
-              )}
+                ) : null}
+                {(mode === "current" || mode === "ls-sip") && (
+                  <WealthMoneyField
+                    label="Current corpus"
+                    value={currentCorpus}
+                    onChange={setCurrentCorpus}
+                    error={corpusError}
+                    max={CORPUS_AMOUNT_MAX}
+                    slider={{
+                      min: CORPUS_AMOUNT_MIN,
+                      max: CORPUS_AMOUNT_MAX,
+                      step: 1_00_000,
+                      scale: "log",
+                      presets: WEALTH_MONEY_PRESETS_DEFAULT,
+                    }}
+                  />
+                )}
+                {(mode === "current" || mode === "existing") && (
+                  <WealthMoneyField
+                    label="Current SIP"
+                    value={currentMonthlySip}
+                    onChange={setCurrentMonthlySip}
+                    error={currentSipError}
+                    max={SIP_AMOUNT_MAX}
+                    slider={{
+                      min: SIP_AMOUNT_MIN,
+                      max: SIP_AMOUNT_MAX,
+                      step: 1_000,
+                      scale: "log",
+                      presets: SIP_AMOUNT_PRESETS,
+                    }}
+                  />
+                )}
+                {mode === "ls-sip" && (
+                  <WealthMoneyField
+                    label="Extra lumpsum"
+                    value={extraLumpsum}
+                    onChange={setExtraLumpsum}
+                    error={extraLsError}
+                  />
+                )}
+                {mode === "periodic" && (
+                  <>
+                    <WealthMoneyField
+                      label="Periodic amount"
+                      value={periodicAmount}
+                      onChange={setPeriodicAmount}
+                      error={periodicAmountError}
+                      max={CORPUS_AMOUNT_MAX}
+                      slider={{
+                        min: CORPUS_AMOUNT_MIN,
+                        max: CORPUS_AMOUNT_MAX,
+                        step: 1_00_000,
+                        scale: "log",
+                        presets: WEALTH_MONEY_PRESETS_DEFAULT,
+                      }}
+                    />
+                    <div className="min-w-0">
+                      <WealthSelectField
+                        label="How often"
+                        value={String(timesPerYear)}
+                        onChange={(value) => setTimesPerYear(Number(value))}
+                        options={FREQUENCY_OPTIONS}
+                        hint={`${formatINRCurrency(periodicAmount * timesPerYear)} / year`}
+                      />
+                    </div>
+                  </>
+                )}
+                {mode === "compounding" && (
+                  <>
+                    <div className="min-w-0">
+                      <div className="mb-1.5 text-sm text-slate-600">
+                        Investment for growth steps
+                      </div>
+                      <WealthSegmented
+                        fullWidth
+                        layoutId="goals-compounding-type"
+                        value={investmentType}
+                        onChange={(id) =>
+                          setInvestmentType(id === "sip" ? "sip" : "one-time")
+                        }
+                        options={[
+                          { id: "one-time", label: "One Time" },
+                          { id: "sip", label: "SIP" },
+                        ]}
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <WealthSelectField
+                        label="Growth step size"
+                        value={String(stepSize)}
+                        onChange={(value) => setStepSize(Number(value))}
+                        options={COMPOUNDING_STEP_OPTIONS}
+                        hint="10K, 1L, 10L, or 1Cr milestones"
+                      />
+                    </div>
+                  </>
+                )}
+                <WealthPercentField
+                  label="Expected CAGR"
+                  value={returnPct}
+                  onChange={setReturnPct}
+                  error={returnError}
+                />
+                <WealthPercentField
+                  label="Inflation"
+                  value={inflationPct}
+                  onChange={setInflationPct}
+                  error={inflationError}
+                />
+                <WealthPercentField
+                  label="Tax / LTCG"
+                  value={taxPct}
+                  onChange={setTaxPct}
+                  error={taxError}
+                />
+                <div className="min-w-0">
+                  <div className="mb-1.5 text-sm text-slate-600">Real return</div>
+                  <div className="flex h-[42px] items-center justify-between rounded-lg bg-slate-50 px-3 ring-1 ring-slate-200">
+                    <span className="text-xs text-slate-500">After inflation</span>
+                    <span className="text-sm font-medium tabular-nums text-emerald-700">
+                      {formatPercent(realReturnPct)}
+                    </span>
+                  </div>
+                </div>
+              </WealthProfileGrid>
             </div>
-          </BentoGroup>
-
-          <BentoGroup 
-            num="03" 
-            title="Rate Assumptions" 
-            subtitle="CAGR & Tax" 
-            colSpan={3}
-            footer={
-               <>
-                 <span>Real Net Yield:</span>
-                 <span className="font-bold text-brand-700">
-                   {(((1 + returnPct/100) / (1 + inflationPct/100) - 1)*100).toFixed(2)}% Net
-                 </span>
-               </>
-            }
-          >
-            <div className="flex flex-col gap-4">
-              <PercentInput
-                label="Expected Return (%)"
-                value={returnPct}
-                onChange={setReturnPct}
-                error={returnError}
-              />
-              <PercentInput
-                label="Inflation (%)"
-                value={inflationPct}
-                onChange={setInflationPct}
-                error={inflationError}
-              />
-              <PercentInput 
-                label="Tax Bracket (LTCG %)" 
-                value={taxPct} 
-                onChange={setTaxPct} 
-                error={taxError} 
-              />
-            </div>
-          </BentoGroup>
-        </BentoSection>
+          </WealthSection>
+        </div>
       }
       results={
         <>
-          {error ? <StatusNote tone="error">{error}</StatusNote> : null}
+          {error ? <WealthStatusNote tone="error">{error}</WealthStatusNote> : null}
           {!canCalculate ? (
-            <StatusNote tone="error">
+            <WealthStatusNote tone="error">
               <div className="flex flex-col gap-1">
                 <span className="font-semibold">
                   Fix the inputs above to refresh the calculation
@@ -769,10 +887,10 @@ export function UnifiedGoalPlanner() {
                   ))}
                 </ul>
               </div>
-            </StatusNote>
+            </WealthStatusNote>
           ) : null}
           {loading && !result && canCalculate ? (
-            <StatusNote tone="pending">Calculating…</StatusNote>
+            <WealthStatusNote tone="info">Calculating…</WealthStatusNote>
           ) : null}
           {result ? (
             <GoalResults
@@ -784,16 +902,29 @@ export function UnifiedGoalPlanner() {
               onToggleMilestones={() => setOpenMilestones((v) => !v)}
               openAnalytics={openAnalytics}
               onToggleAnalytics={() => setOpenAnalytics((v) => !v)}
+              openSchedule={openSchedule}
+              onToggleSchedule={() => setOpenSchedule((v) => !v)}
+              openDelay={openDelay}
+              onToggleDelay={() => setOpenDelay((v) => !v)}
+              chartTab={chartTab}
+              onChartTabChange={setChartTab}
             />
           ) : null}
         </>
       }
       footer={
-        <ComplianceFootnote>
-          Calculations shown are for illustration purposes only. Goal funding paths are modeled under
-          the stated return, inflation, and tax assumptions. Actual market returns and tax rules can
-          differ. Market investments are subject to risk.
-        </ComplianceFootnote>
+        <WealthDisclaimer
+          notes={[
+            "Delay permanently compresses the compounding runway under the same return path.",
+            "Headline target is not purchasing power. Frame conversations on the inflation-adjusted corpus.",
+            "Tax is applied on gains only. Net after tax is the amount available at the goal date.",
+            "Projections are illustrative. Actual market returns and tax rules can differ.",
+          ]}
+        >
+          Figures are for illustration only. Goal funding paths use the stated return, inflation,
+          and tax assumptions. Markets carry risk; past performance does not guarantee future
+          results.
+        </WealthDisclaimer>
       }
     />
     {mode === "ls-sip" &&
@@ -1113,49 +1244,490 @@ export function UnifiedGoalPlanner() {
   );
 }
 
+
+function toneFromSchedule(tone?: string): "default" | "emerald" | "amber" | "rose" {
+  if (tone === "step") return "emerald";
+  if (tone === "warn") return "amber";
+  return "default";
+}
+
+function GoalScheduleTable({
+  mode,
+  rows,
+  filterPlaceholder = "Filter by year…",
+}: {
+  mode: Mode;
+  rows: Array<Record<string, number>>;
+  filterPlaceholder?: string;
+}) {
+  const cols = scheduleColumns(mode);
+  const columns: WealthTableColumn<Record<string, number>>[] = cols.map((c) => ({
+    key: c.key,
+    header: c.header,
+    align: c.align,
+    sticky: c.sticky,
+    tone: toneFromSchedule(c.tone),
+    searchValue: (row) => String(row[c.key] ?? ""),
+    render: (row) =>
+      c.format === "inr" ? moneyCell(row[c.key] ?? 0) : String(row[c.key] ?? ""),
+  }));
+  return (
+    <WealthDataTable
+      rows={rows}
+      columns={columns}
+      getRowKey={(row, i) => row.year ?? i}
+      filterPlaceholder={filterPlaceholder}
+    />
+  );
+}
+
+function MetricGrid({ children }: { children: ReactNode }) {
+  return <div className="grid grid-cols-1 gap-4 md:grid-cols-3">{children}</div>;
+}
+
+function GoalSummaryCard({
+  target,
+  inflAdj,
+  tenureYears,
+  standardSip,
+  stepUpSip,
+}: {
+  target: number;
+  inflAdj: number;
+  tenureYears: number;
+  standardSip?: number;
+  stepUpSip?: number;
+}) {
+  const sameBasis = Math.abs(target - inflAdj) < 0.5;
+  const sipDelta =
+    standardSip != null && stepUpSip != null
+      ? Math.max(0, standardSip - stepUpSip)
+      : null;
+
+  const rows: Array<{
+    label: string;
+    value: string;
+    tone?: "neutral" | "emerald" | "net";
+  }> = [];
+
+  if (!sameBasis) {
+    rows.push({
+      label: "Inflation-adjusted",
+      value: formatINRCurrency(inflAdj),
+      tone: "neutral",
+    });
+  }
+  rows.push({
+    label: "Horizon",
+    value: `${tenureYears} year${tenureYears === 1 ? "" : "s"}`,
+    tone: "neutral",
+  });
+  if (sipDelta != null && sipDelta > 0) {
+    rows.push({
+      label: "Step-up starts lower",
+      value: `${formatINRCurrency(sipDelta)} / mo`,
+      tone: "emerald",
+    });
+  }
+  rows.push({
+    label: "Both paths reach",
+    value: formatINRCurrency(target),
+    tone: "net",
+  });
+
+  return (
+    <div className="flex h-full flex-col rounded-2xl border border-slate-200/80 bg-white px-4 py-4 shadow-[0_1px_2px_rgba(15,23,42,0.03),0_8px_24px_rgba(15,23,42,0.04)] sm:px-5">
+      <div className="flex items-center gap-2.5">
+        <WealthIconMark className="h-7 w-7">
+          <IconTarget className="h-3.5 w-3.5" />
+        </WealthIconMark>
+        <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-slate-400">
+          Goal summary
+        </div>
+      </div>
+
+      <div className="mt-3">
+        <div className="text-[13px] text-slate-500">Target goal</div>
+        <div className="mt-0.5 text-[24px] font-medium tracking-tight tabular-nums text-slate-900">
+          {formatINRCurrency(target)}
+        </div>
+        <p className="mt-1.5 text-xs leading-relaxed text-slate-500">
+          {sameBasis
+            ? "Net after capital gains tax · stated goal basis"
+            : "Net after capital gains tax"}
+        </p>
+      </div>
+
+      <dl className="mt-auto space-y-0 border-t border-slate-100 pt-1">
+        {rows.map((row) => (
+          <div
+            key={row.label}
+            className={
+              row.tone === "net"
+                ? "mt-1 flex items-baseline justify-between gap-4 rounded-xl bg-emerald-50/70 px-3 py-2.5"
+                : "flex items-baseline justify-between gap-4 border-b border-slate-100 py-2.5 last:border-0"
+            }
+          >
+            <dt
+              className={
+                row.tone === "net"
+                  ? "text-[14px] font-medium text-emerald-800/80"
+                  : "text-[14px] text-slate-500"
+              }
+            >
+              {row.label}
+            </dt>
+            <dd
+              className={
+                row.tone === "net"
+                  ? "text-[14px] font-semibold tabular-nums tracking-tight text-emerald-800"
+                  : row.tone === "emerald"
+                    ? "text-[14px] font-medium tabular-nums tracking-tight text-emerald-700"
+                    : "text-[14px] font-medium tabular-nums tracking-tight text-slate-900"
+              }
+            >
+              {row.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
+function SummaryRows({
+  title,
+  rows,
+}: {
+  title: string;
+  rows: Array<{ label: string; value: number | string; emphasize?: boolean }>;
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200/80 bg-white px-4 py-4 shadow-[0_1px_2px_rgba(15,23,42,0.03),0_8px_24px_rgba(15,23,42,0.04)] sm:px-5">
+      <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-slate-400">
+        {title}
+      </div>
+      <dl className="mt-3.5 divide-y divide-slate-100">
+        {rows.map((row) => (
+          <div
+            key={row.label}
+            className="flex items-baseline justify-between gap-4 py-2.5 first:pt-0 last:pb-0"
+          >
+            <dt className="text-[14px] leading-snug text-slate-500">{row.label}</dt>
+            <dd
+              className={
+                row.emphasize
+                  ? "text-[14px] font-semibold tabular-nums tracking-tight text-emerald-700"
+                  : "text-[14px] font-medium tabular-nums tracking-tight text-slate-900"
+              }
+            >
+              {typeof row.value === "number" ? formatINRCurrency(row.value) : row.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
+function AnalyticsSplit({ left, right }: { left: ReactNode; right: ReactNode }) {
+  return (
+    <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-12">
+      <div className="min-w-0 overflow-hidden xl:col-span-7">{left}</div>
+      <div className="flex min-w-0 flex-col gap-3 xl:col-span-5">{right}</div>
+    </div>
+  );
+}
+
+const MODE_AUDIT_HINT: Record<Mode, string> = {
+  sip: "Flat vs step-up SIP paths",
+  current: "Current corpus + additional paths",
+  "ls-sip": "All-LS, all-SIP, and mix options",
+  existing: "Keep existing SIP + top-up",
+  periodic: "Periodic lumpsum + remaining SIP",
+  compounding: "SIP vs lumpsum growth steps",
+};
+
+function GoalAuditBlock({
+  mode,
+  result,
+  tenureYears,
+  children,
+}: {
+  mode: Mode;
+  result: GoalPlannerResult;
+  tenureYears: number;
+  children: ReactNode;
+}) {
+  const target = result.targetGoal;
+  const shortfall = result.shortfall ?? 0;
+  const primaryInvested =
+    result.standard?.invested ??
+    result.existing?.totalInvested ??
+    result.periodic?.totalInvested ??
+    0;
+  const tax = result.standard?.tax ?? result.periodic?.tax ?? 0;
+  const gain = result.standard?.gain ?? result.periodic?.gain ?? 0;
+  const surplusCredit = Math.max(
+    0,
+    (result.existing?.netCredit ?? result.periodic?.netCredit ?? 0) - target,
+  );
+
+  const rows: WealthAuditRow[] = [
+    {
+      label: "Target goal (net)",
+      cells: [{ text: formatINRCurrency(target), tone: "emerald" }],
+      highlight: true,
+    },
+    {
+      label: "Inflation-adjusted goal",
+      cells: [{ text: formatINRCurrency(result.inflAdjGoal) }],
+    },
+  ];
+
+  if (result.shortfall != null) {
+    rows.push({
+      label: "Shortfall",
+      cells: [{ text: formatINRCurrency(result.shortfall), tone: "rose" }],
+    });
+  }
+  if (result.existingCredit != null || result.existing?.netCredit != null) {
+    rows.push({
+      label: "Existing credit",
+      cells: [
+        {
+          text: formatINRCurrency(
+            result.existingCredit ?? result.existing?.netCredit ?? 0,
+          ),
+        },
+      ],
+    });
+  }
+  if (result.standard) {
+    rows.push(
+      {
+        label: mode === "sip" ? "Standard SIP (monthly)" : "Additional SIP (monthly)",
+        cells: [{ text: formatINRCurrency(result.standard.monthlySip), tone: "emerald" }],
+      },
+      {
+        label: "SIP invested",
+        cells: [{ text: formatINRCurrency(result.standard.invested) }],
+      },
+      {
+        label: "SIP maturity",
+        cells: [{ text: formatINRCurrency(result.standard.maturity) }],
+      },
+      {
+        label: "SIP tax",
+        cells: [{ text: formatINRCurrency(result.standard.tax), tone: "rose" }],
+        tax: true,
+      },
+      {
+        label: "SIP net after tax",
+        cells: [{ text: formatINRCurrency(result.standard.netAfterTax), tone: "emerald" }],
+        highlight: true,
+      },
+    );
+  }
+  if (result.stepUp) {
+    rows.push({
+      label: "Step-up SIP (start)",
+      cells: [{ text: formatINRCurrency(result.stepUp.monthlySip), tone: "emerald" }],
+    });
+    if (result.stepUp.endMonthlySip != null) {
+      rows.push({
+        label: "Step-up SIP (end)",
+        cells: [{ text: formatINRCurrency(result.stepUp.endMonthlySip) }],
+      });
+    }
+  }
+  if (result.lumpsum?.lumpsum != null) {
+    rows.push({
+      label: mode === "compounding" ? "Lumpsum today" : "Additional lumpsum today",
+      cells: [{ text: formatINRCurrency(result.lumpsum.lumpsum) }],
+    });
+  }
+  if (result.allLumpsum != null) {
+    rows.push({
+      label: "All lumpsum today",
+      cells: [{ text: formatINRCurrency(result.allLumpsum) }],
+    });
+  }
+  if (result.allSip != null) {
+    rows.push({
+      label: "All SIP monthly",
+      cells: [{ text: formatINRCurrency(result.allSip) }],
+    });
+  }
+  if (result.mixSip != null) {
+    rows.push({
+      label: "Mix remaining SIP",
+      cells: [{ text: formatINRCurrency(result.mixSip), tone: "emerald" }],
+      highlight: true,
+    });
+  }
+
+  return (
+    <div className="space-y-5">
+      <WealthAuditLedger
+        stats={[
+          {
+            label: "Horizon",
+            value: `${tenureYears} yr${tenureYears === 1 ? "" : "s"}`,
+            hint: MODE_AUDIT_HINT[mode],
+          },
+          {
+            label: "Target (net)",
+            value: formatINRCurrency(target),
+            hint:
+              result.inflAdjGoal !== target
+                ? `Infl-adj. ${formatINRCurrency(result.inflAdjGoal)}`
+                : "Net after capital gains tax",
+            tone: "emerald",
+          },
+          {
+            label: result.overfunded ? "Surplus credit" : "Shortfall",
+            value: formatINRCurrency(result.overfunded ? surplusCredit : shortfall),
+            hint: result.overfunded ? "Already covers the goal" : "Still needing funding",
+          },
+        ]}
+        chips={
+          <>
+            <WealthAuditChip label="Tax on gains" tone="rose">
+              {gain > 0
+                ? `${formatPercent((tax / gain) * 100, 1)} of pre-tax gain (${formatINRCurrency(tax)})`
+                : formatINRCurrency(tax)}
+            </WealthAuditChip>
+            <WealthAuditChip label="Primary path invested" tone="emerald">
+              {formatINRCurrency(primaryInvested)}
+            </WealthAuditChip>
+          </>
+        }
+        tableTitle={
+          mode === "sip"
+            ? "SIP vs Step-up breakdown"
+            : mode === "current"
+              ? "Current investment breakdown"
+              : "Outcome breakdown"
+        }
+        tableSubtitle="Line-by-line metrics for the active funding paths"
+        columns={["Metric", "Amount"]}
+        rows={rows}
+      />
+      {children}
+    </div>
+  );
+}
+
 function GoalResultSections({
   milestones,
   analytics,
+  audit,
+  delay,
   openMilestones,
   onToggleMilestones,
   openAnalytics,
   onToggleAnalytics,
+  openSchedule,
+  onToggleSchedule,
+  openDelay,
+  onToggleDelay,
   tenureYears,
+  milestonesSubtitle,
+  analyticsSubtitle,
+  auditTitle,
 }: {
   milestones: ReactNode;
   analytics: ReactNode;
+  audit?: ReactNode;
+  delay?: ReactNode;
   openMilestones: boolean;
   onToggleMilestones: () => void;
   openAnalytics: boolean;
   onToggleAnalytics: () => void;
+  openSchedule?: boolean;
+  onToggleSchedule?: () => void;
+  openDelay?: boolean;
+  onToggleDelay?: () => void;
   tenureYears: number;
+  milestonesSubtitle?: string;
+  analyticsSubtitle?: string;
+  auditTitle?: string;
 }) {
   return (
-    <Stack>
-      <ResultsSection
-        sectionId="02"
+    <div className="space-y-5">
+      <WealthSection
+        badge="02 · Milestones"
         title="Goal Milestones"
-        description="Key funding outcomes for the selected goal mode"
+        subtitle={
+          milestonesSubtitle ??
+          `Key funding outcomes · ${tenureYears} year horizon`
+        }
         open={openMilestones}
         onToggle={onToggleMilestones}
-        meta={
+        mark={
+          <WealthIconMark tone="emerald">
+            <IconTarget />
+          </WealthIconMark>
+        }
+        actions={
           <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">
-            Horizon: {tenureYears} Years
+            Horizon: {tenureYears} Year{tenureYears === 1 ? "" : "s"}
           </span>
         }
       >
         {milestones}
-      </ResultsSection>
-      <ResultsSection
-        sectionId="03"
+      </WealthSection>
+
+      <WealthSection
+        badge="03 · Analytics"
         title="Goal Analytics"
-        description="Charts, summaries, and yearly audit schedule"
+        subtitle={analyticsSubtitle ?? "Charts and funding mix for the selected mode"}
         open={openAnalytics}
         onToggle={onToggleAnalytics}
+        mark={
+          <WealthIconMark>
+            <IconChart />
+          </WealthIconMark>
+        }
       >
         {analytics}
-      </ResultsSection>
-    </Stack>
+      </WealthSection>
+
+      {delay && openDelay != null && onToggleDelay ? (
+        <WealthSection
+          badge="04 · Delay"
+          title="Cost of Delay"
+          subtitle="How waiting 3 to 12 months raises the SIP required"
+          open={openDelay}
+          onToggle={onToggleDelay}
+          mark={
+            <WealthIconMark tone="amber">
+              <IconDelay />
+            </WealthIconMark>
+          }
+        >
+          {delay}
+        </WealthSection>
+      ) : null}
+
+      {audit && openSchedule != null && onToggleSchedule ? (
+        <WealthSection
+          badge={delay ? "05 · Audit" : "04 · Audit"}
+          title={auditTitle ?? "Goal Outcome Ledger"}
+          subtitle="Horizon, shortfall, tax drag, and year-by-year funding audit"
+          open={openSchedule}
+          onToggle={onToggleSchedule}
+          mark={
+            <WealthIconMark>
+              <IconCalendar />
+            </WealthIconMark>
+          }
+        >
+          {audit}
+        </WealthSection>
+      ) : null}
+    </div>
   );
 }
 
@@ -1168,6 +1740,12 @@ function GoalResults({
   onToggleMilestones,
   openAnalytics,
   onToggleAnalytics,
+  openSchedule,
+  onToggleSchedule,
+  openDelay,
+  onToggleDelay,
+  chartTab,
+  onChartTabChange,
 }: {
   mode: Mode;
   result: GoalPlannerResult;
@@ -1177,20 +1755,31 @@ function GoalResults({
   onToggleMilestones: () => void;
   openAnalytics: boolean;
   onToggleAnalytics: () => void;
+  openSchedule: boolean;
+  onToggleSchedule: () => void;
+  openDelay: boolean;
+  onToggleDelay: () => void;
+  chartTab: "funding" | "compare";
+  onChartTabChange: (tab: "funding" | "compare") => void;
 }) {
   const sectionProps = {
     openMilestones,
     onToggleMilestones,
     openAnalytics,
     onToggleAnalytics,
+    openSchedule,
+    onToggleSchedule,
+    openDelay,
+    onToggleDelay,
     tenureYears,
   };
+  const chartProps = { chartTab, onChartTabChange };
 
   if (mode === "ls-sip") {
-    return <LsSipResults result={result} {...sectionProps} />;
+    return <LsSipResults result={result} {...sectionProps} {...chartProps} />;
   }
   if (mode === "current") {
-    return <CurrentInvestmentResults result={result} {...sectionProps} />;
+    return <CurrentInvestmentResults result={result} {...sectionProps} {...chartProps} />;
   }
   if (mode === "existing") {
     return (
@@ -1198,35 +1787,58 @@ function GoalResults({
         result={result}
         currentMonthlySip={currentMonthlySip}
         {...sectionProps}
+        {...chartProps}
       />
     );
   }
   if (mode === "periodic") {
-    return <PeriodicResults result={result} {...sectionProps} />;
+    return <PeriodicResults result={result} {...sectionProps} {...chartProps} />;
   }
   if (mode === "compounding" && result.standard && result.lumpsum?.lumpsum != null) {
     return (
       <GoalResultSections
         {...sectionProps}
         milestones={
-          <StatGrid>
-            <StatCard title="Target goal" value={result.targetGoal} tone="neutral" />
-            <StatCard
-              title="Monthly SIP required"
+          <MetricGrid>
+            <WealthMetricCard
+              title="Target Goal"
+              value={result.targetGoal}
+              description="Net after capital gains tax"
+              tone="accent"
+              mark={
+                <WealthIconMark className="h-7 w-7">
+                  <IconTarget className="h-3.5 w-3.5" />
+                </WealthIconMark>
+              }
+            />
+            <WealthMetricCard
+              title="Monthly SIP"
               value={result.standard.monthlySip}
-              hint="Every month for the full tenure"
+              description="Every month for the full tenure"
               tone="positive"
+              badge="SIP"
+              mark={
+                <WealthIconMark tone="emerald" className="h-7 w-7">
+                  <IconSip className="h-3.5 w-3.5" />
+                </WealthIconMark>
+              }
             />
-            <StatCard
-              title="Lumpsum required"
+            <WealthMetricCard
+              title="Lumpsum Today"
               value={result.lumpsum.lumpsum ?? 0}
-              hint="One-time amount today"
+              description="One-time amount today"
               tone="neutral"
+              badge="One Time"
+              mark={
+                <WealthIconMark className="h-7 w-7">
+                  <IconStepUp className="h-3.5 w-3.5" />
+                </WealthIconMark>
+              }
             />
-          </StatGrid>
+          </MetricGrid>
         }
         analytics={
-          <CompoundingResults
+          <CompoundingAnalytics
             tenureYears={tenureYears}
             result={{
               targetGoal: result.targetGoal,
@@ -1240,114 +1852,102 @@ function GoalResults({
             }}
           />
         }
+        analyticsSubtitle="SIP vs lumpsum path and wealth-step crossings"
+        auditTitle="Growth Steps Ledger"
+        audit={
+          <GoalAuditBlock mode="compounding" result={result} tenureYears={tenureYears}>
+            <CompoundingSchedule
+              tenureYears={tenureYears}
+              result={{
+                targetGoal: result.targetGoal,
+                extraYears: result.extraYears,
+                investmentType: result.investmentType,
+                stepSize: result.stepSize,
+                standard: result.standard,
+                lumpsum: result.lumpsum,
+                growthSteps: result.growthSteps,
+                schedule: result.schedule,
+              }}
+            />
+          </GoalAuditBlock>
+        }
       />
     );
   }
 
-  const summaryItems: ResultItem[] = [
-    { label: "Target goal", value: result.targetGoal, highlight: true, tone: "maturity" },
-    { label: "Inflation-adjusted goal", value: result.inflAdjGoal },
-  ];
-  if (result.shortfall != null) {
-    summaryItems.push({
-      label: "Shortfall to fund",
-      value: result.shortfall,
-      highlight: true,
-      tone: "delay",
-    });
-  }
-  if (result.existingCredit != null) {
-    summaryItems.push({ label: "Credit from current corpus", value: result.existingCredit });
-  }
-  if (result.existing) {
-    summaryItems.push(
-      { label: "Existing corpus FV", value: result.existing.corpusFv },
-      { label: "Existing SIP FV", value: result.existing.sipFv },
-      { label: "Existing net credit", value: result.existing.netCredit },
-    );
-  }
-  if (result.periodic) {
-    summaryItems.push(
-      { label: "Periodic maturity", value: result.periodic.maturity },
-      { label: "Periodic invested", value: result.periodic.totalInvested },
-      { label: "Periodic net credit", value: result.periodic.netCredit },
-    );
-  }
-  if (result.allLumpsum != null && result.allSip != null) {
-    summaryItems.push(
-      { label: "All lumpsum (today)", value: result.allLumpsum },
-      { label: "All SIP (monthly)", value: result.allSip },
-      { label: "Mix remaining SIP", value: result.mixSip ?? 0, highlight: true, tone: "gain" },
-    );
-  }
+  const delays = (result.delays ?? []).map((d) => ({
+    mo: d.months,
+    sip: d.sipRequired,
+    extra: d.extraInvested,
+  }));
 
   return (
     <GoalResultSections
       {...sectionProps}
       milestones={<GoalHero mode={mode} result={result} />}
+      milestonesSubtitle="Flat SIP, step-up SIP, and target corpus"
+      analyticsSubtitle="Funding mix and SIP vs step-up comparison"
+      auditTitle="SIP vs Step-up Ledger"
       analytics={
-        <>
-          <ResultsSplit
-            left={renderGoalCharts(mode, result, tenureYears)}
-            right={
-              <>
-                <ResultCard
-                  title={result.overfunded ? "Results · already funded" : "Goal summary"}
-                  items={summaryItems}
-                />
-                {result.standard ? (
-                  <ResultCard
-                    title={mode === "sip" ? "Standard SIP" : "Additional SIP"}
-                    items={legItems(result.standard)}
-                  />
-                ) : null}
-                {result.stepUp ? (
-                  <ResultCard
-                    title={mode === "sip" ? "Step-up SIP" : "Additional step-up SIP"}
-                    items={legItems(result.stepUp)}
-                  />
-                ) : null}
-                {result.lumpsum?.lumpsum != null ? (
-                  <ResultCard title="Additional lumpsum today" items={legItems(result.lumpsum)} />
-                ) : null}
-              </>
-            }
-          />
-          <ScheduleTable
-            caption="Yearly schedule"
-            meta={`${result.schedule.length} years`}
-            zebra
-            columns={scheduleColumns(mode)}
-            rows={result.schedule}
-          />
-          {result.delays && result.delays.length > 0 ? (
-            <ScheduleTable
-              caption="Cost of delay"
-              meta="Later start, higher SIP"
-              columns={[
-                { key: "months", header: "Delay (months)", sticky: true },
-                {
-                  key: "sipRequired",
-                  header: "SIP required",
-                  format: "inr",
-                  align: "right",
-                  tone: "std",
-                },
-                {
-                  key: "extraInvested",
-                  header: "Extra invested",
-                  format: "inr",
-                  align: "right",
-                  tone: "warn",
-                },
-              ]}
-              rows={result.delays}
+        <div className="space-y-5">
+          <div className="min-w-0 overflow-hidden">
+            {renderGoalCharts(mode, result, tenureYears, chartTab, onChartTabChange)}
+          </div>
+          <div className="grid grid-cols-1 items-stretch gap-3 lg:grid-cols-3">
+            <GoalSummaryCard
+              target={result.targetGoal}
+              inflAdj={result.inflAdjGoal}
+              tenureYears={tenureYears}
+              standardSip={result.standard?.monthlySip}
+              stepUpSip={result.stepUp?.monthlySip}
             />
-          ) : null}
-        </>
+            {result.standard ? (
+              <LegMetricCard
+                title={mode === "sip" ? "Standard SIP" : "Additional SIP"}
+                leg={result.standard}
+              />
+            ) : null}
+            {result.stepUp ? (
+              <LegMetricCard
+                title={mode === "sip" ? "Step-up SIP" : "Additional step-up SIP"}
+                leg={result.stepUp}
+              />
+            ) : null}
+            {result.lumpsum?.lumpsum != null ? (
+              <LegMetricCard title="Additional lumpsum today" leg={result.lumpsum} />
+            ) : null}
+          </div>
+        </div>
+      }
+      delay={
+        delays.length > 0 ? (
+          <DelayCostCards
+            delays={delays}
+            baselineSip={result.standard?.monthlySip ?? 0}
+          />
+        ) : undefined
+      }
+      audit={
+        <GoalAuditBlock mode={mode} result={result} tenureYears={tenureYears}>
+          <GoalScheduleTable mode={mode} rows={result.schedule} />
+        </GoalAuditBlock>
       }
     />
   );
+}
+
+function sectionSpread(props: {
+  openMilestones: boolean;
+  onToggleMilestones: () => void;
+  openAnalytics: boolean;
+  onToggleAnalytics: () => void;
+  openSchedule: boolean;
+  onToggleSchedule: () => void;
+  openDelay: boolean;
+  onToggleDelay: () => void;
+  tenureYears: number;
+}) {
+  return props;
 }
 
 function LsSipResults({
@@ -1357,6 +1957,12 @@ function LsSipResults({
   onToggleMilestones,
   openAnalytics,
   onToggleAnalytics,
+  openSchedule,
+  onToggleSchedule,
+  openDelay,
+  onToggleDelay,
+  chartTab,
+  onChartTabChange,
 }: {
   result: GoalPlannerResult;
   tenureYears: number;
@@ -1364,6 +1970,12 @@ function LsSipResults({
   onToggleMilestones: () => void;
   openAnalytics: boolean;
   onToggleAnalytics: () => void;
+  openSchedule: boolean;
+  onToggleSchedule: () => void;
+  openDelay: boolean;
+  onToggleDelay: () => void;
+  chartTab: "funding" | "compare";
+  onChartTabChange: (tab: "funding" | "compare") => void;
 }) {
   const years = result.schedule.length || tenureYears;
   const mixSip = result.mixSip ?? 0;
@@ -1373,68 +1985,83 @@ function LsSipResults({
 
   return (
     <GoalResultSections
-      openMilestones={openMilestones}
-      onToggleMilestones={onToggleMilestones}
-      openAnalytics={openAnalytics}
-      onToggleAnalytics={onToggleAnalytics}
-      tenureYears={tenureYears}
+      {...sectionSpread({
+        openMilestones,
+        onToggleMilestones,
+        openAnalytics,
+        onToggleAnalytics,
+        openSchedule,
+        onToggleSchedule,
+        openDelay,
+        onToggleDelay,
+        tenureYears,
+      })}
       milestones={
-        <StatGrid>
-          <StatCard title="Target goal" value={result.targetGoal} tone="neutral" />
-          <StatCard title="Shortfall to fund" value={result.shortfall ?? 0} tone="negative" />
-          <StatCard title="Mix monthly SIP" value={mixSip} tone="positive" />
-        </StatGrid>
-      }
-      analytics={
-        <>
-          <ResultsSplit
-            left={renderGoalCharts("ls-sip", result, years)}
-            right={
-              <>
-                <ResultCard
-                  title={result.overfunded ? "Results · already funded" : "Goal summary"}
-                  items={[
-                    {
-                      label: "Target goal",
-                      value: result.targetGoal,
-                      highlight: true,
-                      tone: "maturity",
-                    },
-                    { label: "Inflation-adjusted goal", value: result.inflAdjGoal },
-                    {
-                      label: "Shortfall to fund",
-                      value: result.shortfall ?? 0,
-                      highlight: true,
-                      tone: "delay",
-                    },
-                    { label: "Credit from current corpus", value: result.existingCredit ?? 0 },
-                    { label: "All lumpsum (today)", value: allLumpsum },
-                    { label: "All SIP (monthly)", value: allSip },
-                    {
-                      label: "Mix remaining SIP",
-                      value: mixSip,
-                      highlight: true,
-                      tone: "gain",
-                    },
-                  ]}
-                />
-                {standard ? <LegMetricCard title="Additional SIP" leg={standard} /> : null}
-                {result.stepUp ? (
-                  <LegMetricCard title="Additional step-up SIP" leg={result.stepUp} />
-                ) : null}
-              </>
+        <MetricGrid>
+          <WealthMetricCard
+            title="Target Goal"
+            value={result.targetGoal}
+            description="Net after capital gains tax"
+            tone="accent"
+            mark={
+              <WealthIconMark className="h-7 w-7">
+                <IconTarget className="h-3.5 w-3.5" />
+              </WealthIconMark>
             }
           />
-
-          <ScheduleTable
-            caption="Yearly schedule"
-            meta={`${result.schedule.length} years`}
-            zebra
-            columns={scheduleColumns("ls-sip")}
-            rows={result.schedule}
+          <WealthMetricCard
+            title="Shortfall"
+            value={result.shortfall ?? 0}
+            description="Amount still needing funding"
+            tone="neutral"
+            badge="Gap"
           />
-        </>
+          <WealthMetricCard
+            title="Mix Monthly SIP"
+            value={mixSip}
+            description="Remaining SIP with extra lumpsum applied"
+            tone="positive"
+            mark={
+              <WealthIconMark tone="emerald" className="h-7 w-7">
+                <IconSip className="h-3.5 w-3.5" />
+              </WealthIconMark>
+            }
+          />
+        </MetricGrid>
       }
+      analytics={
+        <AnalyticsSplit
+          left={renderGoalCharts("ls-sip", result, years, chartTab, onChartTabChange)}
+          right={
+            <>
+              <SummaryRows
+                title={result.overfunded ? "Results · already funded" : "Goal summary"}
+                rows={[
+                  { label: "Target goal", value: result.targetGoal, emphasize: true },
+                  { label: "Inflation-adjusted goal", value: result.inflAdjGoal },
+                  { label: "Shortfall to fund", value: result.shortfall ?? 0, emphasize: true },
+                  { label: "Credit from current corpus", value: result.existingCredit ?? 0 },
+                  { label: "All lumpsum (today)", value: allLumpsum },
+                  { label: "All SIP (monthly)", value: allSip },
+                  { label: "Mix remaining SIP", value: mixSip, emphasize: true },
+                ]}
+              />
+              {standard ? <LegMetricCard title="Additional SIP" leg={standard} /> : null}
+              {result.stepUp ? (
+                <LegMetricCard title="Additional step-up SIP" leg={result.stepUp} />
+              ) : null}
+            </>
+          }
+        />
+      }
+      audit={
+        <GoalAuditBlock mode="ls-sip" result={result} tenureYears={tenureYears}>
+          <GoalScheduleTable mode="ls-sip" rows={result.schedule} />
+        </GoalAuditBlock>
+      }
+      milestonesSubtitle="Target, shortfall, and mix remaining SIP"
+      analyticsSubtitle="Corpus mix and all-LS vs all-SIP vs mix"
+      auditTitle="LS + SIP Options Ledger"
     />
   );
 }
@@ -1446,6 +2073,12 @@ function PeriodicResults({
   onToggleMilestones,
   openAnalytics,
   onToggleAnalytics,
+  openSchedule,
+  onToggleSchedule,
+  openDelay,
+  onToggleDelay,
+  chartTab,
+  onChartTabChange,
 }: {
   result: GoalPlannerResult;
   tenureYears: number;
@@ -1453,6 +2086,12 @@ function PeriodicResults({
   onToggleMilestones: () => void;
   openAnalytics: boolean;
   onToggleAnalytics: () => void;
+  openSchedule: boolean;
+  onToggleSchedule: () => void;
+  openDelay: boolean;
+  onToggleDelay: () => void;
+  chartTab: "funding" | "compare";
+  onChartTabChange: (tab: "funding" | "compare") => void;
 }) {
   const years = result.schedule.length || tenureYears;
   const periodic = result.periodic;
@@ -1469,122 +2108,134 @@ function PeriodicResults({
 
   return (
     <GoalResultSections
-      openMilestones={openMilestones}
-      onToggleMilestones={onToggleMilestones}
-      openAnalytics={openAnalytics}
-      onToggleAnalytics={onToggleAnalytics}
-      tenureYears={tenureYears}
+      {...sectionSpread({
+        openMilestones,
+        onToggleMilestones,
+        openAnalytics,
+        onToggleAnalytics,
+        openSchedule,
+        onToggleSchedule,
+        openDelay,
+        onToggleDelay,
+        tenureYears,
+      })}
       milestones={
-        <>
+        <div className="space-y-4">
           {result.overfunded ? (
-            <StatusNote tone="info">
+            <WealthStatusNote tone="info">
               Periodic investments already fund this goal. Additional SIP, step-up, and lumpsum are not
               required.
-            </StatusNote>
+            </WealthStatusNote>
           ) : null}
-
-          <StatGrid>
-            <StatCard title="Target goal" value={result.targetGoal} tone="neutral" />
-            <StatCard
-              title={result.overfunded ? "Periodic net credit" : "Shortfall to fund"}
+          <MetricGrid>
+            <WealthMetricCard
+              title="Target Goal"
+              value={result.targetGoal}
+              description="Net after capital gains tax"
+              tone="accent"
+              mark={
+                <WealthIconMark className="h-7 w-7">
+                  <IconTarget className="h-3.5 w-3.5" />
+                </WealthIconMark>
+              }
+            />
+            <WealthMetricCard
+              title={result.overfunded ? "Periodic Net Credit" : "Shortfall"}
               value={result.overfunded ? (periodic?.netCredit ?? 0) : shortfall}
-              tone={result.overfunded ? "positive" : "negative"}
+              description={
+                result.overfunded
+                  ? "Credit already covering the goal"
+                  : "Amount still needing funding"
+              }
+              tone="neutral"
             />
-            <StatCard
-              title="Additional SIP · monthly"
+            <WealthMetricCard
+              title="Additional SIP"
               value={standard?.monthlySip ?? 0}
+              description="Monthly SIP still required"
               tone="positive"
+              mark={
+                <WealthIconMark tone="emerald" className="h-7 w-7">
+                  <IconSip className="h-3.5 w-3.5" />
+                </WealthIconMark>
+              }
             />
-            <StatCard title="Step-up SIP · start" value={stepUp?.monthlySip ?? 0} tone="positive" />
-          </StatGrid>
-        </>
+            <WealthMetricCard
+              title="Step-up SIP"
+              value={stepUp?.monthlySip ?? 0}
+              description="Starting monthly SIP with annual step-up"
+              tone="positive"
+              mark={
+                <WealthIconMark tone="emerald" className="h-7 w-7">
+                  <IconStepUp className="h-3.5 w-3.5" />
+                </WealthIconMark>
+              }
+            />
+          </MetricGrid>
+        </div>
       }
       analytics={
-        <>
-          <ResultsSplit
-            left={renderGoalCharts("periodic", result, years)}
+        <div className="space-y-5">
+          <AnalyticsSplit
+            left={renderGoalCharts("periodic", result, years, chartTab, onChartTabChange)}
             right={
               <>
-                <ResultCard
+                <SummaryRows
                   title={result.overfunded ? "Results · already funded" : "Goal summary"}
-                  items={[
-                    {
-                      label: "Target goal",
-                      value: result.targetGoal,
-                      highlight: true,
-                      tone: "maturity",
-                    },
+                  rows={[
+                    { label: "Target goal", value: result.targetGoal, emphasize: true },
                     { label: "Inflation-adjusted goal", value: result.inflAdjGoal },
-                    {
-                      label: "Shortfall to fund",
-                      value: shortfall,
-                      highlight: true,
-                      tone: "delay",
-                    },
+                    { label: "Shortfall to fund", value: shortfall, emphasize: true },
                     { label: "Periodic maturity", value: periodic?.maturity ?? 0 },
                     { label: "Periodic invested", value: periodic?.totalInvested ?? 0 },
-                    {
-                      label: "Periodic gain",
-                      value: periodicGain,
-                      tone: "gain",
-                    },
-                    { label: "Periodic tax", value: periodicTax, tone: "tax" },
+                    { label: "Periodic gain", value: periodicGain },
+                    { label: "Periodic tax", value: periodicTax },
                     {
                       label: "Periodic net credit",
                       value: periodic?.netCredit ?? 0,
-                      highlight: true,
-                      tone: "inflation",
+                      emphasize: true,
                     },
-                    {
-                      label: "Periodic payments",
-                      displayValue: String(periodic?.payments ?? 0),
-                    },
+                    { label: "Periodic payments", value: String(periodic?.payments ?? 0) },
                   ]}
                 />
                 {periodic ? (
-                  <div className="flex min-h-[240px] flex-1 flex-col">
-                    <CompositionChart
-                      title="Periodic mix"
-                      centerLabel="Maturity"
-                      centerValue={periodic.maturity}
-                      showPercentages
-                      size="lg"
-                      slices={[
-                        {
-                          name: "Periodic invested",
-                          value: periodic.totalInvested,
-                          color: "var(--app-chart-invested)",
-                        },
-                        {
-                          name: "Periodic gain",
-                          value: periodicGain,
-                          color: "var(--app-chart-gain)",
-                        },
-                      ]}
-                    />
-                  </div>
+                  <WealthMixDonut
+                    title="Periodic mix"
+                    centerLabel="Maturity"
+                    centerValue={periodic.maturity}
+                    slices={[
+                      {
+                        name: "Periodic invested",
+                        value: periodic.totalInvested,
+                        color: wealthMixColors.invested,
+                      },
+                      {
+                        name: "Periodic gain",
+                        value: periodicGain,
+                        color: wealthMixColors.gain,
+                      },
+                    ]}
+                  />
                 ) : null}
               </>
             }
           />
-
           <FundingPathsBoard
             muted={Boolean(result.overfunded)}
             lumpsum={lumpsum}
             standard={standard}
             stepUp={stepUp}
           />
-
-          <ScheduleTable
-            caption="Yearly schedule"
-            meta={`${result.schedule.length} years · periodic + remaining SIP`}
-            zebra
-            highlightLastRow
-            columns={scheduleColumns("periodic")}
-            rows={result.schedule}
-          />
-        </>
+        </div>
       }
+      audit={
+        <GoalAuditBlock mode="periodic" result={result} tenureYears={tenureYears}>
+          <GoalScheduleTable mode="periodic" rows={result.schedule} />
+        </GoalAuditBlock>
+      }
+      milestonesSubtitle="Periodic credit, shortfall, and remaining SIP paths"
+      analyticsSubtitle="Periodic mix, waterfall, and remaining funding options"
+      auditTitle="Periodic Lumpsum Ledger"
     />
   );
 }
@@ -1596,6 +2247,12 @@ function CurrentInvestmentResults({
   onToggleMilestones,
   openAnalytics,
   onToggleAnalytics,
+  openSchedule,
+  onToggleSchedule,
+  openDelay,
+  onToggleDelay,
+  chartTab: _chartTab,
+  onChartTabChange: _onChartTabChange,
 }: {
   result: GoalPlannerResult;
   tenureYears: number;
@@ -1603,118 +2260,332 @@ function CurrentInvestmentResults({
   onToggleMilestones: () => void;
   openAnalytics: boolean;
   onToggleAnalytics: () => void;
+  openSchedule: boolean;
+  onToggleSchedule: () => void;
+  openDelay: boolean;
+  onToggleDelay: () => void;
+  chartTab: "funding" | "compare";
+  onChartTabChange: (tab: "funding" | "compare") => void;
 }) {
+  const [localTab, setLocalTab] = useState<"funding" | "compare" | "mix">("funding");
+  void _chartTab;
+  void _onChartTabChange;
+
   const years = result.schedule.length || tenureYears;
   const existing = result.existing;
   const standard = result.standard;
   const stepUp = result.stepUp;
   const lumpsum = result.lumpsum;
+  const shortfall = result.shortfall ?? 0;
+
+  const fundingChart = goalRequiredChart("current", result);
+  const compareChart = goalExtraChart("current", result, years);
+  const mixChart =
+    standard != null ? (
+      <WealthMixDonut
+        title="Additional SIP mix"
+        centerLabel="Pre-tax"
+        centerValue={standard.maturity}
+        tax={standard.tax}
+        net={standard.netAfterTax}
+        netLabel="Net"
+        slices={[
+          {
+            name: "Invested",
+            value: standard.invested,
+            color: wealthMixColors.invested,
+          },
+          {
+            name: "Gain",
+            value: standard.gain,
+            color: wealthMixColors.gain,
+          },
+        ]}
+      />
+    ) : null;
+
+  const activeChart =
+    localTab === "compare"
+      ? compareChart
+      : localTab === "mix"
+        ? mixChart
+        : fundingChart;
 
   return (
     <GoalResultSections
-      openMilestones={openMilestones}
-      onToggleMilestones={onToggleMilestones}
-      openAnalytics={openAnalytics}
-      onToggleAnalytics={onToggleAnalytics}
-      tenureYears={tenureYears}
+      {...sectionSpread({
+        openMilestones,
+        onToggleMilestones,
+        openAnalytics,
+        onToggleAnalytics,
+        openSchedule,
+        onToggleSchedule,
+        openDelay,
+        onToggleDelay,
+        tenureYears,
+      })}
       milestones={
-        <StatGrid>
-          <StatCard title="Target goal" value={result.targetGoal} tone="neutral" />
-          <StatCard title="Shortfall to fund" value={result.shortfall ?? 0} tone="negative" />
-          <StatCard title="Additional SIP · monthly" value={standard?.monthlySip ?? 0} tone="positive" />
-          <StatCard title="Step-up SIP · start" value={stepUp?.monthlySip ?? 0} tone="positive" />
-        </StatGrid>
+        <MetricGrid>
+          <WealthMetricCard
+            title="Shortfall"
+            value={shortfall}
+            description="Amount still needing funding after existing credit"
+            badge="Gap"
+            tone="neutral"
+            footer={
+              <>
+                Existing credit ·{" "}
+                <span className="font-semibold tabular-nums text-slate-700">
+                  {formatINRCurrency(existing?.netCredit ?? 0)}
+                </span>
+              </>
+            }
+            mark={
+              <WealthIconMark className="h-7 w-7">
+                <IconTarget className="h-3.5 w-3.5" />
+              </WealthIconMark>
+            }
+          />
+          <WealthMetricCard
+            title="Additional SIP"
+            value={standard?.monthlySip ?? 0}
+            description="Flat monthly SIP to close the shortfall"
+            badge="Flat"
+            tone="positive"
+            footer={
+              standard ? (
+                <>
+                  Invested ·{" "}
+                  <span className="font-semibold tabular-nums text-slate-700">
+                    {formatINRCurrency(standard.invested)}
+                  </span>
+                  {" · Net "}
+                  <span className="font-semibold tabular-nums text-emerald-700">
+                    {formatINRCurrency(standard.netAfterTax)}
+                  </span>
+                </>
+              ) : undefined
+            }
+            mark={
+              <WealthIconMark tone="emerald" className="h-7 w-7">
+                <IconSip className="h-3.5 w-3.5" />
+              </WealthIconMark>
+            }
+          />
+          <WealthMetricCard
+            title="Step-up SIP"
+            value={stepUp?.monthlySip ?? 0}
+            description="Starting monthly SIP with annual step-up"
+            badge="Step-up"
+            tone="positive"
+            footer={
+              stepUp?.endMonthlySip != null ? (
+                <>
+                  Ends at ·{" "}
+                  <span className="font-semibold tabular-nums text-emerald-700">
+                    {formatINRCurrency(stepUp.endMonthlySip)}
+                  </span>
+                  /mo
+                </>
+              ) : lumpsum?.lumpsum != null ? (
+                <>
+                  Or lumpsum today ·{" "}
+                  <span className="font-semibold tabular-nums text-slate-700">
+                    {formatINRCurrency(lumpsum.lumpsum)}
+                  </span>
+                </>
+              ) : undefined
+            }
+            mark={
+              <WealthIconMark tone="emerald" className="h-7 w-7">
+                <IconStepUp className="h-3.5 w-3.5" />
+              </WealthIconMark>
+            }
+          />
+        </MetricGrid>
       }
       analytics={
-        <>
-      <ResultsSplit
-        left={renderGoalCharts("current", result, years)}
-        right={
-          <>
-            <ResultCard
-              title={result.overfunded ? "Results · already funded" : "Goal summary"}
-              items={[
-                {
-                  label: "Target goal",
-                  value: result.targetGoal,
-                  highlight: true,
-                  tone: "maturity",
-                },
-                { label: "Inflation-adjusted goal", value: result.inflAdjGoal },
-                {
-                  label: "Shortfall to fund",
-                  value: result.shortfall ?? 0,
-                  highlight: true,
-                  tone: "delay",
-                },
-                {
-                  label: "Existing net credit",
-                  value: existing?.netCredit ?? 0,
-                  tone: "inflation",
-                },
-                { label: "Existing corpus FV", value: existing?.corpusFv ?? 0 },
-                { label: "Existing SIP FV", value: existing?.sipFv ?? 0 },
-                {
-                  label: "Additional SIP (monthly)",
-                  value: standard?.monthlySip ?? 0,
-                  highlight: true,
-                  tone: "gain",
-                },
-                {
-                  label: "Step-up SIP (start)",
-                  value: stepUp?.monthlySip ?? 0,
-                  tone: "inflation",
-                },
-                {
-                  label: "Additional lumpsum today",
-                  value: lumpsum?.lumpsum ?? 0,
-                },
-              ]}
+        <div className="space-y-5">
+          <div className="space-y-3">
+            <div className="overflow-x-auto pb-1">
+              <WealthSegmented
+                variant="underline"
+                layoutId="current-chart-tabs"
+                value={localTab}
+                onChange={setLocalTab}
+                options={[
+                  {
+                    id: "funding",
+                    label: "Funding",
+                    icon: <IconChart className="h-3.5 w-3.5" />,
+                  },
+                  {
+                    id: "compare",
+                    label: "Comparison",
+                    icon: <IconRates className="h-3.5 w-3.5" />,
+                  },
+                  {
+                    id: "mix",
+                    label: "SIP Mix",
+                    icon: <IconDonut className="h-3.5 w-3.5" />,
+                  },
+                ]}
+              />
+            </div>
+            <div className="min-w-0 overflow-hidden">{activeChart}</div>
+          </div>
+
+          <div className="space-y-5">
+            <CurrentSummaryCard
+              target={result.targetGoal}
+              inflAdj={result.inflAdjGoal}
+              shortfall={shortfall}
+              existingCredit={existing?.netCredit ?? 0}
+              corpusFv={existing?.corpusFv ?? 0}
+              sipFv={existing?.sipFv ?? 0}
+              tenureYears={tenureYears}
             />
-            {standard ? (
-              <div className="flex min-h-[240px] flex-1 flex-col">
-                <CompositionChart
-                  title="Additional SIP mix"
-                  centerLabel="Net"
-                  centerValue={standard.netAfterTax}
-                  showPercentages
-                  size="lg"
-                  slices={[
-                    {
-                      name: "Invested",
-                      value: standard.invested,
-                      color: "var(--app-chart-invested)",
-                    },
-                    {
-                      name: "Gain",
-                      value: standard.gain,
-                      color: "var(--app-chart-gain)",
-                    },
-                    {
-                      name: "Tax",
-                      value: standard.tax,
-                      color: "var(--app-chart-tax)",
-                    },
-                  ]}
-                />
-              </div>
-            ) : null}
-          </>
-        }
-      />
 
-      <FundingPathsBoard lumpsum={lumpsum} standard={standard} stepUp={stepUp} />
-
-      <ScheduleTable
-        caption="Yearly schedule"
-        meta={`${result.schedule.length} years`}
-        zebra
-        columns={scheduleColumns("current")}
-        rows={result.schedule}
-      />
-        </>
+            <FundingPathsBoard lumpsum={lumpsum} standard={standard} stepUp={stepUp} />
+          </div>
+        </div>
       }
+      audit={
+        <GoalAuditBlock mode="current" result={result} tenureYears={tenureYears}>
+          <GoalScheduleTable mode="current" rows={result.schedule} />
+        </GoalAuditBlock>
+      }
+      milestonesSubtitle="Shortfall and paths to close the funding gap"
+      analyticsSubtitle="Waterfall, capital compare, and SIP mix"
+      auditTitle="Current Investment Ledger"
     />
+  );
+}
+
+function CurrentSummaryCard({
+  target,
+  inflAdj,
+  shortfall,
+  existingCredit,
+  corpusFv,
+  sipFv,
+  tenureYears,
+}: {
+  target: number;
+  inflAdj: number;
+  shortfall: number;
+  existingCredit: number;
+  corpusFv: number;
+  sipFv: number;
+  tenureYears: number;
+}) {
+  const sameBasis = Math.abs(target - inflAdj) < 0.5;
+  const rows: Array<{
+    label: string;
+    value: string;
+    tone?: "default" | "emerald" | "rose";
+    highlight?: boolean;
+  }> = [
+    {
+      label: "Shortfall to fund",
+      value: formatINRCurrency(shortfall),
+      tone: "rose",
+      highlight: true,
+    },
+    {
+      label: "Target goal (net)",
+      value: formatINRCurrency(target),
+      tone: "emerald",
+    },
+  ];
+
+  if (!sameBasis) {
+    rows.push({
+      label: "Inflation-adjusted goal",
+      value: formatINRCurrency(inflAdj),
+    });
+  }
+
+  rows.push(
+    {
+      label: "Existing credit",
+      value: formatINRCurrency(existingCredit),
+      tone: "emerald",
+    },
+    {
+      label: "Existing corpus FV",
+      value: formatINRCurrency(corpusFv),
+    },
+    {
+      label: "Existing SIP FV",
+      value: formatINRCurrency(sipFv),
+    },
+    {
+      label: "Horizon",
+      value: `${tenureYears} year${tenureYears === 1 ? "" : "s"}`,
+    },
+  );
+
+  return (
+    <div className="space-y-2.5">
+      <div>
+        <div className="text-[12px] font-medium uppercase tracking-[0.14em] text-slate-400">
+          Goal summary
+        </div>
+        <p className="mt-1 text-[13px] leading-relaxed text-slate-500">
+          Shortfall after existing credit, with the target corpus on the goal date
+        </p>
+      </div>
+      <div className="overflow-x-auto">
+        <WealthLedgerShell className="min-w-[24rem]">
+          <table className="w-full border-collapse text-left text-[13px] tabular-nums">
+            <thead>
+              <tr className={wealthLedgerTheadClass()}>
+                <th className="px-4 py-3.5 text-left text-[13px] font-medium text-slate-600">
+                  Metric
+                </th>
+                <th className="px-4 py-3.5 text-right text-[13px] font-medium text-emerald-700">
+                  Amount
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+              {rows.map((row) => (
+                <tr
+                  key={row.label}
+                  className={
+                    row.highlight
+                      ? "border-t border-emerald-200/80 bg-emerald-50/60"
+                      : "transition-colors hover:bg-slate-50/80"
+                  }
+                >
+                  <td className="px-4 py-3.5 text-[14px] text-slate-700">
+                    {row.highlight ? (
+                      <span className="inline-flex items-center rounded-md bg-emerald-600 px-2 py-0.5 text-[12px] font-semibold text-white">
+                        {row.label}
+                      </span>
+                    ) : (
+                      row.label
+                    )}
+                  </td>
+                  <td
+                    className={
+                      row.tone === "rose"
+                        ? "px-4 py-3.5 text-right text-[14px] font-semibold tabular-nums text-rose-600"
+                        : row.tone === "emerald"
+                          ? "px-4 py-3.5 text-right text-[14px] font-semibold tabular-nums text-emerald-700"
+                          : "px-4 py-3.5 text-right text-[14px] font-medium tabular-nums text-slate-800"
+                    }
+                  >
+                    {row.value}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </WealthLedgerShell>
+      </div>
+    </div>
   );
 }
 
@@ -1726,6 +2597,12 @@ function ExistingSipResults({
   onToggleMilestones,
   openAnalytics,
   onToggleAnalytics,
+  openSchedule,
+  onToggleSchedule,
+  openDelay,
+  onToggleDelay,
+  chartTab: _chartTab,
+  onChartTabChange: _onChartTabChange,
 }: {
   result: GoalPlannerResult;
   tenureYears: number;
@@ -1734,8 +2611,16 @@ function ExistingSipResults({
   onToggleMilestones: () => void;
   openAnalytics: boolean;
   onToggleAnalytics: () => void;
+  openSchedule: boolean;
+  onToggleSchedule: () => void;
+  openDelay: boolean;
+  onToggleDelay: () => void;
+  chartTab: "funding" | "compare";
+  onChartTabChange: (tab: "funding" | "compare") => void;
 }) {
-  const [chartType, setChartType] = useState<"pie" | "bar">("pie");
+  const [localChart, setLocalChart] = useState<"pie" | "bar">("pie");
+  void _chartTab;
+  void _onChartTabChange;
   const years = result.schedule.length || tenureYears;
   const existing = result.existing;
   const standard = result.standard;
@@ -1753,37 +2638,53 @@ function ExistingSipResults({
 
   return (
     <GoalResultSections
-      openMilestones={openMilestones}
-      onToggleMilestones={onToggleMilestones}
-      openAnalytics={openAnalytics}
-      onToggleAnalytics={onToggleAnalytics}
-      tenureYears={tenureYears}
+      {...sectionSpread({
+        openMilestones,
+        onToggleMilestones,
+        openAnalytics,
+        onToggleAnalytics,
+        openSchedule,
+        onToggleSchedule,
+        openDelay,
+        onToggleDelay,
+        tenureYears,
+      })}
       milestones={
-        <>
-          <StatGrid>
-            <StatCard
-              title="Target goal"
+        <div className="space-y-4">
+          <MetricGrid>
+            <WealthMetricCard
+              title="Target Goal"
               value={result.targetGoal}
-              tone="neutral"
-              hint="Net after capital gains tax"
+              description="Net after capital gains tax"
+              tone="accent"
+              mark={
+                <WealthIconMark className="h-7 w-7">
+                  <IconTarget className="h-3.5 w-3.5" />
+                </WealthIconMark>
+              }
             />
-            <StatCard
-              title="Existing SIP credit"
+            <WealthMetricCard
+              title="Existing SIP Credit"
               value={existing?.netCredit ?? 0}
+              description="Keep current SIP running"
               tone="neutral"
-              hint="Keep current SIP running"
             />
-            <StatCard
+            <WealthMetricCard
               title="Additional SIP"
               value={standard?.monthlySip ?? 0}
+              description="Extra flat monthly SIP"
               tone="positive"
-              hint="Extra flat monthly SIP"
+              mark={
+                <WealthIconMark tone="emerald" className="h-7 w-7">
+                  <IconSip className="h-3.5 w-3.5" />
+                </WealthIconMark>
+              }
             />
-            <StatCard
+            <WealthMetricCard
               title="Step-up SIP"
               value={stepUp?.monthlySip ?? 0}
+              description="Starting monthly SIP"
               tone="positive"
-              hint="Starting monthly SIP"
               footer={
                 stepUp?.endMonthlySip != null ? (
                   <>
@@ -1795,215 +2696,135 @@ function ExistingSipResults({
                   </>
                 ) : undefined
               }
-            />
-          </StatGrid>
-
-          {result.overfunded ? (
-            <StatusNote tone="info">
-              Existing SIP already covers the goal. Additional funding is not required.
-            </StatusNote>
-          ) : (
-            <StatusNote tone="info">
-              Shortfall to fund · {formatINRCurrency(result.shortfall ?? 0)}. Keep the current SIP of{" "}
-              {formatINRCurrency(currentMonthlySip)}/mo and add one of the paths below.
-            </StatusNote>
-          )}
-        </>
-      }
-      analytics={
-        <>
-      <div className="grid grid-cols-1 items-stretch gap-4 xl:grid-cols-3">
-        <div className="flex min-w-0 flex-col gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3.5 sm:p-4 xl:col-span-2">
-          <div className="flex flex-wrap items-center gap-3">
-            <h3 className="text-[11px] font-semibold uppercase tracking-widest text-[var(--app-text-muted)] sm:text-xs">
-              {chartType === "pie"
-                ? "Existing SIP vs additional SIP"
-                : "Existing vs additional comparison"}
-            </h3>
-            <ModeTabs
-              tabs={[
-                { id: "pie", label: "Pie chart" },
-                { id: "bar", label: "Bar chart" },
-              ]}
-              value={chartType}
-              onChange={(id) => setChartType(id as "pie" | "bar")}
-            />
-          </div>
-
-          {chartType === "pie" ? (
-            <CompositionChart
-              title="SIP1 + SIP2 corpus mix"
-              centerLabel="Combined"
-              centerValue={combinedCorpus}
-              showPercentages
-              size="lg"
-              className="min-h-[280px] flex-1 sm:min-h-[300px]"
-              slices={[
-                {
-                  name: "Existing invested",
-                  value: sip1Invested,
-                  color: "var(--app-chart-invested)",
-                },
-                {
-                  name: "Existing gain",
-                  value: sip1Gain,
-                  color: "var(--app-chart-a)",
-                },
-                {
-                  name: "Additional invested",
-                  value: sip2Invested,
-                  color: "var(--app-chart-b)",
-                },
-                {
-                  name: "Additional gain",
-                  value: sip2Gain,
-                  color: "var(--app-chart-gain)",
-                },
-              ]}
-              footer={
-                standard ? (
-                  <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-                    <div className="flex items-baseline justify-between gap-2 rounded-md border border-[var(--app-warn-border)] bg-[var(--app-warn-bg)] px-2.5 py-1.5">
-                      <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-warn-text)]">
-                        Add. tax
-                      </div>
-                      <div className="text-xs font-semibold tabular-nums text-[var(--app-warn-text-strong)]">
-                        {formatINRCurrency(sip2Tax)}
-                      </div>
-                    </div>
-                    <div className="flex items-baseline justify-between gap-2 rounded-md border border-[var(--app-step-text)]/25 bg-[var(--app-step-bg)] px-2.5 py-1.5">
-                      <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-step-text)]">
-                        Add. net
-                      </div>
-                      <div className="text-xs font-semibold tabular-nums text-[var(--app-text)]">
-                        {formatINRCurrency(sip2Net)}
-                      </div>
-                    </div>
-                  </div>
-                ) : undefined
+              mark={
+                <WealthIconMark tone="emerald" className="h-7 w-7">
+                  <IconStepUp className="h-3.5 w-3.5" />
+                </WealthIconMark>
               }
             />
+          </MetricGrid>
+          {result.overfunded ? (
+            <WealthStatusNote tone="info">
+              Existing SIP already covers the goal. Additional funding is not required.
+            </WealthStatusNote>
           ) : (
-            <CompareChart
-              title="Existing vs additional SIP"
-              showBarLabels
-              className="min-h-[280px] flex-1 sm:min-h-[300px]"
-              data={[
-                {
-                  category: "Monthly SIP",
-                  existing: currentMonthlySip,
-                  additional: standard?.monthlySip ?? 0,
-                },
-                {
-                  category: "Invested",
-                  existing: sip1Invested,
-                  additional: sip2Invested,
-                },
-                {
-                  category: "Corpus",
-                  existing: sip1Fv,
-                  additional: standard?.maturity ?? 0,
-                },
-              ]}
-              series={[
-                { key: "existing", label: "Existing", color: "var(--app-chart-a)" },
-                { key: "additional", label: "Additional", color: "var(--app-chart-b)" },
-              ]}
-            />
+            <WealthStatusNote tone="info">
+              Shortfall to fund · {formatINRCurrency(result.shortfall ?? 0)}. Keep the current SIP of{" "}
+              {formatINRCurrency(currentMonthlySip)}/mo and add one of the paths below.
+            </WealthStatusNote>
           )}
         </div>
-
-        <div className="flex h-full min-w-0 flex-col gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] p-3.5 sm:p-4">
-          <h3 className="text-[11px] font-semibold uppercase tracking-widest text-[var(--app-text-muted)] sm:text-xs">
-            {result.overfunded ? "Results · already funded" : "Goal summary"}
-          </h3>
-
-          <div className="rounded-xl border border-[var(--app-step-text)]/20 bg-[var(--app-step-bg)] px-3.5 py-3">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-step-text)]">
-              Target goal
-            </div>
-            <div className="mt-1 text-xl font-bold tracking-tight tabular-nums text-[var(--app-text)] sm:text-2xl">
-              {formatINRCurrency(result.targetGoal)}
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-[var(--app-warn-border)] bg-[var(--app-warn-bg)] px-3.5 py-2.5">
-            <div className="flex items-baseline justify-between gap-2">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-warn-text)]">
-                Shortfall
-              </span>
-              <span className="text-sm font-bold tabular-nums text-[var(--app-warn-text-strong)] sm:text-base">
-                {formatINRCurrency(result.shortfall ?? 0)}
-              </span>
-            </div>
-          </div>
-
-          <div className="grid flex-1 grid-cols-2 content-stretch gap-2.5">
-            <div className="flex flex-col justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-2.5">
-              <div className="text-[9px] font-semibold uppercase tracking-wider text-[var(--app-text-subtle)]">
-                Existing credit
-              </div>
-              <div className="mt-1 text-sm font-semibold tabular-nums text-[var(--app-std-text)]">
-                {formatINRCurrency(existing?.netCredit ?? 0)}
-              </div>
-              <div className="mt-0.5 text-[10px] text-[var(--app-text-subtle)]">
-                FV {formatINRCurrency(sip1Fv)}
-              </div>
-            </div>
-
-            <div className="flex flex-col justify-center rounded-xl border border-[var(--app-step-text)]/25 bg-[var(--app-step-bg)] px-3 py-2.5">
-              <div className="text-[9px] font-semibold uppercase tracking-wider text-[var(--app-step-text)]">
-                Additional SIP
-              </div>
-              <div className="mt-1 text-sm font-semibold tabular-nums text-[var(--app-text)]">
-                {formatINRCurrency(standard?.monthlySip ?? 0)}
-                <span className="ml-0.5 text-[10px] font-medium text-[var(--app-text-muted)]">
-                  /mo
-                </span>
-              </div>
-            </div>
-
-            <div className="flex flex-col justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-2.5">
-              <div className="text-[9px] font-semibold uppercase tracking-wider text-[var(--app-text-subtle)]">
-                Step-up SIP
-              </div>
-              <div className="mt-1 text-sm font-semibold tabular-nums text-[var(--app-text)]">
-                {formatINRCurrency(stepUp?.monthlySip ?? 0)}
-                <span className="ml-0.5 text-[10px] font-medium text-[var(--app-text-muted)]">
-                  /mo
-                </span>
-              </div>
-              {stepUp?.endMonthlySip != null ? (
-                <div className="mt-0.5 text-[10px] tabular-nums text-[var(--app-step-text)]">
-                  Ends {formatINRCurrency(stepUp.endMonthlySip)}
-                </div>
-              ) : null}
-            </div>
-
-            <div className="flex flex-col justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-2.5">
-              <div className="text-[9px] font-semibold uppercase tracking-wider text-[var(--app-text-subtle)]">
-                Lumpsum today
-              </div>
-              <div className="mt-1 text-sm font-semibold tabular-nums text-[var(--app-text)]">
-                {formatINRCurrency(lumpsum?.lumpsum ?? 0)}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <FundingPathsBoard lumpsum={lumpsum} standard={standard} stepUp={stepUp} />
-
-      <ScheduleTable
-        caption="Yearly schedule"
-        meta={`${result.schedule.length} years · existing SIP + additional paths`}
-        zebra
-        highlightLastRow
-        columns={scheduleColumns("existing")}
-        rows={result.schedule}
-      />
-        </>
       }
+      analytics={
+        <div className="space-y-5">
+          <div className="overflow-x-auto pb-1">
+            <WealthSegmented
+              variant="underline"
+              layoutId="existing-chart-pill"
+              value={localChart}
+              onChange={(id) => setLocalChart(id)}
+              options={[
+                {
+                  id: "pie",
+                  label: "Mix",
+                  icon: <IconDonut className="h-3.5 w-3.5" />,
+                },
+                {
+                  id: "bar",
+                  label: "Compare",
+                  icon: <IconChart className="h-3.5 w-3.5" />,
+                },
+              ]}
+            />
+          </div>
+
+          <AnalyticsSplit
+            left={
+              localChart === "pie" ? (
+                <WealthMixDonut
+                  title="SIP1 + SIP2 corpus mix"
+                  centerLabel="Combined"
+                  centerValue={combinedCorpus}
+                  tax={standard ? sip2Tax : undefined}
+                  net={standard ? sip2Net : undefined}
+                  netLabel="Add. net"
+                  slices={[
+                    {
+                      name: "Existing invested",
+                      value: sip1Invested,
+                      color: wealthMixColors.invested,
+                    },
+                    {
+                      name: "Existing gain",
+                      value: sip1Gain,
+                      color: wealthMixColors.secondary,
+                    },
+                    {
+                      name: "Additional invested",
+                      value: sip2Invested,
+                      color: wealthMixColors.secondaryGain,
+                    },
+                    {
+                      name: "Additional gain",
+                      value: sip2Gain,
+                      color: wealthMixColors.gain,
+                    },
+                  ]}
+                />
+              ) : (
+                <WealthCompareBars
+                  showBarLabels
+                  data={[
+                    {
+                      category: "Monthly SIP",
+                      existing: currentMonthlySip,
+                      additional: standard?.monthlySip ?? 0,
+                    },
+                    {
+                      category: "Invested",
+                      existing: sip1Invested,
+                      additional: sip2Invested,
+                    },
+                    {
+                      category: "Corpus",
+                      existing: sip1Fv,
+                      additional: standard?.maturity ?? 0,
+                    },
+                  ]}
+                  series={[
+                    { key: "existing", label: "Existing", color: wealthChart.standard },
+                    { key: "additional", label: "Additional", color: wealthChart.stepUp },
+                  ]}
+                />
+              )
+            }
+            right={
+              <SummaryRows
+                title={result.overfunded ? "Results · already funded" : "Goal summary"}
+                rows={[
+                  { label: "Target goal", value: result.targetGoal, emphasize: true },
+                  { label: "Shortfall", value: result.shortfall ?? 0, emphasize: true },
+                  { label: "Existing credit", value: existing?.netCredit ?? 0 },
+                  { label: "Existing FV", value: sip1Fv },
+                  { label: "Additional SIP", value: standard?.monthlySip ?? 0 },
+                  { label: "Step-up SIP", value: stepUp?.monthlySip ?? 0 },
+                  { label: "Lumpsum today", value: lumpsum?.lumpsum ?? 0 },
+                ]}
+              />
+            }
+          />
+
+          <FundingPathsBoard lumpsum={lumpsum} standard={standard} stepUp={stepUp} />
+        </div>
+      }
+      audit={
+        <GoalAuditBlock mode="existing" result={result} tenureYears={tenureYears}>
+          <GoalScheduleTable mode="existing" rows={result.schedule} />
+        </GoalAuditBlock>
+      }
+      milestonesSubtitle="Existing SIP credit and top-up paths"
+      analyticsSubtitle="Existing vs additional mix and comparison"
+      auditTitle="Existing SIP Ledger"
     />
   );
 }
@@ -2023,306 +2844,361 @@ function FundingPathsBoard({
     lumpsum?.lumpsum != null
       ? {
           key: "lumpsum",
-          eyebrow: "One-time",
           title: "Lumpsum today",
-          primary: formatINRCurrency(lumpsum.lumpsum),
-          primaryHint: "Pay once",
-          secondary:
-            lumpsum.monthlySip > 0
-              ? `${formatINRCurrency(lumpsum.monthlySip)} / mo`
-              : "No monthly SIP",
+          heroLabel: "Pay once",
+          heroValue: lumpsum.lumpsum,
+          hint: "No monthly SIP",
           leg: lumpsum,
+          mark: (
+            <WealthIconMark className="h-7 w-7">
+              <IconChart className="h-3.5 w-3.5" />
+            </WealthIconMark>
+          ),
         }
       : null,
     standard
       ? {
           key: "sip",
-          eyebrow: "Level SIP",
           title: "Additional SIP",
-          primary: formatINRCurrency(standard.monthlySip),
-          primaryHint: "Every month",
-          secondary: "Flat for the full tenure",
+          heroLabel: "Monthly SIP",
+          heroValue: standard.monthlySip,
+          hint: "Flat for the full tenure",
           leg: standard,
+          mark: (
+            <WealthIconMark tone="emerald" className="h-7 w-7">
+              <IconSip className="h-3.5 w-3.5" />
+            </WealthIconMark>
+          ),
         }
       : null,
     stepUp
       ? {
           key: "step",
-          eyebrow: "Growing SIP",
           title: "Step-up SIP",
-          primary: formatINRCurrency(stepUp.monthlySip),
-          primaryHint: "Starts at",
-          secondary:
+          heroLabel: "Starts at",
+          heroValue: stepUp.monthlySip,
+          hint:
             stepUp.endMonthlySip != null
-              ? `Ends at ${formatINRCurrency(stepUp.endMonthlySip)}`
+              ? `Ends at ${formatINRCurrency(stepUp.endMonthlySip)} / mo`
               : "Rises each year",
           leg: stepUp,
+          mark: (
+            <WealthIconMark tone="emerald" className="h-7 w-7">
+              <IconStepUp className="h-3.5 w-3.5" />
+            </WealthIconMark>
+          ),
         }
       : null,
   ].filter(Boolean) as Array<{
     key: string;
-    eyebrow: string;
     title: string;
-    primary: string;
-    primaryHint: string;
-    secondary: string;
+    heroLabel: string;
+    heroValue: number;
+    hint: string;
     leg: GoalLeg;
+    mark: ReactNode;
   }>;
 
   if (paths.length === 0) return null;
 
   const ranked = [...paths].sort((a, b) => a.leg.invested - b.leg.invested);
-  const rankTone = new Map<string, { shell: string; badge: string; label: string }>();
-  const tones = [
-    {
-      shell: "bg-[var(--app-step-bg)] border-[var(--app-step-text)]/25",
-      badge: "bg-[var(--app-step-text)] text-white",
-      label: "Least capital",
-    },
-    {
-      shell: "bg-[var(--app-std-bg)] border-[var(--app-std-text)]/25",
-      badge: "bg-[var(--app-std-text)] text-white",
-      label: "Mid capital",
-    },
-    {
-      shell: "bg-[var(--app-warn-bg)] border-[var(--app-warn-border)]",
-      badge: "bg-[var(--app-warn-text)] text-white",
-      label: "Most capital",
-    },
-  ];
+  const rankLabel = new Map<string, string>();
+  const labels = ["Least capital", "Mid capital", "Most capital"];
   ranked.forEach((path, i) => {
-    rankTone.set(path.key, tones[Math.min(i, tones.length - 1)]!);
+    rankLabel.set(path.key, labels[Math.min(i, labels.length - 1)]!);
   });
 
   return (
-    <Card className={muted ? "opacity-70" : undefined}>
-      <SectionHeader
-        title="Ways to cover the shortfall"
-        meta="Same net after tax · green needs the least capital"
-      />
-      <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
+    <div className={muted ? "opacity-70" : undefined}>
+      <div className="mb-4">
+        <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-slate-400">
+          Funding paths
+        </div>
+        <h3 className="mt-1.5 text-[15px] font-medium tracking-tight text-slate-900">
+          Cover the shortfall
+        </h3>
+        <p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-slate-500">
+          Three ways to reach the same net after tax. The least-capital path needs the
+          smallest total outlay.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 items-stretch gap-3 md:grid-cols-3">
         {paths.map((path) => {
-          const tone = rankTone.get(path.key)!;
-          const mix = [
-            {
-              key: "invested",
-              label: "Invested",
-              value: path.leg.invested,
-              color: "var(--app-chart-invested)",
-            },
-            {
-              key: "gain",
-              label: "Gain",
-              value: path.leg.gain,
-              color: "var(--app-chart-gain)",
-            },
-            {
-              key: "tax",
-              label: "Tax",
-              value: path.leg.tax,
-              color: "var(--app-chart-tax)",
-            },
+          const badge = rankLabel.get(path.key);
+          const isLeast = badge === "Least capital";
+          const rows = [
+            { label: "Invested", value: path.leg.invested, tone: "neutral" as const },
+            { label: "Gain", value: path.leg.gain, tone: "emerald" as const },
+            { label: "Tax", value: path.leg.tax, tone: "rose" as const },
+            { label: "Net after tax", value: path.leg.netAfterTax, tone: "net" as const },
           ];
-          const mixTotal = mix.reduce((sum, part) => sum + Math.max(0, part.value), 0) || 1;
 
           return (
             <div
               key={path.key}
-              className={`flex min-w-0 flex-col rounded-xl border p-3.5 sm:p-4 ${tone.shell}`}
+              className="flex h-full flex-col rounded-2xl border border-slate-200/80 bg-white px-4 py-4 shadow-[0_1px_2px_rgba(15,23,42,0.03),0_8px_24px_rgba(15,23,42,0.04)] sm:px-5"
             >
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <div className={MICRO_LABEL}>{path.eyebrow}</div>
-                  <div className="mt-0.5 text-sm font-semibold text-[var(--app-text)]">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  {path.mark}
+                  <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-slate-400">
                     {path.title}
                   </div>
                 </div>
-                <span
-                  className={`shrink-0 rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${tone.badge}`}
-                >
-                  {tone.label}
-                </span>
+                {badge ? (
+                  <span
+                    className={
+                      isLeast
+                        ? "rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700"
+                        : "rounded-md bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-500"
+                    }
+                  >
+                    {badge}
+                  </span>
+                ) : null}
               </div>
 
-              <div className="mt-2.5">
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-subtle)]">
-                  {path.primaryHint}
+              <div className="mt-3">
+                <div className="text-[13px] text-slate-500">{path.heroLabel}</div>
+                <div className="mt-0.5 text-[24px] font-medium tracking-tight tabular-nums text-slate-900">
+                  {formatINRCurrency(path.heroValue)}
                 </div>
-                <div className="mt-0.5 text-xl font-semibold tabular-nums tracking-tight text-[var(--app-text)] sm:text-2xl">
-                  {path.primary}
-                </div>
-                <div className={`mt-0.5 ${META_TEXT}`}>{path.secondary}</div>
+                <p className="mt-1.5 text-xs leading-relaxed text-slate-500">{path.hint}</p>
               </div>
 
-              <div className="mt-3 rounded-lg bg-white/70 p-2.5">
-                <div className={`${MICRO_LABEL} mb-2`}>Maturity mix</div>
-                <div
-                  className="flex h-3 overflow-hidden rounded-full"
-                  title="Invested · Gain · Tax"
-                >
-                  {mix.map((part) => {
-                    const pct = Math.max(0, part.value) / mixTotal;
-                    if (pct <= 0) return null;
-                    return (
-                      <div
-                        key={part.key}
-                        className="h-full min-w-[3px] first:rounded-l-full last:rounded-r-full"
-                        style={{
-                          width: `${pct * 100}%`,
-                          background: part.color,
-                        }}
-                      />
-                    );
-                  })}
-                </div>
-                <div className="mt-2.5 grid grid-cols-3 gap-1.5">
-                  {mix.map((part) => {
-                    const pct = Math.round((Math.max(0, part.value) / mixTotal) * 100);
-                    return (
-                      <div key={part.key} className="min-w-0">
-                        <div className="flex items-center gap-1">
-                          <span
-                            className="size-1.5 shrink-0 rounded-full"
-                            style={{ background: part.color }}
-                            aria-hidden
-                          />
-                          <span className="truncate text-[10px] font-semibold uppercase tracking-wide text-[var(--app-text-muted)]">
-                            {part.label}
-                          </span>
-                        </div>
-                        <div className="mt-0.5 truncate text-[11px] font-semibold tabular-nums text-[var(--app-text)]">
-                          {formatINRCurrency(part.value)}
-                        </div>
-                        <div className="text-[10px] tabular-nums text-[var(--app-text-subtle)]">
-                          {pct}%
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="mt-2.5 flex items-center justify-between gap-2 rounded-lg bg-[var(--app-primary)] px-2.5 py-2">
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--app-primary-fg-muted)]">
-                  Net after tax
-                </span>
-                <span className="text-[12px] font-bold tabular-nums text-[var(--app-primary-fg)] sm:text-[13px]">
-                  {formatINRCurrency(path.leg.netAfterTax)}
-                </span>
-              </div>
+              <dl className="mt-auto space-y-0 border-t border-slate-100 pt-1">
+                {rows.map((row) => (
+                  <div
+                    key={row.label}
+                    className={
+                      row.tone === "net"
+                        ? "mt-1 flex items-baseline justify-between gap-4 rounded-xl bg-emerald-50/70 px-3 py-2.5"
+                        : "flex items-baseline justify-between gap-4 border-b border-slate-100 py-2.5 last:border-0"
+                    }
+                  >
+                    <dt
+                      className={
+                        row.tone === "net"
+                          ? "text-[14px] font-medium text-emerald-800/80"
+                          : "text-[14px] text-slate-500"
+                      }
+                    >
+                      {row.label}
+                    </dt>
+                    <dd
+                      className={
+                        row.tone === "net"
+                          ? "text-[14px] font-semibold tabular-nums tracking-tight text-emerald-800"
+                          : row.tone === "emerald"
+                            ? "text-[14px] font-medium tabular-nums tracking-tight text-emerald-700"
+                            : row.tone === "rose"
+                              ? "text-[14px] font-medium tabular-nums tracking-tight text-rose-600"
+                              : "text-[14px] font-medium tabular-nums tracking-tight text-slate-900"
+                      }
+                    >
+                      {formatINRCurrency(row.value)}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
             </div>
           );
         })}
       </div>
-    </Card>
+    </div>
   );
 }
 
 function LegMetricCard({ title, leg }: { title: string; leg: GoalLeg }) {
-  const rows = [
-    { label: "Invested", value: leg.invested, tone: "text-[var(--app-text)]" },
-    { label: "Gain", value: leg.gain, tone: "text-[var(--app-step-text)]" },
-    { label: "Tax", value: leg.tax, tone: "text-[var(--app-danger)]" },
-    {
-      label: "Net after tax",
-      value: leg.netAfterTax,
-      tone: "font-bold text-[var(--app-step-text-strong)]",
-    },
-  ];
   const isLumpsum = leg.lumpsum != null;
+  const heroLabel = isLumpsum ? "Lumpsum today" : "Monthly SIP";
+  const heroValue = isLumpsum ? (leg.lumpsum ?? 0) : leg.monthlySip;
+  const rows = [
+    { label: "Invested", value: leg.invested, tone: "neutral" as const },
+    { label: "Gain", value: leg.gain, tone: "emerald" as const },
+    { label: "Tax", value: leg.tax, tone: "rose" as const },
+    { label: "Net after tax", value: leg.netAfterTax, tone: "net" as const },
+  ];
+
   return (
-    <Card className="h-full min-h-0">
-      <SectionTitle>{title}</SectionTitle>
-      <div className="mt-1.5 text-sm font-semibold tabular-nums text-[var(--app-text)]">
-        {isLumpsum ? "Lumpsum today " : "Monthly SIP "}
-        <span className="text-[var(--app-step-text-strong)]">
-          {formatINRCurrency(isLumpsum ? (leg.lumpsum ?? 0) : leg.monthlySip)}
-        </span>
+    <div className="flex h-full flex-col rounded-2xl border border-slate-200/80 bg-white px-4 py-4 shadow-[0_1px_2px_rgba(15,23,42,0.03),0_8px_24px_rgba(15,23,42,0.04)] sm:px-5">
+      <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-slate-400">
+        {title}
       </div>
-      <div className="mt-3 grid flex-1 grid-cols-2 content-start gap-2">
+      <div className="mt-3">
+        <div className="text-[13px] text-slate-500">{heroLabel}</div>
+        <div className="mt-0.5 text-[24px] font-medium tracking-tight tabular-nums text-slate-900">
+          {formatINRCurrency(heroValue)}
+        </div>
+      </div>
+      <dl className="mt-auto space-y-0 border-t border-slate-100 pt-1">
         {rows.map((row) => (
           <div
             key={row.label}
-            className="rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-2"
+            className={
+              row.tone === "net"
+                ? "mt-1 flex items-baseline justify-between gap-4 rounded-xl bg-emerald-50/70 px-3 py-2.5"
+                : "flex items-baseline justify-between gap-4 border-b border-slate-100 py-2.5 last:border-0"
+            }
           >
-            <div className={MICRO_LABEL}>{row.label}</div>
-            <div className={`mt-1 text-[13px] font-semibold tabular-nums ${row.tone}`}>
+            <dt
+              className={
+                row.tone === "net"
+                  ? "text-[14px] font-medium text-emerald-800/80"
+                  : "text-[14px] text-slate-500"
+              }
+            >
+              {row.label}
+            </dt>
+            <dd
+              className={
+                row.tone === "net"
+                  ? "text-[14px] font-semibold tabular-nums tracking-tight text-emerald-800"
+                  : row.tone === "emerald"
+                    ? "text-[14px] font-medium tabular-nums tracking-tight text-emerald-700"
+                    : row.tone === "rose"
+                      ? "text-[14px] font-medium tabular-nums tracking-tight text-rose-600"
+                      : "text-[14px] font-medium tabular-nums tracking-tight text-slate-900"
+              }
+            >
               {formatINRCurrency(row.value)}
-            </div>
+            </dd>
           </div>
         ))}
-      </div>
-    </Card>
+      </dl>
+    </div>
   );
 }
 
-function renderGoalCharts(mode: Mode, result: GoalPlannerResult, tenureYears: number) {
+function renderGoalCharts(
+  mode: Mode,
+  result: GoalPlannerResult,
+  tenureYears: number,
+  chartTab: "funding" | "compare" = "funding",
+  onChartTabChange?: (tab: "funding" | "compare") => void,
+) {
   const req = goalRequiredChart(mode, result);
   const extra = goalExtraChart(mode, result, tenureYears);
-  
+
   if (!extra) {
-    return (
-      <ChartPane>
-        <div className="flex min-h-[260px] flex-1 flex-col sm:min-h-[300px]">{req}</div>
-      </ChartPane>
-    );
+    return <div className="min-w-0">{req}</div>;
   }
-  
+
+  const active = chartTab === "compare" ? extra : req;
   return (
-    <SegmentedChartControl
-      variant="pill"
-      tabs={[
-        {
-          id: "required",
-          label: "Funding",
-          icon: <PieChart className="h-3.5 w-3.5" />,
-          content: (
-            <ChartPane>
-              <div className="flex min-h-[260px] flex-1 flex-col sm:min-h-[300px]">{req}</div>
-            </ChartPane>
-          ),
-        },
-        {
-          id: "extra",
-          label: "Comparison",
-          icon: <BarChart3 className="h-3.5 w-3.5" />,
-          content: (
-            <ChartPane>
-              <div className="flex min-h-[260px] flex-1 flex-col sm:min-h-[300px]">{extra}</div>
-            </ChartPane>
-          ),
-        },
-      ]}
-    />
+    <div className="space-y-3">
+      <WealthSegmented
+        variant="underline"
+        layoutId={`goal-chart-${mode}`}
+        value={chartTab}
+        onChange={(id) => onChartTabChange?.(id)}
+        options={[
+          {
+            id: "funding",
+            label: "Funding",
+            icon: <IconDonut className="h-3.5 w-3.5" />,
+          },
+          {
+            id: "compare",
+            label: "Comparison",
+            icon: <IconChart className="h-3.5 w-3.5" />,
+          },
+        ]}
+      />
+      <div className="min-w-0">{active}</div>
+    </div>
   );
 }
 
 function GoalHero({ mode, result }: { mode: Mode; result: GoalPlannerResult }) {
   if (mode === "sip" && result.standard && result.stepUp) {
     return (
-      <StatGrid>
-        <StatCard title="Standard SIP · monthly" value={result.standard.monthlySip} tone="positive" />
-        <StatCard title="Step-up SIP · monthly" value={result.stepUp.monthlySip} tone="positive" />
-      </StatGrid>
+      <MetricGrid>
+        <WealthMetricCard
+          title="Standard SIP"
+          value={result.standard.monthlySip}
+          description="Required monthly SIP to reach the target"
+          badge="Flat"
+          tone="neutral"
+          mark={
+            <WealthIconMark className="h-7 w-7">
+              <IconSip className="h-3.5 w-3.5" />
+            </WealthIconMark>
+          }
+        />
+        <WealthMetricCard
+          title="Step-Up SIP"
+          value={result.stepUp.monthlySip}
+          description="Starting monthly SIP with annual step-up"
+          tone="positive"
+          mark={
+            <WealthIconMark tone="emerald" className="h-7 w-7">
+              <IconStepUp className="h-3.5 w-3.5" />
+            </WealthIconMark>
+          }
+        />
+        <WealthMetricCard
+          title="Target Corpus"
+          value={result.targetGoal}
+          description="Net after capital gains tax"
+          tone="accent"
+          mark={
+            <WealthIconMark className="h-7 w-7">
+              <IconTarget className="h-3.5 w-3.5" />
+            </WealthIconMark>
+          }
+        />
+      </MetricGrid>
     );
   }
   if (result.standard) {
     return (
-      <StatGrid>
-        <StatCard title="Target goal" value={result.targetGoal} tone="neutral" />
-        <StatCard
-          title={result.standard.lumpsum != null ? "Additional lumpsum" : "Additional SIP · monthly"}
-          value={result.standard.lumpsum ?? result.standard.monthlySip}
-          tone="positive"
+      <MetricGrid>
+        <WealthMetricCard
+          title="Target Goal"
+          value={result.targetGoal}
+          description="Net after capital gains tax"
+          tone="accent"
+          mark={
+            <WealthIconMark className="h-7 w-7">
+              <IconTarget className="h-3.5 w-3.5" />
+            </WealthIconMark>
+          }
         />
-      </StatGrid>
+        <WealthMetricCard
+          title={result.standard.lumpsum != null ? "Additional Lumpsum" : "Additional SIP"}
+          value={result.standard.lumpsum ?? result.standard.monthlySip}
+          description={
+            result.standard.lumpsum != null
+              ? "One-time amount today"
+              : "Monthly SIP still required"
+          }
+          tone="positive"
+          mark={
+            <WealthIconMark tone="emerald" className="h-7 w-7">
+              <IconSip className="h-3.5 w-3.5" />
+            </WealthIconMark>
+          }
+        />
+      </MetricGrid>
     );
   }
   return (
-    <StatGrid>
-      <StatCard title="Target goal" value={result.targetGoal} tone="neutral" />
-      <StatCard title="Inflation-adjusted" value={result.inflAdjGoal} tone="neutral" />
-    </StatGrid>
+    <MetricGrid>
+      <WealthMetricCard
+        title="Target Goal"
+        value={result.targetGoal}
+        description="Net after capital gains tax"
+        tone="accent"
+      />
+      <WealthMetricCard
+        title="Inflation-Adjusted"
+        value={result.inflAdjGoal}
+        description="Goal grown for inflation"
+        tone="neutral"
+      />
+    </MetricGrid>
   );
 }
 
@@ -2334,12 +3210,16 @@ function investedTaxCorpus(legs: Array<{ key: string; label: string; color: stri
         Object.fromEntries(legs.map((l) => [l.key, l.leg.invested])),
       ),
       Object.assign(
-        { category: "Cap. gains tax" },
+        { category: "Gain" },
+        Object.fromEntries(legs.map((l) => [l.key, l.leg.gain])),
+      ),
+      Object.assign(
+        { category: "Tax" },
         Object.fromEntries(legs.map((l) => [l.key, l.leg.tax])),
       ),
       Object.assign(
-        { category: "Corpus" },
-        Object.fromEntries(legs.map((l) => [l.key, l.leg.maturity])),
+        { category: "Net" },
+        Object.fromEntries(legs.map((l) => [l.key, l.leg.netAfterTax])),
       ),
     ] as Array<{ category: string; [k: string]: string | number }>,
     series: legs.map((l) => ({ key: l.key, label: l.label, color: l.color })),
@@ -2349,17 +3229,22 @@ function investedTaxCorpus(legs: Array<{ key: string; label: string; color: stri
 function goalRequiredChart(mode: Mode, result: GoalPlannerResult): ReactNode {
   if (mode === "sip" && result.standard && result.stepUp) {
     const { data, series } = investedTaxCorpus([
-      { key: "sip", label: "SIP", color: "var(--app-chart-a)", leg: result.standard },
-      { key: "step", label: "Step-up", color: "var(--app-chart-b)", leg: result.stepUp },
+      { key: "sip", label: "Standard SIP", color: wealthChart.standard, leg: result.standard },
+      { key: "step", label: "Step-up SIP", color: wealthChart.stepUp, leg: result.stepUp },
     ]);
-    return <CompareChart title="SIP vs step-up" data={data} series={series} />;
+    return (
+      <WealthCompareBars
+        data={data}
+        series={series}
+        height="h-[300px] sm:h-[340px]"
+        showBarLabels
+      />
+    );
   }
 
   if (mode === "current" && result.lumpsum && result.standard && result.stepUp && result.existing) {
     return (
-      <WaterfallChart
-        title="How the goal is funded"
-        className="min-h-[300px] w-full flex-1 sm:min-h-[330px]"
+      <WealthWaterfallBars
         steps={[
           { label: "Existing credit", value: result.existing.netCredit, kind: "increase" },
           { label: "Additional", value: result.shortfall ?? 0, kind: "increase" },
@@ -2371,36 +3256,38 @@ function goalRequiredChart(mode: Mode, result: GoalPlannerResult): ReactNode {
 
   if (mode === "ls-sip" && result.standard) {
     return (
-      <CompositionChart
+      <WealthMixDonut
         title="Mix: corpus / lumpsum / SIP"
         centerLabel="Mix"
-        showPercentages
-        size="lg"
+        centerValue={
+          (result.existingCredit ?? 0) +
+          (result.extraLumpsum ?? 0) +
+          result.standard.invested +
+          result.standard.gain
+        }
+        tax={result.standard.tax}
+        net={result.standard.netAfterTax}
+        netLabel="SIP net"
         slices={[
           {
             name: "Current corpus credit",
             value: result.existingCredit ?? 0,
-            color: "var(--app-chart-invested)",
+            color: wealthMixColors.invested,
           },
           {
             name: "Extra lumpsum",
             value: result.extraLumpsum ?? 0,
-            color: "var(--app-chart-b)",
+            color: wealthMixColors.secondary,
           },
           {
             name: "SIP invested",
             value: result.standard.invested,
-            color: "var(--app-chart-invested)",
+            color: wealthMixColors.invested,
           },
           {
             name: "SIP gain",
             value: result.standard.gain,
-            color: "var(--app-chart-gain)",
-          },
-          {
-            name: "SIP tax",
-            value: result.standard.tax,
-            color: "var(--app-chart-tax)",
+            color: wealthMixColors.gain,
           },
         ]}
       />
@@ -2409,31 +3296,28 @@ function goalRequiredChart(mode: Mode, result: GoalPlannerResult): ReactNode {
 
   if (mode === "existing" && result.existing && result.standard) {
     return (
-      <CompositionChart
+      <WealthMixDonut
         title="Existing SIP vs additional SIP"
         centerLabel="Corpus"
         centerValue={result.existing.sipFv + result.standard.maturity}
-        compact
+        tax={result.standard.tax}
+        net={result.standard.netAfterTax}
+        netLabel="Add. net"
         slices={[
           {
             name: "SIP1 invested",
             value: result.existing.sipInvested ?? result.existing.totalInvested,
-            color: "var(--app-chart-invested)",
+            color: wealthMixColors.invested,
           },
           {
             name: "SIP2 invested",
             value: result.standard.invested,
-            color: "var(--app-chart-invested)",
+            color: wealthMixColors.secondary,
           },
           {
             name: "SIP2 gain",
             value: result.standard.gain,
-            color: "var(--app-chart-gain)",
-          },
-          {
-            name: "SIP2 tax",
-            value: result.standard.tax,
-            color: "var(--app-chart-tax)",
+            color: wealthMixColors.gain,
           },
         ]}
       />
@@ -2442,9 +3326,7 @@ function goalRequiredChart(mode: Mode, result: GoalPlannerResult): ReactNode {
 
   if (mode === "periodic" && result.periodic) {
     return (
-      <WaterfallChart
-        title="How the goal is funded"
-        className="min-h-[300px] w-full flex-1 sm:min-h-[330px]"
+      <WealthWaterfallBars
         steps={[
           {
             label: "Periodic credit",
@@ -2464,16 +3346,16 @@ function goalRequiredChart(mode: Mode, result: GoalPlannerResult): ReactNode {
 
   if (mode === "compounding") {
     return (
-      <GrowthChart
-        title="SIP vs lumpsum growth steps"
+      <WealthGrowthLine
         data={result.schedule.map((row) => ({
           year: row.year,
           sip: row.sipYearEnd ?? 0,
           lumpsum: row.lumpsumEnd ?? 0,
         }))}
+        xTick={(v) => `Y${v}`}
         series={[
-          { key: "sip", label: "SIP year-end", color: "var(--app-chart-invested)" },
-          { key: "lumpsum", label: "Lumpsum year-end", color: "var(--app-chart-gain)" },
+          { key: "sip", label: "SIP year-end", color: wealthChart.standard, kind: "area" },
+          { key: "lumpsum", label: "Lumpsum year-end", color: wealthChart.stepUp, kind: "line" },
         ]}
       />
     );
@@ -2488,37 +3370,27 @@ function goalExtraChart(mode: Mode, result: GoalPlannerResult, tenureYears = 15)
   }
 
   if (mode === "current" && result.existing && result.lumpsum && result.standard && result.stepUp) {
-    const years = result.schedule.length || tenureYears;
     const sipTotal = result.standard.invested;
     const stepTotal = result.stepUp.invested;
     const lsToday = result.lumpsum.lumpsum ?? 0;
     return (
-      <CompareChart
-        title="Total capital · Extra LS vs SIP vs step-up"
+      <WealthCompareBars
         showBarLabels
-        showLegend={false}
-        className="min-h-[300px] w-full flex-1 sm:min-h-[330px]"
         data={[
           {
             category: "Extra lumpsum",
-            sublabel: "One-time today",
             amount: lsToday,
-            fill: "var(--app-chart-a)",
           },
           {
             category: "Extra SIP",
-            sublabel: `${formatINRCurrency(result.standard.monthlySip)}/mo × ${years}y`,
             amount: sipTotal,
-            fill: "var(--app-chart-b)",
           },
           {
             category: "Extra step-up",
-            sublabel: `${formatINRCurrency(result.stepUp.monthlySip)}/mo start`,
             amount: stepTotal,
-            fill: "var(--app-chart-gain)",
           },
         ]}
-        series={[{ key: "amount", label: "Total capital", color: "var(--app-chart-invested)" }]}
+        series={[{ key: "amount", label: "Total capital", color: wealthChart.invested }]}
       />
     );
   }
@@ -2529,40 +3401,30 @@ function goalExtraChart(mode: Mode, result: GoalPlannerResult, tenureYears = 15)
     const mixSipTotal = (result.mixSip ?? 0) * 12 * years;
     const mixTotal = (result.extraLumpsum ?? 0) + mixSipTotal;
     return (
-      <CompareChart
-        title="Total capital · All-LS vs All-SIP vs Mix"
+      <WealthCompareBars
         showBarLabels
-        showLegend={false}
-        className="min-h-[300px] w-full flex-1 sm:min-h-[330px]"
         data={[
           {
             category: "All lumpsum",
-            sublabel: "One-time today",
             amount: result.allLumpsum,
-            fill: "var(--app-chart-a)",
           },
           {
             category: "All SIP",
-            sublabel: `${formatINRCurrency(result.allSip)}/mo × ${years}y`,
             amount: allSipTotal,
-            fill: "var(--app-chart-b)",
           },
           {
             category: "Mix",
-            sublabel: `LS + ${formatINRCurrency(result.mixSip ?? 0)}/mo`,
             amount: mixTotal,
-            fill: "var(--app-chart-gain)",
           },
         ]}
-        series={[{ key: "amount", label: "Total capital", color: "var(--app-chart-invested)" }]}
+        series={[{ key: "amount", label: "Total capital", color: wealthChart.invested }]}
       />
     );
   }
 
   if (mode === "existing" && result.existing && result.standard) {
     return (
-      <CompareChart
-        title="Existing vs additional SIP"
+      <WealthCompareBars
         data={[
           {
             category: "Invested",
@@ -2576,8 +3438,8 @@ function goalExtraChart(mode: Mode, result: GoalPlannerResult, tenureYears = 15)
           },
         ]}
         series={[
-          { key: "existing", label: "Existing", color: "var(--app-chart-a)" },
-          { key: "additional", label: "Additional", color: "var(--app-chart-b)" },
+          { key: "existing", label: "Existing", color: wealthChart.standard },
+          { key: "additional", label: "Additional", color: wealthChart.stepUp },
         ]}
       />
     );
@@ -2585,9 +3447,7 @@ function goalExtraChart(mode: Mode, result: GoalPlannerResult, tenureYears = 15)
 
   if (mode === "periodic" && result.standard && result.stepUp) {
     return (
-      <CompareChart
-        title="Remaining SIP vs step-up"
-        className="min-h-[300px] w-full flex-1 sm:min-h-[330px]"
+      <WealthCompareBars
         data={[
           {
             category: "Invested",
@@ -2601,8 +3461,8 @@ function goalExtraChart(mode: Mode, result: GoalPlannerResult, tenureYears = 15)
           },
         ]}
         series={[
-          { key: "sip", label: "Remaining SIP", color: "var(--app-chart-a)" },
-          { key: "step", label: "Remaining step-up", color: "var(--app-chart-b)" },
+          { key: "sip", label: "Remaining SIP", color: wealthChart.standard },
+          { key: "step", label: "Remaining step-up", color: wealthChart.stepUp },
         ]}
       />
     );
@@ -2610,34 +3470,22 @@ function goalExtraChart(mode: Mode, result: GoalPlannerResult, tenureYears = 15)
 
   if (mode === "compounding" && result.standard) {
     return (
-      <CompositionChart
+      <WealthMixDonut
         title="SIP at goal year"
         centerLabel="Corpus"
         centerValue={result.standard.maturity}
+        tax={result.standard.tax}
+        net={result.standard.netAfterTax}
+        netLabel="Net after tax"
         slices={[
-          { name: "Invested", value: result.standard.invested, color: "var(--app-chart-invested)" },
-          { name: "Gain", value: result.standard.gain, color: "var(--app-chart-gain)" },
+          { name: "Invested", value: result.standard.invested, color: wealthMixColors.invested },
+          { name: "Gain", value: result.standard.gain, color: wealthMixColors.gain },
         ]}
       />
     );
   }
 
   return null;
-}
-
-function legItems(leg: GoalLeg) {
-  const items = [];
-  if (leg.lumpsum != null) items.push({ label: "Lumpsum", value: leg.lumpsum });
-  items.push({ label: "Monthly SIP", value: leg.monthlySip });
-  if (leg.endMonthlySip != null) items.push({ label: "End SIP", value: leg.endMonthlySip });
-  items.push(
-    { label: "Invested", value: leg.invested },
-    { label: "Maturity", value: leg.maturity },
-    { label: "Gain", value: leg.gain },
-    { label: "Tax", value: leg.tax },
-    { label: "Net after tax", value: leg.netAfterTax },
-  );
-  return items;
 }
 
 function scheduleColumns(mode: Mode) {

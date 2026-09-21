@@ -1,31 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { generatePdfFromElement } from "@/lib/pdf-generator";
 import {
-  AgeInput,
-  BentoGroup,
-  BentoSection,
-  ChartPane,
-  ClientProfileBar,
-  ComplianceFootnote,
-  CompositionChart,
-  Field,
   formatINRCurrency,
   formatPercent,
-  GrowthChart,
-  MoneyInput,
-  PercentInput,
-  ResultsSection,
-  ScheduleTable,
   SelectInput,
-  SegmentedChartControl,
-  Stack,
-  StatCard,
-  StatGrid,
-  StatusNote,
-  TextInput,
-  YearInput,
   ageError,
   emailError,
   nameError,
@@ -51,7 +32,43 @@ import {
 import { useCalculate } from "@/hooks/use-calculate";
 import { useCalculatorMode } from "@/hooks/use-calculator-mode";
 import { getCalculatorPageTitle } from "@/lib/calculator-nav";
-import { LineChart, PieChart } from "lucide-react";
+import {
+  IconCalendar,
+  IconChart,
+  IconDelay,
+  IconDonut,
+  IconPerson,
+  IconRates,
+  IconRefresh,
+  IconSip,
+  IconStepUp,
+  IconTarget,
+  IconTax,
+  moneyCell,
+  WEALTH_CONTENT_CLASS,
+  WealthAgeField,
+  WealthAuditChip,
+  WealthAuditLedger,
+  WealthDataTable,
+  WealthDisclaimer,
+  WealthGrowthLine,
+  WealthHero,
+  WealthIconMark,
+  WealthMetricCard,
+  WealthMixDonut,
+  WealthMoneyField,
+  WealthPercentField,
+  WealthProfileGrid,
+  WealthSection,
+  WealthSegmented,
+  WealthStatusNote,
+  WealthTextField,
+  WealthYearField,
+  wealthChart,
+  wealthMixColors,
+  WEALTH_MONEY_PRESETS_DEFAULT,
+  WEALTH_YEAR_PRESETS_DEFAULT,
+} from "@/components/wealth";
 
 const MODES = [
   { id: "sip", label: "SIP" },
@@ -62,6 +79,20 @@ const MODES = [
 
 type Mode = (typeof MODES)[number]["id"];
 const MODE_IDS = MODES.map((m) => m.id);
+
+const SIP_AMOUNT_MIN = 1_000;
+const SIP_AMOUNT_MAX = 10_00_000;
+const SIP_AMOUNT_PRESETS = [
+  { label: "₹5k", value: 5_000 },
+  { label: "₹10k", value: 10_000 },
+  { label: "₹25k", value: 25_000 },
+  { label: "₹50k", value: 50_000 },
+  { label: "₹1L", value: 1_00_000 },
+  { label: "₹2L", value: 2_00_000 },
+];
+const PERIODIC_AMOUNT_MIN = 10_000;
+const PERIODIC_AMOUNT_MAX = 10_00_00_000;
+const YEARS_SLIDER_MAX = 40;
 
 const FREQUENCY_OPTIONS = [
   { value: "12", label: "Monthly" },
@@ -83,21 +114,21 @@ const MODE_META: Record<
     goal: "Capital growth",
     description: "Monthly SIP with inflation, tax, and cost of delay.",
     assumptionsBlurb:
-      "Interactive multi-parameter engine for monthly SIP growth with inflation and delay",
+      "Client identity, SIP parameters, and market rate settings for monthly growth",
   },
   stepup: {
     strategy: "Step-up SIP compounding",
     goal: "Rising contribution growth",
     description: "Annual step-up SIP with inflation and tax impact.",
     assumptionsBlurb:
-      "Interactive multi-parameter engine for step-up SIP growth with inflation",
+      "Client identity, step-up SIP parameters, and market rate settings",
   },
   periodic: {
     strategy: "Periodic contribution compounding",
     goal: "Scheduled investing",
     description: "Fixed contributions at a chosen frequency through the tenure.",
     assumptionsBlurb:
-      "Interactive multi-parameter engine for periodic contribution growth and tax",
+      "Client identity, contribution schedule, and return/tax assumptions",
   },
 };
 
@@ -160,16 +191,61 @@ const CALCULATOR_ID: Record<Exclude<Mode, "lumpsum">, string> = {
   periodic: "growth-periodic",
 };
 
+function GrowthModeTabs({
+  mode,
+  onModeChange,
+}: {
+  mode: Mode;
+  onModeChange: (next: Mode) => void;
+}) {
+  return (
+    <WealthSegmented
+      fullWidth
+      layoutId="growth-mode-pill"
+      value={mode}
+      onChange={onModeChange}
+      options={[
+        {
+          id: "sip",
+          label: "SIP",
+          icon: <IconSip className="h-3.5 w-3.5" />,
+        },
+        {
+          id: "stepup",
+          label: "Step-up",
+          icon: <IconStepUp className="h-3.5 w-3.5" />,
+        },
+        {
+          id: "lumpsum",
+          label: "Lumpsum",
+          icon: <IconChart className="h-3.5 w-3.5" />,
+        },
+        {
+          id: "periodic",
+          label: "Periodic",
+          icon: <IconCalendar className="h-3.5 w-3.5" />,
+        },
+      ]}
+    />
+  );
+}
+
 export function InvestmentGrowth() {
-  const [mode] = useCalculatorMode(MODE_IDS, "lumpsum");
+  const [mode, setMode] = useCalculatorMode(MODE_IDS, "lumpsum");
   if (mode === "lumpsum") {
     return <GrowthLumpsum />;
   }
 
-  return <InvestmentGrowthModes mode={mode} />;
+  return <InvestmentGrowthModes mode={mode} onModeChange={setMode} />;
 }
 
-function InvestmentGrowthModes({ mode }: { mode: Exclude<Mode, "lumpsum"> }) {
+function InvestmentGrowthModes({
+  mode,
+  onModeChange,
+}: {
+  mode: Exclude<Mode, "lumpsum">;
+  onModeChange: (next: Mode) => void;
+}) {
   const [name, setName] = useState("Mr. Anshu Kaul");
   const [age, setAge] = useState(30);
   const [email, setEmail] = useState(DUMMY_REPORT_CONTACT.email);
@@ -199,6 +275,8 @@ function InvestmentGrowthModes({ mode }: { mode: Exclude<Mode, "lumpsum"> }) {
   const [openAssumptions, setOpenAssumptions] = useState(true);
   const [openMilestones, setOpenMilestones] = useState(true);
   const [openAnalytics, setOpenAnalytics] = useState(true);
+  const [openSchedule, setOpenSchedule] = useState(true);
+  const assumptionsRef = useRef<HTMLDivElement>(null);
 
   const clientNameError = nameError(name);
   const clientAgeError = ageError(age);
@@ -285,7 +363,6 @@ function InvestmentGrowthModes({ mode }: { mode: Exclude<Mode, "lumpsum"> }) {
 
   const horizonYears =
     mode === "sip" ? investYears : mode === "stepup" ? stepYears : periodicYears;
-  const endAge = age + horizonYears;
 
   const input = useMemo(() => {
     switch (mode) {
@@ -415,6 +492,11 @@ function InvestmentGrowthModes({ mode }: { mode: Exclude<Mode, "lumpsum"> }) {
     }
   };
 
+  const scrollToAssumptions = () => {
+    setOpenAssumptions(true);
+    assumptionsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const meta = MODE_META[mode];
 
   return (
@@ -422,6 +504,7 @@ function InvestmentGrowthModes({ mode }: { mode: Exclude<Mode, "lumpsum"> }) {
       <CalculatorPage
         title={getCalculatorPageTitle("/growth", mode)}
         description={meta.description}
+        contentClassName={WEALTH_CONTENT_CLASS}
         actions={
           <ReportDownloadButton
             onClick={handleDownload}
@@ -429,128 +512,160 @@ function InvestmentGrowthModes({ mode }: { mode: Exclude<Mode, "lumpsum"> }) {
             loading={isDownloading}
           />
         }
+        modes={<GrowthModeTabs mode={mode} onModeChange={onModeChange} />}
         header={
-          <ClientProfileBar
-            name={name}
+          <WealthHero
+            clientName={name}
             age={age}
             email={email}
             phone={phone}
+            goalLabel={meta.goal}
+            tenure={horizonYears}
             strategy={meta.strategy}
-            goal={meta.goal}
+            metrics={[
+              {
+                label: "Maturity",
+                value: result?.maturity ?? 0,
+                kind: "currency",
+                tone: "emerald",
+                mark: (
+                  <WealthIconMark tone="emerald" className="h-6 w-6">
+                    <IconTarget className="h-3.5 w-3.5" />
+                  </WealthIconMark>
+                ),
+              },
+              {
+                label: "Invested",
+                value: result?.totalInvested ?? 0,
+                kind: "currency",
+                tone: "slate",
+                mark: (
+                  <WealthIconMark className="h-6 w-6">
+                    <IconSip className="h-3.5 w-3.5" />
+                  </WealthIconMark>
+                ),
+              },
+              {
+                label: "Net after tax",
+                value: result?.netAfterTax ?? 0,
+                kind: "currency",
+                tone: "slate",
+                mark: (
+                  <WealthIconMark className="h-6 w-6">
+                    <IconTax className="h-3.5 w-3.5" />
+                  </WealthIconMark>
+                ),
+              },
+            ]}
+            onEdit={scrollToAssumptions}
           />
         }
         form={
-          <BentoSection
-            sectionId="01"
-            title="Financial Assumptions & Modeling Suite"
-            description={meta.assumptionsBlurb}
-            collapsible
+          <div ref={assumptionsRef}>
+          <WealthSection
+            id="assumptions"
+            badge="01 · Profile"
+            title="Investor Profile and Assumptions"
+            subtitle={meta.assumptionsBlurb}
             open={openAssumptions}
             onToggle={() => setOpenAssumptions((v) => !v)}
+            mark={
+              <WealthIconMark>
+                <IconPerson />
+              </WealthIconMark>
+            }
             actions={
               <button
                 type="button"
                 onClick={resetDefaults}
-                className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 transition-all hover:bg-slate-100 hover:text-emerald-700"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
               >
-                Reset to Baseline
+                <IconRefresh className="h-3.5 w-3.5" />
+                Reset
               </button>
             }
           >
-            <BentoGroup
-              num="01"
-              title="Investor Profile"
-              colSpan={4}
-              footer={
-                <>
-                  <span>Age path:</span>
-                  <span className="font-bold text-slate-700">
-                    {age} → {endAge}
-                  </span>
-                </>
-              }
-            >
-              <div className="mb-4">
-                <Field label="Client Name" error={clientNameError}>
-                  <TextInput
+            <div className="w-full px-0">
+              {mode === "sip" ? (
+                <div className="py-2">
+                <WealthProfileGrid>
+                  <WealthTextField
+                    label="Client name"
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className={clientNameError ? "border-[var(--app-danger)]" : undefined}
+                    onChange={setName}
+                    error={clientNameError}
+                    autoComplete="name"
                   />
-                </Field>
-              </div>
-              <div className="mb-4">
-                <AgeInput value={age} onChange={setAge} error={clientAgeError} />
-              </div>
-              <div className="mb-4">
-                <Field label="Email" error={clientEmailError}>
-                  <TextInput
+                  <WealthAgeField
+                    value={age}
+                    onChange={setAge}
+                    error={clientAgeError}
+                  />
+                  <WealthTextField
+                    label="Email"
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={setEmail}
+                    error={clientEmailError}
                     placeholder="client@email.com"
-                    className={clientEmailError ? "border-[var(--app-danger)]" : undefined}
+                    autoComplete="email"
                   />
-                </Field>
-              </div>
-              <Field label="Phone" error={clientPhoneError}>
-                <TextInput
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+91 98765 43210"
-                  className={clientPhoneError ? "border-[var(--app-danger)]" : undefined}
-                />
-              </Field>
-            </BentoGroup>
-
-            {mode === "sip" ? (
-              <>
-                <BentoGroup
-                  num="02"
-                  title="Investment Parameters"
-                  colSpan={5}
-                  footer={
-                    <>
-                      <span>Horizon:</span>
-                      <span className="font-bold text-emerald-700">
-                        {investYears} yr{investYears === 1 ? "" : "s"} SIP · {sipYears} yr
-                        {sipYears === 1 ? "" : "s"} contribute
-                        {sipDelay > 0 ? ` · ${sipDelay} mo delay` : ""}
-                      </span>
-                    </>
-                  }
-                >
-                  <div className="mb-4">
-                    <MoneyInput
-                      label="Monthly SIP"
-                      value={sipMonthly}
-                      onChange={setSipMonthly}
-                      error={sipMonthlyError}
-                    />
-                  </div>
-                  <div className="mb-4">
-                    <YearInput
-                      label="SIP years"
-                      value={sipYears}
-                      min={1}
-                      max={100}
-                      onChange={setSipYears}
-                      error={sipYearsError ?? (sipYears > investYears ? sipHorizonError : undefined)}
-                    />
-                  </div>
-                  <div className="mb-4">
-                    <YearInput
-                      label="Horizon"
-                      value={investYears}
-                      min={1}
-                      max={100}
-                      suffix="Years"
-                      onChange={setInvestYears}
-                      error={sipHorizonError}
-                    />
-                  </div>
-                  <YearInput
+                  <WealthTextField
+                    label="Phone"
+                    type="tel"
+                    value={phone}
+                    onChange={setPhone}
+                    error={clientPhoneError}
+                    placeholder="+91 98765 43210"
+                    autoComplete="tel"
+                  />
+                  <WealthMoneyField
+                    label="Monthly SIP"
+                    value={sipMonthly}
+                    onChange={setSipMonthly}
+                    error={sipMonthlyError}
+                    max={SIP_AMOUNT_MAX}
+                    slider={{
+                      min: SIP_AMOUNT_MIN,
+                      max: SIP_AMOUNT_MAX,
+                      step: 1_000,
+                      scale: "log",
+                      presets: SIP_AMOUNT_PRESETS,
+                    }}
+                  />
+                  <WealthYearField
+                    label="SIP years"
+                    value={sipYears}
+                    min={1}
+                    max={100}
+                    onChange={setSipYears}
+                    error={
+                      sipYearsError ??
+                      (sipYears > investYears ? sipHorizonError : undefined)
+                    }
+                    slider={{
+                      min: 1,
+                      max: YEARS_SLIDER_MAX,
+                      step: 1,
+                      presets: WEALTH_YEAR_PRESETS_DEFAULT,
+                    }}
+                  />
+                  <WealthYearField
+                    label="Horizon"
+                    value={investYears}
+                    min={1}
+                    max={100}
+                    suffix="Years"
+                    onChange={setInvestYears}
+                    error={sipHorizonError}
+                    slider={{
+                      min: 1,
+                      max: YEARS_SLIDER_MAX,
+                      step: 1,
+                      presets: WEALTH_YEAR_PRESETS_DEFAULT,
+                    }}
+                  />
+                  <WealthYearField
                     label="Delay"
                     value={sipDelay}
                     min={0}
@@ -559,157 +674,172 @@ function InvestmentGrowthModes({ mode }: { mode: Exclude<Mode, "lumpsum"> }) {
                     onChange={(v) => setSipDelay(Math.max(0, v))}
                     error={sipDelayError}
                   />
-                </BentoGroup>
-
-                <BentoGroup
-                  num="03"
-                  title="Rate Assumptions"
-                  subtitle="Return, Inflation & Tax"
-                  colSpan={3}
-                  footer={
-                    <>
-                      <span>Tax drag:</span>
-                      <span className="font-bold text-emerald-700">{formatPercent(sipTax)}</span>
-                    </>
-                  }
-                >
-                  <div className="mb-3.5">
-                    <PercentInput
-                      label="Return"
-                      value={sipReturn}
-                      onChange={(v) => setSipReturn(Math.max(0, v))}
-                      error={sipReturnError}
-                    />
-                  </div>
-                  <div className="mb-3.5">
-                    <PercentInput
-                      label="Inflation"
-                      value={sipInflation}
-                      onChange={(v) => setSipInflation(Math.max(0, v))}
-                      error={sipInflationError}
-                    />
-                  </div>
-                  <PercentInput
+                  <WealthPercentField
+                    label="Return"
+                    value={sipReturn}
+                    onChange={(v) => setSipReturn(Math.max(0, v))}
+                    error={sipReturnError}
+                  />
+                  <WealthPercentField
+                    label="Inflation"
+                    value={sipInflation}
+                    onChange={(v) => setSipInflation(Math.max(0, v))}
+                    error={sipInflationError}
+                  />
+                  <WealthPercentField
                     label="Tax"
                     value={sipTax}
                     onChange={(v) => setSipTax(Math.max(0, v))}
                     error={sipTaxError}
                   />
-                </BentoGroup>
-              </>
-            ) : mode === "stepup" ? (
-              <>
-                <BentoGroup
-                  num="02"
-                  title="Investment Parameters"
-                  colSpan={5}
-                  footer={
-                    <>
-                      <span>Horizon:</span>
-                      <span className="font-bold text-emerald-700">
-                        {stepYears} yr{stepYears === 1 ? "" : "s"} · {formatPercent(stepUpPct)}{" "}
-                        step-up
-                      </span>
-                    </>
-                  }
-                >
-                  <div className="mb-4">
-                    <MoneyInput
-                      label="Start SIP"
-                      value={stepStart}
-                      onChange={setStepStart}
-                      error={stepStartError}
-                    />
-                  </div>
-                  <div className="mb-4">
-                    <YearInput
-                      label="SIP years"
-                      value={stepYears}
-                      min={1}
-                      max={100}
-                      onChange={setStepYears}
-                      error={stepYearsError}
-                    />
-                  </div>
-                  <PercentInput
+                </WealthProfileGrid>
+              </div>
+              ) : mode === "stepup" ? (
+                <div className="py-2">
+                <WealthProfileGrid>
+                  <WealthTextField
+                    label="Client name"
+                    value={name}
+                    onChange={setName}
+                    error={clientNameError}
+                    autoComplete="name"
+                  />
+                  <WealthAgeField
+                    value={age}
+                    onChange={setAge}
+                    error={clientAgeError}
+                  />
+                  <WealthTextField
+                    label="Email"
+                    type="email"
+                    value={email}
+                    onChange={setEmail}
+                    error={clientEmailError}
+                    placeholder="client@email.com"
+                    autoComplete="email"
+                  />
+                  <WealthTextField
+                    label="Phone"
+                    type="tel"
+                    value={phone}
+                    onChange={setPhone}
+                    error={clientPhoneError}
+                    placeholder="+91 98765 43210"
+                    autoComplete="tel"
+                  />
+                  <WealthMoneyField
+                    label="Start SIP"
+                    value={stepStart}
+                    onChange={setStepStart}
+                    error={stepStartError}
+                    max={SIP_AMOUNT_MAX}
+                    slider={{
+                      min: SIP_AMOUNT_MIN,
+                      max: SIP_AMOUNT_MAX,
+                      step: 1_000,
+                      scale: "log",
+                      presets: SIP_AMOUNT_PRESETS,
+                    }}
+                  />
+                  <WealthYearField
+                    label="SIP years"
+                    value={stepYears}
+                    min={1}
+                    max={100}
+                    onChange={setStepYears}
+                    error={stepYearsError}
+                    slider={{
+                      min: 1,
+                      max: YEARS_SLIDER_MAX,
+                      step: 1,
+                      presets: WEALTH_YEAR_PRESETS_DEFAULT,
+                    }}
+                  />
+                  <WealthPercentField
                     label="Step-up"
                     value={stepUpPct}
                     onChange={(v) => setStepUpPct(Math.max(0, v))}
                     error={stepUpPctError}
                   />
-                </BentoGroup>
-
-                <BentoGroup
-                  num="03"
-                  title="Rate Assumptions"
-                  subtitle="Return, Inflation & Tax"
-                  colSpan={3}
-                  footer={
-                    <>
-                      <span>Tax drag:</span>
-                      <span className="font-bold text-emerald-700">{formatPercent(stepTax)}</span>
-                    </>
-                  }
-                >
-                  <div className="mb-3.5">
-                    <PercentInput
-                      label="Return"
-                      value={stepReturn}
-                      onChange={(v) => setStepReturn(Math.max(0, v))}
-                      error={stepReturnError}
-                    />
-                  </div>
-                  <div className="mb-3.5">
-                    <PercentInput
-                      label="Inflation"
-                      value={stepInflation}
-                      onChange={(v) => setStepInflation(Math.max(0, v))}
-                      error={stepInflationError}
-                    />
-                  </div>
-                  <PercentInput
+                  <WealthPercentField
+                    label="Return"
+                    value={stepReturn}
+                    onChange={(v) => setStepReturn(Math.max(0, v))}
+                    error={stepReturnError}
+                  />
+                  <WealthPercentField
+                    label="Inflation"
+                    value={stepInflation}
+                    onChange={(v) => setStepInflation(Math.max(0, v))}
+                    error={stepInflationError}
+                  />
+                  <WealthPercentField
                     label="Tax"
                     value={stepTax}
                     onChange={(v) => setStepTax(Math.max(0, v))}
                     error={stepTaxError}
                   />
-                </BentoGroup>
-              </>
-            ) : (
-              <>
-                <BentoGroup
-                  num="02"
-                  title="Investment Parameters"
-                  colSpan={5}
-                  footer={
-                    <>
-                      <span>Schedule:</span>
-                      <span className="font-bold text-emerald-700">
-                        {frequencyLabel(timesPerYear)} · {periodicYears} yr
-                        {periodicYears === 1 ? "" : "s"}
-                      </span>
-                    </>
-                  }
-                >
-                  <div className="mb-4">
-                    <MoneyInput
-                      label="Amount each"
-                      value={periodicAmount}
-                      onChange={setPeriodicAmount}
-                      error={periodicAmountError}
-                    />
-                  </div>
-                  <div className="mb-4">
+                </WealthProfileGrid>
+              </div>
+              ) : (
+                <div className="py-2">
+                <WealthProfileGrid>
+                  <WealthTextField
+                    label="Client name"
+                    value={name}
+                    onChange={setName}
+                    error={clientNameError}
+                    autoComplete="name"
+                  />
+                  <WealthAgeField
+                    value={age}
+                    onChange={setAge}
+                    error={clientAgeError}
+                  />
+                  <WealthTextField
+                    label="Email"
+                    type="email"
+                    value={email}
+                    onChange={setEmail}
+                    error={clientEmailError}
+                    placeholder="client@email.com"
+                    autoComplete="email"
+                  />
+                  <WealthTextField
+                    label="Phone"
+                    type="tel"
+                    value={phone}
+                    onChange={setPhone}
+                    error={clientPhoneError}
+                    placeholder="+91 98765 43210"
+                    autoComplete="tel"
+                  />
+                  <WealthMoneyField
+                    label="Amount each"
+                    value={periodicAmount}
+                    onChange={setPeriodicAmount}
+                    error={periodicAmountError}
+                    max={PERIODIC_AMOUNT_MAX}
+                    slider={{
+                      min: PERIODIC_AMOUNT_MIN,
+                      max: PERIODIC_AMOUNT_MAX,
+                      step: 1_00_000,
+                      scale: "log",
+                      presets: WEALTH_MONEY_PRESETS_DEFAULT,
+                    }}
+                  />
+                  <div className="min-w-0">
                     <SelectInput
                       label="Freq / yr"
                       value={String(timesPerYear)}
                       onChange={(value) => setTimesPerYear(Number(value))}
                       options={FREQUENCY_OPTIONS}
                       hint={frequencyHint(timesPerYear)}
-                      className="min-w-0 text-[13px]"
+                      error={periodicFreqError}
+                      className="min-w-0 w-full text-[13px]"
                     />
                   </div>
-                  <YearInput
+                  <WealthYearField
                     label="Tenure"
                     value={periodicYears}
                     min={1}
@@ -717,47 +847,37 @@ function InvestmentGrowthModes({ mode }: { mode: Exclude<Mode, "lumpsum"> }) {
                     suffix="Years"
                     onChange={setPeriodicYears}
                     error={periodicYearsError}
+                    slider={{
+                      min: 1,
+                      max: YEARS_SLIDER_MAX,
+                      step: 1,
+                      presets: WEALTH_YEAR_PRESETS_DEFAULT,
+                    }}
                   />
-                </BentoGroup>
-
-                <BentoGroup
-                  num="03"
-                  title="Rate Assumptions"
-                  subtitle="Return & Tax"
-                  colSpan={3}
-                  footer={
-                    <>
-                      <span>Tax drag:</span>
-                      <span className="font-bold text-emerald-700">
-                        {formatPercent(periodicTax)}
-                      </span>
-                    </>
-                  }
-                >
-                  <div className="mb-3.5">
-                    <PercentInput
-                      label="Return"
-                      value={periodicReturn}
-                      onChange={(v) => setPeriodicReturn(Math.max(0, v))}
-                      error={periodicReturnError}
-                    />
-                  </div>
-                  <PercentInput
+                  <WealthPercentField
+                    label="Return"
+                    value={periodicReturn}
+                    onChange={(v) => setPeriodicReturn(Math.max(0, v))}
+                    error={periodicReturnError}
+                  />
+                  <WealthPercentField
                     label="Tax"
                     value={periodicTax}
                     onChange={(v) => setPeriodicTax(Math.max(0, v))}
                     error={periodicTaxError}
                   />
-                </BentoGroup>
-              </>
-            )}
-          </BentoSection>
+                </WealthProfileGrid>
+              </div>
+              )}
+            </div>
+          </WealthSection>
+          </div>
         }
         results={
           <>
-            {error ? <StatusNote tone="error">{error}</StatusNote> : null}
+            {error ? <WealthStatusNote tone="error">{error}</WealthStatusNote> : null}
             {!canCalculate ? (
-              <StatusNote tone="error">
+              <WealthStatusNote tone="error">
                 <div className="flex flex-col gap-1">
                   <span className="font-semibold">
                     Fix the inputs above to refresh the calculation
@@ -769,10 +889,10 @@ function InvestmentGrowthModes({ mode }: { mode: Exclude<Mode, "lumpsum"> }) {
                     ))}
                   </ul>
                 </div>
-              </StatusNote>
+              </WealthStatusNote>
             ) : null}
             {loading && !result && canCalculate ? (
-              <StatusNote tone="pending">Calculating…</StatusNote>
+              <WealthStatusNote tone="info">Calculating…</WealthStatusNote>
             ) : null}
             {result ? (
               <GrowthResults
@@ -785,35 +905,56 @@ function InvestmentGrowthModes({ mode }: { mode: Exclude<Mode, "lumpsum"> }) {
                 onToggleMilestones={() => setOpenMilestones((v) => !v)}
                 openAnalytics={openAnalytics}
                 onToggleAnalytics={() => setOpenAnalytics((v) => !v)}
+                openSchedule={openSchedule}
+                onToggleSchedule={() => setOpenSchedule((v) => !v)}
               />
             ) : null}
           </>
         }
         footer={
-          <ComplianceFootnote>
+          <WealthDisclaimer
+            notes={
+              mode === "sip"
+                ? [
+                    "Unplanned delay permanently compresses the compounding runway under the same return path.",
+                    "Headline maturity is not purchasing power. Frame conversations on the inflation-adjusted corpus.",
+                    "Tax is applied on gains only. Net after tax is the amount available to the investor at exit.",
+                    "Projections are illustrative. Actual market returns and tax rules can differ.",
+                  ]
+                : mode === "stepup"
+                  ? [
+                      "Step-up increases contributions each year at the stated rate; actual SIP changes may differ.",
+                      "Headline maturity is not purchasing power. Frame conversations on the inflation-adjusted corpus.",
+                      "Tax is applied on gains only. Net after tax is the amount available to the investor at exit.",
+                      "Projections are illustrative. Actual market returns and tax rules can differ.",
+                    ]
+                  : [
+                      "Each contribution compounds only for the remaining horizon after it is paid.",
+                      "Tax is applied on gains only. Net after tax is the amount available to the investor at exit.",
+                      "Projections are illustrative. Actual market returns and tax rules can differ.",
+                    ]
+            }
+          >
             {mode === "sip" ? (
               <>
-                Calculations shown are for illustration purposes only. SIP projections compound as
-                modeled with the stated return, inflation, and tax assumptions. Delay shortens the
-                compounding runway. Market investments are subject to risk; past performance does
-                not guarantee future results.
+                Figures are for illustration only. SIP projections compound as modeled with the
+                stated return, inflation, and tax assumptions. Markets carry risk; past performance
+                does not guarantee future results.
               </>
             ) : mode === "stepup" ? (
               <>
-                Calculations shown are for illustration purposes only. Step-up SIP projections
-                increase contributions annually at the stated rate. Tax treatment depends on the
-                investor&apos;s applicable rules. Market investments are subject to risk; past
-                performance does not guarantee future results.
+                Figures are for illustration only. Step-up SIP projections increase contributions
+                annually at the stated rate. Tax depends on the investor&apos;s applicable rules.
+                Markets carry risk; past performance does not guarantee future results.
               </>
             ) : (
               <>
-                Calculations shown are for illustration purposes only. Periodic contribution
-                projections apply the stated return and tax assumptions to each scheduled payment.
-                Market investments are subject to risk; past performance does not guarantee future
-                results.
+                Figures are for illustration only. Periodic contributions apply the stated return
+                and tax assumptions to each scheduled payment. Markets carry risk; past performance
+                does not guarantee future results.
               </>
             )}
-          </ComplianceFootnote>
+          </WealthDisclaimer>
         }
       />
       {mode === "sip" && result && result.inflationAdjusted != null ? (
@@ -902,14 +1043,6 @@ function isYearRow(row: YearRow | PeriodicRow): row is YearRow {
   return "year" in row && "yearEnd" in row;
 }
 
-function mixSlices(result: GrowthResult) {
-  return [
-    { name: "Invested", value: result.totalInvested, color: "var(--app-chart-invested)" },
-    { name: "Gain", value: result.gain, color: "var(--app-chart-gain)" },
-    { name: "Tax", value: result.tax, color: "var(--app-chart-tax)" },
-  ];
-}
-
 function GrowthResults({
   mode,
   result,
@@ -920,6 +1053,8 @@ function GrowthResults({
   onToggleMilestones,
   openAnalytics,
   onToggleAnalytics,
+  openSchedule,
+  onToggleSchedule,
 }: {
   mode: Exclude<Mode, "lumpsum">;
   result: GrowthResult;
@@ -930,7 +1065,10 @@ function GrowthResults({
   onToggleMilestones: () => void;
   openAnalytics: boolean;
   onToggleAnalytics: () => void;
+  openSchedule: boolean;
+  onToggleSchedule: () => void;
 }) {
+  const [chartTab, setChartTab] = useState<"growth" | "allocation">("growth");
   const yearRows = result.schedule.filter(isYearRow);
   const periodicRows = result.schedule.filter((row): row is PeriodicRow => "contributionFv" in row);
   const hasDelay =
@@ -949,126 +1087,143 @@ function GrowthResults({
       : "Nominal maturity, purchasing power, and net outcome after tax";
 
   return (
-    <Stack>
-      <ResultsSection
-        sectionId="02"
+    <div className="space-y-5">
+      <WealthSection
+        badge="02 · Milestones"
         title="Growth Milestones"
-        description={milestonesDescription}
+        subtitle={milestonesDescription}
         open={openMilestones}
         onToggle={onToggleMilestones}
-        meta={
+        mark={
+          <WealthIconMark tone="emerald">
+            <IconChart />
+          </WealthIconMark>
+        }
+        actions={
           <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">
             Horizon: {horizonYears} Year{horizonYears === 1 ? "" : "s"}
           </span>
         }
       >
-        <StatGrid>
-          <StatCard
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <WealthMetricCard
             title="Invested"
             value={result.totalInvested}
-            tone="neutral"
-            badge={
-              mode === "stepup" && result.startMonthly != null && result.endMonthly != null ? (
-                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
-                  Step-up path
-                </span>
-              ) : mode === "periodic" ? (
-                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
-                  {result.payments ?? 0} payments
-                </span>
-              ) : result.payments != null ? (
-                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
-                  {result.payments} payments
-                </span>
-              ) : undefined
+            description={
+              mode === "stepup" && result.startMonthly != null && result.endMonthly != null
+                ? "Step-up contribution path over the tenure"
+                : mode === "periodic"
+                  ? `${result.payments ?? 0} scheduled payments`
+                  : result.payments != null
+                    ? `${result.payments} SIP payments`
+                    : "Total capital contributed"
             }
+            badge={
+              mode === "stepup"
+                ? "Step-up path"
+                : mode === "periodic"
+                  ? `${result.payments ?? 0} payments`
+                  : result.payments != null
+                    ? `${result.payments} payments`
+                    : undefined
+            }
+            tone="neutral"
             footer={
               mode === "stepup" && result.startMonthly != null && result.endMonthly != null ? (
-                <div className="flex items-center justify-between">
-                  <span>SIP path:</span>
-                  <span className="font-semibold text-slate-700">
+                <>
+                  SIP path ·{" "}
+                  <span className="font-semibold tabular-nums text-slate-700">
                     {formatINRCurrency(result.startMonthly)} → {formatINRCurrency(result.endMonthly)}
                   </span>
-                </div>
+                </>
               ) : mode === "periodic" ? (
-                <div className="flex items-center justify-between">
-                  <span>Frequency:</span>
-                  <span className="font-semibold text-slate-700">
-                    {frequencyLabel(timesPerYear)}
-                  </span>
-                </div>
+                <>
+                  Frequency ·{" "}
+                  <span className="font-semibold text-slate-700">{frequencyLabel(timesPerYear)}</span>
+                </>
               ) : (
-                <div className="flex items-center justify-between">
-                  <span>Gain:</span>
-                  <span className="font-bold text-emerald-700">
+                <>
+                  Gain ·{" "}
+                  <span className="font-semibold tabular-nums text-emerald-700">
                     {formatINRCurrency(result.gain)}
                   </span>
-                </div>
+                </>
               )
             }
+            mark={
+              <WealthIconMark className="h-7 w-7">
+                <IconSip className="h-3.5 w-3.5" />
+              </WealthIconMark>
+            }
           />
-          <StatCard
+          <WealthMetricCard
             title="Maturity"
             value={result.maturity}
+            description="Nominal corpus at the end of the horizon"
+            badge="Nominal"
             tone="positive"
-            badge={
-              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
-                Nominal
-              </span>
-            }
             footer={
               result.inflationAdjusted != null ? (
-                <div className="flex items-center justify-between">
-                  <span>Inflation-adj.:</span>
-                  <span className="font-semibold text-slate-700">
+                <>
+                  Inflation-adj. ·{" "}
+                  <span className="font-semibold tabular-nums text-slate-700">
                     {formatINRCurrency(result.inflationAdjusted)}
                     {realYieldPct != null ? ` · ${formatPercent(realYieldPct)}` : ""}
                   </span>
-                </div>
+                </>
               ) : (
-                <div className="flex items-center justify-between">
-                  <span>Gain:</span>
-                  <span className="font-bold text-emerald-700">
+                <>
+                  Gain ·{" "}
+                  <span className="font-semibold tabular-nums text-emerald-700">
                     {formatINRCurrency(result.gain)}
                   </span>
-                </div>
+                </>
               )
             }
+            mark={
+              <WealthIconMark tone="emerald" className="h-7 w-7">
+                <IconChart className="h-3.5 w-3.5" />
+              </WealthIconMark>
+            }
           />
-          <StatCard
+          <WealthMetricCard
             title={hasDelay ? "Cost of delay" : "Net after tax"}
             value={hasDelay ? (result.costOfDelay ?? 0) : result.netAfterTax}
-            tone={hasDelay ? "negative" : "positive"}
-            badge={
-              hasDelay ? (
-                <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-800">
-                  {delayMonths} mo late
-                </span>
-              ) : (
-                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
-                  Post-tax
-                </span>
-              )
+            description={
+              hasDelay
+                ? `Opportunity cost from a ${delayMonths}-month late start`
+                : "Corpus available after capital gains tax"
             }
+            badge={hasDelay ? `${delayMonths} mo late` : "Post-tax"}
+            tone={hasDelay ? "neutral" : "positive"}
             footer={
               hasDelay ? (
-                <div className="flex items-center justify-between">
-                  <span>Delayed maturity:</span>
-                  <span className="font-semibold text-slate-700">
+                <>
+                  Delayed maturity ·{" "}
+                  <span className="font-semibold tabular-nums text-slate-700">
                     {formatINRCurrency(result.delayedMaturity ?? 0)}
                   </span>
-                </div>
+                </>
               ) : (
-                <div className="flex items-center justify-between">
-                  <span>Tax:</span>
-                  <span className="font-semibold text-rose-600">
+                <>
+                  Tax ·{" "}
+                  <span className="font-semibold tabular-nums text-rose-600">
                     {formatINRCurrency(result.tax)}
                   </span>
-                </div>
+                </>
               )
             }
+            mark={
+              <WealthIconMark className="h-7 w-7" tone={hasDelay ? "amber" : "emerald"}>
+                {hasDelay ? (
+                  <IconDelay className="h-3.5 w-3.5" />
+                ) : (
+                  <IconTax className="h-3.5 w-3.5" />
+                )}
+              </WealthIconMark>
+            }
           />
-        </StatGrid>
+        </div>
 
         {hasDelay ? (
           <div className="mt-6 rounded-xl border border-dashed border-rose-300 bg-rose-50/70 p-4">
@@ -1080,161 +1235,343 @@ function GrowthResults({
             </p>
           </div>
         ) : null}
-      </ResultsSection>
+      </WealthSection>
 
-      <ResultsSection
-        sectionId="03"
+      <WealthSection
+        badge="03 · Analytics"
         title="Growth Analytics"
-        description={
+        subtitle={
           mode === "periodic"
-            ? "Contribution FV path, allocation mix, and contribution schedule"
-            : "Corpus path, allocation mix, and yearly audit ledger"
+            ? "Contribution FV path and allocation mix"
+            : "Corpus path and allocation mix"
         }
         open={openAnalytics}
         onToggle={onToggleAnalytics}
+        mark={
+          <WealthIconMark>
+            <IconRates />
+          </WealthIconMark>
+        }
       >
-        <SegmentedChartControl
-          variant="pill"
-          tabs={[
-            {
-              id: "growth",
-              label: "Growth",
-              icon: <LineChart className="h-3.5 w-3.5" />,
-              content: (
-                <ChartPane>
-                  {mode === "periodic" ? (
-                    <GrowthChart
-                      title="FV of each contribution"
-                      showEndLabels
-                      markers
-                      endLabelFull
-                      xTickFormatter={(month) => `Month ${month}`}
-                      data={periodicRows.map((row) => ({
-                        year: row.month,
-                        fv: row.contributionFv,
-                        contribution: row.contribution,
-                      }))}
-                      series={[
-                        { key: "fv", label: "FV at horizon", color: "var(--app-chart-gain)" },
-                        {
-                          key: "contribution",
-                          label: "Contribution",
-                          color: "var(--app-chart-invested)",
-                        },
-                      ]}
-                    />
-                  ) : (
-                    <GrowthChart
-                      title="Investment vs corpus"
-                      showEndLabels
-                      endpointDots
-                      strokeWidth={4}
-                      data={yearRows.map((row) => ({
-                        year: row.year,
-                        invested: row.investedToDate,
-                        corpus: row.yearEnd,
-                        inflationAdjusted: row.inflationAdjusted ?? row.yearEnd,
-                      }))}
-                      series={[
-                        { key: "invested", label: "Investment", color: "var(--app-chart-invested)" },
-                        { key: "corpus", label: "Full return", color: "var(--app-chart-gain)" },
-                        {
-                          key: "inflationAdjusted",
-                          label: "Inflation-adjusted",
-                          color: "var(--app-chart-inflation)",
-                        },
-                      ]}
-                    />
-                  )}
-                </ChartPane>
-              ),
-            },
-            {
-              id: "allocation",
-              label: "Allocation",
-              icon: <PieChart className="h-3.5 w-3.5" />,
-              content: (
-                <ChartPane>
-                  <CompositionChart
-                    title={mode === "periodic" ? "Periodic mix" : "Invested / gain / tax"}
-                    showPercentages
-                    size="lg"
-                    slices={mixSlices(result)}
-                    centerLabel="Maturity"
-                    centerValue={result.maturity}
-                  />
-                </ChartPane>
-              ),
-            },
-          ]}
-        />
+        <div className="space-y-5">
+          <div className="overflow-x-auto pb-1">
+            <WealthSegmented
+              layoutId={`growth-analytics-underline-${mode}`}
+              variant="underline"
+              value={chartTab}
+              onChange={setChartTab}
+              options={[
+                {
+                  id: "growth",
+                  label: "Growth",
+                  icon: <IconChart className="h-3.5 w-3.5" />,
+                },
+                {
+                  id: "allocation",
+                  label: "Corpus Mix",
+                  icon: <IconDonut className="h-3.5 w-3.5" />,
+                },
+              ]}
+            />
+          </div>
 
-        <div className="mt-8">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={chartTab}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.22 }}
+            >
+              {chartTab === "growth" ? (
+                mode === "periodic" ? (
+                  <WealthGrowthLine
+                    data={periodicRows.map((row) => ({
+                      year: row.month,
+                      fv: row.contributionFv,
+                      contribution: row.contribution,
+                    }))}
+                    xTick={(v) => `Month ${v}`}
+                    series={[
+                      {
+                        key: "contribution",
+                        label: "Contribution",
+                        color: wealthChart.invested,
+                        kind: "line",
+                      },
+                      {
+                        key: "fv",
+                        label: "FV at horizon",
+                        color: wealthChart.stepUp,
+                        kind: "area",
+                      },
+                    ]}
+                  />
+                ) : (
+                  <WealthGrowthLine
+                    data={yearRows.map((row) => ({
+                      year: row.year,
+                      invested: row.investedToDate,
+                      corpus: row.yearEnd,
+                      inflationAdjusted: row.inflationAdjusted ?? row.yearEnd,
+                    }))}
+                    series={[
+                      {
+                        key: "invested",
+                        label: "Investment",
+                        color: wealthChart.invested,
+                        kind: "line",
+                      },
+                      {
+                        key: "corpus",
+                        label: "Full return",
+                        color: wealthChart.stepUp,
+                        kind: "area",
+                      },
+                      {
+                        key: "inflationAdjusted",
+                        label: "Inflation-adjusted",
+                        color: wealthChart.inflAdj,
+                        kind: "line",
+                        dashed: true,
+                      },
+                    ]}
+                  />
+                )
+              ) : (
+                <WealthMixDonut
+                  title={mode === "periodic" ? "Periodic mix" : "Corpus mix"}
+                  centerValue={result.maturity}
+                  centerLabel="Pre-tax"
+                  tax={result.tax}
+                  net={result.netAfterTax}
+                  netLabel="Maturity"
+                  slices={[
+                    {
+                      name: "Invested",
+                      value: result.totalInvested,
+                      color: wealthMixColors.invested,
+                    },
+                    {
+                      name: "Gain",
+                      value: result.gain,
+                      color: wealthMixColors.gain,
+                    },
+                  ]}
+                />
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </WealthSection>
+
+      <WealthSection
+        badge="04 · Audit"
+        title={
+          mode === "periodic"
+            ? "Periodic Contribution Ledger"
+            : mode === "stepup"
+              ? "Step-Up SIP Outcome Ledger"
+              : "SIP Outcome Ledger"
+        }
+        subtitle="Horizon, tax drag, yield, and line-by-line maturity audit"
+        open={openSchedule}
+        onToggle={onToggleSchedule}
+        mark={
+          <WealthIconMark>
+            <IconCalendar />
+          </WealthIconMark>
+        }
+      >
+        <div className="space-y-5">
+          <WealthAuditLedger
+            stats={[
+              {
+                label: "Horizon",
+                value: `${horizonYears} yr${horizonYears === 1 ? "" : "s"}`,
+                hint:
+                  mode === "periodic"
+                    ? `${frequencyLabel(timesPerYear)} · ${result.payments ?? 0} payments`
+                    : delayMonths > 0
+                      ? `${delayMonths} mo start delay`
+                      : mode === "stepup"
+                        ? "Annual step-up path"
+                        : "Monthly SIP path",
+              },
+              {
+                label: "Net after tax",
+                value: formatINRCurrency(result.netAfterTax),
+                hint: `Gain ${formatINRCurrency(result.gain)} before tax`,
+                tone: "emerald",
+              },
+              {
+                label: "Post-tax yield",
+                value:
+                  result.totalInvested > 0
+                    ? formatPercent(
+                        ((result.netAfterTax - result.totalInvested) /
+                          result.totalInvested) *
+                          100,
+                      )
+                    : formatPercent(0),
+                hint:
+                  realYieldPct != null
+                    ? `Inflation-adj. ${formatPercent(realYieldPct)}`
+                    : "On invested capital",
+              },
+            ]}
+            chips={
+              <>
+                <WealthAuditChip label="Tax drag">
+                  {result.gain > 0
+                    ? `${formatPercent((result.tax / result.gain) * 100, 1)} of pre-tax gain (${formatINRCurrency(result.tax)})`
+                    : `${formatINRCurrency(result.tax)} on gains`}
+                </WealthAuditChip>
+                <WealthAuditChip label="Invested capital">
+                  {formatINRCurrency(result.totalInvested)}
+                  {result.payments != null ? ` · ${result.payments} payments` : ""}
+                </WealthAuditChip>
+              </>
+            }
+            columns={["Metric", "Amount"]}
+            rows={[
+              {
+                label: "Total invested",
+                cells: [{ text: formatINRCurrency(result.totalInvested) }],
+              },
+              {
+                label: "Expected pre-tax return",
+                cells: [{ text: formatINRCurrency(result.gain) }],
+              },
+              {
+                label: "Tax on profit",
+                cells: [{ text: formatINRCurrency(result.tax), tone: "rose" }],
+                tax: true,
+              },
+              {
+                label: "Post-tax return",
+                cells: [
+                  {
+                    text: formatINRCurrency(result.netAfterTax - result.totalInvested),
+                    tone: "emerald",
+                  },
+                ],
+              },
+              ...(result.inflationAdjusted != null
+                ? [
+                    {
+                      label: "Inflation-adjusted corpus",
+                      cells: [
+                        {
+                          text: formatINRCurrency(result.inflationAdjusted),
+                          tone: "muted" as const,
+                        },
+                      ],
+                    },
+                  ]
+                : []),
+              {
+                label: "Final maturity amount",
+                cells: [
+                  {
+                    text: formatINRCurrency(result.maturity),
+                    tone: "pill" as const,
+                  },
+                ],
+                highlight: true,
+              },
+            ]}
+            note={
+              mode === "periodic"
+                ? `Ledger uses the stated return and tax over ${horizonYears} year${horizonYears === 1 ? "" : "s"} of ${frequencyLabel(timesPerYear).toLowerCase()} contributions. Premature exit and market path risk are not modelled here.`
+                : `Ledger uses the stated return, inflation, and tax over ${horizonYears} year${horizonYears === 1 ? "" : "s"}. Absolute yields are post-tax profit on invested capital. Market path risk is not modelled here.`
+            }
+          />
+
           {mode === "periodic" ? (
-            <ScheduleTable
-              caption="Contribution schedule"
-              meta={`${periodicRows.length} contributions`}
-              zebra
+            <WealthDataTable
+              rows={periodicRows}
+              getRowKey={(row) => row.month}
+              filterPlaceholder="Filter by month…"
+              hideFilter={periodicRows.length <= 12}
+              note="Each row is one scheduled contribution and the future value that payment would reach if held to the investment horizon."
               columns={[
-                { key: "month", header: "Month", align: "right", sticky: true },
+                {
+                  key: "month",
+                  header: "Month",
+                  align: "right",
+                  sticky: true,
+                  searchValue: (row) => String(row.month),
+                  render: (row) => row.month,
+                },
                 {
                   key: "contribution",
                   header: "Contribution",
-                  format: "inr",
                   align: "right",
-                  tone: "std",
+                  searchValue: (row) => String(row.contribution),
+                  render: (row) => moneyCell(row.contribution),
                 },
                 {
                   key: "contributionFv",
                   header: "FV at horizon",
-                  format: "inr",
                   align: "right",
-                  tone: "step",
+                  tone: "emerald",
+                  searchValue: (row) => String(row.contributionFv),
+                  render: (row) => moneyCell(row.contributionFv),
                 },
               ]}
-              rows={periodicRows}
             />
           ) : (
-            <ScheduleTable
-              caption="Yearly schedule"
-              meta={`${yearRows.length} years`}
-              zebra
+            <WealthDataTable
+              rows={yearRows}
+              getRowKey={(row) => row.year}
+              filterPlaceholder="Filter by year…"
+              note="Year-end corpus, invested capital to date, and inflation-adjusted purchasing power for each year of the horizon."
               columns={[
-                { key: "year", header: "Year", sticky: true },
+                {
+                  key: "year",
+                  header: "Year",
+                  sticky: true,
+                  searchValue: (row) => String(row.year),
+                  render: (row) => row.year,
+                },
                 {
                   key: "monthly",
                   header: "Monthly SIP",
-                  format: "inr",
                   align: "right",
-                  tone: "std",
+                  searchValue: (row) => String(row.monthly),
+                  render: (row) => moneyCell(row.monthly),
                 },
                 {
                   key: "investedToDate",
                   header: "Invested",
-                  format: "inr",
                   align: "right",
-                  tone: "std",
+                  searchValue: (row) => String(row.investedToDate),
+                  render: (row) => moneyCell(row.investedToDate),
                 },
                 {
                   key: "yearEnd",
                   header: "Year-end",
-                  format: "inr",
                   align: "right",
-                  tone: "step",
+                  tone: "emerald",
+                  searchValue: (row) => String(row.yearEnd),
+                  render: (row) => moneyCell(row.yearEnd),
                 },
                 {
                   key: "inflationAdjusted",
                   header: "Inflation-adj.",
-                  format: "inr",
                   align: "right",
-                  tone: "std",
+                  searchValue: (row) => String(row.inflationAdjusted ?? ""),
+                  render: (row) =>
+                    row.inflationAdjusted != null
+                      ? moneyCell(row.inflationAdjusted)
+                      : "—",
                 },
               ]}
-              rows={yearRows}
             />
           )}
         </div>
-      </ResultsSection>
-    </Stack>
+      </WealthSection>
+    </div>
   );
 }

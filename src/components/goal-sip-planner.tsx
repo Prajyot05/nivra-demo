@@ -1,71 +1,59 @@
 "use client";
 
-import { useState } from "react";
-import { BarChart3, PieChart } from "lucide-react";
+import { useRef, useState } from "react";
 import { useGoalSip } from "@/hooks/use-goal-sip";
 import {
-  AgeInput,
   ageError,
-  BentoGroup,
-  BentoSection,
-  ChartPane,
-  ClientProfileBar,
-  CompareChart,
-  CompositionChart,
-  ComplianceFootnote,
   emailError,
-  Field,
   formatINRCurrency,
-  ModeTabs,
-  MoneyInput,
+  formatPercent,
   nameError,
-  PercentInput,
+  parseDigits,
   phoneError,
   rateError,
-  ResultsSection,
-  ScheduleTable,
-  SegmentedChartControl,
-  Stack,
-  StatCard,
-  StatGrid,
   StatusNote,
-  TextInput,
-  YearInput,
 } from "@nivra/ui";
 import { CalculatorPage } from "@/components/layout/calculator-page-with-nav";
 import { ReportDownloadButton } from "@/components/calc/report-download-button";
 import { GoalSipDossier, GOAL_SIP_REPORT_ID } from "@/components/reports/goal-sip-dossier";
 import { DUMMY_REPORT_CONTACT } from "@/components/reports/executive-dossier";
 import { generatePdfFromElement } from "@/lib/pdf-generator";
+import { WealthHero } from "@/components/wealth/wealth-hero";
+import { WealthSection } from "@/components/wealth/wealth-section";
+import { WealthMetricCard } from "@/components/wealth/wealth-metric-card";
+import { WealthSegmented } from "@/components/wealth/wealth-segmented";
+import { WealthFieldShell, wealthInputClass } from "@/components/wealth/wealth-field";
+import { DelayCostCards } from "@/components/wealth/delay-cost-cards";
+import { WealthDisclaimer } from "@/components/wealth/wealth-disclaimer";
+import { WealthScheduleTable } from "@/components/wealth/wealth-schedule-table";
+import {
+  IconCalendar,
+  IconChart,
+  IconDelay,
+  IconPerson,
+  IconRefresh,
+  IconSip,
+  IconStepUp,
+  IconTarget,
+  WealthIconMark,
+} from "@/components/wealth/wealth-icons";
+import {
+  WealthAnalyticsPanel,
+  type AnalyticsTab,
+} from "@/components/wealth/charts/wealth-analytics-panel";
+import {
+  WEALTH_GOAL_PRESETS_DEFAULT,
+  WEALTH_YEAR_PRESETS_DEFAULT,
+  WealthMoneyField,
+  WealthProfileGrid,
+  WealthYearField,
+} from "@/components/wealth";
 
-function CorpusMixFooter({
-  taxAmt,
-  netAfterTax,
-}: {
-  taxAmt: number;
-  netAfterTax: number;
-}) {
-  return (
-    <div className="grid grid-cols-1 gap-1.5">
-      <div className="flex items-baseline justify-between gap-2 rounded-md border border-[var(--app-warn-border)] bg-[var(--app-warn-bg)] px-2.5 py-1.5">
-        <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-warn-text)]">
-          Capital Gains Tax
-        </div>
-        <div className="text-xs font-semibold tabular-nums text-[var(--app-warn-text-strong)]">
-          {formatINRCurrency(taxAmt)}
-        </div>
-      </div>
-      <div className="flex items-baseline justify-between gap-2 rounded-md border border-[var(--app-step-text)]/25 bg-[var(--app-step-bg)] px-2.5 py-1.5">
-        <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-step-text)]">
-          Net Corpus
-        </div>
-        <div className="text-xs font-semibold tabular-nums text-[var(--app-text)]">
-          {formatINRCurrency(netAfterTax)}
-        </div>
-      </div>
-    </div>
-  );
-}
+const GOAL_AMOUNT_MAX = 1000_00_00_000; // ₹1,000 Cr
+const GOAL_AMOUNT_MIN = 10_000;
+const GOAL_SLIDER_MAX = GOAL_AMOUNT_MAX;
+const TENURE_MAX = 75;
+const TENURE_SLIDER_MAX = 40;
 
 export function GoalSipPlanner() {
   const [clientName, setClientName] = useState("Mr. John Doe");
@@ -73,6 +61,7 @@ export function GoalSipPlanner() {
   const [email, setEmail] = useState(DUMMY_REPORT_CONTACT.email);
   const [phone, setPhone] = useState(DUMMY_REPORT_CONTACT.phone);
   const [goal, setGoal] = useState(10_000_000);
+
   const [tenure, setTenure] = useState(15);
   const [returnPct, setReturnPct] = useState(12);
   const [inflation, setInflation] = useState(5.25);
@@ -84,14 +73,27 @@ export function GoalSipPlanner() {
   const [openAssumptions, setOpenAssumptions] = useState(true);
   const [openMilestones, setOpenMilestones] = useState(true);
   const [openAnalytics, setOpenAnalytics] = useState(true);
+  const [openDelay, setOpenDelay] = useState(true);
+  const [openSchedule, setOpenSchedule] = useState(true);
+  const [analyticsTab, setAnalyticsTab] = useState<AnalyticsTab>("mix");
+  const [confirmReset, setConfirmReset] = useState(false);
+
+  const assumptionsRef = useRef<HTMLDivElement>(null);
 
   const clientNameError = nameError(clientName);
   const clientAgeError = ageError(age);
   const clientEmailError = emailError(email);
   const clientPhoneError = phoneError(phone);
-  const goalError = goal <= 0 ? "Enter your goal amount." : undefined;
+  const goalError =
+    goal <= 0
+      ? "Enter your goal amount."
+      : goal > GOAL_AMOUNT_MAX
+        ? `Goal amount cannot exceed ${formatINRCurrency(GOAL_AMOUNT_MAX)}.`
+        : undefined;
   const tenureError =
-    tenure < 1 || tenure > 75 ? "Tenure should be between 1 and 75 years." : undefined;
+    tenure < 1 || tenure > TENURE_MAX
+      ? `Tenure should be between 1 and ${TENURE_MAX} years.`
+      : undefined;
   const returnError =
     rateError(returnPct, "Expected return") ??
     (returnPct <= 0 ? "Enter a valid expected return." : undefined);
@@ -161,10 +163,7 @@ export function GoalSipPlanner() {
     yearEnd: row.stepYearEnd,
   }));
 
-  const mixSlices = (invested: number, gain: number) => [
-    { name: "Invested", value: invested, color: "var(--app-chart-invested)" },
-    { name: "Gain", value: gain, color: "var(--app-chart-gain)" },
-  ];
+  const realReturnPct = ((1 + returnPct / 100) / (1 + inflation / 100) - 1) * 100;
 
   const resetDefaults = () => {
     setClientName("Mr. John Doe");
@@ -178,7 +177,12 @@ export function GoalSipPlanner() {
     setTax(12.5);
     setStepUp(10);
     setUseInflAdj(true);
+    setConfirmReset(false);
   };
+
+  const goalBasisHint = useInflAdj
+    ? `Plans to the future value of today’s goal after ${tenure} years of inflation.`
+    : "Keeps the goal in today’s rupees. Does not grow the target with inflation.";
 
   const handleDownload = async () => {
     if (!result || isDownloading) return;
@@ -197,21 +201,17 @@ export function GoalSipPlanner() {
     }
   };
 
+  const scrollToAssumptions = () => {
+    setOpenAssumptions(true);
+    assumptionsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   return (
     <>
       <CalculatorPage
-        title="Precision Wealth Engine"
-        description="Goal – SIP & Step-Up SIP Simulation with Tax Arbitrage"
-        header={
-          <ClientProfileBar
-            name={clientName}
-            age={age}
-            email={email}
-            phone={phone}
-            goal={useInflAdj ? "Inflation-Adjusted Target" : "Stated Target"}
-            strategy="Systematic Investment Plan (SIP)"
-          />
-        }
+        title="Nivra Wealth"
+        description="Goal SIP and Step-Up simulation for advisor-led planning"
+        contentClassName="mx-auto flex w-full max-w-[94rem] flex-col gap-5 sm:gap-6"
         actions={
           <ReportDownloadButton
             onClick={handleDownload}
@@ -219,166 +219,228 @@ export function GoalSipPlanner() {
             loading={isDownloading}
           />
         }
+        header={
+          <WealthHero
+            clientName={clientName}
+            age={age}
+            email={email}
+            phone={phone}
+            goalLabel={useInflAdj ? "Inflation-adjusted value" : "Today’s value"}
+            tenure={tenure}
+            strategy="Systematic Investment Plan"
+            targetCorpus={canCalculate && result ? targetGoal : goal}
+            monthlySip={canCalculate && result ? stepUpSIP || standardSIP : 0}
+            realReturnPct={realReturnPct}
+            onEdit={scrollToAssumptions}
+          />
+        }
         form={
-          <BentoSection
-            sectionId="01"
-            title="Financial Assumptions & Modeling Suite"
-            description="Interactive multi-parameter engine configured with life-cycle compounding"
-            collapsible
-            open={openAssumptions}
-            onToggle={() => setOpenAssumptions((v) => !v)}
-            actions={
-              <button
-                type="button"
-                onClick={resetDefaults}
-                className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 transition-all hover:bg-slate-100 hover:text-emerald-700"
-              >
-                Reset to Baseline
-              </button>
-            }
-          >
-            <BentoGroup
-              num="01"
-              title="Investor Profile"
-              subtitle="KYC Baseline"
-              colSpan={4}
-              footer={
-                <>
-                  <span>Age path:</span>
-                  <span className="font-bold text-slate-700">
-                    {age} → {age + tenure}
-                  </span>
-                </>
+          <div ref={assumptionsRef}>
+            <WealthSection
+              id="assumptions"
+              badge="01 · Profile"
+              title="Investor Profile and Assumptions"
+              subtitle="Client identity, goal sequence, and market rate settings"
+              className="rounded-xl border-slate-200 shadow-none"
+              contentClassName="!px-0 !py-0 !bg-white"
+              open={openAssumptions}
+              onToggle={() => setOpenAssumptions((v) => !v)}
+              mark={
+                <WealthIconMark>
+                  <IconPerson />
+                </WealthIconMark>
+              }
+              actions={
+                confirmReset ? (
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-[12px] text-slate-500">Reset to defaults?</span>
+                    <button
+                      type="button"
+                      onClick={resetDefaults}
+                      className="inline-flex h-8 items-center rounded-lg bg-slate-900 px-3 text-[13px] font-medium text-white transition hover:bg-slate-800"
+                    >
+                      Confirm
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmReset(false)}
+                      className="inline-flex h-8 items-center rounded-lg border border-slate-200 bg-white px-3 text-[13px] font-medium text-slate-600 transition hover:bg-slate-50"
+                    >
+                      Keep
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmReset(true)}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-[13px] font-medium text-slate-600 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-emerald-500/20"
+                  >
+                    <IconRefresh className="h-3.5 w-3.5" />
+                    Reset
+                  </button>
+                )
               }
             >
-              <div className="mb-4">
-                <Field label="Client Name" error={clientNameError}>
-                  <TextInput
-                    value={clientName}
-                    onChange={(e) => setClientName(e.target.value)}
-                    className={clientNameError ? "border-[var(--app-danger)]" : undefined}
-                  />
-                </Field>
-              </div>
-              <div className="mb-4">
-                <AgeInput value={age} onChange={setAge} error={clientAgeError} />
-              </div>
-              <div className="mb-4">
-                <Field label="Email" error={clientEmailError}>
-                  <TextInput
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="client@email.com"
-                    className={clientEmailError ? "border-[var(--app-danger)]" : undefined}
-                  />
-                </Field>
-              </div>
-              <div className="mb-4">
-                <Field label="Phone" error={clientPhoneError}>
-                  <TextInput
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+91 98765 43210"
-                    className={clientPhoneError ? "border-[var(--app-danger)]" : undefined}
-                  />
-                </Field>
-              </div>
-              <div className="mb-4">
-                <MoneyInput
-                  label="Goal amount"
-                  value={goal}
-                  onChange={setGoal}
-                  align="right"
-                  error={goalError}
-                />
-              </div>
-              <div className="flex flex-col gap-1.5 border-t border-slate-200/60 pt-3">
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-                  Goal basis
-                </span>
-                <ModeTabs
-                  fullWidth
-                  tabs={[
-                    { id: "raw", label: "Stated" },
-                    { id: "infl", label: "Inflation-adj" },
-                  ]}
-                  value={useInflAdj ? "infl" : "raw"}
-                  onChange={(id) => setUseInflAdj(id === "infl")}
-                />
-              </div>
-            </BentoGroup>
+              <div className="px-6 py-4">
+                <WealthProfileGrid>
+                  <WealthFieldShell label="Client name" error={clientNameError}>
+                    <input
+                      value={clientName}
+                      onChange={(e) => setClientName(e.target.value)}
+                      className={wealthInputClass}
+                      autoComplete="name"
+                      aria-required
+                    />
+                  </WealthFieldShell>
+                  <WealthFieldShell
+                    label="Age"
+                    suffix="Years"
+                    error={clientAgeError}
+                  >
+                    <input
+                      inputMode="numeric"
+                      value={String(age)}
+                      onChange={(e) =>
+                        setAge(Math.round(parseDigits(e.target.value)))
+                      }
+                      className={`${wealthInputClass} !pr-1.5`}
+                      aria-required
+                    />
+                  </WealthFieldShell>
+                  <WealthFieldShell label="Email" error={clientEmailError}>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="client@email.com"
+                      className={wealthInputClass}
+                      autoComplete="email"
+                      aria-required
+                    />
+                  </WealthFieldShell>
+                  <WealthFieldShell label="Phone" error={clientPhoneError}>
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="+91 98765 43210"
+                      className={wealthInputClass}
+                      autoComplete="tel"
+                      aria-required
+                    />
+                  </WealthFieldShell>
 
-            <BentoGroup
-              num="02"
-              title="Accumulation Engine"
-              subtitle="SIP Mode"
-              colSpan={5}
-              footer={
-                <>
-                  <span>Total Active Target:</span>
-                  <span className="font-bold text-brand-700">
-                    {canCalculate && result ? formatINRCurrency(targetGoal) : "-"}
-                  </span>
-                </>
-              }
-            >
-              <div className="flex flex-col gap-4">
-                <YearInput
-                  label="Investment Tenure (yrs)"
-                  value={tenure}
-                  min={1}
-                  max={75}
-                  onChange={setTenure}
-                  error={tenureError}
-                />
-                <PercentInput
-                  label="Step-Up (%)"
-                  value={stepUp}
-                  onChange={setStepUp}
-                  hint="Annual SIP increment"
-                  error={stepUpError}
-                />
-              </div>
-            </BentoGroup>
+                  <WealthMoneyField
+                    label="Goal amount"
+                    value={goal}
+                    onChange={(v) =>
+                      setGoal(Math.min(GOAL_AMOUNT_MAX, Math.max(0, v)))
+                    }
+                    error={goalError}
+                    max={GOAL_AMOUNT_MAX}
+                    slider={{
+                      min: GOAL_AMOUNT_MIN,
+                      max: GOAL_SLIDER_MAX,
+                      step: 25_000,
+                      scale: "log",
+                      presets: WEALTH_GOAL_PRESETS_DEFAULT,
+                    }}
+                  />
 
-            <BentoGroup
-              num="03"
-              title="Rate Assumptions"
-              subtitle="CAGR & Tax"
-              colSpan={3}
-              footer={
-                <>
-                  <span>Real Net Yield:</span>
-                  <span className="font-bold text-brand-700">
-                    {(((1 + returnPct / 100) / (1 + inflation / 100) - 1) * 100).toFixed(2)}% Net
-                  </span>
-                </>
-              }
-            >
-              <div className="flex flex-col gap-4">
-                <PercentInput
-                  label="Expected Return (%)"
-                  value={returnPct}
-                  onChange={setReturnPct}
-                  error={returnError}
-                />
-                <PercentInput
-                  label="Inflation (%)"
-                  value={inflation}
-                  onChange={setInflation}
-                  error={inflationError}
-                />
-                <PercentInput
-                  label="Tax Bracket (LTCG %)"
-                  value={tax}
-                  onChange={setTax}
-                  error={taxError}
-                />
+                  <div className="min-w-0">
+                    <div className="mb-1.5 text-[13px] font-medium leading-4 text-slate-600">
+                      Goal basis
+                    </div>
+                    <WealthSegmented
+                      fullWidth
+                      layoutId="goal-basis-pill"
+                      value={useInflAdj ? "infl" : "raw"}
+                      onChange={(id) => setUseInflAdj(id === "infl")}
+                      options={[
+                        { id: "raw", label: "Today’s value" },
+                        { id: "infl", label: "Inflation-adjusted" },
+                      ]}
+                    />
+                    <p className="mt-1.5 text-[11px] leading-4 text-slate-500">
+                      {goalBasisHint}
+                    </p>
+                  </div>
+
+                  <WealthYearField
+                    label="Investment tenure"
+                    value={tenure}
+                    onChange={setTenure}
+                    min={1}
+                    max={TENURE_MAX}
+                    error={tenureError}
+                    slider={{
+                      min: 1,
+                      max: TENURE_SLIDER_MAX,
+                      step: 1,
+                      presets: WEALTH_YEAR_PRESETS_DEFAULT,
+                    }}
+                  />
+                  <WealthFieldShell
+                    label="Annual step-up"
+                    suffix="%"
+                    error={stepUpError}
+                  >
+                    <input
+                      inputMode="decimal"
+                      value={String(stepUp)}
+                      onChange={(e) => setStepUp(parseDigits(e.target.value))}
+                      className={`${wealthInputClass} !pr-1.5`}
+                      aria-required
+                    />
+                  </WealthFieldShell>
+
+                  <WealthFieldShell
+                    label="Expected CAGR"
+                    suffix="%"
+                    error={returnError}
+                  >
+                    <input
+                      inputMode="decimal"
+                      value={String(returnPct)}
+                      onChange={(e) =>
+                        setReturnPct(parseDigits(e.target.value))
+                      }
+                      className={`${wealthInputClass} !pr-1.5`}
+                      aria-required
+                    />
+                  </WealthFieldShell>
+                  <WealthFieldShell
+                    label="Inflation"
+                    suffix="%"
+                    error={inflationError}
+                  >
+                    <input
+                      inputMode="decimal"
+                      value={String(inflation)}
+                      onChange={(e) =>
+                        setInflation(parseDigits(e.target.value))
+                      }
+                      className={`${wealthInputClass} !pr-1.5`}
+                      aria-required
+                    />
+                  </WealthFieldShell>
+                  <WealthFieldShell
+                    label="Tax / LTCG"
+                    suffix="%"
+                    error={taxError}
+                  >
+                    <input
+                      inputMode="decimal"
+                      value={String(tax)}
+                      onChange={(e) => setTax(parseDigits(e.target.value))}
+                      className={`${wealthInputClass} !pr-1.5`}
+                      aria-required
+                    />
+                  </WealthFieldShell>
+                </WealthProfileGrid>
               </div>
-            </BentoGroup>
-          </BentoSection>
+            </WealthSection>
+          </div>
         }
         results={
           <>
@@ -405,31 +467,40 @@ export function GoalSipPlanner() {
             {loading && !result && canCalculate ? (
               <StatusNote tone="pending">Calculating…</StatusNote>
             ) : null}
+
             {result ? (
-              <Stack>
-                <ResultsSection
-                  sectionId="02"
-                  title="SIP Milestones"
-                  description="Required monthly SIP paths and target corpus after capital gains tax"
+              <div className="space-y-5">
+                <WealthSection
+                  badge="02 · Milestones"
+                  title="SIP Milestone Cards"
+                  subtitle="Required monthly paths and net target after capital gains tax"
                   open={openMilestones}
                   onToggle={() => setOpenMilestones((v) => !v)}
-                  meta={
-                    <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">
-                      Horizon: {tenure} Years
-                    </span>
+                  mark={
+                    <WealthIconMark tone="emerald">
+                      <IconTarget />
+                    </WealthIconMark>
                   }
                 >
-                  <StatGrid>
-                    <StatCard
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <WealthMetricCard
                       title="Standard SIP"
                       value={standardSIP}
-                      hint="Required monthly SIP"
+                      description="Required monthly SIP to reach the target"
+                      badge="Flat"
                       tone="neutral"
+                      trend="Level contribution each year"
+                      mark={
+                        <WealthIconMark className="h-7 w-7">
+                          <IconSip className="h-3.5 w-3.5" />
+                        </WealthIconMark>
+                      }
                     />
-                    <StatCard
+                    <WealthMetricCard
                       title="Step-Up SIP"
                       value={stepUpSIP}
-                      hint="Starting monthly SIP"
+                      description="Starting monthly SIP with annual step-up"
+                      badge={`+${formatPercent(stepUp, 0)} / yr`}
                       tone="positive"
                       footer={
                         <>
@@ -440,189 +511,161 @@ export function GoalSipPlanner() {
                           /mo
                         </>
                       }
+                      trend="Lower entry SIP, rising capacity"
+                      mark={
+                        <WealthIconMark tone="emerald" className="h-7 w-7">
+                          <IconStepUp className="h-3.5 w-3.5" />
+                        </WealthIconMark>
+                      }
                     />
-                    <StatCard
+                    <WealthMetricCard
                       title="Target Corpus"
                       value={targetGoal}
-                      hint="Net after capital gains tax"
-                      tone="positive"
+                      description="Net after capital gains tax"
+                      badge={`${tenure} yr`}
+                      tone="accent"
+                      trend={
+                        useInflAdj
+                          ? `From stated ${formatINRCurrency(goal)}`
+                          : "Stated goal basis"
+                      }
+                      mark={
+                        <WealthIconMark className="h-7 w-7">
+                          <IconTarget className="h-3.5 w-3.5" />
+                        </WealthIconMark>
+                      }
                     />
-                  </StatGrid>
-                </ResultsSection>
+                  </div>
+                </WealthSection>
 
-                <ResultsSection
-                  sectionId="03"
-                  title="SIP Analytics"
-                  description="Corpus mix, SIP vs step-up compare, cost of delay, and yearly schedule"
+                <WealthSection
+                  badge="03 · Analytics"
+                  title="Wealth Analytics"
+                  subtitle="Corpus mix, growth compare, timeline, tax, and inflation views"
                   open={openAnalytics}
                   onToggle={() => setOpenAnalytics((v) => !v)}
+                  mark={
+                    <WealthIconMark>
+                      <IconChart />
+                    </WealthIconMark>
+                  }
                 >
-                  <div className="grid grid-cols-1 items-stretch gap-4 xl:grid-cols-3">
-                    <div className="xl:col-span-2">
-                      <SegmentedChartControl
-                        variant="pill"
-                        tabs={[
-                          {
-                            id: "pie",
-                            label: "Corpus Mix",
-                            icon: <PieChart className="h-3.5 w-3.5" />,
-                            content: (
-                              <ChartPane>
-                                <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2">
-                                  <CompositionChart
-                                    title="Standard SIP"
-                                    compact
-                                    showPercentages
-                                    centerLabel="Pre-Tax Corpus"
-                                    centerValue={stdCorpus}
-                                    slices={mixSlices(stdInvested, stdGain)}
-                                    footer={
-                                      <CorpusMixFooter taxAmt={stdTax} netAfterTax={stdNet} />
-                                    }
-                                  />
-                                  <CompositionChart
-                                    title="Step-Up SIP"
-                                    compact
-                                    showPercentages
-                                    centerLabel="Pre-Tax Corpus"
-                                    centerValue={stepCorpus}
-                                    slices={mixSlices(stepInvested, stepGain)}
-                                    footer={
-                                      <CorpusMixFooter taxAmt={stepTax} netAfterTax={stepNet} />
-                                    }
-                                  />
-                                </div>
-                              </ChartPane>
-                            ),
-                          },
-                          {
-                            id: "bar",
-                            label: "Compare",
-                            icon: <BarChart3 className="h-3.5 w-3.5" />,
-                            content: (
-                              <ChartPane>
-                                <CompareChart
-                                  title="Standard vs Step-Up"
-                                  showBarLabels
-                                  className="min-h-[280px] flex-1 sm:min-h-[320px]"
-                                  data={[
-                                    { category: "Invested", sip: stdInvested, step: stepInvested },
-                                    { category: "Gain", sip: stdGain, step: stepGain },
-                                    {
-                                      category: "Pre-Tax Corpus",
-                                      sip: stdCorpus,
-                                      step: stepCorpus,
-                                    },
-                                    { category: "Net Corpus", sip: stdNet, step: stepNet },
-                                  ]}
-                                  series={[
-                                    { key: "sip", label: "SIP", color: "var(--app-chart-a)" },
-                                    {
-                                      key: "step",
-                                      label: "Step-Up",
-                                      color: "var(--app-chart-b)",
-                                    },
-                                  ]}
-                                />
-                              </ChartPane>
-                            ),
-                          },
-                        ]}
-                      />
-                    </div>
+                  <WealthAnalyticsPanel
+                    tab={analyticsTab}
+                    onTabChange={setAnalyticsTab}
+                    stdInvested={stdInvested}
+                    stdGain={stdGain}
+                    stdCorpus={stdCorpus}
+                    stdTax={stdTax}
+                    stdNet={stdNet}
+                    stepInvested={stepInvested}
+                    stepGain={stepGain}
+                    stepCorpus={stepCorpus}
+                    stepTax={stepTax}
+                    stepNet={stepNet}
+                    schedule={combinedSchedule}
+                    goal={goal}
+                    inflAdjGoal={inflAdjGoal}
+                    tenure={tenure}
+                    inflationPct={inflation}
+                  />
+                </WealthSection>
 
-                    <ScheduleTable
-                      caption="Cost of Delay"
-                      meta="Later start, higher SIP"
-                      fillHeight
-                      emphasizeRow={(_, index) => index === delays.length - 1}
-                      columns={[
-                        {
-                          key: "mo",
-                          header: "Delay",
-                          sticky: true,
-                          render: (value) => `${Number(value)} Mo`,
-                        },
-                        {
-                          key: "sip",
-                          header: "Required SIP",
-                          format: "inr",
-                          align: "right",
-                          tone: "std",
-                        },
-                        {
-                          key: "extra",
-                          header: "Additional Cost",
-                          format: "inr",
-                          align: "right",
-                          tone: "warn",
-                        },
-                      ]}
-                      rows={delays}
-                    />
-                  </div>
+                <WealthSection
+                  badge="04 · Delay"
+                  title="Cost of Delay"
+                  subtitle="How waiting 3 to 12 months raises the SIP required"
+                  open={openDelay}
+                  onToggle={() => setOpenDelay((v) => !v)}
+                  mark={
+                    <WealthIconMark tone="amber">
+                      <IconDelay />
+                    </WealthIconMark>
+                  }
+                >
+                  <DelayCostCards delays={delays} baselineSip={standardSIP} />
+                </WealthSection>
 
-                  <div className="mb-3 mt-8 flex flex-col items-center justify-center text-center">
-                    <span className="mb-1 rounded border border-brand-200 bg-brand-50 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-brand-700">
-                      Audit Breakdown
-                    </span>
-                    <h3 className="text-sm font-bold text-slate-900">Year-by-Year Schedule</h3>
-                    <p className="mt-0.5 text-xs text-slate-500">
-                      SIP vs Step-up SIP Progression Timeline
-                    </p>
-                  </div>
-
-                  <ScheduleTable
-                    caption="Yearly Schedule"
-                    meta={`${combinedSchedule.length} years`}
-                    zebra
-                    highlightLastRow
-                    columns={[
-                      { key: "year", header: "Yr", sticky: true },
+                <WealthSection
+                  badge="05 · Schedule"
+                  title="Yearly Investment Schedule"
+                  subtitle="Standard vs Step-Up SIP progression by year"
+                  open={openSchedule}
+                  onToggle={() => setOpenSchedule((v) => !v)}
+                  mark={
+                    <WealthIconMark>
+                      <IconCalendar />
+                    </WealthIconMark>
+                  }
+                >
+                  <WealthScheduleTable
+                    rows={combinedSchedule}
+                    summary={[
                       {
-                        key: "stdMonthly",
-                        header: "Std SIP",
-                        format: "inr",
-                        align: "right",
+                        label: "Years",
+                        value: String(combinedSchedule.length),
+                      },
+                      {
+                        label: "Final Std Corpus",
+                        value: formatINRCurrency(stdCorpus),
                         tone: "std",
                       },
                       {
-                        key: "stdYearEnd",
-                        header: "Std. End Corpus",
-                        format: "inr",
-                        align: "right",
-                        tone: "std",
-                      },
-                      {
-                        key: "stepMonthly",
-                        header: "Step-Up SIP",
-                        format: "inr",
-                        align: "right",
+                        label: "Final Step-Up Corpus",
+                        value: formatINRCurrency(stepCorpus),
                         tone: "step",
                       },
                       {
-                        key: "stepYearEnd",
-                        header: "Step-Up End Corpus",
-                        format: "inr",
-                        align: "right",
+                        label: "Step-Up End SIP",
+                        value: formatINRCurrency(stepUpEndSIP),
                         tone: "step",
                       },
                     ]}
-                    rows={combinedSchedule}
                   />
-                </ResultsSection>
-              </Stack>
+                </WealthSection>
+              </div>
             ) : null}
           </>
         }
         footer={
-          <ComplianceFootnote>
-            Calculations shown are for illustration purposes only. SIP and step-up projections are
-            modeled under the stated return, inflation, and tax assumptions. Actual market returns
-            and tax rules can differ. Market investments are subject to risk.
-          </ComplianceFootnote>
+          <WealthDisclaimer
+            notes={[
+              "Unplanned delay permanently compresses the compounding runway under the same return path.",
+              "Headline maturity is not purchasing power. Frame conversations on the inflation-adjusted corpus.",
+              "Tax is applied on gains only. Net after tax is the amount available to the investor at exit.",
+              "Projections are illustrative. Actual market returns and tax rules can differ.",
+            ]}
+          >
+            Figures are for illustration only. SIP and step-up projections use the stated return,
+            inflation, and tax assumptions. Markets carry risk; past performance does not guarantee
+            future results.
+          </WealthDisclaimer>
         }
       />
+
+      {/* Sticky mobile actions */}
+      {result ? (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/80 bg-white/95 p-3 backdrop-blur sm:hidden">
+          <div className="mx-auto flex max-w-[94rem] gap-2">
+            <button
+              type="button"
+              onClick={handleDownload}
+              disabled={isDownloading}
+              className="flex-1 rounded-[14px] bg-emerald-700 py-3 text-sm font-medium text-white disabled:opacity-50"
+            >
+              {isDownloading ? "Exporting…" : "Export PDF"}
+            </button>
+            <button
+              type="button"
+              onClick={scrollToAssumptions}
+              className="rounded-[14px] border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700"
+            >
+              Edit
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       {result ? (
         <GoalSipDossier
           data={{

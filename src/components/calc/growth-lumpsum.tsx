@@ -1,34 +1,10 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import {
-  AgeInput,
-  BentoGroup,
-  BentoSection,
-  Card,
-  CHIP,
-  CHIP_OFF,
-  CHIP_ON,
-  ClientProfileBar,
-  ResultsSection,
-  CompareChart,
-  CompositionChart,
-  ComplianceFootnote,
-  Field,
   formatINRCurrency,
   formatPercent,
-  GrowthChart,
-  MoneyInput,
-  PercentInput,
-  ScheduleTable,
-  SectionTitle,
-  SegmentedChartControl,
-  Stack,
-  StatCard,
-  StatGrid,
-  StatusNote,
-  TextInput,
-  YearInput,
 } from "@nivra/ui";
 import { CalculatorPage } from "@/components/layout/calculator-page-with-nav";
 import { ReportDownloadButton } from "@/components/calc/report-download-button";
@@ -38,25 +14,61 @@ import {
 } from "@/components/reports/one-time-investment-dossier";
 import { DUMMY_REPORT_CONTACT } from "@/components/reports/executive-dossier";
 import { useCalculate } from "@/hooks/use-calculate";
+import { useCalculatorMode } from "@/hooks/use-calculator-mode";
 import { getCalculatorPageTitle } from "@/lib/calculator-nav";
 import { generatePdfFromElement } from "@/lib/pdf-generator";
-import { BarChart3, ChevronDown, LineChart, PieChart } from "lucide-react";
+import {
+  IconCalendar,
+  IconChart,
+  IconDelay,
+  IconDonut,
+  IconPerson,
+  IconRates,
+  IconRefresh,
+  IconSip,
+  IconStepUp,
+  IconTarget,
+  IconTax,
+  moneyCell,
+  WEALTH_CONTENT_CLASS,
+  WEALTH_MONEY_PRESETS_DEFAULT,
+  WEALTH_YEAR_PRESETS_DEFAULT,
+  WealthAgeField,
+  WealthAuditChip,
+  WealthAuditLedger,
+  WealthCompareBars,
+  WealthDataTable,
+  WealthDisclaimer,
+  WealthGrowthLine,
+  WealthHero,
+  WealthIconMark,
+  WealthMetricCard,
+  WealthMixDonut,
+  WealthMoneyField,
+  WealthPercentField,
+  WealthProfileGrid,
+  WealthSection,
+  WealthSegmented,
+  WealthStatusNote,
+  WealthTextField,
+  WealthYearField,
+  wealth,
+  wealthChart,
+  wealthMixColors,
+} from "@/components/wealth";
 
 const AMOUNT_MIN = 10_000;
 const AMOUNT_MAX = 100_00_00_000; // ₹100 Cr
 const AMOUNT_STEP = 1_00_000;
 const AMOUNT_PRESETS = [
-  { label: "₹1L", value: 1_00_000 },
-  { label: "₹10L", value: 10_00_000 },
-  { label: "₹50L", value: 50_00_000 },
-  { label: "₹1Cr", value: 1_00_00_000 },
+  ...WEALTH_MONEY_PRESETS_DEFAULT,
   { label: "₹10Cr", value: 10_00_00_000 },
-  { label: "₹50Cr", value: 50_00_00_000 },
-  { label: "₹100Cr", value: 100_00_00_000 },
-] as const;
+];
+const YEARS_MAX = 100;
+const YEARS_SLIDER_MAX = 40;
 
-const YEAR_PRESETS = [5, 10, 15, 16, 20, 25, 30] as const;
-const DELAY_PRESETS = [0, 3, 6, 12, 18, 24] as const;
+const GROWTH_MODE_IDS = ["sip", "stepup", "lumpsum", "periodic"] as const;
+type GrowthMode = (typeof GROWTH_MODE_IDS)[number];
 
 type YearRow = {
   year: number;
@@ -77,6 +89,13 @@ type LumpsumResult = {
   delayedMaturity?: number | null;
   costOfDelay?: number | null;
   schedule: YearRow[];
+};
+
+type AuditRow = {
+  label: string;
+  value: number;
+  tax?: boolean;
+  highlight?: boolean;
 };
 
 function nameError(value: string): string | undefined {
@@ -128,19 +147,8 @@ function rateError(value: number, label: string): string | undefined {
   return undefined;
 }
 
-function AuditBreakdownTable({
-  result,
-  delayMonths,
-}: {
-  result: LumpsumResult;
-  delayMonths: number;
-}) {
-  const rows: Array<{
-    label: string;
-    value: number;
-    tax?: boolean;
-    highlight?: boolean;
-  }> = [
+function buildAuditRows(result: LumpsumResult, delayMonths: number): AuditRow[] {
+  const rows: AuditRow[] = [
     { label: "Principal invested", value: result.totalInvested },
     { label: "Pre-tax maturity", value: result.maturity, highlight: true },
     { label: "Investment gain", value: result.gain },
@@ -160,54 +168,11 @@ function AuditBreakdownTable({
     );
   }
 
-  return (
-    <div className="mt-8">
-      <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
-        <div>
-          <h3 className="text-sm font-bold text-slate-800">Audit Breakdown</h3>
-          <p className="text-[11px] text-slate-500">
-            Nominal growth, purchasing power, tax, and delay impact
-          </p>
-        </div>
-      </div>
-      <div className="overflow-x-auto rounded-xl border border-slate-200">
-        <table className="w-full min-w-[420px] border-collapse text-left text-sm">
-          <thead>
-            <tr className="bg-slate-800 text-[11px] uppercase tracking-wider text-white">
-              <th className="px-4 py-3 font-semibold">Metric</th>
-              <th className="px-4 py-3 text-right font-semibold">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr
-                key={row.label}
-                className={`border-t border-slate-100 ${
-                  row.highlight ? "bg-emerald-50/60" : "bg-white"
-                }`}
-              >
-                <td className="px-4 py-2.5 text-slate-700">{row.label}</td>
-                <td
-                  className={`px-4 py-2.5 text-right tabular-nums font-medium ${
-                    row.tax
-                      ? "text-rose-600"
-                      : row.highlight
-                        ? "text-emerald-800"
-                        : "text-slate-800"
-                  }`}
-                >
-                  {formatINRCurrency(row.value)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
+  return rows;
 }
 
 export function GrowthLumpsum() {
+  const [mode, setMode] = useCalculatorMode(GROWTH_MODE_IDS, "lumpsum");
   const [name, setName] = useState("Mr. Anshu Kaul");
   const [age, setAge] = useState(30);
   const [email, setEmail] = useState(DUMMY_REPORT_CONTACT.email);
@@ -222,6 +187,9 @@ export function GrowthLumpsum() {
   const [openAssumptions, setOpenAssumptions] = useState(true);
   const [openMilestones, setOpenMilestones] = useState(true);
   const [openAnalytics, setOpenAnalytics] = useState(true);
+  const [openSchedule, setOpenSchedule] = useState(true);
+  const [chartTab, setChartTab] = useState<"growth" | "allocation" | "delay">("growth");
+  const assumptionsRef = useRef<HTMLDivElement>(null);
 
   const clientNameError = nameError(name);
   const clientAgeError = ageError(age);
@@ -280,7 +248,6 @@ export function GrowthLumpsum() {
   );
   const [isDownloading, setIsDownloading] = useState(false);
 
-  const endAge = age + years;
   const realYieldPct =
     result && result.totalInvested > 0
       ? ((result.inflationAdjusted - result.totalInvested) / result.totalInvested) * 100
@@ -324,13 +291,22 @@ export function GrowthLumpsum() {
     }
   };
 
+  const scrollToAssumptions = () => {
+    setOpenAssumptions(true);
+    assumptionsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const yearRows = result?.schedule ?? [];
+  const auditRows = result ? buildAuditRows(result, delayMonths) : [];
+  const activeChartTab =
+    chartTab === "delay" && !hasDelay ? "growth" : chartTab;
 
   return (
     <>
       <CalculatorPage
         title={getCalculatorPageTitle("/growth", "lumpsum")}
         description="One-time lumpsum compounding with inflation, tax, and cost of delay."
+        contentClassName={WEALTH_CONTENT_CLASS}
         actions={
           <ReportDownloadButton
             onClick={handleDownload}
@@ -338,227 +314,207 @@ export function GrowthLumpsum() {
             loading={isDownloading}
           />
         }
+        modes={
+          <WealthSegmented
+            fullWidth
+            layoutId="growth-mode-pill"
+            value={mode}
+            onChange={(id) => setMode(id as GrowthMode)}
+            options={[
+              {
+                id: "sip",
+                label: "SIP",
+                icon: <IconSip className="h-3.5 w-3.5" />,
+              },
+              {
+                id: "stepup",
+                label: "Step-up",
+                icon: <IconStepUp className="h-3.5 w-3.5" />,
+              },
+              {
+                id: "lumpsum",
+                label: "Lumpsum",
+                icon: <IconChart className="h-3.5 w-3.5" />,
+              },
+              {
+                id: "periodic",
+                label: "Periodic",
+                icon: <IconCalendar className="h-3.5 w-3.5" />,
+              },
+            ]}
+          />
+        }
         header={
-          <ClientProfileBar
-            name={name}
+          <WealthHero
+            clientName={name}
             age={age}
             email={email}
             phone={phone}
+            goalLabel="Capital growth"
+            tenure={years}
             strategy="One-time lumpsum compounding"
-            goal="Capital growth"
+            metrics={[
+              {
+                label: "Maturity",
+                value: result?.maturity ?? 0,
+                kind: "currency",
+                tone: "emerald",
+                mark: (
+                  <WealthIconMark tone="emerald" className="h-6 w-6">
+                    <IconTarget className="h-3.5 w-3.5" />
+                  </WealthIconMark>
+                ),
+              },
+              {
+                label: "Invested",
+                value: result?.totalInvested ?? amount,
+                kind: "currency",
+                tone: "slate",
+                mark: (
+                  <WealthIconMark className="h-6 w-6">
+                    <IconSip className="h-3.5 w-3.5" />
+                  </WealthIconMark>
+                ),
+              },
+              {
+                label: "Net after tax",
+                value: result?.netAfterTax ?? 0,
+                kind: "currency",
+                tone: "slate",
+                mark: (
+                  <WealthIconMark className="h-6 w-6">
+                    <IconTax className="h-3.5 w-3.5" />
+                  </WealthIconMark>
+                ),
+              },
+            ]}
+            onEdit={scrollToAssumptions}
           />
         }
         form={
-          <BentoSection
-            sectionId="01"
-            title="Financial Assumptions & Modeling Suite"
-            description="Interactive multi-parameter engine for one-time investment growth with inflation and delay"
-            collapsible
+          <div ref={assumptionsRef}>
+          <WealthSection
+            id="assumptions"
+            badge="01 · Profile"
+            title="Investor Profile and Assumptions"
+            subtitle="Client, lumpsum, rates, and start delay"
             open={openAssumptions}
             onToggle={() => setOpenAssumptions((v) => !v)}
+            mark={
+              <WealthIconMark>
+                <IconPerson />
+              </WealthIconMark>
+            }
             actions={
               <button
                 type="button"
                 onClick={resetDefaults}
-                className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 transition-all hover:bg-slate-100 hover:text-emerald-700"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
               >
-                Reset to Baseline
+                <IconRefresh className="h-3.5 w-3.5" />
+                Reset
               </button>
             }
           >
-            <BentoGroup
-              num="01"
-              title="Investor Profile"
-              colSpan={4}
-              footer={
-                <>
-                  <span>Age path:</span>
-                  <span className="font-bold text-slate-700">
-                    {age} → {endAge}
-                  </span>
-                </>
-              }
-            >
-              <div className="mb-4">
-                <Field label="Client Name" error={clientNameError}>
-                  <TextInput
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className={clientNameError ? "border-[var(--app-danger)]" : undefined}
-                  />
-                </Field>
-              </div>
-              <div className="mb-4">
-                <AgeInput value={age} onChange={setAge} error={clientAgeError} />
-              </div>
-              <div className="mb-4">
-                <Field label="Email" error={clientEmailError}>
-                  <TextInput
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="client@email.com"
-                    className={clientEmailError ? "border-[var(--app-danger)]" : undefined}
-                  />
-                </Field>
-              </div>
-              <Field label="Phone" error={clientPhoneError}>
-                <TextInput
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+91 98765 43210"
-                  className={clientPhoneError ? "border-[var(--app-danger)]" : undefined}
-                />
-              </Field>
-            </BentoGroup>
-
-            <BentoGroup
-              num="02"
-              title="Investment Parameters"
-              colSpan={5}
-              footer={
-                <>
-                  <span>Horizon:</span>
-                  <span className="font-bold text-emerald-700">
-                    {years} yr{years === 1 ? "" : "s"}
-                    {delayMonths > 0 ? ` · ${delayMonths} mo delay` : ""}
-                  </span>
-                </>
-              }
-            >
-              <div className="mb-4">
-                <MoneyInput
-                  label="Investment amount"
-                  value={amount}
-                  onChange={(v) => setAmount(Math.min(AMOUNT_MAX, Math.max(0, v)))}
-                  error={amountError}
-                  max={AMOUNT_MAX}
-                  suffix="₹"
-                />
-                <input
-                  type="range"
-                  className="nivra-range-slider mt-3 w-full cursor-pointer"
-                  min={AMOUNT_MIN}
-                  max={AMOUNT_MAX}
-                  step={AMOUNT_STEP}
-                  value={Math.min(AMOUNT_MAX, Math.max(AMOUNT_MIN, amount || AMOUNT_MIN))}
-                  onChange={(e) => setAmount(Number(e.target.value))}
-                  aria-label="Investment amount slider"
-                />
-                <div className="mt-1 flex items-center justify-between text-[10px] font-semibold tabular-nums text-slate-400">
-                  <span>{formatINRCurrency(AMOUNT_MIN)}</span>
-                  <span>{formatINRCurrency(AMOUNT_MAX)}</span>
-                </div>
-                <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-                  <span className="text-[10px] font-bold uppercase text-slate-400">Quick:</span>
-                  {AMOUNT_PRESETS.map((preset) => (
-                    <button
-                      key={preset.value}
-                      type="button"
-                      onClick={() => setAmount(preset.value)}
-                      aria-pressed={amount === preset.value}
-                      className={`${CHIP} ${amount === preset.value ? CHIP_ON : CHIP_OFF}`}
-                    >
-                      {preset.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="mb-3">
-                <YearInput
-                  label="Term"
-                  value={years}
-                  min={1}
-                  max={100}
-                  suffix="Years"
-                  onChange={setYears}
-                  error={yearsError}
-                />
-                <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-                  <span className="text-[10px] font-bold uppercase text-slate-400">Quick:</span>
-                  {YEAR_PRESETS.map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      onClick={() => setYears(preset)}
-                      aria-pressed={years === preset}
-                      className={`${CHIP} ${years === preset ? CHIP_ON : CHIP_OFF}`}
-                    >
-                      {preset}Y
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <YearInput
-                  label="Delay"
-                  value={delayMonths}
-                  min={0}
-                  max={1200}
-                  suffix="Months"
-                  onChange={(v) => setDelayMonths(Math.max(0, v))}
-                  error={delayError}
-                />
-                <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-                  <span className="text-[10px] font-bold uppercase text-slate-400">Quick:</span>
-                  {DELAY_PRESETS.map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      onClick={() => setDelayMonths(preset)}
-                      aria-pressed={delayMonths === preset}
-                      className={`${CHIP} ${delayMonths === preset ? CHIP_ON : CHIP_OFF}`}
-                    >
-                      {preset === 0 ? "None" : `${preset}M`}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </BentoGroup>
-
-            <BentoGroup
-              num="03"
-              title="Rate Assumptions"
-              subtitle="Return, Inflation & Tax"
-              colSpan={3}
-              footer={
-                <>
-                  <span>Tax drag:</span>
-                  <span className="font-bold text-emerald-700">{formatPercent(taxPct)}</span>
-                </>
-              }
-            >
-              <div className="mb-3.5">
-                <PercentInput
-                  label="Expected return"
-                  value={returnPct}
-                  onChange={(v) => setReturnPct(Math.max(0, v))}
-                  error={returnError}
-                />
-              </div>
-              <div className="mb-3.5">
-                <PercentInput
-                  label="Inflation"
-                  value={inflationPct}
-                  onChange={(v) => setInflationPct(Math.max(0, v))}
-                  error={inflationError}
-                />
-              </div>
-              <PercentInput
+            <div className="py-2">
+            <WealthProfileGrid>
+              <WealthTextField
+                label="Client name"
+                value={name}
+                onChange={setName}
+                error={clientNameError}
+                autoComplete="name"
+              />
+              <WealthAgeField
+                value={age}
+                onChange={setAge}
+                error={clientAgeError}
+              />
+              <WealthTextField
+                label="Email"
+                type="email"
+                value={email}
+                onChange={setEmail}
+                error={clientEmailError}
+                placeholder="client@email.com"
+                autoComplete="email"
+              />
+              <WealthTextField
+                label="Phone"
+                type="tel"
+                value={phone}
+                onChange={setPhone}
+                error={clientPhoneError}
+                placeholder="+91 98765 43210"
+                autoComplete="tel"
+              />
+              <WealthMoneyField
+                label="Investment amount"
+                value={amount}
+                onChange={(v) => setAmount(Math.min(AMOUNT_MAX, Math.max(0, v)))}
+                error={amountError}
+                max={AMOUNT_MAX}
+                suffix="₹"
+                slider={{
+                  min: AMOUNT_MIN,
+                  max: AMOUNT_MAX,
+                  step: AMOUNT_STEP,
+                  scale: "log",
+                  presets: AMOUNT_PRESETS,
+                }}
+              />
+              <WealthYearField
+                label="Term"
+                value={years}
+                min={1}
+                max={YEARS_MAX}
+                suffix="Years"
+                onChange={setYears}
+                error={yearsError}
+                slider={{
+                  min: 1,
+                  max: YEARS_SLIDER_MAX,
+                  step: 1,
+                  presets: WEALTH_YEAR_PRESETS_DEFAULT,
+                }}
+              />
+              <WealthYearField
+                label="Delay"
+                value={delayMonths}
+                min={0}
+                max={1200}
+                suffix="Months"
+                onChange={(v) => setDelayMonths(Math.max(0, v))}
+                error={delayError}
+              />
+              <WealthPercentField
+                label="Expected return"
+                value={returnPct}
+                onChange={(v) => setReturnPct(Math.max(0, v))}
+                error={returnError}
+              />
+              <WealthPercentField
+                label="Inflation"
+                value={inflationPct}
+                onChange={(v) => setInflationPct(Math.max(0, v))}
+                error={inflationError}
+              />
+              <WealthPercentField
                 label="Tax"
                 value={taxPct}
                 onChange={(v) => setTaxPct(Math.max(0, v))}
                 error={taxError}
               />
-            </BentoGroup>
-          </BentoSection>
+            </WealthProfileGrid>
+            </div>
+          </WealthSection>
+          </div>
         }
         results={
           <>
-            {error ? <StatusNote tone="error">{error}</StatusNote> : null}
+            {error ? <WealthStatusNote tone="error">{error}</WealthStatusNote> : null}
             {!canCalculate ? (
-              <StatusNote tone="error">
+              <WealthStatusNote tone="error">
                 <div className="flex flex-col gap-1">
                   <span className="font-semibold">
                     Fix the inputs above to refresh the calculation
@@ -570,96 +526,112 @@ export function GrowthLumpsum() {
                     ))}
                   </ul>
                 </div>
-              </StatusNote>
+              </WealthStatusNote>
             ) : null}
             {loading && !result && canCalculate ? (
-              <StatusNote tone="pending">Calculating…</StatusNote>
+              <WealthStatusNote tone="info">Calculating…</WealthStatusNote>
             ) : null}
             {result ? (
-              <Stack>
-                <ResultsSection
-                  sectionId="02"
+              <div className="space-y-5">
+                <WealthSection
+                  badge="02 · Milestones"
                   title="Growth Milestones"
-                  description="Nominal maturity, purchasing power, and net outcome after tax"
+                  subtitle="Nominal maturity, purchasing power, and net outcome after tax"
                   open={openMilestones}
                   onToggle={() => setOpenMilestones((v) => !v)}
-                  meta={
+                  mark={
+                    <WealthIconMark tone="emerald">
+                      <IconChart />
+                    </WealthIconMark>
+                  }
+                  actions={
                     <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">
                       Horizon: {years} Years
                     </span>
                   }
                 >
-                  <StatGrid>
-                    <StatCard
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <WealthMetricCard
                       title="Maturity"
                       value={result.maturity}
+                      description="Nominal corpus at the end of the tenure"
+                      badge="Nominal"
                       tone="positive"
-                      badge={
-                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
-                          Nominal
-                        </span>
-                      }
                       footer={
-                        <div className="flex items-center justify-between">
-                          <span>Invested:</span>
-                          <span className="font-bold text-emerald-700">
+                        <>
+                          Invested ·{" "}
+                          <span className="font-semibold tabular-nums text-emerald-700">
                             {formatINRCurrency(result.totalInvested)}
                           </span>
-                        </div>
+                        </>
+                      }
+                      mark={
+                        <WealthIconMark tone="emerald" className="h-7 w-7">
+                          <IconChart className="h-3.5 w-3.5" />
+                        </WealthIconMark>
                       }
                     />
-                    <StatCard
+                    <WealthMetricCard
                       title="Inflation adjusted"
                       value={result.inflationAdjusted}
+                      description="Purchasing power in today rupees"
+                      badge="Today rupees"
                       tone="neutral"
-                      badge={
-                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
-                          Today rupees
-                        </span>
-                      }
                       footer={
-                        <div className="flex items-center justify-between">
-                          <span>Real yield:</span>
-                          <span className="font-semibold text-slate-700">
+                        <>
+                          Real yield ·{" "}
+                          <span className="font-semibold tabular-nums text-slate-700">
                             {formatPercent(realYieldPct)}
                           </span>
-                        </div>
+                        </>
+                      }
+                      mark={
+                        <WealthIconMark className="h-7 w-7">
+                          <IconRates className="h-3.5 w-3.5" />
+                        </WealthIconMark>
                       }
                     />
-                    <StatCard
+                    <WealthMetricCard
                       title={hasDelay ? "Cost of delay" : "Net after tax"}
                       value={hasDelay ? (result.costOfDelay ?? 0) : result.netAfterTax}
-                      tone={hasDelay ? "negative" : "positive"}
-                      badge={
-                        hasDelay ? (
-                          <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-800">
-                            {delayMonths} mo late
-                          </span>
-                        ) : (
-                          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
-                            Post-tax
-                          </span>
-                        )
+                      description={
+                        hasDelay
+                          ? `Opportunity cost from a ${delayMonths}-month late start`
+                          : "Corpus available after capital gains tax"
                       }
+                      badge={hasDelay ? `${delayMonths} mo late` : "Post-tax"}
+                      tone={hasDelay ? "neutral" : "positive"}
                       footer={
                         hasDelay ? (
-                          <div className="flex items-center justify-between">
-                            <span>Delayed maturity:</span>
-                            <span className="font-semibold text-slate-700">
+                          <>
+                            Delayed maturity ·{" "}
+                            <span className="font-semibold tabular-nums text-slate-700">
                               {formatINRCurrency(result.delayedMaturity ?? 0)}
                             </span>
-                          </div>
+                          </>
                         ) : (
-                          <div className="flex items-center justify-between">
-                            <span>Gain after tax:</span>
-                            <span className="font-bold text-emerald-700">
+                          <>
+                            Gain after tax ·{" "}
+                            <span className="font-semibold tabular-nums text-emerald-700">
                               {formatINRCurrency(result.gain - result.tax)}
                             </span>
-                          </div>
+                          </>
                         )
                       }
+                      mark={
+                        <WealthIconMark
+                          className="h-7 w-7"
+                          tone={hasDelay ? "amber" : "emerald"}
+                        >
+                          {hasDelay ? (
+                            <IconDelay className="h-3.5 w-3.5" />
+                          ) : (
+                            <IconTax className="h-3.5 w-3.5" />
+                          )}
+                        </WealthIconMark>
+                      }
                     />
-                  </StatGrid>
+                  </div>
 
                   {hasDelay ? (
                     <div className="mt-6 rounded-xl border border-dashed border-rose-300 bg-rose-50/70 p-4">
@@ -671,190 +643,282 @@ export function GrowthLumpsum() {
                       </p>
                     </div>
                   ) : null}
-                </ResultsSection>
+                </WealthSection>
 
-                <ResultsSection
-                  sectionId="03"
+                <WealthSection
+                  badge="03 · Analytics"
                   title="Growth Analytics"
-                  description="Corpus path, allocation mix, delay compare, and yearly audit ledger"
+                  subtitle="Corpus path, allocation mix, and delay compare"
                   open={openAnalytics}
                   onToggle={() => setOpenAnalytics((v) => !v)}
+                  mark={
+                    <WealthIconMark>
+                      <IconRates />
+                    </WealthIconMark>
+                  }
                 >
-                  <SegmentedChartControl
-                    variant="pill"
-                    tabs={[
-                      {
-                        id: "growth",
-                        label: "Growth",
-                        icon: <LineChart className="h-3.5 w-3.5" />,
-                        content: (
-                          <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.04)] sm:p-8">
-                            <GrowthChart
-                              title="Full return vs inflation-adjusted"
-                              showEndLabels
-                              endpointDots
-                              data={yearRows.map((row) => ({
-                                year: row.year,
-                                corpus: row.yearEnd,
-                                inflationAdjusted: row.inflationAdjusted ?? row.yearEnd,
-                              }))}
-                              series={[
+                  <div className="space-y-5">
+                    <div className="overflow-x-auto pb-1">
+                      <WealthSegmented
+                        layoutId="lumpsum-analytics-underline"
+                        variant="underline"
+                        value={activeChartTab}
+                        onChange={(id) => setChartTab(id)}
+                        options={[
+                          {
+                            id: "growth",
+                            label: "Growth",
+                            icon: <IconChart className="h-3.5 w-3.5" />,
+                          },
+                          {
+                            id: "allocation",
+                            label: "Corpus Mix",
+                            icon: <IconDonut className="h-3.5 w-3.5" />,
+                          },
+                          ...(hasDelay
+                            ? [
                                 {
-                                  key: "corpus",
-                                  label: "Full return",
-                                  color: "var(--app-chart-gain)",
+                                  id: "delay" as const,
+                                  label: "Delay",
+                                  icon: <IconDelay className="h-3.5 w-3.5" />,
                                 },
-                                {
-                                  key: "inflationAdjusted",
-                                  label: "Inflation-adjusted",
-                                  color: "var(--app-chart-inflation)",
-                                },
-                              ]}
-                            />
-                          </div>
-                        ),
-                      },
-                      {
-                        id: "allocation",
-                        label: "Allocation",
-                        icon: <PieChart className="h-3.5 w-3.5" />,
-                        content: (
-                          <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.04)] sm:p-8">
-                            <CompositionChart
-                              title="Invested / gain / tax"
-                              showPercentages
-                              size="lg"
-                              slices={[
-                                {
-                                  name: "Invested",
-                                  value: result.totalInvested,
-                                  color: "var(--app-chart-invested)",
-                                },
-                                {
-                                  name: "Gain",
-                                  value: result.gain,
-                                  color: "var(--app-chart-gain)",
-                                },
-                                {
-                                  name: "Tax",
-                                  value: result.tax,
-                                  color: "var(--app-chart-tax)",
-                                },
-                              ]}
-                              centerLabel="Maturity"
-                              centerValue={result.maturity}
-                            />
-                          </div>
-                        ),
-                      },
-                      ...(hasDelay
-                        ? [
-                            {
-                              id: "delay",
-                              label: "Delay",
-                              icon: <BarChart3 className="h-3.5 w-3.5" />,
-                              content: (
-                                <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.04)] sm:p-8">
-                                  <CompareChart
-                                    title="On-time vs delayed maturity"
-                                    showBarLabels
-                                    data={[
-                                      {
-                                        category: "Maturity",
-                                        onTime: result.maturity,
-                                        delayed: result.delayedMaturity ?? 0,
-                                      },
-                                    ]}
-                                    series={[
-                                      {
-                                        key: "onTime",
-                                        label: "On time",
-                                        color: "#00875a",
-                                      },
-                                      {
-                                        key: "delayed",
-                                        label: "Delayed",
-                                        color: "#e16868",
-                                      },
-                                    ]}
-                                  />
-                                </div>
-                              ),
-                            },
-                          ]
-                        : []),
-                    ]}
-                  />
+                              ]
+                            : []),
+                        ]}
+                      />
+                    </div>
 
-                  <AuditBreakdownTable result={result} delayMonths={delayMonths} />
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={activeChartTab}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        transition={{ duration: 0.22 }}
+                      >
+                        {activeChartTab === "growth" ? (
+                          <WealthGrowthLine
+                            data={yearRows.map((row) => ({
+                              year: row.year,
+                              invested: row.investedToDate,
+                              corpus: row.yearEnd,
+                              inflationAdjusted: row.inflationAdjusted ?? row.yearEnd,
+                            }))}
+                            series={[
+                              {
+                                key: "invested",
+                                label: "Investment",
+                                color: wealthChart.invested,
+                                kind: "line",
+                              },
+                              {
+                                key: "corpus",
+                                label: "Full return",
+                                color: wealthChart.stepUp,
+                                kind: "area",
+                              },
+                              {
+                                key: "inflationAdjusted",
+                                label: "Inflation-adjusted",
+                                color: wealthChart.inflAdj,
+                                kind: "line",
+                                dashed: true,
+                              },
+                            ]}
+                          />
+                        ) : null}
 
-                  <div className="mt-8">
-                    <ScheduleTable
-                      caption="Yearly schedule"
-                      meta={`${yearRows.length} years`}
-                      zebra
+                        {activeChartTab === "allocation" ? (
+                          <WealthMixDonut
+                            title="Corpus mix"
+                            centerValue={result.maturity}
+                            centerLabel="Pre-tax"
+                            tax={result.tax}
+                            net={result.netAfterTax}
+                            netLabel="Maturity"
+                            slices={[
+                              {
+                                name: "Invested",
+                                value: result.totalInvested,
+                                color: wealthMixColors.invested,
+                              },
+                              {
+                                name: "Gain",
+                                value: result.gain,
+                                color: wealthMixColors.gain,
+                              },
+                            ]}
+                          />
+                        ) : null}
+
+                        {activeChartTab === "delay" && hasDelay ? (
+                          <WealthCompareBars
+                            showBarLabels
+                            data={[
+                              {
+                                category: "Maturity",
+                                onTime: result.maturity,
+                                delayed: result.delayedMaturity ?? 0,
+                              },
+                            ]}
+                            series={[
+                              {
+                                key: "onTime",
+                                label: "On time",
+                                color: wealthChart.stepUp,
+                              },
+                              {
+                                key: "delayed",
+                                label: "Delayed",
+                                color: wealth.rose,
+                              },
+                            ]}
+                          />
+                        ) : null}
+                      </motion.div>
+                    </AnimatePresence>
+                  </div>
+                </WealthSection>
+
+                <WealthSection
+                  badge="04 · Audit"
+                  title="Lumpsum Outcome Ledger"
+                  subtitle="Horizon, tax drag, yield, and line-by-line maturity audit"
+                  open={openSchedule}
+                  onToggle={() => setOpenSchedule((v) => !v)}
+                  mark={
+                    <WealthIconMark>
+                      <IconCalendar />
+                    </WealthIconMark>
+                  }
+                >
+                  <div className="space-y-5">
+                    <WealthAuditLedger
+                      stats={[
+                        {
+                          label: "Horizon",
+                          value: `${years} yr${years === 1 ? "" : "s"}`,
+                          hint:
+                            delayMonths > 0
+                              ? `${delayMonths} mo start delay`
+                              : "One-time investment",
+                        },
+                        {
+                          label: "Net after tax",
+                          value: formatINRCurrency(result.netAfterTax),
+                          hint: `Gain ${formatINRCurrency(result.gain)} before tax`,
+                          tone: "emerald",
+                        },
+                        {
+                          label: "Post-tax yield",
+                          value:
+                            result.totalInvested > 0
+                              ? formatPercent(
+                                  ((result.netAfterTax - result.totalInvested) /
+                                    result.totalInvested) *
+                                    100,
+                                )
+                              : formatPercent(0),
+                          hint: `Inflation-adj. ${formatPercent(realYieldPct)}`,
+                        },
+                      ]}
+                      chips={
+                        <>
+                          <WealthAuditChip label="Tax drag">
+                            {result.gain > 0
+                              ? `${formatPercent((result.tax / result.gain) * 100, 1)} of pre-tax gain (${formatINRCurrency(result.tax)})`
+                              : `${formatINRCurrency(result.tax)} on gains`}
+                          </WealthAuditChip>
+                          <WealthAuditChip label="Principal">
+                            {formatINRCurrency(result.totalInvested)}
+                            {hasDelay && result.costOfDelay != null
+                              ? ` · delay cost ${formatINRCurrency(result.costOfDelay)}`
+                              : ""}
+                          </WealthAuditChip>
+                        </>
+                      }
+                      columns={["Metric", "Amount"]}
+                      rows={auditRows.map((row) => ({
+                        label: row.label,
+                        tax: row.tax,
+                        highlight: row.highlight && row.label === "Net after tax",
+                        cells: [
+                          {
+                            text: formatINRCurrency(row.value),
+                            tone: row.highlight
+                              ? row.label === "Net after tax"
+                                ? ("pill" as const)
+                                : ("emerald" as const)
+                              : row.tax
+                                ? ("rose" as const)
+                                : ("default" as const),
+                          },
+                        ],
+                      }))}
+                      note={`Ledger uses the stated return, inflation, and tax over ${years} year${years === 1 ? "" : "s"}. Absolute yields are post-tax profit on invested capital. Market path risk is not modelled here.`}
+                    />
+
+                    <WealthDataTable
+                      rows={yearRows}
+                      getRowKey={(row) => row.year}
+                      filterPlaceholder="Filter by year…"
+                      note="Year-end corpus and inflation-adjusted purchasing power for each year of the lumpsum horizon."
                       columns={[
-                        { key: "year", header: "Year", sticky: true },
+                        {
+                          key: "year",
+                          header: "Year",
+                          sticky: true,
+                          searchValue: (row) => String(row.year),
+                          render: (row) => row.year,
+                        },
                         {
                           key: "investedToDate",
                           header: "Invested",
-                          format: "inr",
                           align: "right",
-                          tone: "std",
+                          searchValue: (row) => String(row.investedToDate),
+                          render: (row) => moneyCell(row.investedToDate),
                         },
                         {
                           key: "yearEnd",
                           header: "Year-end",
-                          format: "inr",
                           align: "right",
-                          tone: "step",
+                          tone: "emerald",
+                          searchValue: (row) => String(row.yearEnd),
+                          render: (row) => moneyCell(row.yearEnd),
                         },
                         {
                           key: "inflationAdjusted",
                           header: "Inflation-adj.",
-                          format: "inr",
                           align: "right",
-                          tone: "std",
+                          searchValue: (row) => String(row.inflationAdjusted ?? ""),
+                          render: (row) =>
+                            row.inflationAdjusted != null
+                              ? moneyCell(row.inflationAdjusted)
+                              : "—",
                         },
                       ]}
-                      rows={yearRows}
                     />
                   </div>
-                </ResultsSection>
-
-                <Card variant="warn">
-                  <SectionTitle className="text-[var(--app-warn-text-strong)]">
-                    Important investment notes
-                  </SectionTitle>
-                  <ul className="mt-2 list-disc space-y-1.5 pl-4 text-xs leading-relaxed text-[var(--app-warn-text)] sm:columns-2 sm:gap-x-8">
-                    <li>
-                      Unplanned delay permanently compresses the compounding runway under the same
-                      return path.
-                    </li>
-                    <li>
-                      Headline maturity is not purchasing power. Frame conversations on the
-                      inflation-adjusted corpus.
-                    </li>
-                    <li>
-                      Tax is applied on gains only. Net after tax is the amount available to the
-                      investor at exit.
-                    </li>
-                    <li>
-                      Projections are illustrative. Actual market returns and tax rules can differ.
-                    </li>
-                  </ul>
-                </Card>
-              </Stack>
+                </WealthSection>
+              </div>
             ) : null}
           </>
         }
         footer={
-          <ComplianceFootnote>
-            Calculations shown are for illustration purposes only. One-time investment returns are
-            compounded annually as modeled. Tax treatment depends on the investor&apos;s applicable
-            rules and holding period. Market investments are subject to risk; past performance does
-            not guarantee future results.
-          </ComplianceFootnote>
+          result ? (
+            <WealthDisclaimer
+              notes={[
+                "Unplanned delay permanently compresses the compounding runway under the same return path.",
+                "Headline maturity is not purchasing power. Frame conversations on the inflation-adjusted corpus.",
+                "Tax is applied on gains only. Net after tax is the amount available to the investor at exit.",
+                "Projections are illustrative. Actual market returns and tax rules can differ.",
+              ]}
+            >
+              Figures are for illustration only. One-time investments compound annually as modeled.
+              Tax depends on the investor&apos;s applicable rules and holding period. Markets carry
+              risk; past performance does not guarantee future results.
+            </WealthDisclaimer>
+          ) : null
         }
       />
       {result ? (

@@ -1,8 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { ArrowRight, BarChart3, Download, LineChart, Loader2, PieChart, TrendingUp } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useMemo, useRef, useState } from "react";
 import { generatePdfFromElement } from "@/lib/pdf-generator";
 import {
   INSURANCE_IRR_REPORT_ID,
@@ -13,29 +11,10 @@ import {
   InsuranceTpDossier,
 } from "@/components/reports/insurance-tp-dossier";
 import { DUMMY_REPORT_CONTACT } from "@/components/reports/executive-dossier";
+import { ReportDownloadButton } from "@/components/calc/report-download-button";
 import {
-  AgeInput,
-  BentoGroup,
-  BentoSection,
-  ChartPane,
-  ClientProfileBar,
-  CompareChart,
-  ComplianceFootnote,
-  CompositionChart,
-  Field,
   formatINRCurrency,
   formatPercent,
-  GrowthChart,
-  META_TEXT,
-  MoneyInput,
-  PercentInput,
-  ResultsSection,
-  SegmentedChartControl,
-  Stack,
-  StatCard,
-  StatusNote,
-  TextInput,
-  YearInput,
   ageError,
   emailError,
   nameError,
@@ -46,13 +25,60 @@ import { CalculatorPage } from "@/components/layout/calculator-page-with-nav";
 import { useCalculate } from "@/hooks/use-calculate";
 import { useCalculatorMode } from "@/hooks/use-calculator-mode";
 import { getCalculatorPageTitle } from "@/lib/calculator-nav";
+import {
+  IconCalendar,
+  IconChart,
+  IconChevron,
+  IconDonut,
+  IconPerson,
+  IconRates,
+  IconRefresh,
+  IconStepUp,
+  IconTarget,
+  IconTimeline,
+  WEALTH_CONTENT_CLASS,
+  WealthAgeField,
+  WealthCompareBars,
+  WealthDataTable,
+  WealthDisclaimer,
+  WealthGrowthLine,
+  WealthHero,
+  WealthMetricCard,
+  WealthMixDonut,
+  WealthMoneyField,
+  WealthPercentField,
+  WealthProfileGrid,
+  WealthSection,
+  WealthSegmented,
+  WealthStatusNote,
+  WealthTextField,
+  WealthYearField,
+  WealthIconMark,
+  wealthChart,
+  wealthMixColors,
+  WEALTH_MONEY_PRESETS_DEFAULT,
+  WEALTH_YEAR_PRESETS_DEFAULT,
+} from "@/components/wealth";
+
+const PREMIUM_MIN = 1_000;
+const PREMIUM_MAX = 1_00_00_000;
+const PREMIUM_PRESETS = [
+  { label: "₹25k", value: 25_000 },
+  { label: "₹50k", value: 50_000 },
+  { label: "₹1L", value: 1_00_000 },
+  { label: "₹2L", value: 2_00_000 },
+  { label: "₹5L", value: 5_00_000 },
+  { label: "₹10L", value: 10_00_000 },
+];
+const CORPUS_MIN = 10_000;
+const CORPUS_MAX = 10_00_00_000;
+const YEARS_SLIDER_MAX = 40;
 
 const MODES = [
   { id: "irr", label: "IRR" },
   { id: "switch", label: "Term + invest" },
 ] as const;
 
-type Mode = (typeof MODES)[number]["id"];
 const MODE_IDS = MODES.map((m) => m.id);
 
 type IrrResult = {
@@ -83,6 +109,9 @@ type TpResult = {
   };
   compare: Array<{ category: string; keep: number; switch: number }>;
 };
+
+type IrrAnalyticsTab = "mix" | "compare";
+type TpAnalyticsTab = "compare" | "growth" | "funding";
 
 export function InsuranceCalculator() {
   const [mode] = useCalculatorMode(MODE_IDS, "irr");
@@ -118,6 +147,10 @@ export function InsuranceCalculator() {
   const [openAssumptions, setOpenAssumptions] = useState(true);
   const [openMilestones, setOpenMilestones] = useState(true);
   const [openAnalytics, setOpenAnalytics] = useState(true);
+  const [openSchedule, setOpenSchedule] = useState(true);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const assumptionsRef = useRef<HTMLDivElement>(null);
 
   const irrNameError = nameError(name);
   const irrAgeError = ageError(age);
@@ -291,8 +324,6 @@ export function InsuranceCalculator() {
     canCalculate,
   );
 
-  const [isDownloading, setIsDownloading] = useState(false);
-
   const resetDefaults = () => {
     if (mode === "irr") {
       setName("Mr. John Doe");
@@ -372,555 +403,588 @@ export function InsuranceCalculator() {
   const profileAge = mode === "irr" ? age : tpAge;
   const profileEmail = mode === "irr" ? email : tpEmail;
   const profilePhone = mode === "irr" ? phone : tpPhone;
+  const profileTenure = mode === "irr" ? policyTerm : yearsLeft;
+  const strategy =
+    mode === "irr" ? "Traditional policy IRR" : "Term plus invest switch";
+  const goalLabel =
+    mode === "irr" ? "Policy return clarity" : "Keep vs switch decision";
+
+  const irrResult =
+    mode === "irr" && result && "maturity" in result && "xirr" in result
+      ? (result as IrrResult)
+      : null;
+  const tpResult =
+    mode === "switch" && result && "keep" in result ? (result as TpResult) : null;
+
+  const heroCorpus =
+    irrResult?.maturity ??
+    tpResult?.switch.investMaturity ??
+    (mode === "irr" ? corpusAtPayEnd : maturity);
+  const heroSecondary =
+    irrResult?.net ??
+    tpResult?.keep.net ??
+    (mode === "irr" ? premium : tpPremium);
+  const heroReturnPct = irrResult
+    ? Number.isFinite(irrResult.xirr)
+      ? irrResult.xirr * 100
+      : ret
+    : tpResult && Number.isFinite(tpResult.switch.irr)
+      ? tpResult.switch.irr * 100
+      : tpRet;
+
+  const scrollToAssumptions = () => {
+    setOpenAssumptions(true);
+    assumptionsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   return (
     <>
-    <CalculatorPage
-      title={getCalculatorPageTitle("/insurance", mode)}
-      description={
-        mode === "irr"
-          ? "Compare policy maturity, net returns after tax, and full-term XIRR."
-          : "Compare keeping the policy versus surrendering into term cover plus investment."
-      }
-      actions={
-        <Button
-          size="icon"
-          className="h-8 w-8 shrink-0 bg-[var(--app-primary)] text-[var(--app-primary-fg)] hover:bg-[var(--app-primary-hover)] transition-colors disabled:opacity-50"
-          onClick={handleDownload}
-          disabled={isDownloading || !result}
-          title="Download Executive Dossier"
-        >
-          {isDownloading ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
-        </Button>
-      }
-      header={
-        <ClientProfileBar
-          name={profileName}
-          age={profileAge}
-          email={profileEmail}
-          phone={profilePhone}
-          strategy={mode === "irr" ? "Traditional policy IRR" : "Term plus invest switch"}
-          goal={mode === "irr" ? "Policy return clarity" : "Keep vs switch decision"}
+      <CalculatorPage
+        title={getCalculatorPageTitle("/insurance", mode)}
+        description={
+          mode === "irr"
+            ? "Compare policy maturity, net returns after tax, and full-term XIRR."
+            : "Compare keeping the policy versus surrendering into term cover plus investment."
+        }
+        contentClassName={WEALTH_CONTENT_CLASS}
+        actions={
+          <ReportDownloadButton
+            onClick={handleDownload}
+            disabled={!result}
+            loading={isDownloading}
+          />
+        }
+        header={
+          <WealthHero
+            clientName={profileName}
+            age={profileAge}
+            email={profileEmail}
+            phone={profilePhone}
+            tenure={profileTenure}
+            strategy={strategy}
+            goalLabel={goalLabel}
+            onEdit={scrollToAssumptions}
+            metrics={[
+              {
+                label: mode === "irr" ? "Gross maturity" : "Switch corpus",
+                value: heroCorpus,
+                kind: "currency",
+                tone: "emerald",
+                mark: (
+                  <WealthIconMark tone="emerald" className="h-6 w-6">
+                    <IconTarget className="h-3.5 w-3.5" />
+                  </WealthIconMark>
+                ),
+              },
+              {
+                label: mode === "irr" ? "Net after tax" : "Keep net",
+                value: heroSecondary,
+                kind: "currency",
+                tone: "slate",
+                mark: (
+                  <WealthIconMark className="h-6 w-6">
+                    <IconRates className="h-3.5 w-3.5" />
+                  </WealthIconMark>
+                ),
+              },
+              {
+                label: mode === "irr" ? "Policy XIRR" : "Switch IRR",
+                value: heroReturnPct,
+                kind: "percent",
+                tone: "slate",
+              },
+            ]}
+          />
+        }
+        form={
+          <div ref={assumptionsRef}>
+            {mode === "irr" ? (
+              <WealthSection
+                id="assumptions"
+                badge="01 · Profile"
+                title="Investor Profile and Assumptions"
+                subtitle="Policy premium path, corpus at pay end, and return assumptions for XIRR"
+                open={openAssumptions}
+                onToggle={() => setOpenAssumptions((v) => !v)}
+                mark={
+                  <WealthIconMark>
+                    <IconPerson />
+                  </WealthIconMark>
+                }
+                actions={
+                  <button
+                    type="button"
+                    onClick={resetDefaults}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
+                  >
+                    <IconRefresh className="h-3.5 w-3.5" />
+                    Reset
+                  </button>
+                }
+              >
+                <div className="py-2">
+                  <WealthProfileGrid>
+                    <WealthTextField
+                      label="Client name"
+                      value={name}
+                      onChange={setName}
+                      error={irrNameError}
+                      autoComplete="name"
+                    />
+                    <WealthAgeField
+                      value={age}
+                      onChange={setAge}
+                      error={irrAgeError}
+                    />
+                    <WealthTextField
+                      label="Email"
+                      type="email"
+                      value={email}
+                      onChange={setEmail}
+                      error={irrEmailError}
+                      placeholder="client@email.com"
+                      autoComplete="email"
+                    />
+                    <WealthTextField
+                      label="Phone"
+                      type="tel"
+                      value={phone}
+                      onChange={setPhone}
+                      error={irrPhoneError}
+                      placeholder="+91 98765 43210"
+                      autoComplete="tel"
+                    />
+                    <WealthMoneyField
+                      label="Annual premium"
+                      value={premium}
+                      onChange={setPremium}
+                      error={irrPremiumError}
+                      max={PREMIUM_MAX}
+                      slider={{
+                        min: PREMIUM_MIN,
+                        max: PREMIUM_MAX,
+                        step: 10_000,
+                        scale: "log",
+                        presets: PREMIUM_PRESETS,
+                      }}
+                    />
+                    <WealthYearField
+                      label="Pay term"
+                      value={payTerm}
+                      min={1}
+                      max={50}
+                      onChange={setPayTerm}
+                      error={irrPayTermError}
+                      hint="Premium years"
+                      slider={{
+                        min: 1,
+                        max: YEARS_SLIDER_MAX,
+                        step: 1,
+                        presets: WEALTH_YEAR_PRESETS_DEFAULT,
+                      }}
+                    />
+                    <WealthMoneyField
+                      label="Corpus at pay end"
+                      value={corpusAtPayEnd}
+                      onChange={setCorpusAtPayEnd}
+                      error={irrCorpusError}
+                      max={CORPUS_MAX}
+                      slider={{
+                        min: CORPUS_MIN,
+                        max: CORPUS_MAX,
+                        step: 1_00_000,
+                        scale: "log",
+                        presets: WEALTH_MONEY_PRESETS_DEFAULT,
+                      }}
+                    />
+                    <WealthYearField
+                      label="Policy term"
+                      value={policyTerm}
+                      min={1}
+                      max={50}
+                      onChange={setPolicyTerm}
+                      error={irrPolicyTermError}
+                      slider={{
+                        min: 1,
+                        max: YEARS_SLIDER_MAX,
+                        step: 1,
+                        presets: WEALTH_YEAR_PRESETS_DEFAULT,
+                      }}
+                    />
+                    <WealthPercentField
+                      label="Expected return"
+                      value={ret}
+                      onChange={(v) => setRet(Math.max(0, v))}
+                      error={irrReturnError}
+                    />
+                    <WealthPercentField
+                      label="Tax on gain"
+                      value={tax}
+                      onChange={(v) => setTax(Math.max(0, v))}
+                      error={irrTaxError}
+                    />
+                  </WealthProfileGrid>
+                </div>
+              </WealthSection>
+            ) : (
+              <WealthSection
+                id="assumptions"
+                badge="01 · Profile"
+                title="Investor Profile and Assumptions"
+                subtitle="Current policy snapshot versus term cover plus redirected investment"
+                open={openAssumptions}
+                onToggle={() => setOpenAssumptions((v) => !v)}
+                mark={
+                  <WealthIconMark>
+                    <IconPerson />
+                  </WealthIconMark>
+                }
+                actions={
+                  <button
+                    type="button"
+                    onClick={resetDefaults}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
+                  >
+                    <IconRefresh className="h-3.5 w-3.5" />
+                    Reset
+                  </button>
+                }
+              >
+                <div className="py-2">
+                  <WealthProfileGrid>
+                    <WealthTextField
+                      label="Client name"
+                      value={tpName}
+                      onChange={setTpName}
+                      error={tpNameError}
+                      autoComplete="name"
+                    />
+                    <WealthAgeField
+                      value={tpAge}
+                      onChange={setTpAge}
+                      error={tpAgeErr}
+                    />
+                    <WealthTextField
+                      label="Email"
+                      type="email"
+                      value={tpEmail}
+                      onChange={setTpEmail}
+                      error={tpEmailError}
+                      placeholder="client@email.com"
+                      autoComplete="email"
+                    />
+                    <WealthTextField
+                      label="Phone"
+                      type="tel"
+                      value={tpPhone}
+                      onChange={setTpPhone}
+                      error={tpPhoneError}
+                      placeholder="+91 98765 43210"
+                      autoComplete="tel"
+                    />
+                    <WealthMoneyField
+                      label="Annual premium"
+                      value={tpPremium}
+                      onChange={setTpPremium}
+                      error={tpPremiumError}
+                      max={PREMIUM_MAX}
+                      slider={{
+                        min: PREMIUM_MIN,
+                        max: PREMIUM_MAX,
+                        step: 10_000,
+                        scale: "log",
+                        presets: PREMIUM_PRESETS,
+                      }}
+                    />
+                    <WealthYearField
+                      label="Pay term"
+                      value={tpPay}
+                      min={1}
+                      max={50}
+                      onChange={setTpPay}
+                      error={tpPayError}
+                      hint="Original premium years"
+                      slider={{
+                        min: 1,
+                        max: YEARS_SLIDER_MAX,
+                        step: 1,
+                        presets: WEALTH_YEAR_PRESETS_DEFAULT,
+                      }}
+                    />
+                    <WealthYearField
+                      label="Years paid"
+                      value={yearsPaid}
+                      min={0}
+                      max={50}
+                      onChange={setYearsPaid}
+                      error={tpYearsPaidError}
+                      hint="Already paid"
+                    />
+                    <WealthYearField
+                      label="Policy term"
+                      value={tpPol}
+                      min={1}
+                      max={50}
+                      onChange={setTpPol}
+                      error={tpPolError}
+                      slider={{
+                        min: 1,
+                        max: YEARS_SLIDER_MAX,
+                        step: 1,
+                        presets: WEALTH_YEAR_PRESETS_DEFAULT,
+                      }}
+                    />
+                    <WealthYearField
+                      label="Yrs to maturity"
+                      value={yearsLeft}
+                      min={1}
+                      max={50}
+                      onChange={setYearsLeft}
+                      error={tpYearsLeftError}
+                      hint={`${yearsLeft}y remaining`}
+                      slider={{
+                        min: 1,
+                        max: YEARS_SLIDER_MAX,
+                        step: 1,
+                        presets: WEALTH_YEAR_PRESETS_DEFAULT,
+                      }}
+                    />
+                    <WealthMoneyField
+                      label="Maturity value"
+                      value={maturity}
+                      onChange={setMaturity}
+                      error={tpMaturityError}
+                      max={CORPUS_MAX}
+                      slider={{
+                        min: CORPUS_MIN,
+                        max: CORPUS_MAX,
+                        step: 1_00_000,
+                        scale: "log",
+                        presets: WEALTH_MONEY_PRESETS_DEFAULT,
+                      }}
+                    />
+                    <WealthMoneyField
+                      label="Surrender value"
+                      value={surrender}
+                      onChange={setSurrender}
+                      error={tpSurrenderError}
+                    />
+                    <WealthMoneyField
+                      label="Term premium"
+                      value={termPrem}
+                      onChange={setTermPrem}
+                      error={tpTermPremError}
+                    />
+                    <WealthYearField
+                      label="Term years"
+                      value={termYears}
+                      min={1}
+                      max={50}
+                      onChange={setTermYears}
+                      error={tpTermYearsError}
+                      slider={{
+                        min: 1,
+                        max: YEARS_SLIDER_MAX,
+                        step: 1,
+                        presets: WEALTH_YEAR_PRESETS_DEFAULT,
+                      }}
+                    />
+                    <WealthMoneyField
+                      label="Term cover"
+                      value={termCover}
+                      onChange={setTermCover}
+                      hint="Sum assured"
+                    />
+                    <WealthPercentField
+                      label="Expected return"
+                      value={tpRet}
+                      onChange={(v) => setTpRet(Math.max(0, v))}
+                      error={tpRetError}
+                    />
+                    <WealthPercentField
+                      label="Tax on gain"
+                      value={tpTax}
+                      onChange={(v) => setTpTax(Math.max(0, v))}
+                      error={tpTaxError}
+                    />
+                  </WealthProfileGrid>
+                  <div className="mt-4 rounded-2xl border border-slate-200/80 bg-slate-50/80 px-3 py-2.5 sm:px-3.5">
+                    <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                      Policy snapshot
+                    </div>
+                    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                      <div className="rounded-xl border border-slate-200/80 bg-white px-2.5 py-2">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="text-[11px] font-medium text-slate-700">
+                            Premium years paid
+                          </span>
+                          <span className="text-[12px] font-semibold tabular-nums text-slate-900">
+                            {yearsPaid}
+                            <span className="font-medium text-slate-400">/{tpPay}</span>
+                          </span>
+                        </div>
+                        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100">
+                          <div
+                            className="h-full rounded-full bg-slate-400"
+                            style={{
+                              width: `${tpPay > 0 ? Math.min(100, (yearsPaid / tpPay) * 100) : 0}%`,
+                            }}
+                          />
+                        </div>
+                        <div className="mt-1 text-[11px] leading-snug text-slate-500">
+                          {Math.max(0, tpPay - yearsPaid)} premium year
+                          {Math.max(0, tpPay - yearsPaid) === 1 ? "" : "s"} still due if you keep
+                        </div>
+                      </div>
+                      <div className="rounded-xl border border-slate-200/80 bg-white px-2.5 py-2">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="text-[11px] font-medium text-slate-700">
+                            Years to maturity
+                          </span>
+                          <span className="text-[12px] font-semibold tabular-nums text-slate-900">
+                            {yearsLeft}
+                            <span className="font-medium text-slate-400">/{tpPol} term</span>
+                          </span>
+                        </div>
+                        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100">
+                          <div
+                            className="h-full rounded-full bg-emerald-600"
+                            style={{
+                              width: `${tpPol > 0 ? Math.min(100, ((tpPol - yearsLeft) / tpPol) * 100) : 0}%`,
+                            }}
+                          />
+                        </div>
+                        <div className="mt-1 text-[11px] leading-snug text-slate-500">
+                          {yearsLeft} year{yearsLeft === 1 ? "" : "s"} remaining on a {tpPol}-year
+                          policy
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </WealthSection>
+            )}
+          </div>
+        }
+        results={
+          <div className="flex flex-col gap-5">
+            {!canCalculate ? (
+              <WealthStatusNote tone="error">
+                <div className="flex flex-col gap-1">
+                  <span className="font-semibold">
+                    Fix the inputs above to refresh the calculation
+                    {result ? ". Showing the last valid result." : "."}
+                  </span>
+                  <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[12px] font-normal">
+                    {fieldErrors.map((msg) => (
+                      <li key={msg}>{msg}</li>
+                    ))}
+                  </ul>
+                </div>
+              </WealthStatusNote>
+            ) : null}
+            {mode === "switch" && canCalculate && tpSurrenderWarn ? (
+              <WealthStatusNote tone="info">{tpSurrenderWarn}</WealthStatusNote>
+            ) : null}
+            {error ? <WealthStatusNote tone="error">{error}</WealthStatusNote> : null}
+            {loading && !result && canCalculate ? (
+              <WealthStatusNote tone="info">Calculating…</WealthStatusNote>
+            ) : null}
+            {irrResult ? (
+              <IrrResults
+                result={irrResult}
+                payTerm={payTerm}
+                policyTerm={policyTerm}
+                expectedReturnPct={ret}
+                annualPremium={premium}
+                openMilestones={openMilestones}
+                onToggleMilestones={() => setOpenMilestones((v) => !v)}
+                openAnalytics={openAnalytics}
+                onToggleAnalytics={() => setOpenAnalytics((v) => !v)}
+                openSchedule={openSchedule}
+                onToggleSchedule={() => setOpenSchedule((v) => !v)}
+              />
+            ) : null}
+            {tpResult ? (
+              <TpResults
+                result={tpResult}
+                yearsToMaturity={yearsLeft}
+                expectedReturnPct={tpRet}
+                termPremium={termPrem}
+                openMilestones={openMilestones}
+                onToggleMilestones={() => setOpenMilestones((v) => !v)}
+                openAnalytics={openAnalytics}
+                onToggleAnalytics={() => setOpenAnalytics((v) => !v)}
+                openSchedule={openSchedule}
+                onToggleSchedule={() => setOpenSchedule((v) => !v)}
+              />
+            ) : null}
+          </div>
+        }
+        footer={
+          <WealthDisclaimer
+            notes={[
+              "Policy illustrations depend on insurer quotes and assumed returns, not guarantees.",
+              "Tax treatment follows the rules modeled; actual treatment depends on the product and holding period.",
+              "Projections are illustrative. Actual policy values and investment outcomes can differ.",
+            ]}
+          >
+            Figures are for illustration only. Insurance illustrations depend on assumed returns,
+            tax treatment, and insurer quotes. They are not a guarantee of policy values or returns.
+          </WealthDisclaimer>
+        }
+      />
+      {irrResult ? (
+        <InsuranceIrrDossier
+          data={{
+            clientName: name,
+            age,
+            email,
+            phone,
+            premium,
+            payTerm,
+            corpusAtPayEnd,
+            policyTerm,
+            returnPct: ret,
+            taxPct: tax,
+            totalPremium: irrResult.totalPremium,
+            maturity: irrResult.maturity,
+            gain: irrResult.gain,
+            tax: irrResult.tax,
+            net: irrResult.net,
+            xirr: irrResult.xirr,
+            payTermRate: irrResult.payTermRate,
+          }}
         />
-      }
-      form={
-        mode === "irr" ? (
-          <BentoSection
-            sectionId="01"
-            title="Financial Assumptions & Modeling Suite"
-            description="Policy premium path, corpus at pay end, and return assumptions for XIRR"
-            collapsible
-            open={openAssumptions}
-            onToggle={() => setOpenAssumptions((v) => !v)}
-            actions={
-              <button
-                type="button"
-                onClick={resetDefaults}
-                className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 transition-all hover:bg-slate-100 hover:text-emerald-700"
-              >
-                Reset to Baseline
-              </button>
-            }
-          >
-            <BentoGroup
-              num="01"
-              title="Investor Profile"
-              colSpan={4}
-              footer={
-                <>
-                  <span>Horizon:</span>
-                  <span className="font-bold text-slate-700">
-                    {age} → {age + policyTerm}
-                  </span>
-                </>
-              }
-            >
-              <div className="mb-4">
-                <Field label="Client Name" error={irrNameError}>
-                  <TextInput
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className={irrNameError ? "border-[var(--app-danger)]" : undefined}
-                  />
-                </Field>
-              </div>
-              <div className="mb-4">
-                <AgeInput value={age} onChange={setAge} error={irrAgeError} />
-              </div>
-              <div className="mb-4">
-                <Field label="Email" error={irrEmailError}>
-                  <TextInput
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="client@email.com"
-                    className={irrEmailError ? "border-[var(--app-danger)]" : undefined}
-                  />
-                </Field>
-              </div>
-              <Field label="Phone" error={irrPhoneError}>
-                <TextInput
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+91 98765 43210"
-                  className={irrPhoneError ? "border-[var(--app-danger)]" : undefined}
-                />
-              </Field>
-            </BentoGroup>
-
-            <BentoGroup
-              num="02"
-              title="Policy Parameters"
-              colSpan={5}
-              footer={
-                <>
-                  <span>Pay path:</span>
-                  <span className="font-bold text-emerald-700">
-                    {payTerm}y premiums · matures Y{policyTerm}
-                  </span>
-                </>
-              }
-            >
-              <div className="mb-3.5">
-                <MoneyInput
-                  label="Annual premium"
-                  value={premium}
-                  onChange={setPremium}
-                  error={irrPremiumError}
-                />
-              </div>
-              <div className="mb-3.5">
-                <YearInput
-                  label="Pay term"
-                  value={payTerm}
-                  min={1}
-                  max={50}
-                  onChange={setPayTerm}
-                  error={irrPayTermError}
-                  hint="Premium years"
-                />
-              </div>
-              <div className="mb-3.5">
-                <MoneyInput
-                  label="Corpus at pay end"
-                  value={corpusAtPayEnd}
-                  onChange={setCorpusAtPayEnd}
-                  error={irrCorpusError}
-                  wrapLabel
-                />
-              </div>
-              <YearInput
-                label="Policy term"
-                value={policyTerm}
-                min={1}
-                max={50}
-                onChange={setPolicyTerm}
-                error={irrPolicyTermError}
-              />
-            </BentoGroup>
-
-            <BentoGroup
-              num="03"
-              title="Rate Assumptions"
-              subtitle="Return & Tax"
-              colSpan={3}
-              footer={
-                <>
-                  <span>Tax drag:</span>
-                  <span className="font-bold text-emerald-700">{tax}%</span>
-                </>
-              }
-            >
-              <div className="mb-3.5">
-                <PercentInput
-                  label="Expected return (%)"
-                  value={ret}
-                  onChange={(v) => setRet(Math.max(0, v))}
-                  error={irrReturnError}
-                  wrapLabel
-                />
-              </div>
-              <PercentInput
-                label="Tax on gain (%)"
-                value={tax}
-                onChange={(v) => setTax(Math.max(0, v))}
-                error={irrTaxError}
-              />
-            </BentoGroup>
-          </BentoSection>
-        ) : (
-          <BentoSection
-            sectionId="01"
-            title="Financial Assumptions & Modeling Suite"
-            description="Current policy snapshot versus term cover plus redirected investment"
-            collapsible
-            open={openAssumptions}
-            onToggle={() => setOpenAssumptions((v) => !v)}
-            actions={
-              <button
-                type="button"
-                onClick={resetDefaults}
-                className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 transition-all hover:bg-slate-100 hover:text-emerald-700"
-              >
-                Reset to Baseline
-              </button>
-            }
-          >
-            <BentoGroup
-              num="01"
-              title="Investor Profile"
-              colSpan={4}
-              footer={
-                <>
-                  <span>Age path:</span>
-                  <span className="font-bold text-slate-700">
-                    {tpAge} → {tpAge + yearsLeft}
-                  </span>
-                </>
-              }
-            >
-              <div className="mb-4">
-                <Field label="Client Name" error={tpNameError}>
-                  <TextInput
-                    value={tpName}
-                    onChange={(e) => setTpName(e.target.value)}
-                    className={tpNameError ? "border-[var(--app-danger)]" : undefined}
-                  />
-                </Field>
-              </div>
-              <div className="mb-4">
-                <AgeInput value={tpAge} onChange={setTpAge} error={tpAgeErr} />
-              </div>
-              <div className="mb-4">
-                <Field label="Email" error={tpEmailError}>
-                  <TextInput
-                    type="email"
-                    value={tpEmail}
-                    onChange={(e) => setTpEmail(e.target.value)}
-                    placeholder="client@email.com"
-                    className={tpEmailError ? "border-[var(--app-danger)]" : undefined}
-                  />
-                </Field>
-              </div>
-              <Field label="Phone" error={tpPhoneError}>
-                <TextInput
-                  type="tel"
-                  value={tpPhone}
-                  onChange={(e) => setTpPhone(e.target.value)}
-                  placeholder="+91 98765 43210"
-                  className={tpPhoneError ? "border-[var(--app-danger)]" : undefined}
-                />
-              </Field>
-            </BentoGroup>
-
-            <BentoGroup
-              num="02"
-              title="Policy & Switch Parameters"
-              colSpan={5}
-              footer={
-                <>
-                  <span>Remaining:</span>
-                  <span className="font-bold text-emerald-700">
-                    {Math.max(0, tpPay - yearsPaid)} premium yrs · {yearsLeft}y to maturity
-                  </span>
-                </>
-              }
-            >
-              <div className="mb-3.5">
-                <MoneyInput
-                  label="Annual premium"
-                  value={tpPremium}
-                  onChange={setTpPremium}
-                  error={tpPremiumError}
-                />
-              </div>
-              <div className="mb-3.5">
-                <YearInput
-                  label="Pay term"
-                  value={tpPay}
-                  min={1}
-                  max={50}
-                  onChange={setTpPay}
-                  error={tpPayError}
-                  hint="Original premium years"
-                />
-              </div>
-              <div className="mb-3.5">
-                <YearInput
-                  label="Years paid"
-                  value={yearsPaid}
-                  min={0}
-                  max={50}
-                  onChange={setYearsPaid}
-                  error={tpYearsPaidError}
-                  hint="Already paid"
-                />
-              </div>
-              <div className="mb-3.5">
-                <YearInput
-                  label="Policy term"
-                  value={tpPol}
-                  min={1}
-                  max={50}
-                  onChange={setTpPol}
-                  error={tpPolError}
-                />
-              </div>
-              <div className="mb-3.5">
-                <YearInput
-                  label="Yrs to maturity"
-                  value={yearsLeft}
-                  min={1}
-                  max={50}
-                  onChange={setYearsLeft}
-                  error={tpYearsLeftError}
-                  hint={`${yearsLeft}y remaining`}
-                  wrapLabel
-                />
-              </div>
-              <div className="mb-3.5">
-                <MoneyInput
-                  label="Maturity value"
-                  value={maturity}
-                  onChange={setMaturity}
-                  error={tpMaturityError}
-                />
-              </div>
-              <div className="mb-3.5">
-                <MoneyInput
-                  label="Surrender value"
-                  value={surrender}
-                  onChange={setSurrender}
-                  error={tpSurrenderError}
-                />
-              </div>
-              <div className="mb-3.5">
-                <MoneyInput
-                  label="Term premium"
-                  value={termPrem}
-                  onChange={setTermPrem}
-                  error={tpTermPremError}
-                />
-              </div>
-              <div className="mb-3.5">
-                <YearInput
-                  label="Term years"
-                  value={termYears}
-                  min={1}
-                  max={50}
-                  onChange={setTermYears}
-                  error={tpTermYearsError}
-                />
-              </div>
-              <MoneyInput
-                label="Term cover"
-                value={termCover}
-                onChange={setTermCover}
-                hint="Sum assured"
-              />
-            </BentoGroup>
-
-            <BentoGroup
-              num="03"
-              title="Rate Assumptions"
-              subtitle="Return & Tax"
-              colSpan={3}
-              footer={
-                <>
-                  <span>Tax drag:</span>
-                  <span className="font-bold text-emerald-700">{tpTax}%</span>
-                </>
-              }
-            >
-              <div className="mb-3.5">
-                <PercentInput
-                  label="Expected return (%)"
-                  value={tpRet}
-                  onChange={(v) => setTpRet(Math.max(0, v))}
-                  error={tpRetError}
-                  wrapLabel
-                  hint="Assumed investment rate"
-                />
-              </div>
-              <PercentInput
-                label="Tax on gain (%)"
-                value={tpTax}
-                onChange={(v) => setTpTax(Math.max(0, v))}
-                error={tpTaxError}
-              />
-            </BentoGroup>
-
-            <div className="lg:col-span-12">
-              <div className="rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-2.5 sm:px-3.5">
-                <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
-                  Policy snapshot
-                </div>
-                <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                  <div className="rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-2.5 py-2">
-                    <div className="flex items-baseline justify-between gap-2">
-                      <span className="text-[11px] font-medium text-[var(--app-text)]">
-                        Premium years paid
-                      </span>
-                      <span className="text-[12px] font-semibold tabular-nums text-[var(--app-text)]">
-                        {yearsPaid}
-                        <span className="font-medium text-[var(--app-text-muted)]">/{tpPay}</span>
-                      </span>
-                    </div>
-                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[var(--app-border)]">
-                      <div
-                        className="h-full rounded-full bg-[var(--app-chart-invested)]"
-                        style={{
-                          width: `${tpPay > 0 ? Math.min(100, (yearsPaid / tpPay) * 100) : 0}%`,
-                        }}
-                      />
-                    </div>
-                    <div className="mt-1 text-[11px] leading-snug text-[var(--app-text-muted)]">
-                      {Math.max(0, tpPay - yearsPaid)} premium year
-                      {Math.max(0, tpPay - yearsPaid) === 1 ? "" : "s"} still due if you keep
-                    </div>
-                  </div>
-                  <div className="rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-2.5 py-2">
-                    <div className="flex items-baseline justify-between gap-2">
-                      <span className="text-[11px] font-medium text-[var(--app-text)]">
-                        Years to maturity
-                      </span>
-                      <span className="text-[12px] font-semibold tabular-nums text-[var(--app-text)]">
-                        {yearsLeft}
-                        <span className="font-medium text-[var(--app-text-muted)]">
-                          /{tpPol} term
-                        </span>
-                      </span>
-                    </div>
-                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[var(--app-border)]">
-                      <div
-                        className="h-full rounded-full bg-[var(--app-step-text)]"
-                        style={{
-                          width: `${tpPol > 0 ? Math.min(100, ((tpPol - yearsLeft) / tpPol) * 100) : 0}%`,
-                        }}
-                      />
-                    </div>
-                    <div className="mt-1 text-[11px] leading-snug text-[var(--app-text-muted)]">
-                      {yearsLeft} year{yearsLeft === 1 ? "" : "s"} remaining on a {tpPol}-year
-                      policy
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </BentoSection>
-        )
-      }
-      results={
-        <div className="flex flex-col gap-3">
-          {!canCalculate ? (
-            <StatusNote tone="error">
-              <div className="flex flex-col gap-1">
-                <span className="font-semibold">
-                  Fix the inputs above to refresh the calculation
-                  {result ? ". Showing the last valid result." : "."}
-                </span>
-                <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[12px] font-normal">
-                  {fieldErrors.map((msg) => (
-                    <li key={msg}>{msg}</li>
-                  ))}
-                </ul>
-              </div>
-            </StatusNote>
-          ) : null}
-          {mode === "switch" && canCalculate && tpSurrenderWarn ? (
-            <StatusNote tone="warn">{tpSurrenderWarn}</StatusNote>
-          ) : null}
-          {error ? <StatusNote tone="error">{error}</StatusNote> : null}
-          {loading && !result && canCalculate ? (
-            <StatusNote tone="pending">Calculating…</StatusNote>
-          ) : null}
-          {mode === "irr" && result && "maturity" in result && "xirr" in result ? (
-            <IrrResults
-              result={result as IrrResult}
-              payTerm={payTerm}
-              policyTerm={policyTerm}
-              expectedReturnPct={ret}
-              annualPremium={premium}
-              openMilestones={openMilestones}
-              onToggleMilestones={() => setOpenMilestones((v) => !v)}
-              openAnalytics={openAnalytics}
-              onToggleAnalytics={() => setOpenAnalytics((v) => !v)}
-            />
-          ) : null}
-          {mode === "switch" && result && "keep" in result ? (
-            <TpResults
-              result={result as TpResult}
-              yearsToMaturity={yearsLeft}
-              expectedReturnPct={tpRet}
-              termPremium={termPrem}
-              openMilestones={openMilestones}
-              onToggleMilestones={() => setOpenMilestones((v) => !v)}
-              openAnalytics={openAnalytics}
-              onToggleAnalytics={() => setOpenAnalytics((v) => !v)}
-            />
-          ) : null}
-        </div>
-      }
-      footer={
-        <ComplianceFootnote>
-          Calculations shown are for illustration purposes only. Insurance illustrations depend on
-          assumed returns, tax treatment, and insurer quotes. Actual policy values and investment
-          outcomes can differ.
-        </ComplianceFootnote>
-      }
-    />
-    {mode === "irr" && result && "maturity" in result && "xirr" in result ? (
-      <InsuranceIrrDossier
-        data={{
-          clientName: name,
-          age,
-          email,
-          phone,
-          premium,
-          payTerm,
-          corpusAtPayEnd,
-          policyTerm,
-          returnPct: ret,
-          taxPct: tax,
-          totalPremium: result.totalPremium,
-          maturity: result.maturity,
-          gain: result.gain,
-          tax: result.tax,
-          net: result.net,
-          xirr: result.xirr,
-          payTermRate: result.payTermRate,
-        }}
-      />
-    ) : null}
-    {mode === "switch" && result && "keep" in result ? (
-      <InsuranceTpDossier
-        data={{
-          clientName: tpName,
-          age: tpAge,
-          email: tpEmail,
-          phone: tpPhone,
-          premium: tpPremium,
-          payTerm: tpPay,
-          yearsPaid,
-          policyTerm: tpPol,
-          yearsToMaturity: yearsLeft,
-          maturityValue: maturity,
-          taxPct: tpTax,
-          surrenderValue: surrender,
-          termPremium: termPrem,
-          termYears,
-          termCover,
-          returnPct: tpRet,
-          remainingPremiums: result.remainingPremiums ?? 0,
-          investmentPeriodYears: result.investmentPeriodYears ?? yearsLeft,
-          additionalWealth: result.additionalWealth ?? 0,
-          keep: result.keep!,
-          switch: result.switch!,
-          compare: result.compare ?? [],
-        }}
-      />
-    ) : null}
+      ) : null}
+      {tpResult ? (
+        <InsuranceTpDossier
+          data={{
+            clientName: tpName,
+            age: tpAge,
+            email: tpEmail,
+            phone: tpPhone,
+            premium: tpPremium,
+            payTerm: tpPay,
+            yearsPaid,
+            policyTerm: tpPol,
+            yearsToMaturity: yearsLeft,
+            maturityValue: maturity,
+            taxPct: tpTax,
+            surrenderValue: surrender,
+            termPremium: termPrem,
+            termYears,
+            termCover,
+            returnPct: tpRet,
+            remainingPremiums: tpResult.remainingPremiums ?? 0,
+            investmentPeriodYears: tpResult.investmentPeriodYears ?? yearsLeft,
+            additionalWealth: tpResult.additionalWealth ?? 0,
+            keep: tpResult.keep,
+            switch: tpResult.switch,
+            compare: tpResult.compare ?? [],
+          }}
+        />
+      ) : null}
     </>
   );
 }
@@ -935,6 +999,8 @@ function IrrResults({
   onToggleMilestones,
   openAnalytics,
   onToggleAnalytics,
+  openSchedule,
+  onToggleSchedule,
 }: {
   result: IrrResult;
   payTerm: number;
@@ -945,15 +1011,16 @@ function IrrResults({
   onToggleMilestones: () => void;
   openAnalytics: boolean;
   onToggleAnalytics: () => void;
+  openSchedule: boolean;
+  onToggleSchedule: () => void;
 }) {
+  const [tab, setTab] = useState<IrrAnalyticsTab>("mix");
   const xirrPct = Number.isFinite(result.xirr) ? result.xirr * 100 : null;
   const growthYears = Math.max(0, policyTerm - payTerm);
   const returnScale = Math.max(expectedReturnPct, xirrPct ?? 0, 1);
   const assumedBar = Math.min(100, (expectedReturnPct / returnScale) * 100);
-  const xirrBar =
-    xirrPct == null ? 0 : Math.min(100, (xirrPct / returnScale) * 100);
-  const xirrGap =
-    xirrPct == null ? null : Math.abs(expectedReturnPct - xirrPct);
+  const xirrBar = xirrPct == null ? 0 : Math.min(100, (xirrPct / returnScale) * 100);
+  const xirrGap = xirrPct == null ? null : Math.abs(expectedReturnPct - xirrPct);
 
   const moneySteps = [
     {
@@ -994,238 +1061,231 @@ function IrrResults({
   ];
 
   return (
-    <Stack>
-      <ResultsSection
-        sectionId="02"
+    <div className="space-y-5">
+      <WealthSection
+        badge="02 · Milestones"
         title="Policy Return Milestones"
-        description="Gross maturity, net after tax, and policy XIRR versus assumed return"
+        subtitle="Gross maturity, net after tax, and policy XIRR versus assumed return"
         open={openMilestones}
         onToggle={onToggleMilestones}
-        meta={
-          <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">
-            Term: {policyTerm} Years · Pay {payTerm}y
-          </span>
+        mark={
+          <WealthIconMark tone="emerald">
+            <IconTarget />
+          </WealthIconMark>
         }
       >
-      <div className="grid w-full grid-cols-1 gap-2 min-[640px]:grid-cols-3">
-        <div className="min-h-[5.25rem] min-w-0 [&>div]:h-full">
-          <StatCard
+        <div className="grid w-full grid-cols-1 gap-4 min-[640px]:grid-cols-3">
+          <WealthMetricCard
             title="Gross maturity"
             value={result.maturity}
-            hint={`From ${formatINRCurrency(result.totalPremium)} premiums`}
+            description={`From ${formatINRCurrency(result.totalPremium)} premiums`}
+            badge={`${policyTerm} yr`}
             tone="neutral"
+            mark={
+              <WealthIconMark className="h-7 w-7">
+                <IconTarget className="h-3.5 w-3.5" />
+              </WealthIconMark>
+            }
           />
-        </div>
-        <div className="min-h-[5.25rem] min-w-0 [&>div]:h-full">
-          <StatCard
+          <WealthMetricCard
             title="Net after tax"
             value={result.net}
-            hint={`Tax ${formatINRCurrency(result.tax)}`}
+            description={`Tax ${formatINRCurrency(result.tax)}`}
+            badge={`Pay ${payTerm}y`}
             tone="positive"
+            mark={
+              <WealthIconMark tone="emerald" className="h-7 w-7">
+                <IconStepUp className="h-3.5 w-3.5" />
+              </WealthIconMark>
+            }
           />
-        </div>
-        <div className="flex min-h-[5.25rem] min-w-0 flex-col justify-center rounded-xl bg-[var(--app-primary)] px-3.5 py-3">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-primary-fg-muted)] sm:text-[11px]">
-            Policy XIRR
-          </div>
-          <div className="mt-1 text-lg font-semibold leading-tight tabular-nums text-[var(--app-primary-fg)] sm:text-xl">
-            {xirrPct == null ? "—" : formatPercent(xirrPct, 2)}
-          </div>
-          <div className="mt-1 text-[11px] leading-snug text-[var(--app-primary-fg-muted)]">
-            {xirrPct == null
-              ? "Could not compute for these inputs"
-              : xirrGap == null
-                ? `Assumed ${formatPercent(expectedReturnPct, 1)}`
-                : `${formatPercent(xirrGap, 2)} ${
-                    xirrPct < expectedReturnPct ? "below" : "above"
-                  } assumed ${formatPercent(expectedReturnPct, 1)}`}
-          </div>
-        </div>
-      </div>
-
-      <div className="rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2.5 sm:px-4">
-        <div className="mb-2.5 flex flex-wrap items-baseline justify-between gap-2">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
-            Premium to maturity
-          </div>
-          <div className={META_TEXT}>
-            {formatINRCurrency(annualPremium)}/year for {payTerm}y · matures in year{" "}
-            {policyTerm}
+          <div className="flex h-full flex-col justify-center rounded-2xl border border-emerald-200/70 bg-emerald-700 p-5 text-white shadow-[0_1px_2px_rgba(15,23,42,0.03),0_8px_24px_rgba(15,23,42,0.04)]">
+            <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-emerald-100/80">
+              Policy XIRR
+            </div>
+            <div className="mt-3 text-[32px] font-medium leading-none tracking-tight tabular-nums sm:text-[36px]">
+              {xirrPct == null ? "—" : formatPercent(xirrPct, 2)}
+            </div>
+            <p className="mt-2.5 text-sm leading-relaxed text-emerald-100/90">
+              {xirrPct == null
+                ? "Could not compute for these inputs"
+                : xirrGap == null
+                  ? `Assumed ${formatPercent(expectedReturnPct, 1)}`
+                  : `${formatPercent(xirrGap, 2)} ${
+                      xirrPct < expectedReturnPct ? "below" : "above"
+                    } assumed ${formatPercent(expectedReturnPct, 1)}`}
+            </p>
           </div>
         </div>
-        <div className="relative w-full overflow-x-auto pt-1">
-          <div
-            className="pointer-events-none absolute left-6 right-6 top-[0.95rem] h-0.5 bg-[var(--app-border)]"
-            aria-hidden
-          />
-          <div className="relative z-[1] flex min-w-[28rem] items-start justify-between gap-2">
-            <div className="flex min-w-0 flex-1 flex-col items-center">
-              <div className="flex size-8 items-center justify-center rounded-full border-2 border-[var(--app-warn-border)] bg-[var(--app-warn-bg)] text-[var(--app-warn-text-strong)]">
-                <span className="text-[10px] font-bold">1-{payTerm}</span>
-              </div>
-              <div className="mt-1.5 text-center">
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-[var(--app-text-muted)]">
-                  Pay premiums
-                </div>
-                <div className="text-[11px] font-semibold tabular-nums text-[var(--app-warn-text)]">
-                  {formatINRCurrency(result.totalPremium)}
-                </div>
-              </div>
+
+        <div className="mt-4 rounded-2xl border border-slate-200/80 bg-slate-50/60 px-3 py-2.5 sm:px-4">
+          <div className="mb-2.5 flex flex-wrap items-baseline justify-between gap-2">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+              Premium to maturity
             </div>
-            <div className="flex min-w-0 flex-1 flex-col items-center">
-              <div className="flex size-8 items-center justify-center rounded-full border-2 border-[var(--app-border)] bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]">
-                <span className="text-[10px] font-bold">
-                  {growthYears > 0 ? `${payTerm + 1}-${policyTerm}` : "—"}
-                </span>
-              </div>
-              <div className="mt-1.5 text-center">
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-[var(--app-text-muted)]">
-                  No premiums
-                </div>
-                <div className={`text-[11px] font-semibold tabular-nums ${META_TEXT}`}>
-                  Growth phase
-                </div>
-              </div>
-            </div>
-            <div className="flex min-w-0 flex-1 flex-col items-center">
-              <div className="flex size-8 items-center justify-center rounded-full border-2 border-[var(--app-step-text)] bg-[var(--app-step-bg)] text-[var(--app-step-text-strong)]">
-                <span className="text-[10px] font-bold">Y{policyTerm}</span>
-              </div>
-              <div className="mt-1.5 text-center">
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-[var(--app-step-text)]">
-                  Gross maturity
-                </div>
-                <div className="text-[11px] font-semibold tabular-nums text-[var(--app-step-text-strong)]">
-                  {formatINRCurrency(result.maturity)}
-                </div>
-              </div>
-            </div>
-            <div className="flex min-w-0 flex-1 flex-col items-center">
-              <div className="flex size-8 items-center justify-center rounded-full border-2 border-[var(--app-step-text)] bg-[var(--app-primary)] text-[var(--app-primary-fg)]">
-                <span className="text-[10px] font-bold">Net</span>
-              </div>
-              <div className="mt-1.5 text-center">
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-[var(--app-step-text)]">
-                  After tax
-                </div>
-                <div className="text-[11px] font-semibold tabular-nums text-[var(--app-step-text-strong)]">
-                  {formatINRCurrency(result.net)}
-                </div>
-              </div>
+            <div className="text-[11px] text-slate-500">
+              {formatINRCurrency(annualPremium)}/year for {payTerm}y · matures in year {policyTerm}
             </div>
           </div>
-        </div>
-      </div>
-
-      </ResultsSection>
-
-      <ResultsSection
-        sectionId="03"
-        title="Policy Analytics"
-        description="Maturity mix, premium compare, cash-flow steps, and assumed return versus XIRR"
-        open={openAnalytics}
-        onToggle={onToggleAnalytics}
-      >
-
-        <SegmentedChartControl
-          variant="pill"
-          tabs={[
-            {
-              id: "mix",
-              label: "Mix",
-              icon: <PieChart className="h-3.5 w-3.5" />,
-              content: (
-                <ChartPane>
-          <CompositionChart
-            title="Gross maturity mix"
-            showPercentages
-            slices={[
-              {
-                name: "Premium paid",
-                value: result.totalPremium,
-                color: "var(--app-chart-invested)",
-              },
-              {
-                name: "Gain",
-                value: result.gain,
-                color: "var(--app-chart-gain)",
-              },
-            ]}
-            centerLabel="Gross maturity"
-            centerValue={result.maturity}
-            footer={
-              <div className="grid grid-cols-1 gap-1.5">
-                <div className="flex items-baseline justify-between gap-2 rounded-md border border-[var(--app-warn-border)] bg-[var(--app-warn-bg)] px-2.5 py-1.5">
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-warn-text)]">
-                    Capital gains tax
+          <div className="relative w-full overflow-x-auto pt-1">
+            <div
+              className="pointer-events-none absolute left-6 right-6 top-[0.95rem] h-0.5 bg-slate-200"
+              aria-hidden
+            />
+            <div className="relative z-[1] flex min-w-[28rem] items-start justify-between gap-2">
+              <div className="flex min-w-0 flex-1 flex-col items-center">
+                <div className="flex size-8 items-center justify-center rounded-full border-2 border-amber-200 bg-amber-50 text-amber-800">
+                  <span className="text-[10px] font-bold">1-{payTerm}</span>
+                </div>
+                <div className="mt-1.5 text-center">
+                  <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                    Pay premiums
                   </div>
-                  <div className="text-xs font-semibold tabular-nums text-[var(--app-warn-text-strong)]">
-                    {formatINRCurrency(result.tax)}
+                  <div className="text-[11px] font-semibold tabular-nums text-amber-800">
+                    {formatINRCurrency(result.totalPremium)}
                   </div>
                 </div>
-                <div className="flex items-baseline justify-between gap-2 rounded-md border border-[var(--app-step-text)]/25 bg-[var(--app-step-bg)] px-2.5 py-1.5">
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-step-text)]">
-                    Net after tax
+              </div>
+              <div className="flex min-w-0 flex-1 flex-col items-center">
+                <div className="flex size-8 items-center justify-center rounded-full border-2 border-slate-200 bg-white text-slate-500">
+                  <span className="text-[10px] font-bold">
+                    {growthYears > 0 ? `${payTerm + 1}-${policyTerm}` : "—"}
+                  </span>
+                </div>
+                <div className="mt-1.5 text-center">
+                  <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                    No premiums
                   </div>
-                  <div className="text-xs font-semibold tabular-nums text-[var(--app-text)]">
+                  <div className="text-[11px] font-semibold tabular-nums text-slate-500">
+                    Growth phase
+                  </div>
+                </div>
+              </div>
+              <div className="flex min-w-0 flex-1 flex-col items-center">
+                <div className="flex size-8 items-center justify-center rounded-full border-2 border-emerald-200 bg-emerald-50 text-emerald-800">
+                  <span className="text-[10px] font-bold">Y{policyTerm}</span>
+                </div>
+                <div className="mt-1.5 text-center">
+                  <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
+                    Gross maturity
+                  </div>
+                  <div className="text-[11px] font-semibold tabular-nums text-emerald-900">
+                    {formatINRCurrency(result.maturity)}
+                  </div>
+                </div>
+              </div>
+              <div className="flex min-w-0 flex-1 flex-col items-center">
+                <div className="flex size-8 items-center justify-center rounded-full border-2 border-emerald-600 bg-emerald-700 text-white">
+                  <span className="text-[10px] font-bold">Net</span>
+                </div>
+                <div className="mt-1.5 text-center">
+                  <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
+                    After tax
+                  </div>
+                  <div className="text-[11px] font-semibold tabular-nums text-emerald-900">
                     {formatINRCurrency(result.net)}
                   </div>
                 </div>
               </div>
-            }
-          />
-                </ChartPane>
-              ),
-            },
-            {
-              id: "compare",
-              label: "Compare",
-              icon: <BarChart3 className="h-3.5 w-3.5" />,
-              content: (
-                <ChartPane>
-          <CompareChart
-            title="Premiums vs gross & net maturity"
-            className="min-h-[280px] flex-none sm:min-h-[300px]"
-            showBarLabels
-            showLegend={false}
-            data={[
-              {
-                category: "Premiums",
-                value: result.totalPremium,
-                fill: "var(--app-chart-invested)",
-              },
-              {
-                category: "Gross maturity",
-                value: result.maturity,
-                fill: "var(--app-chart-gain)",
-              },
-              {
-                category: "Net after tax",
-                value: result.net,
-                fill: "var(--app-chart-tax)",
-              },
-            ]}
-            series={[{ key: "value", label: "Amount", color: "var(--app-chart-gain)" }]}
-          />
-          <div className={`mt-2 px-0.5 ${META_TEXT}`}>
-            Tax of {formatINRCurrency(result.tax)} sits between gross and net maturity.
+            </div>
           </div>
-                </ChartPane>
-              ),
-            },
-            {
-              id: "ledger",
-              label: "Ledger",
-              icon: <TrendingUp className="h-3.5 w-3.5" />,
-              content: (
-                <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        </div>
+      </WealthSection>
 
-          <div className="overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)]">
-            <div className="border-b border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-2.5">
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
+      <WealthSection
+        badge="03 · Analytics"
+        title="Policy Analytics"
+        subtitle="Maturity mix and premium compare versus net outcomes"
+        open={openAnalytics}
+        onToggle={onToggleAnalytics}
+        mark={
+          <WealthIconMark>
+            <IconChart />
+          </WealthIconMark>
+        }
+      >
+        <WealthSegmented
+          variant="underline"
+          layoutId="insurance-irr-analytics"
+          value={tab}
+          onChange={setTab}
+          options={[
+            { id: "mix", label: "Mix", icon: <IconDonut className="h-3.5 w-3.5" /> },
+            { id: "compare", label: "Compare", icon: <IconChart className="h-3.5 w-3.5" /> },
+          ]}
+        />
+
+        <div className="mt-4">
+          {tab === "mix" ? (
+            <WealthMixDonut
+              title="Gross maturity mix"
+              centerLabel="Gross maturity"
+              centerValue={result.maturity}
+              tax={result.tax}
+              net={result.net}
+              netLabel="Net after tax"
+              slices={[
+                {
+                  name: "Premium paid",
+                  value: result.totalPremium,
+                  color: wealthMixColors.invested,
+                },
+                {
+                  name: "Gain",
+                  value: result.gain,
+                  color: wealthMixColors.gain,
+                },
+              ]}
+            />
+          ) : null}
+
+          {tab === "compare" ? (
+            <div>
+              <WealthCompareBars
+                showBarLabels
+                data={[
+                  {
+                    category: "Premiums",
+                    value: result.totalPremium,
+                  },
+                  {
+                    category: "Gross maturity",
+                    value: result.maturity,
+                  },
+                  {
+                    category: "Net after tax",
+                    value: result.net,
+                  },
+                ]}
+                series={[{ key: "value", label: "Amount", color: wealthChart.stepUp }]}
+              />
+              <div className="mt-2 px-0.5 text-[11px] text-slate-500">
+                Tax of {formatINRCurrency(result.tax)} sits between gross and net maturity.
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </WealthSection>
+
+      <WealthSection
+        badge="04 · Schedule"
+        title="Cash-Flow Ledger"
+        subtitle="Premiums to net maturity, plus assumed return versus policy XIRR"
+        open={openSchedule}
+        onToggle={onToggleSchedule}
+        mark={
+          <WealthIconMark>
+            <IconCalendar />
+          </WealthIconMark>
+        }
+      >
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+          <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white">
+            <div className="border-b border-slate-100 bg-slate-50/80 px-3 py-2.5">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                 How your money moves
               </div>
-              <div className={`mt-0.5 ${META_TEXT}`}>
+              <div className="mt-0.5 text-[11px] text-slate-500">
                 From premiums paid to what you keep after tax
               </div>
             </div>
@@ -1233,18 +1293,18 @@ function IrrResults({
               {moneySteps.map((step) => {
                 const rowClass =
                   step.tone === "net"
-                    ? "border border-[var(--app-step-text)]/35 bg-[var(--app-step-bg)]"
+                    ? "border border-emerald-200/70 bg-emerald-50/80"
                     : step.tone === "tax"
-                      ? "border border-[var(--app-warn-border)] bg-[var(--app-warn-bg)]"
+                      ? "border border-amber-200 bg-amber-50/80"
                       : step.tone === "strong"
-                        ? "border border-[var(--app-border)] bg-[var(--app-surface-muted)]"
+                        ? "border border-slate-200 bg-slate-50"
                         : "border border-transparent bg-transparent";
                 const valueClass =
                   step.tone === "net" || step.tone === "gain"
-                    ? "text-[var(--app-step-text-strong)]"
+                    ? "text-emerald-900"
                     : step.tone === "tax"
-                      ? "text-[var(--app-warn-text-strong)]"
-                      : "text-[var(--app-text)]";
+                      ? "text-amber-900"
+                      : "text-slate-900";
                 return (
                   <div
                     key={step.key}
@@ -1255,10 +1315,10 @@ function IrrResults({
                         <span
                           className={`flex size-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
                             step.sign === "−"
-                              ? "bg-[var(--app-warn-bg)] text-[var(--app-warn-text-strong)]"
+                              ? "bg-amber-50 text-amber-900"
                               : step.sign === "+"
-                                ? "bg-[var(--app-step-bg)] text-[var(--app-step-text-strong)]"
-                                : "bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]"
+                                ? "bg-emerald-50 text-emerald-800"
+                                : "bg-slate-100 text-slate-500"
                           }`}
                         >
                           {step.sign}
@@ -1269,8 +1329,8 @@ function IrrResults({
                       <span
                         className={`text-[13px] leading-snug ${
                           step.tone === "net" || step.tone === "strong"
-                            ? "font-semibold text-[var(--app-text)]"
-                            : "font-medium text-[var(--app-text-muted)]"
+                            ? "font-semibold text-slate-900"
+                            : "font-medium text-slate-500"
                         }`}
                       >
                         {step.label}
@@ -1287,69 +1347,73 @@ function IrrResults({
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3.5 py-3">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
+          <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white px-3.5 py-3">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
               Assumed return vs policy XIRR
             </div>
             <div className="mt-3 space-y-3">
               <div>
                 <div className="mb-1 flex items-baseline justify-between gap-2">
-                  <span className="text-[12px] font-medium text-[var(--app-text-muted)]">
+                  <span className="text-[12px] font-medium text-slate-500">
                     Assumed investment return
                   </span>
-                  <span className="text-[13px] font-semibold tabular-nums text-[var(--app-text)]">
+                  <span className="text-[13px] font-semibold tabular-nums text-slate-900">
                     {formatPercent(expectedReturnPct, 1)}
                   </span>
                 </div>
-                <div className="h-2 overflow-hidden rounded-full bg-[var(--app-surface-muted)]">
+                <div className="h-2 overflow-hidden rounded-full bg-slate-100">
                   <div
-                    className="h-full rounded-full bg-[var(--app-chart-invested)]"
+                    className="h-full rounded-full bg-slate-400"
                     style={{ width: `${assumedBar}%` }}
                   />
                 </div>
               </div>
               <div>
                 <div className="mb-1 flex items-baseline justify-between gap-2">
-                  <span className="text-[12px] font-medium text-[var(--app-step-text)]">
+                  <span className="text-[12px] font-medium text-emerald-700">
                     Your policy XIRR
                   </span>
-                  <span className="text-[13px] font-semibold tabular-nums text-[var(--app-step-text-strong)]">
+                  <span className="text-[13px] font-semibold tabular-nums text-emerald-900">
                     {xirrPct == null ? "—" : formatPercent(xirrPct, 2)}
                   </span>
                 </div>
-                <div className="h-2 overflow-hidden rounded-full bg-[var(--app-surface-muted)]">
+                <div className="h-2 overflow-hidden rounded-full bg-slate-100">
                   <div
-                    className="h-full rounded-full bg-[var(--app-step-text)]"
+                    className="h-full rounded-full bg-emerald-600"
                     style={{ width: `${xirrBar}%` }}
                   />
                 </div>
               </div>
             </div>
-            <div className={`mt-2.5 ${META_TEXT}`}>
+            <div className="mt-2.5 text-[11px] text-slate-500">
               {xirrPct == null
                 ? "XIRR could not be calculated for this cash-flow pattern."
                 : xirrPct < expectedReturnPct
                   ? "Premium timing and tax pull the effective return below the assumed rate."
                   : "Effective policy return meets or exceeds the assumed investment return."}
             </div>
-            <div className="mt-2 border-t border-[var(--app-border)] pt-2 text-[12px] text-[var(--app-text-muted)]">
+            <div className="mt-2 border-t border-slate-100 pt-2 text-[12px] text-slate-500">
               Pay-term rate{" "}
-              <span className="font-semibold tabular-nums text-[var(--app-text)]">
+              <span className="font-semibold tabular-nums text-slate-900">
                 {formatPercent(result.payTermRate * 100, 2)}
               </span>
               <span className="ml-1">over the {payTerm} premium years</span>
+              {xirrGap != null ? (
+                <span className="ml-1">
+                  · gap {formatPercent(xirrGap, 2)} vs assumed
+                </span>
+              ) : null}
             </div>
           </div>
-                </div>
-              ),
-            },
-          ]}
-        />
-      </ResultsSection>
-    </Stack>
+        </div>
+        <p className="mt-4 text-[12px] leading-relaxed text-slate-500">
+          Ledger steps walk from total premiums through gain, tax, and net maturity. Annual premium
+          assumed is {formatINRCurrency(annualPremium)} for {payTerm} years.
+        </p>
+      </WealthSection>
+    </div>
   );
 }
-
 
 function TpResults({
   result,
@@ -1360,6 +1424,8 @@ function TpResults({
   onToggleMilestones,
   openAnalytics,
   onToggleAnalytics,
+  openSchedule,
+  onToggleSchedule,
 }: {
   result: TpResult;
   yearsToMaturity: number;
@@ -1369,7 +1435,10 @@ function TpResults({
   onToggleMilestones: () => void;
   openAnalytics: boolean;
   onToggleAnalytics: () => void;
+  openSchedule: boolean;
+  onToggleSchedule: () => void;
 }) {
+  const [tab, setTab] = useState<TpAnalyticsTab>("compare");
   const keepIrrPct = Number.isFinite(result.keep.irr) ? result.keep.irr * 100 : null;
   const switchIrrPct = Number.isFinite(result.switch.irr) ? result.switch.irr * 100 : null;
   const surrenderIrrPct = Number.isFinite(result.switch.surrenderIrr)
@@ -1386,496 +1455,518 @@ function TpResults({
           { year: yearsToMaturity, corpus: result.switch.investMaturity },
         ];
   const termCover = result.termCover ?? 0;
-  const formatIrr = (pct: number | null) =>
-    pct == null ? "—" : formatPercent(pct, 2);
+  const formatIrr = (pct: number | null) => (pct == null ? "—" : formatPercent(pct, 2));
 
   return (
-    <Stack>
-      <ResultsSection
-        sectionId="02"
+    <div className="space-y-5">
+      <WealthSection
+        badge="02 · Milestones"
         title="Keep vs Switch Milestones"
-        description="Net outcomes, IRR, and the wealth impact of switching into term plus invest"
+        subtitle="Net outcomes, IRR, and the wealth impact of switching into term plus invest"
         open={openMilestones}
         onToggle={onToggleMilestones}
-        meta={
-          <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">
-            Horizon: {yearsToMaturity} Years
-          </span>
+        mark={
+          <WealthIconMark tone="emerald">
+            <IconTarget />
+          </WealthIconMark>
         }
       >
-      <div className="grid w-full grid-cols-2 gap-2 min-[720px]:grid-cols-5">
-        <div className="min-h-[5.25rem] min-w-0 [&>div]:h-full">
-          <StatCard
+        <div className="grid w-full grid-cols-1 gap-4 min-[720px]:grid-cols-3">
+          <WealthMetricCard
             title="Keep (net)"
             value={result.keep.net}
-            hint={keepIrrPct == null ? undefined : `IRR ${formatIrr(keepIrrPct)}`}
+            description={keepIrrPct == null ? "Policy path" : `IRR ${formatIrr(keepIrrPct)}`}
+            badge={`${yearsToMaturity} yr`}
             tone="neutral"
+            mark={
+              <WealthIconMark className="h-7 w-7">
+                <IconRates className="h-3.5 w-3.5" />
+              </WealthIconMark>
+            }
           />
-        </div>
-        <div className="min-h-[5.25rem] min-w-0 [&>div]:h-full">
-          <StatCard
+          <WealthMetricCard
             title="Switch corpus"
             value={result.switch.investMaturity}
-            hint={
-              switchIrrPct == null ? undefined : `IRR ${formatIrr(switchIrrPct)}`
+            description={
+              switchIrrPct == null ? "Term + invest" : `IRR ${formatIrr(switchIrrPct)}`
             }
             tone="positive"
+            mark={
+              <WealthIconMark tone="emerald" className="h-7 w-7">
+                <IconStepUp className="h-3.5 w-3.5" />
+              </WealthIconMark>
+            }
           />
-        </div>
-        <div className="col-span-2 min-h-[5.25rem] min-w-0 min-[720px]:col-span-1 [&>div]:h-full">
-          <StatCard
+          <WealthMetricCard
             title="Additional wealth"
             value={additionalWealth}
-            hint="What switching adds"
-            tone="positive"
+            description="What switching adds"
+            tone="accent"
+            mark={
+              <WealthIconMark className="h-7 w-7">
+                <IconTarget className="h-3.5 w-3.5" />
+              </WealthIconMark>
+            }
           />
         </div>
-        <div className="flex min-h-[5.25rem] min-w-0 flex-col justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2.5">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
-            Keep IRR
-          </div>
-          <div className="mt-1 text-lg font-semibold tabular-nums text-[var(--app-text)] sm:text-xl">
-            {formatIrr(keepIrrPct)}
-          </div>
-          <div className={`mt-1 ${META_TEXT}`}>Policy path</div>
-        </div>
-        <div className="flex min-h-[5.25rem] min-w-0 flex-col justify-center rounded-xl border border-[var(--app-step-text)]/30 bg-[var(--app-step-bg)] px-3 py-2.5">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-step-text)]">
-            Switch IRR
-          </div>
-          <div className="mt-1 text-lg font-semibold tabular-nums text-[var(--app-step-text-strong)] sm:text-xl">
-            {formatIrr(switchIrrPct)}
-          </div>
-          <div className={`mt-1 text-[var(--app-step-text)] ${META_TEXT}`}>
-            Investment
-            {surrenderIrrPct != null ? ` · Surr. ${formatIrr(surrenderIrrPct)}` : null}
-          </div>
-        </div>
-      </div>
 
-      <div className="relative overflow-hidden rounded-xl border border-[var(--app-step-text)]/35 bg-[var(--app-primary)] px-3 py-3.5 sm:px-4">
-        <div
-          className="pointer-events-none absolute -right-8 -top-10 size-36 rounded-full bg-[var(--app-primary-fg)]/10"
-          aria-hidden
-        />
-        <div
-          className="pointer-events-none absolute -bottom-12 left-1/3 size-40 rounded-full bg-[var(--app-primary-fg)]/5"
-          aria-hidden
-        />
-        <div className="relative z-[1] flex flex-col gap-3">
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--app-primary-fg-muted)]">
-                <TrendingUp className="size-3.5 shrink-0" aria-hidden />
-                Switch advantage
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-4">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+              Keep IRR
+            </div>
+            <div className="mt-1 text-lg font-semibold tabular-nums text-slate-900 sm:text-xl">
+              {formatIrr(keepIrrPct)}
+            </div>
+            <div className="mt-1 text-[11px] text-slate-500">Policy path</div>
+          </div>
+          <div className="rounded-2xl border border-emerald-200/70 bg-emerald-50/60 p-4">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700">
+              Switch IRR
+            </div>
+            <div className="mt-1 text-lg font-semibold tabular-nums text-emerald-900 sm:text-xl">
+              {formatIrr(switchIrrPct)}
+            </div>
+            <div className="mt-1 text-[11px] text-emerald-700">
+              Investment
+              {surrenderIrrPct != null ? ` · Surr. ${formatIrr(surrenderIrrPct)}` : null}
+            </div>
+          </div>
+        </div>
+
+        <div className="relative mt-4 overflow-hidden rounded-2xl border border-emerald-200/50 bg-emerald-700 px-3 py-3.5 sm:px-4">
+          <div
+            className="pointer-events-none absolute -right-8 -top-10 size-36 rounded-full bg-white/10"
+            aria-hidden
+          />
+          <div className="relative z-[1] flex flex-col gap-3">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-100/80">
+                  <IconStepUp className="size-3.5 shrink-0" aria-hidden />
+                  Switch advantage
+                </div>
+                <div className="mt-1 text-base font-semibold leading-snug text-white sm:text-lg">
+                  Switching could add {formatINRCurrency(additionalWealth)}
+                </div>
               </div>
-              <div className="mt-1 text-base font-semibold leading-snug text-[var(--app-primary-fg)] sm:text-lg">
-                Switching could add {formatINRCurrency(additionalWealth)}
+              <div className="flex flex-wrap gap-1.5">
+                <div className="rounded-lg bg-white/12 px-2.5 py-1 text-[11px] text-white">
+                  <span className="text-emerald-100/80">Horizon</span>{" "}
+                  <span className="font-semibold tabular-nums">{yearsToMaturity}y</span>
+                </div>
+                <div className="rounded-lg bg-white/12 px-2.5 py-1 text-[11px] text-white">
+                  <span className="text-emerald-100/80">Assumed</span>{" "}
+                  <span className="font-semibold tabular-nums">
+                    {formatPercent(expectedReturnPct, 2)}
+                  </span>
+                </div>
+                {termCover > 0 ? (
+                  <div className="rounded-lg bg-white/12 px-2.5 py-1 text-[11px] text-white">
+                    <span className="text-emerald-100/80">Cover</span>{" "}
+                    <span className="font-semibold tabular-nums">
+                      {formatINRCurrency(termCover)}
+                    </span>
+                  </div>
+                ) : null}
               </div>
             </div>
-            <div className="flex flex-wrap gap-1.5">
-              <div className="rounded-lg bg-[var(--app-primary-fg)]/12 px-2.5 py-1 text-[11px] text-[var(--app-primary-fg)]">
-                <span className="text-[var(--app-primary-fg-muted)]">Horizon</span>{" "}
-                <span className="font-semibold tabular-nums">{yearsToMaturity}y</span>
+
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
+              <div className="rounded-xl bg-white/10 px-3 py-2.5">
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-100/80">
+                  Keep net
+                </div>
+                <div className="mt-0.5 text-sm font-semibold tabular-nums text-white sm:text-base">
+                  {formatINRCurrency(result.keep.net)}
+                </div>
+                <div className="mt-0.5 text-[11px] text-emerald-100/80">
+                  IRR {formatIrr(keepIrrPct)}
+                </div>
               </div>
-              <div className="rounded-lg bg-[var(--app-primary-fg)]/12 px-2.5 py-1 text-[11px] text-[var(--app-primary-fg)]">
-                <span className="text-[var(--app-primary-fg-muted)]">Assumed</span>{" "}
-                <span className="font-semibold tabular-nums">
-                  {formatPercent(expectedReturnPct, 2)}
+              <div className="hidden items-center justify-center sm:flex">
+                <div className="flex size-8 items-center justify-center rounded-full bg-white/15 text-white">
+                  <IconChevron className="size-4 -rotate-90" aria-hidden />
+                </div>
+              </div>
+              <div className="rounded-xl bg-white/15 px-3 py-2.5 ring-1 ring-white/20">
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-100/80">
+                  Switch corpus
+                </div>
+                <div className="mt-0.5 text-sm font-semibold tabular-nums text-white sm:text-base">
+                  {formatINRCurrency(result.switch.investMaturity)}
+                </div>
+                <div className="mt-0.5 text-[11px] text-emerald-100/80">
+                  IRR {formatIrr(switchIrrPct)}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div className="mb-1 flex items-center justify-between gap-2 text-[10px] text-emerald-100/80">
+                <span>Keep share of switch corpus</span>
+                <span className="font-semibold tabular-nums text-white">
+                  {result.switch.investMaturity > 0
+                    ? formatPercent((result.keep.net / result.switch.investMaturity) * 100, 0)
+                    : "—"}
                 </span>
               </div>
+              <div className="h-2 overflow-hidden rounded-full bg-white/15">
+                <div
+                  className="h-full rounded-full bg-white/70"
+                  style={{
+                    width: `${
+                      result.switch.investMaturity > 0
+                        ? Math.min(100, (result.keep.net / result.switch.investMaturity) * 100)
+                        : 0
+                    }%`,
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-slate-200/80 bg-white px-3 py-3 sm:px-4">
+          <div className="mb-2.5 flex flex-wrap items-baseline justify-between gap-2">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+              How the switch works
+            </div>
+            <div className="text-[11px] text-slate-500">
+              Surrender → term cover → invest → grow
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-2 min-[520px]:grid-cols-2 xl:grid-cols-4">
+            {[
+              {
+                n: "1",
+                label: "Surrender",
+                value: formatINRCurrency(result.switch.surrenderValue),
+                sub: "Invested today",
+                box: "border-amber-200 bg-amber-50/80",
+                badge: "border-amber-200 bg-white text-amber-900",
+                labelTone: "text-amber-800",
+                valueTone: "text-amber-900",
+              },
+              {
+                n: "2",
+                label: "Buy term",
+                value: `${formatINRCurrency(termPremium)}/yr`,
+                sub: termCover > 0 ? `Cover ${formatINRCurrency(termCover)}` : "Life cover",
+                box: "border-slate-200 bg-slate-50",
+                badge: "border-slate-200 bg-white text-slate-500",
+                labelTone: "text-slate-500",
+                valueTone: "text-slate-900",
+              },
+              {
+                n: "3",
+                label: "Invest rest",
+                value: `${formatINRCurrency(result.switch.sipRedirectAnnual)}/yr`,
+                sub: "Premium redirected",
+                box: "border-emerald-200/70 bg-emerald-50/60",
+                badge: "border-emerald-200 bg-white text-emerald-700",
+                labelTone: "text-emerald-700",
+                valueTone: "text-emerald-900",
+              },
+              {
+                n: "4",
+                label: "Projected corpus",
+                value: formatINRCurrency(result.switch.investMaturity),
+                sub: `In year ${yearsToMaturity}`,
+                box: "border-emerald-200/70 bg-emerald-50/80",
+                badge: "border-emerald-600 bg-emerald-700 text-white",
+                labelTone: "text-emerald-700",
+                valueTone: "text-emerald-900",
+              },
+            ].map((step) => (
+              <div
+                key={step.n}
+                className={`flex items-start gap-2.5 rounded-xl border px-2.5 py-2.5 ${step.box}`}
+              >
+                <div
+                  className={`flex size-7 shrink-0 items-center justify-center rounded-full border text-[10px] font-bold ${step.badge}`}
+                >
+                  {step.n}
+                </div>
+                <div className="min-w-0">
+                  <div
+                    className={`text-[10px] font-semibold uppercase tracking-wide ${step.labelTone}`}
+                  >
+                    {step.label}
+                  </div>
+                  <div
+                    className={`mt-0.5 text-[13px] font-semibold tabular-nums leading-snug ${step.valueTone}`}
+                  >
+                    {step.value}
+                  </div>
+                  <div className="mt-0.5 text-[11px] text-slate-500">{step.sub}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white">
+            <div className="border-b border-slate-100 bg-slate-50/80 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+              Keep policy
+            </div>
+            <div className="grid grid-cols-2 gap-x-3 gap-y-2 p-3 text-[12px]">
+              <div>
+                <div className="text-[10px] text-slate-500">Gross maturity</div>
+                <div className="font-semibold tabular-nums">
+                  {formatINRCurrency(result.keep.maturity)}
+                </div>
+              </div>
+              <div>
+                <div className="text-[10px] text-slate-500">Tax on gain</div>
+                <div className="font-semibold tabular-nums text-amber-800">
+                  {formatINRCurrency(result.keep.tax)}
+                </div>
+              </div>
+              <div className="rounded-lg bg-slate-50 px-2 py-1.5">
+                <div className="text-[10px] text-slate-500">Net value</div>
+                <div className="font-semibold tabular-nums">
+                  {formatINRCurrency(result.keep.net)}
+                </div>
+              </div>
+              <div className="rounded-lg bg-slate-50 px-2 py-1.5">
+                <div className="text-[10px] text-slate-500">Keep IRR</div>
+                <div className="font-semibold tabular-nums">{formatIrr(keepIrrPct)}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-2xl border border-emerald-200/70 bg-white">
+            <div className="flex items-center justify-between gap-2 border-b border-emerald-100 bg-emerald-50/60 px-3 py-2">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700">
+                Surrender + term + invest
+              </div>
               {termCover > 0 ? (
-                <div className="rounded-lg bg-[var(--app-primary-fg)]/12 px-2.5 py-1 text-[11px] text-[var(--app-primary-fg)]">
-                  <span className="text-[var(--app-primary-fg-muted)]">Cover</span>{" "}
-                  <span className="font-semibold tabular-nums">
-                    {formatINRCurrency(termCover)}
-                  </span>
+                <div className="rounded-md bg-white/80 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-emerald-900">
+                  {formatINRCurrency(termCover)} cover
                 </div>
               ) : null}
             </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
-            <div className="rounded-xl bg-[var(--app-primary-fg)]/10 px-3 py-2.5">
-              <div className="text-[10px] font-semibold uppercase tracking-wide text-[var(--app-primary-fg-muted)]">
-                Keep net
-              </div>
-              <div className="mt-0.5 text-sm font-semibold tabular-nums text-[var(--app-primary-fg)] sm:text-base">
-                {formatINRCurrency(result.keep.net)}
-              </div>
-              <div className="mt-0.5 text-[11px] text-[var(--app-primary-fg-muted)]">
-                IRR {formatIrr(keepIrrPct)}
-              </div>
-            </div>
-            <div className="hidden items-center justify-center sm:flex">
-              <div className="flex size-8 items-center justify-center rounded-full bg-[var(--app-primary-fg)]/15 text-[var(--app-primary-fg)]">
-                <ArrowRight className="size-4" aria-hidden />
-              </div>
-            </div>
-            <div className="rounded-xl bg-[var(--app-primary-fg)]/15 px-3 py-2.5 ring-1 ring-[var(--app-primary-fg)]/20">
-              <div className="text-[10px] font-semibold uppercase tracking-wide text-[var(--app-primary-fg-muted)]">
-                Switch corpus
-              </div>
-              <div className="mt-0.5 text-sm font-semibold tabular-nums text-[var(--app-primary-fg)] sm:text-base">
-                {formatINRCurrency(result.switch.investMaturity)}
-              </div>
-              <div className="mt-0.5 text-[11px] text-[var(--app-primary-fg-muted)]">
-                IRR {formatIrr(switchIrrPct)}
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <div className="mb-1 flex items-center justify-between gap-2 text-[10px] text-[var(--app-primary-fg-muted)]">
-              <span>Keep share of switch corpus</span>
-              <span className="font-semibold tabular-nums text-[var(--app-primary-fg)]">
-                {result.switch.investMaturity > 0
-                  ? formatPercent((result.keep.net / result.switch.investMaturity) * 100, 0)
-                  : "—"}
-              </span>
-            </div>
-            <div className="h-2 overflow-hidden rounded-full bg-[var(--app-primary-fg)]/15">
-              <div
-                className="h-full rounded-full bg-[var(--app-primary-fg)]/70"
-                style={{
-                  width: `${
-                    result.switch.investMaturity > 0
-                      ? Math.min(100, (result.keep.net / result.switch.investMaturity) * 100)
-                      : 0
-                  }%`,
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-3 sm:px-4">
-        <div className="mb-2.5 flex flex-wrap items-baseline justify-between gap-2">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
-            How the switch works
-          </div>
-          <div className="text-[11px] text-[var(--app-text-muted)]">
-            Surrender → term cover → invest → grow
-          </div>
-        </div>
-        <div className="grid grid-cols-1 gap-2 min-[520px]:grid-cols-2 xl:grid-cols-4">
-          {[
-            {
-              n: "1",
-              label: "Surrender",
-              value: formatINRCurrency(result.switch.surrenderValue),
-              sub: "Invested today",
-              box: "border-[var(--app-warn-border)] bg-[var(--app-warn-bg)]",
-              badge: "border-[var(--app-warn-border)] bg-[var(--app-surface)] text-[var(--app-warn-text-strong)]",
-              labelTone: "text-[var(--app-warn-text)]",
-              valueTone: "text-[var(--app-warn-text-strong)]",
-            },
-            {
-              n: "2",
-              label: "Buy term",
-              value: `${formatINRCurrency(termPremium)}/yr`,
-              sub: termCover > 0 ? `Cover ${formatINRCurrency(termCover)}` : "Life cover",
-              box: "border-[var(--app-border)] bg-[var(--app-surface-muted)]",
-              badge: "border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-text-muted)]",
-              labelTone: "text-[var(--app-text-muted)]",
-              valueTone: "text-[var(--app-text)]",
-            },
-            {
-              n: "3",
-              label: "Invest rest",
-              value: `${formatINRCurrency(result.switch.sipRedirectAnnual)}/yr`,
-              sub: "Premium redirected",
-              box: "border-[var(--app-step-text)]/25 bg-[var(--app-step-bg)]",
-              badge: "border-[var(--app-step-text)]/35 bg-[var(--app-surface)] text-[var(--app-step-text)]",
-              labelTone: "text-[var(--app-step-text)]",
-              valueTone: "text-[var(--app-step-text-strong)]",
-            },
-            {
-              n: "4",
-              label: "Projected corpus",
-              value: formatINRCurrency(result.switch.investMaturity),
-              sub: `In year ${yearsToMaturity}`,
-              box: "border-[var(--app-step-text)]/35 bg-[var(--app-step-bg)]",
-              badge: "border-[var(--app-step-text)] bg-[var(--app-primary)] text-[var(--app-primary-fg)]",
-              labelTone: "text-[var(--app-step-text)]",
-              valueTone: "text-[var(--app-step-text-strong)]",
-            },
-          ].map((step) => (
-            <div
-              key={step.n}
-              className={`flex items-start gap-2.5 rounded-xl border px-2.5 py-2.5 ${step.box}`}
-            >
-              <div
-                className={`flex size-7 shrink-0 items-center justify-center rounded-full border text-[10px] font-bold ${step.badge}`}
-              >
-                {step.n}
-              </div>
-              <div className="min-w-0">
-                <div className={`text-[10px] font-semibold uppercase tracking-wide ${step.labelTone}`}>
-                  {step.label}
+            <div className="grid grid-cols-2 gap-x-3 gap-y-2 p-3 text-[12px]">
+              <div>
+                <div className="text-[10px] text-slate-500">Surrender in</div>
+                <div className="font-semibold tabular-nums">
+                  {formatINRCurrency(result.switch.surrenderValue)}
                 </div>
-                <div className={`mt-0.5 text-[13px] font-semibold tabular-nums leading-snug ${step.valueTone}`}>
-                  {step.value}
+              </div>
+              <div>
+                <div className="text-[10px] text-slate-500">Term cost</div>
+                <div className="font-semibold tabular-nums">
+                  {formatINRCurrency(result.switch.termCost)}
                 </div>
-                <div className="mt-0.5 text-[11px] text-[var(--app-text-muted)]">{step.sub}</div>
               </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        <div className="overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)]">
-          <div className="border-b border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
-            Keep policy
-          </div>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-2 p-3 text-[12px]">
-            <div>
-              <div className="text-[10px] text-[var(--app-text-muted)]">Gross maturity</div>
-              <div className="font-semibold tabular-nums">
-                {formatINRCurrency(result.keep.maturity)}
-              </div>
-            </div>
-            <div>
-              <div className="text-[10px] text-[var(--app-text-muted)]">Tax on gain</div>
-              <div className="font-semibold tabular-nums text-[var(--app-warn-text)]">
-                {formatINRCurrency(result.keep.tax)}
-              </div>
-            </div>
-            <div className="rounded-lg bg-[var(--app-surface-muted)] px-2 py-1.5">
-              <div className="text-[10px] text-[var(--app-text-muted)]">Net value</div>
-              <div className="font-semibold tabular-nums">
-                {formatINRCurrency(result.keep.net)}
-              </div>
-            </div>
-            <div className="rounded-lg bg-[var(--app-surface-muted)] px-2 py-1.5">
-              <div className="text-[10px] text-[var(--app-text-muted)]">Keep IRR</div>
-              <div className="font-semibold tabular-nums">{formatIrr(keepIrrPct)}</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="overflow-hidden rounded-xl border border-[var(--app-step-text)]/30 bg-[var(--app-surface)]">
-          <div className="flex items-center justify-between gap-2 border-b border-[var(--app-step-text)]/20 bg-[var(--app-step-bg)] px-3 py-2">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-step-text)]">
-              Surrender + term + invest
-            </div>
-            {termCover > 0 ? (
-              <div className="rounded-md bg-[var(--app-surface)]/80 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-[var(--app-step-text-strong)]">
-                {formatINRCurrency(termCover)} cover
-              </div>
-            ) : null}
-          </div>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-2 p-3 text-[12px]">
-            <div>
-              <div className="text-[10px] text-[var(--app-text-muted)]">Surrender in</div>
-              <div className="font-semibold tabular-nums">
-                {formatINRCurrency(result.switch.surrenderValue)}
-              </div>
-            </div>
-            <div>
-              <div className="text-[10px] text-[var(--app-text-muted)]">Term cost</div>
-              <div className="font-semibold tabular-nums">
-                {formatINRCurrency(result.switch.termCost)}
-              </div>
-            </div>
-            <div className="rounded-lg bg-[var(--app-step-bg)] px-2 py-1.5">
-              <div className="text-[10px] text-[var(--app-step-text)]">Projected corpus</div>
-              <div className="font-semibold tabular-nums text-[var(--app-step-text-strong)]">
-                {formatINRCurrency(result.switch.investMaturity)}
-              </div>
-            </div>
-            <div className="rounded-lg bg-[var(--app-step-bg)] px-2 py-1.5">
-              <div className="text-[10px] text-[var(--app-step-text)]">Investment IRR</div>
-              <div className="font-semibold tabular-nums text-[var(--app-step-text-strong)]">
-                {formatIrr(switchIrrPct)}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      </ResultsSection>
-
-      <ResultsSection
-        sectionId="03"
-        title="Switch Analytics"
-        description="Keep versus switch outcomes, corpus path, funding mix, and strategy ledger"
-        open={openAnalytics}
-        onToggle={onToggleAnalytics}
-      >
-
-        <SegmentedChartControl
-          variant="pill"
-          tabs={[
-            {
-              id: "compare",
-              label: "Compare",
-              icon: <BarChart3 className="h-3.5 w-3.5" />,
-              content: (
-                <ChartPane>
-          <CompareChart
-            title="Keep vs switch outcomes"
-            className="min-h-[260px] flex-none sm:min-h-[280px]"
-            showBarLabels
-            data={result.compare}
-            series={[
-              { key: "keep", label: "Keep policy", color: "var(--app-chart-tax)" },
-              { key: "switch", label: "Term + invest", color: "var(--app-chart-gain)" },
-            ]}
-          />
-          <div className={`mt-2 px-0.5 ${META_TEXT}`}>
-            Final value under each strategy. Tax and term cost are shown separately.
-          </div>
-                </ChartPane>
-              ),
-            },
-            {
-              id: "growth",
-              label: "Growth",
-              icon: <LineChart className="h-3.5 w-3.5" />,
-              content: (
-                <ChartPane>
-          <GrowthChart
-            title="Switched corpus over time"
-            className="h-[300px] min-h-[300px] w-full flex-none sm:h-[340px] sm:min-h-[340px]"
-            data={corpusPath}
-            series={[
-              {
-                key: "corpus",
-                label: "Investment corpus",
-                color: "var(--app-chart-gain)",
-              },
-            ]}
-            showEndLabels
-            endpointDots
-            xTickFormatter={(year) => {
-              if (year === 0) return "Y0";
-              if (year === yearsToMaturity) return `Y${yearsToMaturity}`;
-              if (year % 5 === 0) return `Y${year}`;
-              return "";
-            }}
-          />
-          <div className={`mt-2 px-0.5 ${META_TEXT}`}>
-            Year 0 surrender to year {yearsToMaturity} projected corpus.
-          </div>
-                </ChartPane>
-              ),
-            },
-            {
-              id: "funding",
-              label: "Funding",
-              icon: <PieChart className="h-3.5 w-3.5" />,
-              content: (
-                <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-          <CompositionChart
-            title="Initial switch funding"
-            showPercentages
-            slices={[
-              {
-                name: "Surrender invested",
-                value: result.switch.surrenderValue,
-                color: "var(--app-chart-invested)",
-              },
-              {
-                name: "Term cost",
-                value: result.switch.termCost,
-                color: "var(--app-chart-tax)",
-              },
-            ]}
-            centerLabel="Initial funding"
-            centerValue={initialFunding}
-            footer={
-              <div className="flex items-baseline justify-between gap-2 rounded-md border border-[var(--app-step-text)]/25 bg-[var(--app-step-bg)] px-2.5 py-1.5">
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-step-text)]">
-                  Projected corpus
-                </div>
-                <div className="text-xs font-semibold tabular-nums text-[var(--app-text)]">
+              <div className="rounded-lg bg-emerald-50/80 px-2 py-1.5">
+                <div className="text-[10px] text-emerald-700">Projected corpus</div>
+                <div className="font-semibold tabular-nums text-emerald-900">
                   {formatINRCurrency(result.switch.investMaturity)}
                 </div>
               </div>
-            }
-          />
-
-          <div className="overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)]">
-            <div className="border-b border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
-              Strategy comparison
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[20rem] border-collapse text-left text-[12px]">
-                <thead>
-                  <tr className="border-b border-[var(--app-border)] text-[10px] uppercase tracking-wider text-[var(--app-text-muted)]">
-                    <th className="px-3 py-2 font-semibold">Metric</th>
-                    <th className="px-3 py-2 text-right font-semibold">Keep</th>
-                    <th className="px-3 py-2 text-right font-semibold">Switch</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[
-                    {
-                      label: "Initial / surrender",
-                      keep: "—",
-                      switch: formatINRCurrency(result.switch.surrenderValue),
-                    },
-                    {
-                      label: "Term cost",
-                      keep: "—",
-                      switch: formatINRCurrency(result.switch.termCost),
-                    },
-                    {
-                      label: "Term cover",
-                      keep: "—",
-                      switch: termCover > 0 ? formatINRCurrency(termCover) : "—",
-                    },
-                    {
-                      label: "Maturity / corpus",
-                      keep: formatINRCurrency(result.keep.maturity),
-                      switch: formatINRCurrency(result.switch.investMaturity),
-                    },
-                    {
-                      label: "Tax",
-                      keep: formatINRCurrency(result.keep.tax),
-                      switch: "—",
-                    },
-                    {
-                      label: "Net / final value",
-                      keep: formatINRCurrency(result.keep.net),
-                      switch: formatINRCurrency(result.switch.investMaturity),
-                    },
-                    {
-                      label: "IRR",
-                      keep: formatIrr(keepIrrPct),
-                      switch: formatIrr(switchIrrPct),
-                    },
-                  ].map((row) => (
-                    <tr
-                      key={row.label}
-                      className="border-b border-[var(--app-border)] last:border-b-0"
-                    >
-                      <td className="px-3 py-2 text-[var(--app-text-muted)]">{row.label}</td>
-                      <td className="px-3 py-2 text-right tabular-nums text-[var(--app-text)]">
-                        {row.keep}
-                      </td>
-                      <td className="px-3 py-2 text-right tabular-nums text-[var(--app-text)]">
-                        {row.switch}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className={`border-t border-[var(--app-border)] px-3 py-2 ${META_TEXT}`}>
-              Surrender IRR {formatIrr(surrenderIrrPct)} · Investment IRR{" "}
-              {formatIrr(switchIrrPct)}
+              <div className="rounded-lg bg-emerald-50/80 px-2 py-1.5">
+                <div className="text-[10px] text-emerald-700">Investment IRR</div>
+                <div className="font-semibold tabular-nums text-emerald-900">
+                  {formatIrr(switchIrrPct)}
+                </div>
+              </div>
             </div>
           </div>
-                </div>
-              ),
+        </div>
+      </WealthSection>
+
+      <WealthSection
+        badge="03 · Analytics"
+        title="Switch Analytics"
+        subtitle="Keep versus switch outcomes, corpus path, and funding mix"
+        open={openAnalytics}
+        onToggle={onToggleAnalytics}
+        mark={
+          <WealthIconMark>
+            <IconChart />
+          </WealthIconMark>
+        }
+      >
+        <WealthSegmented
+          variant="underline"
+          layoutId="insurance-tp-analytics"
+          value={tab}
+          onChange={setTab}
+          options={[
+            { id: "compare", label: "Compare", icon: <IconChart className="h-3.5 w-3.5" /> },
+            { id: "growth", label: "Growth", icon: <IconTimeline className="h-3.5 w-3.5" /> },
+            { id: "funding", label: "Funding", icon: <IconDonut className="h-3.5 w-3.5" /> },
+          ]}
+        />
+
+        <div className="mt-4">
+          {tab === "compare" ? (
+            <div>
+              <WealthCompareBars
+                showBarLabels
+                data={result.compare}
+                series={[
+                  { key: "keep", label: "Keep policy", color: wealthChart.tax },
+                  { key: "switch", label: "Term + invest", color: wealthChart.stepUp },
+                ]}
+              />
+              <div className="mt-2 px-0.5 text-[11px] text-slate-500">
+                Final value under each strategy. Tax and term cost are shown separately.
+              </div>
+            </div>
+          ) : null}
+
+          {tab === "growth" ? (
+            <div>
+              <WealthGrowthLine
+                data={corpusPath}
+                xTick={(year) => {
+                  if (year === 0) return "Y0";
+                  if (year === yearsToMaturity) return `Y${yearsToMaturity}`;
+                  if (typeof year === "number" && year % 5 === 0) return `Y${year}`;
+                  return `Y${year}`;
+                }}
+                series={[
+                  {
+                    key: "corpus",
+                    label: "Investment corpus",
+                    color: wealthChart.stepUp,
+                    kind: "area",
+                  },
+                ]}
+              />
+              <div className="mt-2 px-0.5 text-[11px] text-slate-500">
+                Year 0 surrender to year {yearsToMaturity} projected corpus.
+              </div>
+            </div>
+          ) : null}
+
+          {tab === "funding" ? (
+            <WealthMixDonut
+              title="Initial switch funding"
+              centerLabel="Initial funding"
+              centerValue={initialFunding}
+              net={result.switch.investMaturity}
+              netLabel="Projected corpus"
+              slices={[
+                {
+                  name: "Surrender invested",
+                  value: result.switch.surrenderValue,
+                  color: wealthMixColors.invested,
+                },
+                {
+                  name: "Term cost",
+                  value: result.switch.termCost,
+                  color: wealthMixColors.tax,
+                },
+              ]}
+            />
+          ) : null}
+        </div>
+      </WealthSection>
+
+      <WealthSection
+        badge="04 · Ledger"
+        title="Strategy Comparison Ledger"
+        subtitle="Keep versus switch metrics including IRR and terminal values"
+        open={openSchedule}
+        onToggle={onToggleSchedule}
+        mark={
+          <WealthIconMark>
+            <IconCalendar />
+          </WealthIconMark>
+        }
+      >
+        <WealthDataTable
+          rows={[
+            {
+              label: "Initial / surrender",
+              keep: "—",
+              switch: formatINRCurrency(result.switch.surrenderValue),
+            },
+            {
+              label: "Term cost",
+              keep: "—",
+              switch: formatINRCurrency(result.switch.termCost),
+            },
+            {
+              label: "Term cover",
+              keep: "—",
+              switch: termCover > 0 ? formatINRCurrency(termCover) : "—",
+            },
+            {
+              label: "Maturity / corpus",
+              keep: formatINRCurrency(result.keep.maturity),
+              switch: formatINRCurrency(result.switch.investMaturity),
+            },
+            {
+              label: "Tax",
+              keep: formatINRCurrency(result.keep.tax),
+              switch: "—",
+            },
+            {
+              label: "Net / final value",
+              keep: formatINRCurrency(result.keep.net),
+              switch: formatINRCurrency(result.switch.investMaturity),
+            },
+            {
+              label: "IRR",
+              keep: formatIrr(keepIrrPct),
+              switch: formatIrr(switchIrrPct),
+            },
+          ]}
+          getRowKey={(row) => row.label}
+          filterPlaceholder="Filter metrics…"
+          summary={[
+            {
+              label: "Keep net",
+              value: formatINRCurrency(result.keep.net),
+              tone: "std",
+            },
+            {
+              label: "Switch corpus",
+              value: formatINRCurrency(result.switch.investMaturity),
+              tone: "step",
+            },
+            {
+              label: "Additional wealth",
+              value: formatINRCurrency(additionalWealth),
+              tone: "step",
+            },
+            {
+              label: "Term premium",
+              value: formatINRCurrency(termPremium),
+            },
+          ]}
+          note={`Surrender IRR ${formatIrr(surrenderIrrPct)}. Investment IRR ${formatIrr(switchIrrPct)}. Expected return assumed ${formatPercent(expectedReturnPct, 1)}.`}
+          columns={[
+            {
+              key: "label",
+              header: "Metric",
+              sticky: true,
+              searchValue: (row) => row.label,
+              render: (row) => row.label,
+            },
+            {
+              key: "keep",
+              header: "Keep",
+              align: "right",
+              searchValue: (row) => row.keep,
+              render: (row) => row.keep,
+            },
+            {
+              key: "switch",
+              header: "Switch",
+              align: "right",
+              searchValue: (row) => row.switch,
+              render: (row) => row.switch,
             },
           ]}
         />
-      </ResultsSection>
-    </Stack>
+      </WealthSection>
+    </div>
   );
 }

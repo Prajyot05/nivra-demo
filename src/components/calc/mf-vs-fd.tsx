@@ -1,31 +1,11 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import {
-  AgeInput,
-  BentoGroup,
-  BentoSection,
-  Card,
-  CHIP,
-  CHIP_OFF,
-  CHIP_ON,
-  ClientProfileBar,
-  ResultsSection,
-  CompareChart,
-  CompositionChart,
-  Field,
   formatINRCurrency,
   formatPercent,
-  MoneyInput,
-  PercentInput,
-  SectionTitle,
-  SegmentedChartControl,
-  Stack,
-  StatCard,
-  StatGrid,
   StatusNote,
-  TextInput,
-  YearInput,
 } from "@nivra/ui";
 import { CalculatorPage } from "@/components/layout/calculator-page-with-nav";
 import { ReportDownloadButton } from "@/components/calc/report-download-button";
@@ -36,9 +16,36 @@ import {
 import { DUMMY_REPORT_CONTACT } from "@/components/reports/executive-dossier";
 import { useCalculate } from "@/hooks/use-calculate";
 import { generatePdfFromElement } from "@/lib/pdf-generator";
-import { BarChart3, ChevronDown, PieChart } from "lucide-react";
+import {
+  IconChart,
+  IconDonut,
+  IconPerson,
+  IconRates,
+  IconRefresh,
+  IconTarget,
+  WEALTH_CONTENT_CLASS,
+  WEALTH_DAY_PRESETS_DEFAULT,
+  WealthCompareBars,
+  WealthDisclaimer,
+  WealthHero,
+  WealthIconMark,
+  WealthMetricCard,
+  WealthMixDonut,
+  WealthMoneyField,
+  WealthPercentField,
+  WealthAgeField,
+  WealthAuditChip,
+  WealthAuditLedger,
+  WealthProfileGrid,
+  WealthSegmented,
+  WealthSection,
+  WealthTextField,
+  WealthYearField,
+  wealthChart,
+  wealthMixColors,
+  IconCalendar,
+} from "@/components/wealth";
 
-const DAY_PRESETS = [7, 15, 30, 90, 180, 365] as const;
 const AMOUNT_MIN = 10_000;
 const AMOUNT_MAX = 100_00_00_000; // ₹100 Cr
 const AMOUNT_STEP = 1_00_000;
@@ -48,9 +55,10 @@ const AMOUNT_PRESETS = [
   { label: "₹50L", value: 50_00_000 },
   { label: "₹1Cr", value: 1_00_00_000 },
   { label: "₹10Cr", value: 10_00_00_000 },
-  { label: "₹50Cr", value: 50_00_00_000 },
-  { label: "₹100Cr", value: 100_00_00_000 },
 ] as const;
+
+const DAY_SLIDER_MAX = 3650; // 10 years on the slider; typing still allows longer
+const DAY_PRESETS = WEALTH_DAY_PRESETS_DEFAULT;
 
 type Leg = {
   invested: number;
@@ -71,6 +79,8 @@ type MfFdResult = {
   fdAdvantage: number;
   compare: Array<{ category: string; mf: number; fd: number }>;
 };
+
+type AnalyticsTab = "mix" | "compare";
 
 function interestError(value: number, label: string): string | undefined {
   if (!Number.isFinite(value)) return `${label} must be a valid number.`;
@@ -139,8 +149,8 @@ function YieldSplitBar({
   multiplier: number;
 }) {
   return (
-    <div className="rounded-xl border border-slate-200/80 bg-slate-50 p-4">
-      <div className="mb-2 flex flex-col gap-1 text-xs font-semibold text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+    <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4">
+      <div className="mb-2 flex flex-col gap-1 text-xs font-medium text-slate-600 sm:flex-row sm:items-center sm:justify-between">
         <span>Relative Yield Distribution:</span>
         <span>
           Mutual Fund yields{" "}
@@ -172,7 +182,25 @@ function YieldSplitBar({
   );
 }
 
-function AuditCompareTable({ result }: { result: MfFdResult }) {
+function AuditCompareTable({
+  result,
+  insight,
+  days,
+  horizonYears,
+}: {
+  result: MfFdResult;
+  insight: {
+    mfWins: boolean;
+    fdWins: boolean;
+    advantage: number;
+    relativePct: number;
+    mfYieldPct: number;
+    fdYieldPct: number;
+    multiplier: number;
+  };
+  days: number;
+  horizonYears: number;
+}) {
   const rows: Array<{
     label: string;
     mf: number;
@@ -222,96 +250,92 @@ function AuditCompareTable({ result }: { result: MfFdResult }) {
     },
   ];
 
+  const winner = insight.mfWins ? "Mutual Fund" : insight.fdWins ? "Fixed Deposit" : "Neither";
+  const taxDragMf =
+    result.mf.preTax > 0 ? (result.mf.tax / result.mf.preTax) * 100 : 0;
+  const taxDragFd =
+    result.fd.preTax > 0 ? (result.fd.tax / result.fd.preTax) * 100 : 0;
+
   return (
-    <div className="mt-8">
-      <div className="mb-3 flex flex-col items-center justify-center text-center">
-        <span className="mb-1 rounded border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-emerald-700">
-          Audit Breakdown
-        </span>
-        <h3 className="text-sm font-bold text-slate-900">MF vs FD Post-Tax Comparative Ledger</h3>
-        <p className="mt-0.5 text-xs text-slate-500">
-          Side-by-side metrics for mutual fund and fixed deposit over the selected horizon
-        </p>
-      </div>
-
-      <div className="flex w-full justify-center overflow-x-auto py-2">
-        <div className="w-fit max-w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <table className="border-collapse whitespace-nowrap text-left text-xs tabular-nums">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-100/70 text-[11px] font-bold uppercase tracking-wider text-slate-700">
-                <th className="px-5 py-3.5 text-left font-bold text-slate-800">Metric</th>
-                <th className="px-5 py-3.5 text-right font-bold text-emerald-700">Mutual Fund</th>
-                <th className="px-5 py-3.5 text-right font-bold text-slate-600">Fixed Deposit</th>
-                <th className="px-5 py-3.5 text-right font-extrabold text-emerald-700">
-                  <span className="inline-flex items-center justify-end gap-1">
-                    <span>Net Advantage</span>
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                  </span>
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-              {rows.map((row) => {
-                const delta = row.advantage ?? row.mf - row.fd;
-                if (row.highlight) {
-                  return (
-                    <tr
-                      key={row.label}
-                      className="border-t-2 border-emerald-300/80 bg-emerald-50/70 transition-colors hover:bg-emerald-50"
-                    >
-                      <td className="px-5 py-3.5">
-                        <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-extrabold text-white shadow-sm shadow-emerald-600/20">
-                          {row.label}
-                        </span>
-                      </td>
-                      <td className="px-5 py-3.5 text-right text-sm font-black tabular-nums text-emerald-800">
-                        {formatINRCurrency(row.mf)}
-                      </td>
-                      <td className="px-5 py-3.5 text-right font-semibold tabular-nums text-slate-700">
-                        {formatINRCurrency(row.fd)}
-                      </td>
-                      <td className="px-5 py-3.5 text-right tabular-nums">
-                        <span className="rounded-lg bg-emerald-600 px-3 py-1 text-xs font-bold tracking-tight text-white shadow-sm">
-                          {delta >= 0 ? "+" : ""}
-                          {formatINRCurrency(delta)}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                }
-
-                return (
-                  <tr key={row.label} className="transition-colors hover:bg-slate-50/80">
-                    <td className="px-5 py-3">
-                      <span className="rounded-md border border-slate-200/80 bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-700">
-                        {row.label}
-                      </span>
-                    </td>
-                    <td
-                      className={`px-5 py-3 text-right font-semibold tabular-nums ${
-                        row.tax ? "text-rose-600" : "text-slate-800"
-                      }`}
-                    >
-                      {formatINRCurrency(row.mf)}
-                    </td>
-                    <td
-                      className={`px-5 py-3 text-right tabular-nums ${
-                        row.tax ? "font-semibold text-rose-600" : "text-slate-500"
-                      }`}
-                    >
-                      {formatINRCurrency(row.fd)}
-                    </td>
-                    <td className="px-5 py-3 text-right font-bold tabular-nums text-emerald-600">
-                      {delta === 0 ? "—" : `${delta > 0 ? "+" : ""}${formatINRCurrency(delta)}`}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+    <WealthAuditLedger
+      stats={[
+        {
+          label: "Horizon",
+          value: `${days} days`,
+          hint: `${horizonYears.toFixed(2)} years · day-count basis 365`,
+        },
+        {
+          label: "Post-tax edge",
+          value:
+            insight.advantage > 0
+              ? `+${formatINRCurrency(insight.advantage)}`
+              : formatINRCurrency(0),
+          hint: `${winner}${
+            insight.relativePct > 0
+              ? ` · +${insight.relativePct.toFixed(1)}% vs alternate`
+              : ""
+          }`,
+          tone: "emerald",
+        },
+        {
+          label: "Yield multiple",
+          value: `${insight.multiplier.toFixed(2)}×`,
+          hint: `MF post-tax ${formatPercent(insight.mfYieldPct)} · FD ${formatPercent(insight.fdYieldPct)}`,
+        },
+      ]}
+      chips={
+        <>
+          <WealthAuditChip label="MF tax drag">
+            {formatPercent(taxDragMf, 1)} of pre-tax gain (
+            {formatINRCurrency(result.mf.tax)})
+          </WealthAuditChip>
+          <WealthAuditChip label="FD tax drag">
+            {formatPercent(taxDragFd, 1)} of pre-tax gain (
+            {formatINRCurrency(result.fd.tax)})
+          </WealthAuditChip>
+        </>
+      }
+      columns={["Metric", "Mutual Fund", "Fixed Deposit", "Net Advantage"]}
+      rows={rows.map((row) => {
+        const delta = row.advantage ?? row.mf - row.fd;
+        if (row.highlight) {
+          return {
+            label: row.label,
+            highlight: true,
+            cells: [
+              { text: formatINRCurrency(row.mf), tone: "emerald" as const },
+              { text: formatINRCurrency(row.fd) },
+              {
+                text: `${delta >= 0 ? "+" : ""}${formatINRCurrency(delta)}`,
+                tone: "pill" as const,
+              },
+            ],
+          };
+        }
+        return {
+          label: row.label,
+          tax: row.tax,
+          cells: [
+            {
+              text: formatINRCurrency(row.mf),
+              tone: row.tax ? ("rose" as const) : ("default" as const),
+            },
+            {
+              text: formatINRCurrency(row.fd),
+              tone: row.tax ? ("rose" as const) : ("muted" as const),
+            },
+            {
+              text:
+                delta === 0
+                  ? "Equal"
+                  : `${delta > 0 ? "+" : ""}${formatINRCurrency(delta)}`,
+              tone: "emerald" as const,
+            },
+          ],
+        };
+      })}
+      note={`Ledger uses the stated MF and FD rates with their tax rates over ${days} days. Absolute yields are post-tax profit on invested capital. Premature FD exit and market risk on mutual funds are not modelled here.`}
+    />
   );
 }
 
@@ -330,6 +354,9 @@ export function MfVsFd() {
   const [openAssumptions, setOpenAssumptions] = useState(true);
   const [openArbitrage, setOpenArbitrage] = useState(true);
   const [openAnalytics, setOpenAnalytics] = useState(true);
+  const [openAudit, setOpenAudit] = useState(true);
+  const [analyticsTab, setAnalyticsTab] = useState<AnalyticsTab>("mix");
+  const assumptionsRef = useRef<HTMLDivElement>(null);
 
   const clientNameError = nameError(name);
   const clientAgeError = ageError(age);
@@ -420,6 +447,11 @@ export function MfVsFd() {
     setFdTax(25);
   };
 
+  const scrollToAssumptions = () => {
+    setOpenAssumptions(true);
+    assumptionsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const handleDownload = async () => {
     if (!result || isDownloading) return;
     setIsDownloading(true);
@@ -442,6 +474,7 @@ export function MfVsFd() {
       <CalculatorPage
         title="Mutual Fund vs Fixed Deposit"
         description="Short-horizon post-tax compare of mutual funds vs fixed deposits (365-day count)."
+        contentClassName={WEALTH_CONTENT_CLASS}
         actions={
           <ReportDownloadButton
             onClick={handleDownload}
@@ -450,133 +483,125 @@ export function MfVsFd() {
           />
         }
         header={
-          <ClientProfileBar
-            name={name}
+          <WealthHero
+            clientName={name}
             age={age}
             email={email}
             phone={phone}
-            strategy="Tax-aware MF vs FD compare"
-            goal="Post-tax arbitrage"
+            goalLabel="MF vs FD"
+            tenure={Math.max(1, Math.round(horizonYears))}
+            strategy="Post-tax yield compare"
+            metrics={[
+              {
+                label: "Investment",
+                value: amount,
+                kind: "currency",
+                tone: "emerald",
+                mark: (
+                  <WealthIconMark tone="emerald" className="h-6 w-6">
+                    <IconTarget className="h-3.5 w-3.5" />
+                  </WealthIconMark>
+                ),
+              },
+              {
+                label: "MF post-tax",
+                value: result?.mf.postTax ?? 0,
+                kind: "currency",
+                tone: "slate",
+                mark: (
+                  <WealthIconMark className="h-6 w-6">
+                    <IconChart className="h-3.5 w-3.5" />
+                  </WealthIconMark>
+                ),
+              },
+              {
+                label: "FD post-tax",
+                value: result?.fd.postTax ?? 0,
+                kind: "currency",
+                tone: "slate",
+                mark: (
+                  <WealthIconMark className="h-6 w-6">
+                    <IconRates className="h-3.5 w-3.5" />
+                  </WealthIconMark>
+                ),
+              },
+            ]}
+            onEdit={scrollToAssumptions}
           />
         }
         form={
-          <BentoSection
-            sectionId="01"
-            title="Financial Assumptions & Modeling Suite"
-            description="Interactive multi-parameter engine for short-horizon MF vs FD post-tax compare"
-            collapsible
+          <div ref={assumptionsRef}>
+          <WealthSection
+            id="assumptions"
+            badge="01 · Profile"
+            title="Investor Profile and Assumptions"
+            subtitle="Client identity, investment amount, horizon, and return or tax rates"
             open={openAssumptions}
             onToggle={() => setOpenAssumptions((v) => !v)}
+            mark={
+              <WealthIconMark>
+                <IconPerson />
+              </WealthIconMark>
+            }
             actions={
               <button
                 type="button"
                 onClick={resetDefaults}
-                className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 transition-all hover:bg-slate-100 hover:text-emerald-700"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
               >
-                Reset to Baseline
+                <IconRefresh className="h-3.5 w-3.5" />
+                Reset
               </button>
             }
           >
-            <BentoGroup
-              num="01"
-              title="Investor Profile"
-              colSpan={4}
-              footer={
-                <>
-                  <span>Investment Window:</span>
-                  <span className="font-bold text-slate-700">
-                    {days} day{days === 1 ? "" : "s"}
-                  </span>
-                </>
-              }
-            >
-              <div className="mb-4">
-                <Field label="Client Name" error={clientNameError}>
-                  <TextInput
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className={clientNameError ? "border-[var(--app-danger)]" : undefined}
-                  />
-                </Field>
-              </div>
-              <div className="mb-4">
-                <AgeInput value={age} onChange={setAge} error={clientAgeError} />
-              </div>
-              <div className="mb-4">
-                <Field label="Email" error={clientEmailError}>
-                  <TextInput
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="client@email.com"
-                    className={clientEmailError ? "border-[var(--app-danger)]" : undefined}
-                  />
-                </Field>
-              </div>
-              <Field label="Phone" error={clientPhoneError}>
-                <TextInput
+            <div className="py-2">
+              <WealthProfileGrid>
+                <WealthTextField
+                  label="Client name"
+                  value={name}
+                  onChange={setName}
+                  error={clientNameError}
+                  autoComplete="name"
+                />
+                <WealthAgeField
+                  value={age}
+                  onChange={setAge}
+                  error={clientAgeError}
+                />
+                <WealthTextField
+                  label="Email"
+                  type="email"
+                  value={email}
+                  onChange={setEmail}
+                  error={clientEmailError}
+                  placeholder="client@email.com"
+                  autoComplete="email"
+                />
+                <WealthTextField
+                  label="Phone"
                   type="tel"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={setPhone}
+                  error={clientPhoneError}
                   placeholder="+91 98765 43210"
-                  className={clientPhoneError ? "border-[var(--app-danger)]" : undefined}
+                  autoComplete="tel"
                 />
-              </Field>
-            </BentoGroup>
-
-            <BentoGroup
-              num="02"
-              title="Investment Parameters"
-              colSpan={5}
-              footer={
-                <>
-                  <span>Horizon:</span>
-                  <span className="font-bold text-emerald-700">
-                    {horizonYears.toFixed(2)} Years ({days} Days)
-                  </span>
-                </>
-              }
-            >
-              <div className="mb-4">
-                <MoneyInput
+                <WealthMoneyField
                   label="Investment amount"
                   value={amount}
                   onChange={(v) => setAmount(Math.min(AMOUNT_MAX, Math.max(0, v)))}
                   error={amountError}
                   max={AMOUNT_MAX}
                   suffix="₹"
+                  slider={{
+                    min: AMOUNT_MIN,
+                    max: AMOUNT_MAX,
+                    step: AMOUNT_STEP,
+                    scale: "log",
+                    presets: [...AMOUNT_PRESETS],
+                  }}
                 />
-                <input
-                  type="range"
-                  className="nivra-range-slider mt-3 w-full cursor-pointer"
-                  min={AMOUNT_MIN}
-                  max={AMOUNT_MAX}
-                  step={AMOUNT_STEP}
-                  value={Math.min(AMOUNT_MAX, Math.max(AMOUNT_MIN, amount || AMOUNT_MIN))}
-                  onChange={(e) => setAmount(Number(e.target.value))}
-                  aria-label="Investment amount slider"
-                />
-                <div className="mt-1 flex items-center justify-between text-[10px] font-semibold tabular-nums text-slate-400">
-                  <span>{formatINRCurrency(AMOUNT_MIN)}</span>
-                  <span>{formatINRCurrency(AMOUNT_MAX)}</span>
-                </div>
-                <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-                  <span className="text-[10px] font-bold uppercase text-slate-400">Quick:</span>
-                  {AMOUNT_PRESETS.map((preset) => (
-                    <button
-                      key={preset.value}
-                      type="button"
-                      onClick={() => setAmount(preset.value)}
-                      aria-pressed={amount === preset.value}
-                      className={`${CHIP} ${amount === preset.value ? CHIP_ON : CHIP_OFF}`}
-                    >
-                      {preset.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="mb-3">
-                <YearInput
+                <WealthYearField
                   label="Investment period"
                   value={days}
                   min={1}
@@ -585,70 +610,44 @@ export function MfVsFd() {
                   onChange={setDays}
                   error={daysError}
                   hint={daysWarning}
+                  slider={{
+                    min: 1,
+                    max: DAY_SLIDER_MAX,
+                    step: 1,
+                    scale: "log",
+                    presets: DAY_PRESETS,
+                    formatBound: (v) =>
+                      v >= 365 ? `${(v / 365).toFixed(v % 365 === 0 ? 0 : 1)} yr` : `${v}d`,
+                  }}
                 />
-              </div>
-              <div className="flex flex-wrap items-center gap-1.5 border-t border-slate-100 pt-3">
-                <span className="text-[10px] font-bold uppercase text-slate-400">Quick:</span>
-                {DAY_PRESETS.map((preset) => (
-                  <button
-                    key={preset}
-                    type="button"
-                    onClick={() => setDays(preset)}
-                    aria-pressed={days === preset}
-                    className={`${CHIP} ${days === preset ? CHIP_ON : CHIP_OFF}`}
-                  >
-                    {preset}D
-                  </button>
-                ))}
-              </div>
-            </BentoGroup>
-
-            <BentoGroup
-              num="03"
-              title="Rate Assumptions"
-              subtitle="Return & Tax"
-              colSpan={3}
-              footer={
-                <>
-                  <span>Tax drag:</span>
-                  <span className="font-bold text-emerald-700">
-                    MF {formatPercent(mfTax)} · FD {formatPercent(fdTax)}
-                  </span>
-                </>
-              }
-            >
-              <div className="mb-3.5">
-                <PercentInput
+                <WealthPercentField
                   label="MF interest"
                   value={mfReturn}
                   onChange={setMfReturn}
                   error={mfInterestErr}
                 />
-              </div>
-              <div className="mb-3.5">
-                <PercentInput
+                <WealthPercentField
                   label="FD interest"
                   value={fdReturn}
                   onChange={setFdReturn}
                   error={fdInterestErr}
                 />
-              </div>
-              <div className="mb-3.5">
-                <PercentInput
+                <WealthPercentField
                   label="MF tax rate"
                   value={mfTax}
                   onChange={setMfTax}
                   error={mfTaxErr}
                 />
-              </div>
-              <PercentInput
-                label="FD tax rate"
-                value={fdTax}
-                onChange={setFdTax}
-                error={fdTaxErr}
-              />
-            </BentoGroup>
-          </BentoSection>
+                <WealthPercentField
+                  label="FD tax rate"
+                  value={fdTax}
+                  onChange={setFdTax}
+                  error={fdTaxErr}
+                />
+              </WealthProfileGrid>
+            </div>
+          </WealthSection>
+          </div>
         }
         results={
           <>
@@ -672,57 +671,52 @@ export function MfVsFd() {
               <StatusNote tone="pending">Calculating…</StatusNote>
             ) : null}
             {result && insight ? (
-              <Stack>
-                <ResultsSection
-                  sectionId="02"
-                  title="Post-Tax Return Arbitrage (MF vs. FD Benchmark)"
-                  description="Comparison of equity-style MF vs bank FD over the selected horizon, after tax"
+              <div className="space-y-5">
+                <WealthSection
+                  badge="02 · Results"
+                  title="Post-Tax Return Arbitrage"
+                  subtitle="Equity-style MF vs bank FD over the selected horizon, after tax"
                   open={openArbitrage}
                   onToggle={() => setOpenArbitrage((v) => !v)}
-                  meta={
+                  mark={
+                    <WealthIconMark tone="emerald">
+                      <IconTarget />
+                    </WealthIconMark>
+                  }
+                  actions={
                     <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">
                       Horizon: {horizonYears.toFixed(1)} Years
                     </span>
                   }
                 >
-                  <StatGrid>
-                    <StatCard
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <WealthMetricCard
                       title="MF post-tax return"
                       value={result.mf.postTax}
+                      description="Equity mutual fund net yield after tax"
+                      badge="Equity MF"
                       tone="positive"
-                      badge={
-                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
-                          Equity MF
-                        </span>
-                      }
-                      footer={
-                        <div className="flex items-center justify-between">
-                          <span>Net Absolute Yield:</span>
-                          <span className="font-bold text-emerald-700">
-                            {formatPercent(insight.mfYieldPct)}
-                          </span>
-                        </div>
+                      trend={`Net absolute yield ${formatPercent(insight.mfYieldPct)}`}
+                      mark={
+                        <WealthIconMark tone="emerald" className="h-7 w-7">
+                          <IconChart className="h-3.5 w-3.5" />
+                        </WealthIconMark>
                       }
                     />
-                    <StatCard
+                    <WealthMetricCard
                       title="FD post-tax return"
                       value={result.fd.postTax}
+                      description="Bank fixed deposit net yield after tax"
+                      badge="Bank FD"
                       tone="neutral"
-                      badge={
-                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
-                          Bank Fixed Dep.
-                        </span>
-                      }
-                      footer={
-                        <div className="flex items-center justify-between">
-                          <span>Net Absolute Yield:</span>
-                          <span className="font-semibold text-slate-700">
-                            {formatPercent(insight.fdYieldPct)}
-                          </span>
-                        </div>
+                      trend={`Net absolute yield ${formatPercent(insight.fdYieldPct)}`}
+                      mark={
+                        <WealthIconMark className="h-7 w-7">
+                          <IconRates className="h-3.5 w-3.5" />
+                        </WealthIconMark>
                       }
                     />
-                    <StatCard
+                    <WealthMetricCard
                       title={
                         insight.mfWins
                           ? "MF advantage"
@@ -731,24 +725,28 @@ export function MfVsFd() {
                             : "Advantage"
                       }
                       value={insight.advantage}
-                      tone={insight.mfWins || insight.fdWins ? "positive" : "neutral"}
+                      description="Wealth surplus vs the alternate path"
                       badge={
-                        insight.relativePct > 0 ? (
-                          <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
-                            +{insight.relativePct.toFixed(1)}% Extra
-                          </span>
-                        ) : undefined
+                        insight.relativePct > 0
+                          ? `+${insight.relativePct.toFixed(1)}% extra`
+                          : undefined
                       }
+                      tone={insight.mfWins || insight.fdWins ? "positive" : "neutral"}
                       footer={
-                        <div className="flex items-center justify-between">
-                          <span>Wealth Surplus:</span>
-                          <span className="font-bold text-emerald-700">
-                            +{formatINRCurrency(insight.advantage)} In Pocket
+                        <>
+                          In pocket ·{" "}
+                          <span className="font-semibold tabular-nums text-emerald-700">
+                            +{formatINRCurrency(insight.advantage)}
                           </span>
-                        </div>
+                        </>
+                      }
+                      mark={
+                        <WealthIconMark tone="emerald" className="h-7 w-7">
+                          <IconTarget className="h-3.5 w-3.5" />
+                        </WealthIconMark>
                       }
                     />
-                  </StatGrid>
+                  </div>
 
                   <div className="mt-6">
                     <YieldSplitBar
@@ -757,119 +755,146 @@ export function MfVsFd() {
                       multiplier={insight.multiplier}
                     />
                   </div>
-                </ResultsSection>
+                </WealthSection>
 
-                <ResultsSection
-                  sectionId="03"
+                <WealthSection
+                  badge="03 · Analytics"
                   title="Comparative Analytics"
-                  description="Side-by-side bars, composition mix, and audit ledger"
+                  subtitle="Corpus mix and side-by-side post-tax comparison"
                   open={openAnalytics}
                   onToggle={() => setOpenAnalytics((v) => !v)}
+                  mark={
+                    <WealthIconMark>
+                      <IconChart />
+                    </WealthIconMark>
+                  }
                 >
-                  <SegmentedChartControl
-                    variant="pill"
-                    tabs={[
-                      {
-                        id: "compare",
-                        label: "Comparison",
-                        icon: <BarChart3 className="h-3.5 w-3.5" />,
-                        content: (
-                          <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.04)] sm:p-8">
-                            <CompareChart
-                              title="MF vs FD"
-                              showBarLabels
-                              data={result.compare}
-                              series={[
-                                { key: "mf", label: "Mutual fund", color: "#00875a" },
-                                { key: "fd", label: "Fixed deposit", color: "#8fa0b5" },
+                  <div className="space-y-4">
+                    <div className="overflow-x-auto pb-1">
+                      <WealthSegmented
+                        layoutId="mf-fd-analytics-underline"
+                        variant="underline"
+                        value={analyticsTab}
+                        onChange={setAnalyticsTab}
+                        options={[
+                          {
+                            id: "mix",
+                            label: "Corpus Mix",
+                            icon: <IconDonut className="h-3.5 w-3.5" />,
+                          },
+                          {
+                            id: "compare",
+                            label: "Compare",
+                            icon: <IconChart className="h-3.5 w-3.5" />,
+                          },
+                        ]}
+                      />
+                    </div>
+
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={analyticsTab}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -6 }}
+                        transition={{ duration: 0.22 }}
+                        className="space-y-4"
+                      >
+                        {analyticsTab === "mix" ? (
+                          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                            <WealthMixDonut
+                              title="Mutual Fund"
+                              centerValue={result.mf.preTax}
+                              tax={result.mf.tax}
+                              net={result.mf.net}
+                              netLabel="Maturity"
+                              slices={[
+                                {
+                                  name: "Invested",
+                                  value: result.mf.invested,
+                                  color: wealthMixColors.invested,
+                                },
+                                {
+                                  name: "Gain",
+                                  value: result.mf.gain,
+                                  color: wealthMixColors.gain,
+                                },
+                              ]}
+                            />
+                            <WealthMixDonut
+                              title="Fixed Deposit"
+                              centerValue={result.fd.preTax}
+                              tax={result.fd.tax}
+                              net={result.fd.net}
+                              netLabel="Maturity"
+                              slices={[
+                                {
+                                  name: "Invested",
+                                  value: result.fd.invested,
+                                  color: wealthMixColors.secondary,
+                                },
+                                {
+                                  name: "Gain",
+                                  value: result.fd.gain,
+                                  color: wealthMixColors.secondaryGain,
+                                },
                               ]}
                             />
                           </div>
-                        ),
-                      },
-                      {
-                        id: "allocation",
-                        label: "Allocation",
-                        icon: <PieChart className="h-3.5 w-3.5" />,
-                        content: (
-                          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                            <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.04)] sm:p-8">
-                              <CompositionChart
-                                title="MF mix"
-                                showPercentages
-                                slices={[
-                                  {
-                                    name: "Invested",
-                                    value: result.mf.invested,
-                                    color: "#5d6f85",
-                                  },
-                                  {
-                                    name: "Gain",
-                                    value: result.mf.gain,
-                                    color: "#00875a",
-                                  },
-                                  {
-                                    name: "Tax",
-                                    value: result.mf.tax,
-                                    color: "#e16868",
-                                  },
-                                ]}
-                                centerLabel="Maturity"
-                                centerValue={result.mf.net}
-                              />
-                            </div>
-                            <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.04)] sm:p-8">
-                              <CompositionChart
-                                title="FD mix"
-                                showPercentages
-                                slices={[
-                                  {
-                                    name: "Invested",
-                                    value: result.fd.invested,
-                                    color: "#5d6f85",
-                                  },
-                                  {
-                                    name: "Gain",
-                                    value: result.fd.gain,
-                                    color: "#00875a",
-                                  },
-                                  {
-                                    name: "Tax",
-                                    value: result.fd.tax,
-                                    color: "#e16868",
-                                  },
-                                ]}
-                                centerLabel="Maturity"
-                                centerValue={result.fd.net}
-                              />
-                            </div>
-                          </div>
-                        ),
-                      },
-                    ]}
+                        ) : null}
+
+                        {analyticsTab === "compare" ? (
+                          <WealthCompareBars
+                            showBarLabels
+                            data={result.compare}
+                            series={[
+                              { key: "mf", label: "Mutual fund", color: wealthChart.stepUp },
+                              { key: "fd", label: "Fixed deposit", color: wealthChart.standard },
+                            ]}
+                          />
+                        ) : null}
+                      </motion.div>
+                    </AnimatePresence>
+                  </div>
+                </WealthSection>
+
+                <WealthSection
+                  badge="04 · Audit"
+                  title="MF vs FD Post-Tax Comparative Ledger"
+                  subtitle="Horizon, tax drag, yield multiple, and line-by-line maturity audit"
+                  open={openAudit}
+                  onToggle={() => setOpenAudit((v) => !v)}
+                  mark={
+                    <WealthIconMark>
+                      <IconCalendar />
+                    </WealthIconMark>
+                  }
+                >
+                  <AuditCompareTable
+                    result={result}
+                    insight={insight}
+                    days={days}
+                    horizonYears={horizonYears}
                   />
+                </WealthSection>
 
-                  <AuditCompareTable result={result} />
-                </ResultsSection>
-
-                <Card variant="warn">
-                  <SectionTitle className="text-[var(--app-warn-text-strong)]">
-                    Important investment notes
-                  </SectionTitle>
-                  <ul className="mt-2 list-disc space-y-1.5 pl-4 text-xs leading-relaxed text-[var(--app-warn-text)] sm:columns-2 sm:gap-x-8">
-                    <li>
-                      Fixed Deposits may charge a premature withdrawal penalty, even for partial
-                      withdrawals.
-                    </li>
-                    <li>
-                      Debt/Arbitrage Mutual Funds provide flexibility in investment duration, unlike
-                      FDs where tenure is fixed at the start.
-                    </li>
-                  </ul>
-                </Card>
-              </Stack>
+              </div>
             ) : null}
           </>
+        }
+        footer={
+          result ? (
+            <WealthDisclaimer
+              notes={[
+                "Fixed deposits may charge a premature withdrawal penalty, even for partial withdrawals.",
+                "Debt or arbitrage mutual funds allow flexible holding periods, unlike FDs where tenure is fixed at the start.",
+              ]}
+            >
+              Figures are for illustration only. MF and FD projections use the stated rates and tax
+              assumptions on a 365-day basis. Markets carry risk; past performance does not guarantee
+              future results.
+            </WealthDisclaimer>
+          ) : null
         }
       />
       {result ? (

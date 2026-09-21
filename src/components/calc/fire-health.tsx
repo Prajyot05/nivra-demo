@@ -1,21 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  ArrowDownLeft,
-  ArrowUpRight,
-  BarChart3,
-  Check,
-  ChevronRight,
-  Download,
-  Flag,
-  LineChart,
-  Loader2,
-  PieChart,
-  Plus,
-  Trash2,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { generatePdfFromElement } from "@/lib/pdf-generator";
 import {
   FINANCIAL_HEALTH_REPORT_ID,
@@ -27,42 +12,9 @@ import {
 } from "@/components/reports/fire-planner-dossier";
 import { DUMMY_REPORT_CONTACT } from "@/components/reports/executive-dossier";
 import {
-  AgeInput,
-  BentoGroup,
-  BentoSection,
-  BUTTON_DANGER,
-  BUTTON_PRIMARY,
-  BUTTON_SECONDARY,
-  CARD,
-  CARD_PAD,
-  ChartPane,
-  ClientProfileBar,
   ComboChart,
-  CompareChart,
-  ComplianceFootnote,
-  CompositionChart,
-  Field,
-  formatCompactINR,
   formatINRCurrency,
-  GrowthChart,
-  META_TEXT,
-  MoneyInput,
-  PercentInput,
-  PILL,
-  ResultCard,
-  ResultsSection,
-  RESULTS_LEFT,
-  RESULTS_RIGHT,
-  RESULTS_SPLIT,
-  ScheduleTable,
-  SECTION_TITLE,
-  SelectInput,
-  SegmentedChartControl,
   StackedAreaChart,
-  StatCard,
-  StatusNote,
-  TextInput,
-  YearInput,
   ageError,
   emailError,
   nameError,
@@ -70,9 +22,219 @@ import {
   rateError,
 } from "@nivra/ui";
 import { CalculatorPage } from "@/components/layout/calculator-page-with-nav";
+import { ReportDownloadButton } from "@/components/calc/report-download-button";
 import { useCalculate } from "@/hooks/use-calculate";
 import { useCalculatorMode } from "@/hooks/use-calculator-mode";
 import { getCalculatorPageTitle } from "@/lib/calculator-nav";
+import {
+  ChartFrame,
+  IconCalendar,
+  IconChart,
+  IconCheck,
+  IconChevron,
+  IconDonut,
+  IconFlag,
+  IconPerson,
+  IconRefresh,
+  IconSip,
+  IconTarget,
+  IconTimeline,
+  WEALTH_CONTENT_CLASS,
+  WealthAgeField,
+  WealthDataTable,
+  WealthDisclaimer,
+  WealthHero,
+  WealthIconMark,
+  WealthMetricCard,
+  WealthMoneyField,
+  WealthPercentField,
+  WealthProfileGrid,
+  WealthSection,
+  WealthSegmented,
+  WealthSelectField,
+  WealthStatusNote,
+  WealthTextField,
+  WealthYearField,
+  WealthCompareBars,
+  WealthGrowthLine,
+  WealthMixDonut,
+  wealthChart,
+  wealthMixColors,
+  moneyCell,
+  WEALTH_MONEY_PRESETS_DEFAULT,
+  WEALTH_YEAR_PRESETS_DEFAULT,
+} from "@/components/wealth";
+
+const EXPENSE_MIN = 1_000;
+const EXPENSE_MAX = 10_00_000;
+const EXPENSE_PRESETS = [
+  { label: "₹25k", value: 25_000 },
+  { label: "₹50k", value: 50_000 },
+  { label: "₹1L", value: 1_00_000 },
+  { label: "₹2L", value: 2_00_000 },
+  { label: "₹5L", value: 5_00_000 },
+];
+const CORPUS_MIN = 10_000;
+const CORPUS_MAX = 10_00_00_000;
+const SIP_MIN = 1_000;
+const SIP_MAX = 10_00_000;
+const SIP_PRESETS = [
+  { label: "₹5k", value: 5_000 },
+  { label: "₹10k", value: 10_000 },
+  { label: "₹25k", value: 25_000 },
+  { label: "₹50k", value: 50_000 },
+  { label: "₹1L", value: 1_00_000 },
+  { label: "₹2L", value: 2_00_000 },
+];
+const YEARS_SLIDER_MAX = 40;
+
+type MiniIconProps = { className?: string };
+function IconPlus({ className }: MiniIconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
+      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+function IconTrash({ className }: MiniIconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
+      <path
+        d="M6 7h12M9 7V5.5h6V7M8 7l.8 12h6.4L16 7"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+function IconArrowDown({ className }: MiniIconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
+      <path
+        d="M12 5v14M6 13l6 6 6-6"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+function IconArrowUp({ className }: MiniIconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
+      <path
+        d="M12 19V5M6 11l6-6 6 6"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+const BTN_SECONDARY =
+  "inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50 disabled:opacity-50";
+const BTN_PRIMARY =
+  "inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-emerald-800 disabled:opacity-50";
+const BTN_DANGER =
+  "inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700 transition hover:bg-rose-100 disabled:opacity-50";
+const PILL = "inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-medium";
+const META_TEXT = "text-[11px] text-slate-500";
+
+function DetailPanel({
+  title,
+  accent,
+  children,
+}: {
+  title: string;
+  accent?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className={`overflow-hidden rounded-2xl border bg-white ${
+        accent ? "border-emerald-200/80" : "border-slate-200/80"
+      }`}
+    >
+      <div
+        className={`border-b px-4 py-2.5 text-[11px] font-medium uppercase tracking-[0.14em] ${
+          accent
+            ? "border-emerald-100 bg-emerald-50/60 text-emerald-800"
+            : "border-slate-100 bg-slate-50 text-slate-500"
+        }`}
+      >
+        {title}
+      </div>
+      <div className="divide-y divide-slate-100">{children}</div>
+    </div>
+  );
+}
+
+function DetailRow({
+  label,
+  value,
+  hint,
+  highlight,
+}: {
+  label: string;
+  value: React.ReactNode;
+  hint?: string;
+  highlight?: boolean;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-3 px-4 py-2.5">
+      <div className="min-w-0">
+        <div className="text-sm text-slate-600">{label}</div>
+        {hint ? <div className="mt-0.5 text-xs text-slate-400">{hint}</div> : null}
+      </div>
+      <div
+        className={`shrink-0 text-right text-sm font-medium tabular-nums ${
+          highlight ? "text-emerald-700" : "text-slate-900"
+        }`}
+      >
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function WealthResultCard({
+  title,
+  accent,
+  items,
+}: {
+  title: string;
+  accent?: boolean;
+  items: Array<{
+    label: string;
+    value?: number;
+    displayValue?: string;
+    hint?: string;
+    highlight?: boolean;
+    tone?: string;
+  }>;
+}) {
+  return (
+    <DetailPanel title={title} accent={accent}>
+      {items.map((item) => (
+        <DetailRow
+          key={item.label}
+          label={item.label}
+          value={
+            item.displayValue ??
+            (item.value != null ? formatINRCurrency(item.value) : "—")
+          }
+          hint={item.hint}
+          highlight={item.highlight}
+        />
+      ))}
+    </DetailPanel>
+  );
+}
 
 const MODES = [
   { id: "fire", label: "FIRE" },
@@ -202,7 +364,8 @@ type HealthResult = {
 };
 
 export function FireHealthCalculator() {
-  const [mode] = useCalculatorMode(MODE_IDS, "fire");
+  const [mode, setMode] = useCalculatorMode(MODE_IDS, "fire");
+  const assumptionsRef = useRef<HTMLDivElement>(null);
 
   const [fireName, setFireName] = useState("Sanjay Gupta");
   const [age, setAge] = useState(40);
@@ -253,6 +416,7 @@ export function FireHealthCalculator() {
   const [openAssumptions, setOpenAssumptions] = useState(true);
   const [openMilestones, setOpenMilestones] = useState(true);
   const [openAnalytics, setOpenAnalytics] = useState(true);
+  const [openSchedule, setOpenSchedule] = useState(true);
 
   const calculatorId = mode === "fire" ? "fire-planner" : "financial-health";
 
@@ -630,588 +794,560 @@ export function FireHealthCalculator() {
   const profileEmail = mode === "fire" ? fireEmail : hEmail;
   const profilePhone = mode === "fire" ? firePhone : hPhone;
 
+  const heroTenure =
+    mode === "fire" ? Math.max(0, retAge - age) : Math.max(0, hSurv - hAge);
+  const heroCorpus =
+    mode === "fire"
+      ? (fire?.corpusRequired ?? 0)
+      : (health?.corpusAtRetirement ?? hCorpus);
+  const heroSip = mode === "fire" ? (fire?.monthlySip ?? curSip) : hSav;
+  const heroReturn = mode === "fire" ? ret : hReturn;
+
+  const scrollToAssumptions = () => {
+    setOpenAssumptions(true);
+    assumptionsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
   return (
     <>
-    <CalculatorPage
-      title={getCalculatorPageTitle("/fire", mode)}
-      description={
-        mode === "health"
-          ? "Plan your retirement corpus, spending needs, and long-term financial health."
-          : "Plan the corpus and SIP path needed to reach financial independence."
-      }
-      actions={
-        <Button
-          size="icon"
-          className="h-8 w-8 shrink-0 bg-[var(--app-primary)] text-[var(--app-primary-fg)] hover:bg-[var(--app-primary-hover)] transition-colors disabled:opacity-50"
-          onClick={handleDownload}
-          disabled={isDownloading || !result}
-          title="Download Executive Dossier"
-        >
-          {isDownloading ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
-        </Button>
-      }
-      header={
-        <ClientProfileBar
-          name={profileName}
-          age={profileAge}
-          email={profileEmail}
-          phone={profilePhone}
-          strategy={mode === "fire" ? "FIRE corpus & SIP path" : "Retirement runway check"}
-          goal={mode === "fire" ? "Financial independence" : "Financial health"}
-        />
-      }
-      form={
-        mode === "fire" ? (
-          <BentoSection
-            sectionId="01"
-            title="Financial Assumptions & Modeling Suite"
-            description="Interactive engine for FIRE corpus, SIP path, delay cost, and major events"
-            collapsible
-            open={openAssumptions}
-            onToggle={() => setOpenAssumptions((v) => !v)}
-            actions={
-              <button
-                type="button"
-                onClick={resetDefaults}
-                className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 transition-all hover:bg-slate-100 hover:text-emerald-700"
-              >
-                Reset to Baseline
-              </button>
+      <CalculatorPage
+        title={getCalculatorPageTitle("/fire", mode)}
+        description={
+          mode === "health"
+            ? "Plan your retirement corpus, spending needs, and long-term financial health."
+            : "Plan the corpus and SIP path needed to reach financial independence."
+        }
+        contentClassName={WEALTH_CONTENT_CLASS}
+        actions={
+          <ReportDownloadButton
+            onClick={handleDownload}
+            disabled={!result}
+            loading={isDownloading}
+          />
+        }
+        header={
+          <WealthHero
+            clientName={profileName}
+            age={profileAge}
+            email={profileEmail}
+            phone={profilePhone}
+            goalLabel={mode === "fire" ? "Financial independence" : "Financial health"}
+            tenure={heroTenure}
+            strategy={
+              mode === "fire" ? "FIRE corpus & SIP path" : "Retirement runway check"
             }
-          >
-            <BentoGroup
-              num="01"
-              title="Investor Profile"
-              colSpan={4}
-              footer={
-                <>
-                  <span>Age path:</span>
-                  <span className="font-bold text-slate-700">
-                    {age} → {retAge} → {survAge}
-                  </span>
-                </>
-              }
-            >
-              <div className="mb-4">
-                <Field label="Client Name" error={fireNameError}>
-                  <TextInput
-                    value={fireName}
-                    onChange={(e) => setFireName(e.target.value)}
-                    className={fireNameError ? "border-[var(--app-danger)]" : undefined}
-                  />
-                </Field>
-              </div>
-              <div className="mb-4">
-                <AgeInput value={age} onChange={setAge} error={fireAgeError} />
-              </div>
-              <div className="mb-4">
-                <Field label="Email" error={fireEmailError}>
-                  <TextInput
-                    type="email"
-                    value={fireEmail}
-                    onChange={(e) => setFireEmail(e.target.value)}
-                    placeholder="client@email.com"
-                    className={fireEmailError ? "border-[var(--app-danger)]" : undefined}
-                  />
-                </Field>
-              </div>
-              <div className="mb-4">
-                <Field label="Phone" error={firePhoneError}>
-                  <TextInput
-                    type="tel"
-                    value={firePhone}
-                    onChange={(e) => setFirePhone(e.target.value)}
-                    placeholder="+91 98765 43210"
-                    className={firePhoneError ? "border-[var(--app-danger)]" : undefined}
-                  />
-                </Field>
-              </div>
-              <div className="mb-4">
-                <YearInput
-                  label="Retire age"
-                  value={retAge}
-                  onChange={setRetAge}
-                  error={fireRetError}
-                />
-              </div>
-              <YearInput
-                label="Survive age"
-                value={survAge}
-                onChange={setSurvAge}
-                error={fireSurvError}
-              />
-            </BentoGroup>
+            targetCorpus={heroCorpus}
+            monthlySip={heroSip}
+            realReturnPct={heroReturn}
+            onEdit={scrollToAssumptions}
+          />
+        }
+        form={
+          <div ref={assumptionsRef} className="space-y-4">
+            <WealthSegmented
+              fullWidth
+              layoutId="fire-health-mode"
+              value={mode}
+              onChange={setMode}
+              options={MODES.map((m) => ({ id: m.id, label: m.label }))}
+            />
 
-            <BentoGroup
-              num="02"
-              title="Spending & Corpus Parameters"
-              colSpan={5}
-              footer={
-                <>
-                  <span>Horizon:</span>
-                  <span className="font-bold text-emerald-700">
-                    {Math.max(0, retAge - age)} active yrs
-                    {delay > 0 ? ` · ${delay} mo delay` : ""}
-                  </span>
-                </>
-              }
-            >
-              <div className="mb-3.5">
-                <MoneyInput label="Monthly exp." value={monthlyExp} onChange={setMonthlyExp} />
-              </div>
-              <div className="mb-3.5">
-                <MoneyInput label="Lifestyle / yr" value={lifestyle} onChange={setLifestyle} />
-              </div>
-              <div className="mb-3.5">
-                <SelectInput
-                  label="Exp. @ ret"
-                  value={mFactor}
-                  onChange={setMFactor}
-                  options={FACTOR_OPTIONS}
-                />
-              </div>
-              <div className="mb-3.5">
-                <SelectInput
-                  label="Lifestyle @ ret"
-                  value={lFactor}
-                  onChange={setLFactor}
-                  options={FACTOR_OPTIONS}
-                />
-              </div>
-              <div className="mb-3.5">
-                <MoneyInput label="Corpus 1" value={c1Amt} onChange={setC1Amt} />
-              </div>
-              <div className="mb-3.5">
-                <PercentInput label="C1 return" value={c1Ret} onChange={setC1Ret} />
-              </div>
-              <div className="mb-3.5">
-                <MoneyInput label="Corpus 2" value={c2Amt} onChange={setC2Amt} />
-              </div>
-              <div className="mb-3.5">
-                <PercentInput label="C2 return" value={c2Ret} onChange={setC2Ret} />
-              </div>
-              <div className="mb-3.5">
-                <MoneyInput label="Corpus 3" value={c3Amt} onChange={setC3Amt} />
-              </div>
-              <div className="mb-3.5">
-                <PercentInput label="C3 return" value={c3Ret} onChange={setC3Ret} />
-              </div>
-              <div className="mb-3.5">
-                <MoneyInput label="Current SIP" value={curSip} onChange={setCurSip} />
-              </div>
-              <div className="mb-3.5">
-                <PercentInput label="SIP return" value={curSipRet} onChange={setCurSipRet} />
-              </div>
-              <div className="mb-3.5">
-                <YearInput
-                  label="Limit SIP yrs"
-                  value={limitSip}
-                  onChange={setLimitSip}
-                  error={fireLimitSipError}
-                  hint="0 = full"
-                />
-              </div>
-              <div className="mb-3.5">
-                <PercentInput
-                  label="Step-up %"
-                  value={stepUp}
-                  onChange={setStepUp}
-                  error={fireStepUpError}
-                />
-              </div>
-              <div className="mb-3.5">
-                <YearInput
-                  label="Every (yrs)"
-                  value={stepUpEvery}
-                  onChange={setStepUpEvery}
-                  error={fireStepEveryError}
-                />
-              </div>
-              <div className="mb-3.5">
-                <YearInput
-                  label="Delay (mos)"
-                  value={delay}
-                  onChange={setDelay}
-                  error={fireDelayError}
-                />
-              </div>
-              <SelectInput
-                label="Major events"
-                value={eventsMode}
-                onChange={(v) => {
-                  const next = v === "Yes" ? "Yes" : "None";
-                  setEventsMode(next);
-                  if (next === "Yes" && fireEvents.length === 0) {
-                    setFireEvents([
-                      newFireEvent(Math.min(survAge, Math.max(age + 1, age + 5))),
-                    ]);
-                  }
-                }}
-                options={FIRE_EVENTS_OPTIONS}
-              />
-            </BentoGroup>
-
-            <BentoGroup
-              num="03"
-              title="Rate Assumptions"
-              subtitle="Return · Inflation · Tax"
-              colSpan={3}
-              footer={
-                <>
-                  <span>Tax drag:</span>
-                  <span className="font-bold text-emerald-700">{tax}%</span>
-                </>
-              }
-            >
-              <div className="mb-3.5">
-                <PercentInput
-                  label="Return (pre)"
-                  value={ret}
-                  onChange={setRet}
-                  error={fireRetPctError}
-                />
-              </div>
-              <div className="mb-3.5">
-                <PercentInput
-                  label="Return (post)"
-                  value={retAfter}
-                  onChange={setRetAfter}
-                  error={fireAfterError}
-                />
-              </div>
-              <div className="mb-3.5">
-                <PercentInput
-                  label="Tax on gains"
-                  value={tax}
-                  onChange={setTax}
-                  error={fireTaxError}
-                />
-              </div>
-              <PercentInput
-                label="Inflation"
-                value={infl}
-                onChange={setInfl}
-                error={fireInflError}
-              />
-            </BentoGroup>
-
-            {eventsMode === "Yes" ? (
-              <BentoGroup
-                num="02"
-                title="Major Events"
-                subtitle="Income & expense shocks"
-                colSpan={12}
-                footer={
-                  <>
-                    <span>Events:</span>
-                    <span className="font-bold text-emerald-700">{fireEvents.length}</span>
-                  </>
+            {mode === "fire" ? (
+              <WealthSection
+                id="assumptions"
+                badge="01 · Profile"
+                title="FIRE Assumptions"
+                subtitle="Corpus path, SIP funding, delay cost, and major life events"
+                open={openAssumptions}
+                onToggle={() => setOpenAssumptions((v) => !v)}
+                mark={
+                  <WealthIconMark>
+                    <IconPerson />
+                  </WealthIconMark>
+                }
+                actions={
+                  <button
+                    type="button"
+                    onClick={resetDefaults}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
+                  >
+                    <IconRefresh className="h-3.5 w-3.5" />
+                    Reset
+                  </button>
                 }
               >
-                <FireEventTimeline
-                  events={fireEvents}
-                  currentAge={age}
-                  retirementAge={retAge}
-                  survivalAge={survAge}
-                  eventErrorById={fireEventErrorById}
-                  atCapacity={fireEvents.length >= MAX_FIRE_EVENTS}
-                  onAdd={() =>
-                    setFireEvents((prev) => [
-                      ...prev,
-                      newFireEvent(
-                        Math.min(survAge, Math.max(age + 1, retAge - 1)),
-                      ),
-                    ])
-                  }
-                  onPatch={(id, patch) =>
-                    setFireEvents((prev) =>
-                      prev.map((row) => (row.id === id ? { ...row, ...patch } : row)),
-                    )
-                  }
-                  onRemove={(id) =>
-                    setFireEvents((prev) => prev.filter((row) => row.id !== id))
-                  }
-                />
-              </BentoGroup>
-            ) : null}
-          </BentoSection>
-        ) : (
-          <BentoSection
-            sectionId="01"
-            title="Financial Assumptions & Modeling Suite"
-            description="Interactive engine for retirement runway, spending, and health events"
-            collapsible
-            open={openAssumptions}
-            onToggle={() => setOpenAssumptions((v) => !v)}
-            actions={
-              <button
-                type="button"
-                onClick={resetDefaults}
-                className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 transition-all hover:bg-slate-100 hover:text-emerald-700"
+                <div className="py-2">
+                  <WealthProfileGrid>
+                    <WealthTextField
+                      label="Client name"
+                      value={fireName}
+                      onChange={setFireName}
+                      error={fireNameError}
+                      autoComplete="name"
+                    />
+                    <WealthAgeField
+                      value={age}
+                      onChange={setAge}
+                      error={fireAgeError}
+                    />
+                    <WealthTextField
+                      label="Email"
+                      type="email"
+                      value={fireEmail}
+                      onChange={setFireEmail}
+                      error={fireEmailError}
+                      placeholder="client@email.com"
+                      autoComplete="email"
+                    />
+                    <WealthTextField
+                      label="Phone"
+                      type="tel"
+                      value={firePhone}
+                      onChange={setFirePhone}
+                      error={firePhoneError}
+                      placeholder="+91 98765 43210"
+                      autoComplete="tel"
+                    />
+                    <WealthYearField
+                      label="Retire age"
+                      value={retAge}
+                      onChange={setRetAge}
+                      error={fireRetError}
+                      min={0}
+                      max={120}
+                    />
+                    <WealthYearField
+                      label="Survive age"
+                      value={survAge}
+                      onChange={setSurvAge}
+                      error={fireSurvError}
+                      min={0}
+                      max={120}
+                    />
+                    <WealthMoneyField
+                      label="Monthly exp."
+                      value={monthlyExp}
+                      onChange={setMonthlyExp}
+                      max={EXPENSE_MAX}
+                      slider={{
+                        min: EXPENSE_MIN,
+                        max: EXPENSE_MAX,
+                        step: 5_000,
+                        scale: "log",
+                        presets: EXPENSE_PRESETS,
+                      }}
+                    />
+                    <WealthMoneyField
+                      label="Lifestyle / yr"
+                      value={lifestyle}
+                      onChange={setLifestyle}
+                      max={CORPUS_MAX}
+                      slider={{
+                        min: CORPUS_MIN,
+                        max: CORPUS_MAX,
+                        step: 1_00_000,
+                        scale: "log",
+                        presets: WEALTH_MONEY_PRESETS_DEFAULT,
+                      }}
+                    />
+                    <div className="min-w-0">
+                      <WealthSelectField
+                        label="Exp. @ ret"
+                        value={mFactor}
+                        onChange={setMFactor}
+                        options={FACTOR_OPTIONS}
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <WealthSelectField
+                        label="Lifestyle @ ret"
+                        value={lFactor}
+                        onChange={setLFactor}
+                        options={FACTOR_OPTIONS}
+                      />
+                    </div>
+                    <WealthMoneyField label="Corpus 1" value={c1Amt} onChange={setC1Amt} />
+                    <WealthPercentField label="C1 return" value={c1Ret} onChange={setC1Ret} />
+                    <WealthMoneyField label="Corpus 2" value={c2Amt} onChange={setC2Amt} />
+                    <WealthPercentField label="C2 return" value={c2Ret} onChange={setC2Ret} />
+                    <WealthMoneyField label="Corpus 3" value={c3Amt} onChange={setC3Amt} />
+                    <WealthPercentField label="C3 return" value={c3Ret} onChange={setC3Ret} />
+                    <WealthMoneyField
+                      label="Current SIP"
+                      value={curSip}
+                      onChange={setCurSip}
+                      max={SIP_MAX}
+                      slider={{
+                        min: SIP_MIN,
+                        max: SIP_MAX,
+                        step: 1_000,
+                        scale: "log",
+                        presets: SIP_PRESETS,
+                      }}
+                    />
+                    <WealthPercentField
+                      label="SIP return"
+                      value={curSipRet}
+                      onChange={setCurSipRet}
+                    />
+                    <WealthYearField
+                      label="Limit SIP yrs"
+                      value={limitSip}
+                      onChange={setLimitSip}
+                      error={fireLimitSipError}
+                      hint="0 = full"
+                      min={0}
+                      max={100}
+                      slider={{
+                        min: 0,
+                        max: YEARS_SLIDER_MAX,
+                        step: 1,
+                        presets: [{ label: "Full", value: 0 }, ...WEALTH_YEAR_PRESETS_DEFAULT],
+                      }}
+                    />
+                    <WealthPercentField
+                      label="Step-up %"
+                      value={stepUp}
+                      onChange={setStepUp}
+                      error={fireStepUpError}
+                    />
+                    <WealthYearField
+                      label="Every (yrs)"
+                      value={stepUpEvery}
+                      onChange={setStepUpEvery}
+                      error={fireStepEveryError}
+                      min={1}
+                      max={50}
+                    />
+                    <WealthYearField
+                      label="Delay (mos)"
+                      value={delay}
+                      onChange={setDelay}
+                      error={fireDelayError}
+                      min={0}
+                      max={120}
+                      suffix="Mos"
+                    />
+                    <div className="min-w-0">
+                      <WealthSelectField
+                        label="Major events"
+                        value={eventsMode}
+                        onChange={(v) => {
+                          const next = v === "Yes" ? "Yes" : "None";
+                          setEventsMode(next);
+                          if (next === "Yes" && fireEvents.length === 0) {
+                            setFireEvents([
+                              newFireEvent(Math.min(survAge, Math.max(age + 1, age + 5))),
+                            ]);
+                          }
+                        }}
+                        options={FIRE_EVENTS_OPTIONS}
+                      />
+                    </div>
+                    <WealthPercentField
+                      label="Return (pre)"
+                      value={ret}
+                      onChange={setRet}
+                      error={fireRetPctError}
+                    />
+                    <WealthPercentField
+                      label="Return (post)"
+                      value={retAfter}
+                      onChange={setRetAfter}
+                      error={fireAfterError}
+                    />
+                    <WealthPercentField
+                      label="Tax on gains"
+                      value={tax}
+                      onChange={setTax}
+                      error={fireTaxError}
+                    />
+                    <WealthPercentField
+                      label="Inflation"
+                      value={infl}
+                      onChange={setInfl}
+                      error={fireInflError}
+                    />
+                  </WealthProfileGrid>
+                  {eventsMode === "Yes" ? (
+                    <div className="mt-4 min-w-0">
+                      <FireEventTimeline
+                        events={fireEvents}
+                        currentAge={age}
+                        retirementAge={retAge}
+                        survivalAge={survAge}
+                        eventErrorById={fireEventErrorById}
+                        atCapacity={fireEvents.length >= MAX_FIRE_EVENTS}
+                        onAdd={() =>
+                          setFireEvents((prev) => [
+                            ...prev,
+                            newFireEvent(
+                              Math.min(survAge, Math.max(age + 1, retAge - 1)),
+                            ),
+                          ])
+                        }
+                        onPatch={(id, patch) =>
+                          setFireEvents((prev) =>
+                            prev.map((row) => (row.id === id ? { ...row, ...patch } : row)),
+                          )
+                        }
+                        onRemove={(id) =>
+                          setFireEvents((prev) => prev.filter((row) => row.id !== id))
+                        }
+                      />
+                    </div>
+                  ) : null}
+                </div>
+              </WealthSection>
+            ) : (
+              <WealthSection
+                id="assumptions"
+                badge="01 · Profile"
+                title="Health Assumptions"
+                subtitle="Retirement runway, spending, and post-retirement health events"
+                open={openAssumptions}
+                onToggle={() => setOpenAssumptions((v) => !v)}
+                mark={
+                  <WealthIconMark>
+                    <IconPerson />
+                  </WealthIconMark>
+                }
+                actions={
+                  <button
+                    type="button"
+                    onClick={resetDefaults}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
+                  >
+                    <IconRefresh className="h-3.5 w-3.5" />
+                    Reset
+                  </button>
+                }
               >
-                Reset to Baseline
-              </button>
-            }
-          >
-            <BentoGroup
-              num="01"
-              title="Investor Profile"
-              colSpan={4}
-              footer={
-                <>
-                  <span>Age path:</span>
-                  <span className="font-bold text-slate-700">
-                    {hAge} → {hRet} → {hSurv}
+                <div className="py-2">
+                  <WealthProfileGrid>
+                    <WealthTextField
+                      label="Client name"
+                      value={hName}
+                      onChange={setHName}
+                      error={hNameError}
+                      autoComplete="name"
+                    />
+                    <WealthAgeField
+                      value={hAge}
+                      onChange={setHAge}
+                      error={hAgeError}
+                    />
+                    <WealthTextField
+                      label="Email"
+                      type="email"
+                      value={hEmail}
+                      onChange={setHEmail}
+                      error={hEmailError}
+                      placeholder="client@email.com"
+                      autoComplete="email"
+                    />
+                    <WealthTextField
+                      label="Phone"
+                      type="tel"
+                      value={hPhone}
+                      onChange={setHPhone}
+                      error={hPhoneError}
+                      placeholder="+91 98765 43210"
+                      autoComplete="tel"
+                    />
+                    <WealthYearField
+                      label="Retirement age"
+                      value={hRet}
+                      min={0}
+                      max={120}
+                      onChange={setHRet}
+                      error={hRetError}
+                    />
+                    <WealthYearField
+                      label="Survival age"
+                      value={hSurv}
+                      min={0}
+                      max={120}
+                      onChange={setHSurv}
+                      error={hSurvError}
+                    />
+                    <WealthMoneyField
+                      label="Current corpus"
+                      value={hCorpus}
+                      onChange={setHCorpus}
+                      max={CORPUS_MAX}
+                      slider={{
+                        min: CORPUS_MIN,
+                        max: CORPUS_MAX,
+                        step: 1_00_000,
+                        scale: "log",
+                        presets: WEALTH_MONEY_PRESETS_DEFAULT,
+                      }}
+                    />
+                    <WealthMoneyField
+                      label="Monthly expense"
+                      value={hExp}
+                      onChange={setHExp}
+                      max={EXPENSE_MAX}
+                      slider={{
+                        min: EXPENSE_MIN,
+                        max: EXPENSE_MAX,
+                        step: 5_000,
+                        scale: "log",
+                        presets: EXPENSE_PRESETS,
+                      }}
+                    />
+                    <WealthMoneyField
+                      label="Monthly investment"
+                      value={hSav}
+                      onChange={setHSav}
+                      max={SIP_MAX}
+                      slider={{
+                        min: SIP_MIN,
+                        max: SIP_MAX,
+                        step: 1_000,
+                        scale: "log",
+                        presets: SIP_PRESETS,
+                      }}
+                    />
+                    <WealthMoneyField
+                      label="Lifestyle / year"
+                      value={hLife}
+                      onChange={setHLife}
+                      max={CORPUS_MAX}
+                      slider={{
+                        min: CORPUS_MIN,
+                        max: CORPUS_MAX,
+                        step: 1_00_000,
+                        scale: "log",
+                        presets: WEALTH_MONEY_PRESETS_DEFAULT,
+                      }}
+                    />
+                    <WealthMoneyField
+                      label="Retirement benefit"
+                      value={hBenefit}
+                      onChange={setHBenefit}
+                    />
+                    <WealthPercentField
+                      label="Inflation"
+                      value={hInfl}
+                      onChange={setHInfl}
+                      error={hInflError}
+                    />
+                    <WealthPercentField
+                      label="Pre-ret. return"
+                      value={hReturn}
+                      onChange={setHReturn}
+                      error={hReturnError}
+                    />
+                    <WealthPercentField
+                      label="Post-ret. return"
+                      value={hAfter}
+                      onChange={setHAfter}
+                      error={hAfterError}
+                    />
+                    <WealthPercentField
+                      label="Tax after ret."
+                      value={hTax}
+                      onChange={setHTax}
+                      error={hTaxError}
+                    />
+                  </WealthProfileGrid>
+                  <div className="mt-4 min-w-0">
+                    <HealthEventTimeline
+                      events={healthEvents}
+                      retirementAge={hRet}
+                      survivalAge={hSurv}
+                      eventErrorById={eventErrorById}
+                      atCapacity={healthEvents.length >= MAX_HEALTH_EVENTS}
+                      onAdd={() =>
+                        setHealthEvents((prev) => [
+                          ...prev,
+                          newHealthEvent(Math.min(hSurv, Math.max(hRet + 1, hRet + 2))),
+                        ])
+                      }
+                      onPatch={(id, patch) =>
+                        setHealthEvents((prev) =>
+                          prev.map((row) => (row.id === id ? { ...row, ...patch } : row)),
+                        )
+                      }
+                      onRemove={(id) =>
+                        setHealthEvents((prev) => prev.filter((row) => row.id !== id))
+                      }
+                    />
+                  </div>
+                </div>
+              </WealthSection>
+            )}
+          </div>
+        }
+        results={
+          <div className="flex flex-col gap-3">
+            {error ? <WealthStatusNote tone="error">{error}</WealthStatusNote> : null}
+            {fieldErrors.length > 0 ? (
+              <WealthStatusNote tone="error">
+                <div className="flex flex-col gap-1">
+                  <span className="font-semibold">
+                    Fix the inputs above to refresh the calculation
+                    {result ? ". Showing the last valid result." : "."}
                   </span>
-                </>
-              }
-            >
-              <div className="mb-4">
-                <Field label="Client Name" error={hNameError}>
-                  <TextInput
-                    value={hName}
-                    onChange={(e) => setHName(e.target.value)}
-                    className={hNameError ? "border-[var(--app-danger)]" : undefined}
-                  />
-                </Field>
-              </div>
-              <div className="mb-4">
-                <AgeInput value={hAge} onChange={setHAge} error={hAgeError} />
-              </div>
-              <div className="mb-4">
-                <Field label="Email" error={hEmailError}>
-                  <TextInput
-                    type="email"
-                    value={hEmail}
-                    onChange={(e) => setHEmail(e.target.value)}
-                    placeholder="client@email.com"
-                    className={hEmailError ? "border-[var(--app-danger)]" : undefined}
-                  />
-                </Field>
-              </div>
-              <div className="mb-4">
-                <Field label="Phone" error={hPhoneError}>
-                  <TextInput
-                    type="tel"
-                    value={hPhone}
-                    onChange={(e) => setHPhone(e.target.value)}
-                    placeholder="+91 98765 43210"
-                    className={hPhoneError ? "border-[var(--app-danger)]" : undefined}
-                  />
-                </Field>
-              </div>
-              <div className="mb-4">
-                <YearInput
-                  label="Retirement age"
-                  value={hRet}
-                  min={0}
-                  max={120}
-                  onChange={setHRet}
-                  error={hRetError}
-                />
-              </div>
-              <YearInput
-                label="Survival age"
-                value={hSurv}
-                min={0}
-                max={120}
-                onChange={setHSurv}
-                error={hSurvError}
+                  <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[12px] font-normal">
+                    {fieldErrors.map((msg) => (
+                      <li key={msg}>{msg}</li>
+                    ))}
+                  </ul>
+                </div>
+              </WealthStatusNote>
+            ) : null}
+            {loading && !result && fieldErrors.length === 0 ? (
+              <WealthStatusNote tone="info">Calculating…</WealthStatusNote>
+            ) : null}
+            {fire ? (
+              <FireResults
+                result={fire}
+                age={age}
+                retirementAge={retAge}
+                survivalAge={survAge}
+                delayMonths={delay}
+                eventsEnabled={eventsMode === "Yes"}
+                events={fireEvents}
+                openMilestones={openMilestones}
+                onToggleMilestones={() => setOpenMilestones((v) => !v)}
+                openAnalytics={openAnalytics}
+                onToggleAnalytics={() => setOpenAnalytics((v) => !v)}
+                openSchedule={openSchedule}
+                onToggleSchedule={() => setOpenSchedule((v) => !v)}
               />
-            </BentoGroup>
-
-            <BentoGroup
-              num="02"
-              title="Corpus & Spending Parameters"
-              colSpan={5}
-              footer={
-                <>
-                  <span>Runway:</span>
-                  <span className="font-bold text-emerald-700">
-                    {Math.max(0, hSurv - hRet)} retired yrs
-                  </span>
-                </>
-              }
-            >
-              <div className="mb-3.5">
-                <MoneyInput
-                  label="Current corpus"
-                  value={hCorpus}
-                  onChange={setHCorpus}
-                  align="right"
-                />
-              </div>
-              <div className="mb-3.5">
-                <MoneyInput
-                  label="Monthly expense"
-                  value={hExp}
-                  onChange={setHExp}
-                  align="right"
-                />
-              </div>
-              <div className="mb-3.5">
-                <MoneyInput
-                  label="Monthly investment"
-                  value={hSav}
-                  onChange={setHSav}
-                  align="right"
-                />
-              </div>
-              <div className="mb-3.5">
-                <MoneyInput
-                  label="Lifestyle / year"
-                  value={hLife}
-                  onChange={setHLife}
-                  align="right"
-                />
-              </div>
-              <MoneyInput
-                label="Retirement benefit"
-                value={hBenefit}
-                onChange={setHBenefit}
-                align="right"
-              />
-            </BentoGroup>
-
-            <BentoGroup
-              num="03"
-              title="Rate Assumptions"
-              subtitle="Return · Inflation · Tax"
-              colSpan={3}
-              footer={
-                <>
-                  <span>Tax drag:</span>
-                  <span className="font-bold text-emerald-700">{hTax}%</span>
-                </>
-              }
-            >
-              <div className="mb-3.5">
-                <PercentInput
-                  label="Inflation"
-                  value={hInfl}
-                  onChange={setHInfl}
-                  error={hInflError}
-                />
-              </div>
-              <div className="mb-3.5">
-                <PercentInput
-                  label="Pre-ret. return"
-                  value={hReturn}
-                  onChange={setHReturn}
-                  error={hReturnError}
-                />
-              </div>
-              <div className="mb-3.5">
-                <PercentInput
-                  label="Post-ret. return"
-                  value={hAfter}
-                  onChange={setHAfter}
-                  error={hAfterError}
-                />
-              </div>
-              <PercentInput
-                label="Tax after ret."
-                value={hTax}
-                onChange={setHTax}
-                error={hTaxError}
-              />
-            </BentoGroup>
-
-            <BentoGroup
-              num="02"
-              title="Health Events"
-              subtitle="Post-retirement cashflows"
-              colSpan={12}
-              footer={
-                <>
-                  <span>Events:</span>
-                  <span className="font-bold text-emerald-700">{healthEvents.length}</span>
-                </>
-              }
-            >
-              <HealthEventTimeline
-                events={healthEvents}
+            ) : null}
+            {health ? (
+              <HealthResults
+                result={health}
                 retirementAge={hRet}
                 survivalAge={hSurv}
-                eventErrorById={eventErrorById}
-                atCapacity={healthEvents.length >= MAX_HEALTH_EVENTS}
-                onAdd={() =>
-                  setHealthEvents((prev) => [
-                    ...prev,
-                    newHealthEvent(Math.min(hSurv, Math.max(hRet + 1, hRet + 2))),
-                  ])
-                }
-                onPatch={(id, patch) =>
-                  setHealthEvents((prev) =>
-                    prev.map((row) => (row.id === id ? { ...row, ...patch } : row)),
-                  )
-                }
-                onRemove={(id) =>
-                  setHealthEvents((prev) => prev.filter((row) => row.id !== id))
-                }
+                events={healthEvents}
+                openMilestones={openMilestones}
+                onToggleMilestones={() => setOpenMilestones((v) => !v)}
+                openAnalytics={openAnalytics}
+                onToggleAnalytics={() => setOpenAnalytics((v) => !v)}
+                openSchedule={openSchedule}
+                onToggleSchedule={() => setOpenSchedule((v) => !v)}
               />
-            </BentoGroup>
-          </BentoSection>
-        )
-      }
-      results={
-        <div className="flex flex-col gap-3">
-          {error ? <StatusNote tone="error">{error}</StatusNote> : null}
-          {fieldErrors.length > 0 ? (
-            <StatusNote tone="error">
-              <div className="flex flex-col gap-1">
-                <span className="font-semibold">
-                  Fix the inputs above to refresh the calculation
-                  {result ? ". Showing the last valid result." : "."}
-                </span>
-                <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[12px] font-normal">
-                  {fieldErrors.map((msg) => (
-                    <li key={msg}>{msg}</li>
-                  ))}
-                </ul>
-              </div>
-            </StatusNote>
-          ) : null}
-          {loading && !result && fieldErrors.length === 0 ? (
-            <StatusNote tone="pending">Calculating…</StatusNote>
-          ) : null}
-          {fire ? (
-            <FireResults
-              result={fire}
-              age={age}
-              retirementAge={retAge}
-              survivalAge={survAge}
-              delayMonths={delay}
-              eventsEnabled={eventsMode === "Yes"}
-              events={fireEvents}
-              openMilestones={openMilestones}
-              onToggleMilestones={() => setOpenMilestones((v) => !v)}
-              openAnalytics={openAnalytics}
-              onToggleAnalytics={() => setOpenAnalytics((v) => !v)}
-            />
-          ) : null}
-          {health ? (
-            <HealthResults
-              result={health}
-              retirementAge={hRet}
-              survivalAge={hSurv}
-              events={healthEvents}
-              openMilestones={openMilestones}
-              onToggleMilestones={() => setOpenMilestones((v) => !v)}
-              openAnalytics={openAnalytics}
-              onToggleAnalytics={() => setOpenAnalytics((v) => !v)}
-            />
-          ) : null}
-        </div>
-      }
-      footer={
-        <ComplianceFootnote>
-          Calculations shown are for illustration purposes only. FIRE and financial health
-          projections depend on assumed returns, inflation, tax, spending, and event schedules.
-          Actual market returns and longevity can differ.
-        </ComplianceFootnote>
-      }
-    />
+            ) : null}
+          </div>
+        }
+        footer={
+          <WealthDisclaimer
+            notes={[
+              "FIRE timelines are sensitive to spending, inflation, and sequence of returns.",
+              "Event schedules (income, expenses, windfalls) reshape the runway when timing shifts.",
+              "Projections are illustrative. Actual market returns and longevity can differ.",
+            ]}
+          >
+            Figures are for illustration only. FIRE and financial health projections depend on
+            assumed returns, inflation, tax, spending, and event schedules. Markets carry risk; past
+            performance does not guarantee future results.
+          </WealthDisclaimer>
+        }
+      />
     {mode === "fire" && fire ? (
       <FirePlannerDossier
         data={{
@@ -1315,7 +1451,6 @@ export function FireHealthCalculator() {
   );
 }
 
-
 function HealthEventTimeline({
   events,
   retirementAge,
@@ -1404,23 +1539,23 @@ function HealthEventTimeline({
         </div>
         <button
           type="button"
-          className={BUTTON_PRIMARY}
+          className={BTN_PRIMARY}
           onClick={onAdd}
           disabled={atCapacity}
         >
-          <Plus className="size-3.5" />
+          <IconPlus className="size-3.5" />
           Add event
         </button>
       </div>
 
       {events.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface-muted)] py-8 text-center">
-          <Flag className="mb-2 size-6 text-[var(--app-text-subtle)]" />
+          <IconFlag className="mb-2 size-6 text-[var(--app-text-subtle)]" />
           <p className="mb-3 text-[13px] text-[var(--app-text-muted)]">
             No post-retirement events yet.
           </p>
-          <button type="button" className={BUTTON_PRIMARY} onClick={onAdd} disabled={atCapacity}>
-            <Plus className="size-3.5" />
+          <button type="button" className={BTN_PRIMARY} onClick={onAdd} disabled={atCapacity}>
+            <IconPlus className="size-3.5" />
             Add first event
           </button>
         </div>
@@ -1440,7 +1575,7 @@ function HealthEventTimeline({
 
               <div className="relative z-[1] flex w-[5.5rem] shrink-0 flex-col items-center">
                 <div className="flex size-11 items-center justify-center rounded-full border-2 border-[var(--app-primary)] bg-[var(--app-primary)] text-[var(--app-primary-fg)]">
-                  <ChevronRight className="size-5" />
+                  <IconChevron className="size-5" />
                 </div>
                 <div className="mt-2 text-center">
                   <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
@@ -1457,7 +1592,7 @@ function HealthEventTimeline({
                 const isActive = activeId === ev.id;
                 const isOpen = openId === ev.id;
                 const isExpense = ev.type === "Expense";
-                const Icon = isExpense ? ArrowDownLeft : ArrowUpRight;
+                const Icon = isExpense ? IconArrowDown : IconArrowUp;
 
                 return (
                   <div
@@ -1500,7 +1635,7 @@ function HealthEventTimeline({
 
               <div className="relative z-[1] flex w-[5.5rem] shrink-0 flex-col items-center">
                 <div className="flex size-11 items-center justify-center rounded-full border-2 border-[var(--app-border)] bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]">
-                  <Flag className="size-5" />
+                  <IconFlag className="size-5" />
                 </div>
                 <div className="mt-2 text-center">
                   <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
@@ -1531,29 +1666,29 @@ function HealthEventTimeline({
                 <div className="flex flex-wrap gap-1.5">
                   <button
                     type="button"
-                    className={BUTTON_DANGER}
+                    className={BTN_DANGER}
                     onClick={() => {
                       const id = openEvent.id;
                       setOpenId(null);
                       onRemove(id);
                     }}
                   >
-                    <Trash2 className="size-3.5" />
+                    <IconTrash className="size-3.5" />
                     Remove
                   </button>
                   <button
                     type="button"
-                    className={BUTTON_SECONDARY}
+                    className={BTN_SECONDARY}
                     onClick={() => setOpenId(null)}
                   >
-                    <Check className="size-3.5" />
+                    <IconCheck className="size-3.5" />
                     Done
                   </button>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <YearInput
+                <WealthYearField
                   label="Event age"
                   value={openEvent.age}
                   min={0}
@@ -1562,13 +1697,13 @@ function HealthEventTimeline({
                   error={openError}
                   hint={!openError ? `After ${retirementAge}, on or before ${survivalAge}` : undefined}
                 />
-                <MoneyInput
+                <WealthMoneyField
                   label="Amount"
                   value={openEvent.amount}
                   onChange={(amount) => onPatch(openEvent.id, { amount })}
-                  align="right"
+                 
                 />
-                <SelectInput
+                <WealthSelectField
                   label="Type"
                   value={openEvent.type}
                   options={EVENT_TYPE_OPTIONS}
@@ -1705,23 +1840,23 @@ function FireEventTimeline({
         </div>
         <button
           type="button"
-          className={BUTTON_PRIMARY}
+          className={BTN_PRIMARY}
           onClick={onAdd}
           disabled={atCapacity}
         >
-          <Plus className="size-3.5" />
+          <IconPlus className="size-3.5" />
           Add event
         </button>
       </div>
 
       {events.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface-muted)] py-8 text-center">
-          <Flag className="mb-2 size-6 text-[var(--app-text-subtle)]" />
+          <IconFlag className="mb-2 size-6 text-[var(--app-text-subtle)]" />
           <p className="mb-3 text-[13px] text-[var(--app-text-muted)]">
             No major events yet. Add income or expense cash flows along the plan.
           </p>
-          <button type="button" className={BUTTON_PRIMARY} onClick={onAdd} disabled={atCapacity}>
-            <Plus className="size-3.5" />
+          <button type="button" className={BTN_PRIMARY} onClick={onAdd} disabled={atCapacity}>
+            <IconPlus className="size-3.5" />
             Add first event
           </button>
         </div>
@@ -1741,7 +1876,7 @@ function FireEventTimeline({
 
               <div className="relative z-[1] flex w-[5.5rem] shrink-0 flex-col items-center">
                 <div className="flex size-11 items-center justify-center rounded-full border-2 border-[var(--app-primary)] bg-[var(--app-primary)] text-[var(--app-primary-fg)]">
-                  <ChevronRight className="size-5" />
+                  <IconChevron className="size-5" />
                 </div>
                 <div className="mt-2 text-center">
                   <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
@@ -1779,7 +1914,7 @@ function FireEventTimeline({
                 const isOpen = openId === ev.id;
                 const net = ev.expense - ev.income;
                 const isExpenseHeavy = net >= 0;
-                const Icon = isExpenseHeavy ? ArrowDownLeft : ArrowUpRight;
+                const Icon = isExpenseHeavy ? IconArrowDown : IconArrowUp;
                 const label =
                   ev.income > 0 && ev.expense > 0
                     ? "Mixed"
@@ -1835,7 +1970,7 @@ function FireEventTimeline({
 
               <div className="relative z-[1] flex w-[5.5rem] shrink-0 flex-col items-center">
                 <div className="flex size-11 items-center justify-center rounded-full border-2 border-[var(--app-border)] bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]">
-                  <Flag className="size-5" />
+                  <IconFlag className="size-5" />
                 </div>
                 <div className="mt-2 text-center">
                   <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
@@ -1869,29 +2004,29 @@ function FireEventTimeline({
                 <div className="flex flex-wrap gap-1.5">
                   <button
                     type="button"
-                    className={BUTTON_DANGER}
+                    className={BTN_DANGER}
                     onClick={() => {
                       const id = openEvent.id;
                       setOpenId(null);
                       onRemove(id);
                     }}
                   >
-                    <Trash2 className="size-3.5" />
+                    <IconTrash className="size-3.5" />
                     Remove
                   </button>
                   <button
                     type="button"
-                    className={BUTTON_SECONDARY}
+                    className={BTN_SECONDARY}
                     onClick={() => setOpenId(null)}
                   >
-                    <Check className="size-3.5" />
+                    <IconCheck className="size-3.5" />
                     Done
                   </button>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <YearInput
+                <WealthYearField
                   label="Event age"
                   value={openEvent.age}
                   min={0}
@@ -1904,17 +2039,17 @@ function FireEventTimeline({
                       : undefined
                   }
                 />
-                <MoneyInput
+                <WealthMoneyField
                   label="Income"
                   value={openEvent.income}
                   onChange={(income) => onPatch(openEvent.id, { income })}
-                  align="right"
+                 
                 />
-                <MoneyInput
+                <WealthMoneyField
                   label="Expense"
                   value={openEvent.expense}
                   onChange={(expense) => onPatch(openEvent.id, { expense })}
-                  align="right"
+                 
                 />
               </div>
             </div>
@@ -1942,6 +2077,8 @@ function FireResults({
   onToggleMilestones,
   openAnalytics,
   onToggleAnalytics,
+  openSchedule,
+  onToggleSchedule,
 }: {
   result: FireResult;
   age: number;
@@ -1954,7 +2091,10 @@ function FireResults({
   onToggleMilestones: () => void;
   openAnalytics: boolean;
   onToggleAnalytics: () => void;
+  openSchedule: boolean;
+  onToggleSchedule: () => void;
 }) {
+  const [analyticsTab, setAnalyticsTab] = useState<"corpus" | "flows" | "mix">("corpus");
   const line = result.schedule.map((row) => ({
     year: row.age,
     corpus: row.corpus,
@@ -1987,14 +2127,6 @@ function FireResults({
 
   const delayLumpsum = result.delayLumpsum || result.additionalLumpsum;
   const delaySipVal = result.delaySip || result.monthlySip;
-  const lumpsumPct =
-    result.additionalLumpsum > 0
-      ? ((delayLumpsum - result.additionalLumpsum) / result.additionalLumpsum) * 100
-      : 0;
-  const sipPct =
-    result.monthlySip > 0
-      ? ((delaySipVal - result.monthlySip) / result.monthlySip) * 100
-      : 0;
 
   const summaryItems = [
     {
@@ -2041,195 +2173,230 @@ function FireResults({
       : []),
   ];
 
+  const surplusOrSip = result.excess
+    ? result.currentAtRetirement + result.eventsCorpusAtRetirement - result.corpusRequired
+    : result.monthlySip;
+
   return (
     <div className="flex flex-col gap-4">
-      <ResultsSection
-        sectionId="02"
+      <WealthSection
+        badge="02 · Milestones"
         title="FIRE Funding Milestones"
-        description="Corpus required, surplus or SIP gap, and age path"
+        subtitle="Corpus required, surplus or SIP gap, and age path"
         open={openMilestones}
         onToggle={onToggleMilestones}
-        meta={
+        mark={
+          <WealthIconMark tone="emerald">
+            <IconTarget />
+          </WealthIconMark>
+        }
+        actions={
           <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">
             Age {age} → {retirementAge} → {survivalAge}
           </span>
         }
       >
-      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2">
-        <span className={`${PILL} bg-[var(--app-std-bg)] text-[var(--app-std-text)]`}>
-          {age} Now
-        </span>
-        <ChevronRight className="size-3.5 text-[var(--app-text-subtle)]" />
-        <span className={`${PILL} bg-[var(--app-step-bg)] text-[var(--app-step-text)]`}>
-          {retirementAge} Retire
-        </span>
-        <ChevronRight className="size-3.5 text-[var(--app-text-subtle)]" />
-        <span className={`${PILL} bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]`}>
-          {survivalAge} Survive
-        </span>
-        {eventsEnabled ? (
-          <span className={`${PILL} bg-[var(--app-warn-bg)] text-[var(--app-warn-text)]`}>
-            {activeEvents.length} event{activeEvents.length === 1 ? "" : "s"}
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2">
+          <span className={`${PILL} bg-[var(--app-std-bg)] text-[var(--app-std-text)]`}>
+            {age} Now
           </span>
-        ) : (
-          <span className={`${PILL} bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]`}>
-            No events
+          <IconChevron className="size-3.5 -rotate-90 text-slate-400" />
+          <span className={`${PILL} bg-[var(--app-step-bg)] text-[var(--app-step-text)]`}>
+            {retirementAge} Retire
           </span>
-        )}
-      </div>
+          <IconChevron className="size-3.5 -rotate-90 text-slate-400" />
+          <span className={`${PILL} bg-slate-100 text-slate-500`}>
+            {survivalAge} Survive
+          </span>
+          {eventsEnabled ? (
+            <span className={`${PILL} bg-[var(--app-warn-bg)] text-[var(--app-warn-text)]`}>
+              {activeEvents.length} event{activeEvents.length === 1 ? "" : "s"}
+            </span>
+          ) : (
+            <span className={`${PILL} bg-slate-100 text-slate-500`}>No events</span>
+          )}
+        </div>
 
-      <div className="mt-6 grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
-            <StatCard
-              title="Corpus required"
-              value={result.corpusRequired}
-              hint={`At age ${retirementAge}`}
-              tone="neutral"
-            />
-            <StatCard
-              title={result.excess ? "Surplus at retirement" : "Monthly SIP needed"}
-              value={
-                result.excess
-                  ? result.currentAtRetirement +
-                    result.eventsCorpusAtRetirement -
-                    result.corpusRequired
-                  : result.monthlySip
-              }
-              tone={result.excess ? "positive" : "negative"}
-            />
-            <StatCard
-              title="Current corpus at retirement"
-              value={result.currentAtRetirement}
-              tone="neutral"
-              hint="Existing investments only"
-            />
-            <StatCard
-              title="Additional lumpsum"
-              value={result.additionalLumpsum}
-              tone={result.excess ? "positive" : "negative"}
-              hint={result.excess ? "Fully funded" : "Funding gap today"}
-            />
-          </div>
-      </ResultsSection>
-
-      <ResultsSection
-        sectionId="03"
-        title="FIRE Path Analytics"
-        description="Corpus journey, funding mix, delay cost, and age schedule"
-        open={openAnalytics}
-        onToggle={onToggleAnalytics}
-      >
-      <div className={RESULTS_SPLIT}>
-        <div className={RESULTS_LEFT}>
-          <SegmentedChartControl
-            variant="pill"
-            tabs={[
-              {
-                id: "corpus",
-                label: "Corpus",
-                icon: <LineChart className="w-4 h-4" />,
-                content: (
-                  <ChartPane>
-                    <GrowthChart
-                      title="Corpus vs age"
-                      data={line}
-                      series={[{ key: "corpus", label: "Corpus", color: "var(--app-chart-gain)" }]}
-                      referenceLines={[retireMarker]}
-                    />
-                  </ChartPane>
-                ),
-              },
-              {
-                id: "flows",
-                label: "Flows",
-                icon: <BarChart3 className="w-4 h-4" />,
-                content: (
-                  <ChartPane>
-                    <StackedAreaChart
-                      title="Contributions vs withdrawals"
-                      data={area}
-                      series={[
-                        {
-                          key: "contribution",
-                          label: "Contributions",
-                          color: "var(--app-chart-invested)",
-                        },
-                        {
-                          key: "withdrawal",
-                          label: "Withdrawals",
-                          color: "var(--app-chart-tax)",
-                        },
-                      ]}
-                      lineOnlyKeys={["contribution"]}
-                      referenceLines={[retireMarker]}
-                    />
-                  </ChartPane>
-                ),
-              },
-              {
-                id: "mix",
-                label: "Gap mix",
-                icon: <PieChart className="w-4 h-4" />,
-                content: (
-                  <ChartPane>
-                    <CompositionChart
-                      title="Gap funding mix"
-                      slices={[
-                        { name: "Invested via SIP", value: invested, color: "var(--app-chart-invested)" },
-                        { name: "Investment gain", value: gain, color: "var(--app-chart-gain)" },
-                      ]}
-                      centerLabel="Additional funding gap"
-                      centerValue={result.balanceCorpus}
-                      centerValueDisplay={`₹${formatCompactINR(result.balanceCorpus)}`}
-                    />
-                  </ChartPane>
-                ),
-              },
-            ]}
+        <div className="mt-6 grid grid-cols-1 gap-4 min-[480px]:grid-cols-2">
+          <WealthMetricCard
+            title="Corpus required"
+            value={result.corpusRequired}
+            description={`At age ${retirementAge}`}
+            tone="neutral"
+            mark={
+              <WealthIconMark className="h-7 w-7">
+                <IconTarget className="h-3.5 w-3.5" />
+              </WealthIconMark>
+            }
+          />
+          <WealthMetricCard
+            title={result.excess ? "Surplus at retirement" : "Monthly SIP needed"}
+            value={surplusOrSip}
+            description={result.excess ? "Overfunded at retirement" : "Additional SIP to close the gap"}
+            tone={result.excess ? "positive" : "accent"}
+            mark={
+              <WealthIconMark tone="emerald" className="h-7 w-7">
+                <IconSip className="h-3.5 w-3.5" />
+              </WealthIconMark>
+            }
+          />
+          <WealthMetricCard
+            title="Current corpus at retirement"
+            value={result.currentAtRetirement}
+            description="Existing investments only"
+            tone="neutral"
+            mark={
+              <WealthIconMark className="h-7 w-7">
+                <IconChart className="h-3.5 w-3.5" />
+              </WealthIconMark>
+            }
+          />
+          <WealthMetricCard
+            title="Additional lumpsum"
+            value={result.additionalLumpsum}
+            description={result.excess ? "Fully funded" : "Funding gap today"}
+            tone={result.excess ? "positive" : "accent"}
+            mark={
+              <WealthIconMark className="h-7 w-7">
+                <IconCalendar className="h-3.5 w-3.5" />
+              </WealthIconMark>
+            }
           />
         </div>
-        <div className={RESULTS_RIGHT}>
-          <div className="flex shrink-0 flex-col gap-3">
-            <ResultCard
+      </WealthSection>
+
+      <WealthSection
+        badge="03 · Analytics"
+        title="FIRE Path Analytics"
+        subtitle="Corpus journey, funding mix, and delay cost charts"
+        open={openAnalytics}
+        onToggle={onToggleAnalytics}
+        mark={
+          <WealthIconMark>
+            <IconChart />
+          </WealthIconMark>
+        }
+      >
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:items-start">
+          <div className="space-y-4 lg:col-span-7">
+            <WealthSegmented
+              variant="underline"
+              layoutId="fire-analytics-tab"
+              value={analyticsTab}
+              onChange={setAnalyticsTab}
+              options={[
+                {
+                  id: "corpus",
+                  label: "Corpus",
+                  icon: <IconChart className="h-3.5 w-3.5" />,
+                },
+                {
+                  id: "flows",
+                  label: "Flows",
+                  icon: <IconTimeline className="h-3.5 w-3.5" />,
+                },
+                {
+                  id: "mix",
+                  label: "Gap mix",
+                  icon: <IconDonut className="h-3.5 w-3.5" />,
+                },
+              ]}
+            />
+            {analyticsTab === "corpus" ? (
+              <WealthGrowthLine
+                data={line}
+                xTick={(v) => `Age ${v}`}
+                series={[{ key: "corpus", label: "Corpus", color: wealthChart.stepUp, kind: "area" }]}
+              />
+            ) : null}
+            {analyticsTab === "flows" ? (
+              <ChartFrame>
+                <StackedAreaChart
+                  title="Contributions vs withdrawals"
+                  data={area}
+                  series={[
+                    {
+                      key: "contribution",
+                      label: "Contributions",
+                      color: "var(--app-chart-invested)",
+                    },
+                    {
+                      key: "withdrawal",
+                      label: "Withdrawals",
+                      color: "var(--app-chart-tax)",
+                    },
+                  ]}
+                  lineOnlyKeys={["contribution"]}
+                  referenceLines={[retireMarker]}
+                />
+              </ChartFrame>
+            ) : null}
+            {analyticsTab === "mix" ? (
+              <WealthMixDonut
+                title="Gap funding mix"
+                centerLabel="Additional funding gap"
+                centerValue={result.balanceCorpus}
+                slices={[
+                  {
+                    name: "Invested via SIP",
+                    value: invested,
+                    color: wealthMixColors.invested,
+                  },
+                  {
+                    name: "Investment gain",
+                    value: gain,
+                    color: wealthMixColors.gain,
+                  },
+                ]}
+              />
+            ) : null}
+          </div>
+
+          <div className="flex flex-col gap-3 lg:col-span-5">
+            <WealthResultCard
               title={result.excess ? "Results · overfunded" : "FIRE summary"}
+              accent={result.excess}
               items={summaryItems}
             />
 
             {delayMonths > 0 ? (
-              <div className={`${CARD} ${CARD_PAD} space-y-3`}>
-                <div className={SECTION_TITLE}>Start now vs delay {delayMonths} mo</div>
+              <div className="space-y-3 rounded-2xl border border-slate-200/80 bg-white p-4">
+                <div className="text-sm font-semibold text-slate-900">
+                  Start now vs delay {delayMonths} mo
+                </div>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <div className="rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-muted)]/40 p-2.5">
-                    <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
+                  <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-2.5">
+                    <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                       Lumpsum
                     </div>
                     <div className="mt-1.5 space-y-1 text-xs">
                       <div className="flex justify-between gap-2">
-                        <span className="text-[var(--app-text-muted)]">Start now</span>
+                        <span className="text-slate-500">Start now</span>
                         <span className="font-semibold tabular-nums">
                           {formatINRCurrency(result.additionalLumpsum)}
                         </span>
                       </div>
                       <div className="flex justify-between gap-2">
-                        <span className="text-[var(--app-text-muted)]">Delayed</span>
+                        <span className="text-slate-500">Delayed</span>
                         <span className="font-semibold tabular-nums">
                           {formatINRCurrency(delayLumpsum)}
                         </span>
                       </div>
                     </div>
                   </div>
-                  <div className="rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-muted)]/40 p-2.5">
-                    <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
+                  <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-2.5">
+                    <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                       Monthly SIP
                     </div>
                     <div className="mt-1.5 space-y-1 text-xs">
                       <div className="flex justify-between gap-2">
-                        <span className="text-[var(--app-text-muted)]">Start now</span>
+                        <span className="text-slate-500">Start now</span>
                         <span className="font-semibold tabular-nums">
                           {formatINRCurrency(result.monthlySip)}
                         </span>
                       </div>
                       <div className="flex justify-between gap-2">
-                        <span className="text-[var(--app-text-muted)]">Delayed</span>
+                        <span className="text-slate-500">Delayed</span>
                         <span className="font-semibold tabular-nums">
                           {formatINRCurrency(delaySipVal)}
                         </span>
@@ -2240,91 +2407,116 @@ function FireResults({
               </div>
             ) : null}
 
-            <CompareChart
-              title="Delay cost"
+            <WealthCompareBars
+              showBarLabels
               data={[
                 {
                   category: "Lumpsum",
                   now: result.additionalLumpsum,
                   delayed: delayLumpsum,
-                  tooltipDetails:
-                    lumpsumPct > 0
-                      ? [{ label: "Increase", value: `${lumpsumPct.toFixed(1)}%` }]
-                      : undefined,
                 },
                 {
                   category: "Monthly SIP",
                   now: result.monthlySip,
                   delayed: delaySipVal,
-                  tooltipDetails:
-                    sipPct > 0
-                      ? [{ label: "Increase", value: `${sipPct.toFixed(1)}%` }]
-                      : undefined,
                 },
               ]}
               series={[
-                { key: "now", label: "Start now", color: "var(--app-chart-invested)" },
-                { key: "delayed", label: "Delayed", color: "var(--app-chart-tax)" },
+                { key: "now", label: "Start now", color: wealthChart.invested },
+                { key: "delayed", label: "Delayed", color: wealthChart.tax },
               ]}
-              showBarLabels
             />
           </div>
         </div>
-      </div>
-      <ScheduleTable
-        caption="Age schedule"
-        meta={`Retirement at ${retirementAge} · Survival ${survivalAge}`}
-        zebra
-        emphasizeRow={(row) =>
-          Number(row.age) === retirementAge ||
-          Number(row.age) === survivalAge ||
-          Number(row.eventAmount ?? 0) !== 0
+      </WealthSection>
+
+      <WealthSection
+        badge="04 · Schedule"
+        title="FIRE Age Schedule"
+        subtitle="Year-wise contributions, withdrawals, events, and corpus by age"
+        open={openSchedule}
+        onToggle={onToggleSchedule}
+        mark={
+          <WealthIconMark>
+            <IconCalendar />
+          </WealthIconMark>
         }
-        columns={[
-          { key: "age", header: "Age", sticky: true },
-          {
-            key: "phase",
-            header: "Phase",
-            render: (value) => phaseBadge(String(value ?? "")),
-          },
-          {
-            key: "contribution",
-            header: "Contribution",
-            format: "inr",
-            align: "right",
-            tone: "std",
-          },
-          {
-            key: "withdrawal",
-            header: "Withdrawal",
-            format: "inr",
-            align: "right",
-            tone: "warn",
-          },
-          ...(eventsEnabled
-            ? [
-                {
-                  key: "eventAmount",
-                  header: "Event",
-                  align: "right" as const,
-                  tone: "warn" as const,
-                  render: (value: unknown) => {
-                    const amount = typeof value === "number" ? value : 0;
-                    if (!amount) return "0";
-                    return (
-                      <span className="rounded-md bg-[var(--app-warn-bg)] px-1.5 py-0.5 font-semibold text-[var(--app-warn-text-strong)]">
-                        {formatINRCurrency(amount)}
-                      </span>
-                    );
+      >
+        <WealthDataTable
+          rows={result.schedule}
+          getRowKey={(row) => row.age}
+          filterPlaceholder="Filter by age…"
+          summary={[
+            { label: "Retirement", value: String(retirementAge) },
+            { label: "Survival", value: String(survivalAge) },
+            {
+              label: "Corpus required",
+              value: formatINRCurrency(result.corpusRequired),
+              tone: "std",
+            },
+            {
+              label: result.excess ? "Surplus" : "Monthly SIP",
+              value: formatINRCurrency(surplusOrSip),
+              tone: "step",
+            },
+          ]}
+          note="Phase marks pre-retirement, retirement year, and post-retirement drawdown. Event amounts appear only when events are enabled."
+          columns={[
+            {
+              key: "age",
+              header: "Age",
+              sticky: true,
+              searchValue: (row) => String(row.age),
+              render: (row) => row.age,
+            },
+            {
+              key: "phase",
+              header: "Phase",
+              searchValue: (row) => row.phase,
+              render: (row) => phaseBadge(row.phase),
+            },
+            {
+              key: "contribution",
+              header: "Contribution",
+              align: "right",
+              render: (row) => moneyCell(row.contribution),
+            },
+            {
+              key: "withdrawal",
+              header: "Withdrawal",
+              align: "right",
+              tone: "amber",
+              render: (row) => moneyCell(row.withdrawal),
+            },
+            ...(eventsEnabled
+              ? [
+                  {
+                    key: "eventAmount",
+                    header: "Event",
+                    align: "right" as const,
+                    tone: "amber" as const,
+                    render: (row: (typeof result.schedule)[number]) => {
+                      const amount = row.eventAmount ?? 0;
+                      if (!amount) return "0";
+                      return (
+                        <span className="rounded-md bg-amber-50 px-1.5 py-0.5 font-semibold text-amber-800">
+                          {formatINRCurrency(amount)}
+                        </span>
+                      );
+                    },
                   },
-                },
-              ]
-            : []),
-          { key: "corpus", header: "Corpus", format: "inr", align: "right", tone: "step" },
-        ]}
-        rows={result.schedule}
-      />
-      </ResultsSection>
+                ]
+              : []),
+            {
+              key: "corpus",
+              header: "Corpus",
+              align: "right",
+              tone: "emerald",
+              render: (row) => moneyCell(row.corpus),
+            },
+          ]}
+        />
+      </WealthSection>
     </div>
   );
 }
@@ -2338,6 +2530,8 @@ function HealthResults({
   onToggleMilestones,
   openAnalytics,
   onToggleAnalytics,
+  openSchedule,
+  onToggleSchedule,
 }: {
   result: HealthResult;
   retirementAge: number;
@@ -2347,6 +2541,8 @@ function HealthResults({
   onToggleMilestones: () => void;
   openAnalytics: boolean;
   onToggleAnalytics: () => void;
+  openSchedule: boolean;
+  onToggleSchedule: () => void;
 }) {
   const combo = result.schedule.map((row) => ({
     age: row.age,
@@ -2367,8 +2563,6 @@ function HealthResults({
       color: "var(--app-warn-text)",
     })),
   ];
-
-  const healthTone = !result.funded ? ("warn" as const) : ("info" as const);
 
   const gapDisplay =
     result.gapAtRetirement <= 0
@@ -2400,89 +2594,112 @@ function HealthResults({
   };
 
   return (
-    <div className="flex flex-col gap-3">
-      <ResultsSection
-        sectionId="02"
+    <div className="flex flex-col gap-4">
+      <WealthSection
+        badge="02 · Milestones"
         title="Financial Health Milestones"
-        description="Corpus at retirement and runway through survival"
+        subtitle="Corpus at retirement and runway through survival"
         open={openMilestones}
         onToggle={onToggleMilestones}
-        meta={
+        mark={
+          <WealthIconMark tone="emerald">
+            <IconTarget />
+          </WealthIconMark>
+        }
+        actions={
           <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">
             {retirementAge} → {survivalAge}
           </span>
         }
       >
-      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2">
-        <StatusNote
-          tone={result.funded ? healthTone : "warn"}
-          className="min-w-0 flex-1 border-0 bg-transparent px-0 py-0"
-        >
-          {result.message}
-        </StatusNote>
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className={`${PILL} bg-[var(--app-step-bg)] text-[var(--app-step-text)]`}>
-            {retirementAge} Retire
-          </span>
-          {activeEvents.map((ev) => (
-            <span
-              key={ev.id}
-              className={`${PILL} bg-[var(--app-warn-bg)] text-[var(--app-warn-text)]`}
-            >
-              {ev.age} · {formatINRCurrency(ev.amount)}
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2">
+          <WealthStatusNote
+            tone={result.funded ? "success" : "error"}
+            className="min-w-0 flex-1 border-0 bg-transparent px-0 py-0"
+          >
+            {result.message}
+          </WealthStatusNote>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className={`${PILL} bg-[var(--app-step-bg)] text-[var(--app-step-text)]`}>
+              {retirementAge} Retire
             </span>
-          ))}
-          <span className={`${PILL} bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]`}>
-            {survivalAge} Survive
-          </span>
-        </div>
-      </div>
-
-      <div className="mt-6 grid shrink-0 grid-cols-1 gap-2 min-[480px]:grid-cols-2">
-            <StatCard title="Corpus at retirement" value={result.corpusAtRetirement} tone="neutral" />
-            <StatCard
-              title={result.funded ? "Remaining at survival" : "Corpus when funds run out"}
-              value={result.funded ? result.remainingAtSurvival : 0}
-              tone={result.funded ? "positive" : "negative"}
-              hint={
-                result.funded
-                  ? `${result.retiredYears}-year retirement runway`
-                  : `Lasts ~${result.yearsLasting} of ${result.retiredYears} yrs`
-              }
-            />
+            {activeEvents.map((ev) => (
+              <span
+                key={ev.id}
+                className={`${PILL} bg-[var(--app-warn-bg)] text-[var(--app-warn-text)]`}
+              >
+                {ev.age} · {formatINRCurrency(ev.amount)}
+              </span>
+            ))}
+            <span className={`${PILL} bg-slate-100 text-slate-500`}>
+              {survivalAge} Survive
+            </span>
           </div>
-      </ResultsSection>
+        </div>
 
-      <ResultsSection
-        sectionId="03"
+        <div className="mt-6 grid grid-cols-1 gap-4 min-[480px]:grid-cols-2">
+          <WealthMetricCard
+            title="Corpus at retirement"
+            value={result.corpusAtRetirement}
+            description="Projected corpus when retirement begins"
+            tone="neutral"
+            mark={
+              <WealthIconMark className="h-7 w-7">
+                <IconTarget className="h-3.5 w-3.5" />
+              </WealthIconMark>
+            }
+          />
+          <WealthMetricCard
+            title={result.funded ? "Remaining at survival" : "Corpus when funds run out"}
+            value={result.funded ? result.remainingAtSurvival : 0}
+            description={
+              result.funded
+                ? `${result.retiredYears}-year retirement runway`
+                : `Lasts ~${result.yearsLasting} of ${result.retiredYears} yrs`
+            }
+            tone={result.funded ? "positive" : "accent"}
+            mark={
+              <WealthIconMark tone="emerald" className="h-7 w-7">
+                <IconFlag className="h-3.5 w-3.5" />
+              </WealthIconMark>
+            }
+          />
+        </div>
+      </WealthSection>
+
+      <WealthSection
+        badge="03 · Analytics"
         title="Health Path Analytics"
-        description="Corpus vs expenses, gap mix, and age schedule"
+        subtitle="Corpus vs expenses and savings versus retirement gap"
         open={openAnalytics}
         onToggle={onToggleAnalytics}
+        mark={
+          <WealthIconMark>
+            <IconChart />
+          </WealthIconMark>
+        }
       >
-      <div className={`${RESULTS_SPLIT} gap-3`}>
-        <div className={`${RESULTS_LEFT} gap-3`}>
-          <ChartPane>
-          <ComboChart
-            title="Corpus and expenses vs age"
-            className="min-h-[260px] sm:min-h-[300px]"
-            data={combo}
-            bars={[{ key: "corpus", label: "Corpus", color: "var(--app-chart-invested)" }]}
-            lines={[
-              {
-                key: "expense",
-                label: "Annual Retirement Expense",
-                color: "var(--app-chart-tax)",
-              },
-            ]}
-            ageMarkers={ageMarkers}
-          />
-          </ChartPane>
-        </div>
-        <div className={`${RESULTS_RIGHT} gap-3`}>
-          <ResultCard
-            title="Health summary"
-            items={[
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:items-start">
+          <div className="lg:col-span-7">
+            <ChartFrame height="h-[280px] sm:h-[340px]">
+              <ComboChart
+                title="Corpus and expenses vs age"
+                className="min-h-[260px] sm:min-h-[300px]"
+                data={combo}
+                bars={[{ key: "corpus", label: "Corpus", color: "var(--app-chart-invested)" }]}
+                lines={[
+                  {
+                    key: "expense",
+                    label: "Annual Retirement Expense",
+                    color: "var(--app-chart-tax)",
+                  },
+                ]}
+                ageMarkers={ageMarkers}
+              />
+            </ChartFrame>
+          </div>
+          <div className="flex flex-col gap-3 lg:col-span-5">
+            <WealthResultCard title="Health summary" items={[
               { label: "Corpus at retirement", value: result.corpusAtRetirement },
               {
                 label: "Remaining at survival",
@@ -2493,76 +2710,111 @@ function HealthResults({
               { label: "Monthly expense @ ret+1", value: result.monthlyExpAtRetPlus1 },
               { label: "Lifestyle @ ret+1", value: result.lifestyleAtRetPlus1 },
               gapDisplay,
-            ]}
-          />
-          <CompositionChart
-            title="Savings vs retirement gap"
-            compact
-            className="min-h-0"
-            slices={[
-              {
-                name: "Corpus at retirement",
-                value: result.corpusAtRetirement,
-                color: "var(--app-chart-invested)",
-              },
-              ...(result.gapAtRetirement > 0
-                ? [
-                    {
-                      name: "Gap",
-                      value: result.gapAtRetirement,
-                      color: "var(--app-chart-tax)",
-                    },
-                  ]
-                : []),
-            ]}
-            centerLabel={
-              !result.funded ? "Shortfall" : result.gapAtRetirement > 0 ? "Funded" : "Fully Funded"
-            }
-            centerValue={result.corpusAtRetirement}
-          />
+            ]} />
+            <WealthMixDonut
+              title="Savings vs retirement gap"
+              centerLabel={
+                !result.funded
+                  ? "Shortfall"
+                  : result.gapAtRetirement > 0
+                    ? "Funded"
+                    : "Fully Funded"
+              }
+              centerValue={result.corpusAtRetirement}
+              slices={[
+                {
+                  name: "Corpus at retirement",
+                  value: result.corpusAtRetirement,
+                  color: wealthMixColors.invested,
+                },
+                ...(result.gapAtRetirement > 0
+                  ? [
+                      {
+                        name: "Gap",
+                        value: result.gapAtRetirement,
+                        color: wealthMixColors.tax,
+                      },
+                    ]
+                  : []),
+              ]}
+            />
+          </div>
         </div>
-      </div>
-      <ScheduleTable
-        caption="Age path"
-        meta={`${result.schedule.length} ages · retirement at ${retirementAge}`}
-        zebra
-        emphasizeRow={(row) =>
-          Number(row.age) === retirementAge || Number(row.eventAmount ?? 0) !== 0
+      </WealthSection>
+
+      <WealthSection
+        badge="04 · Schedule"
+        title="Health Age Schedule"
+        subtitle="Year-wise expenses, events, and corpus from now through survival"
+        open={openSchedule}
+        onToggle={onToggleSchedule}
+        mark={
+          <WealthIconMark>
+            <IconCalendar />
+          </WealthIconMark>
         }
-        columns={[
-          { key: "age", header: "Age", sticky: true },
-          {
-            key: "phase",
-            header: "Phase",
-            render: (value) => phaseBadge(String(value ?? "")),
-          },
-          {
-            key: "yearlyExpense",
-            header: "Annual Expense",
-            format: "inr",
-            align: "right",
-            tone: "warn",
-          },
-          {
-            key: "eventAmount",
-            header: "Net Event Impact",
-            align: "right",
-            tone: "warn",
-            render: (value) => {
-              const amount = typeof value === "number" ? value : 0;
-              if (!amount) return "0";
-              return (
-                <span className="rounded-md bg-[var(--app-warn-bg)] px-1.5 py-0.5 font-semibold text-[var(--app-warn-text-strong)]">
-                  {formatINRCurrency(amount)}
-                </span>
-              );
+      >
+        <WealthDataTable
+          rows={result.schedule}
+          getRowKey={(row) => row.age}
+          filterPlaceholder="Filter by age…"
+          summary={[
+            { label: "Ages", value: String(result.schedule.length) },
+            { label: "Retirement", value: String(retirementAge) },
+            { label: "Survival", value: String(survivalAge) },
+            {
+              label: "Corpus @ retire",
+              value: formatINRCurrency(result.corpusAtRetirement),
+              tone: "step",
             },
-          },
-          { key: "corpus", header: "Corpus", format: "inr", align: "right", tone: "step" },
-        ]}
-        rows={result.schedule}
-      />
-      </ResultsSection>
+          ]}
+          note="Each row is one age year. Annual expense and net event impact feed the corpus path until survival age."
+          columns={[
+            {
+              key: "age",
+              header: "Age",
+              sticky: true,
+              searchValue: (row) => String(row.age),
+              render: (row) => row.age,
+            },
+            {
+              key: "phase",
+              header: "Phase",
+              searchValue: (row) => row.phase,
+              render: (row) => phaseBadge(row.phase),
+            },
+            {
+              key: "yearlyExpense",
+              header: "Annual Expense",
+              align: "right",
+              tone: "amber",
+              render: (row) => moneyCell(row.yearlyExpense),
+            },
+            {
+              key: "eventAmount",
+              header: "Net Event Impact",
+              align: "right",
+              tone: "amber",
+              render: (row) => {
+                const amount = row.eventAmount ?? 0;
+                if (!amount) return "0";
+                return (
+                  <span className="rounded-md bg-amber-50 px-1.5 py-0.5 font-semibold text-amber-800">
+                    {formatINRCurrency(amount)}
+                  </span>
+                );
+              },
+            },
+            {
+              key: "corpus",
+              header: "Corpus",
+              align: "right",
+              tone: "emerald",
+              render: (row) => moneyCell(row.corpus),
+            },
+          ]}
+        />
+      </WealthSection>
     </div>
   );
 }
