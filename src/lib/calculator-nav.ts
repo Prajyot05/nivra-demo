@@ -94,6 +94,7 @@ export const CALCULATOR_CATEGORIES: NavCategory[] = [
         excelFile:
           "calculator-tests/Nivra Multiple Goals with Corpus Assignment v2.xlsm",
         completed: true,
+        uiPolished: true,
       },
       {
         id: "goal-periodic",
@@ -153,6 +154,7 @@ export const CALCULATOR_CATEGORIES: NavCategory[] = [
         description: "Post-tax mutual fund versus fixed deposit over a short horizon.",
         excelFile: "calculator-tests/Nivra MF vs FD v1.xlsm",
         completed: true,
+        uiPolished: true,
       },
       {
         id: "growth-lumpsum",
@@ -207,6 +209,7 @@ export const CALCULATOR_CATEGORIES: NavCategory[] = [
         description: "Solve the SIP needed when several withdrawals hit at different ages.",
         excelFile: "Unprotected/Nivra SIP for Multiple Withdrawals v2.xlsm",
         completed: true,
+        uiPolished: true,
       },
     ],
   },
@@ -248,6 +251,8 @@ export const CALCULATOR_CATEGORIES: NavCategory[] = [
         shortLabel: "Education",
         description: "Plan school and college fees with inflation, corpus, and funding options.",
         excelFile: "Unprotected/Nivra Child Education Planner v4.xlsm",
+        completed: true,
+        uiPolished: true,
       },
       {
         id: "vehicle-loan",
@@ -257,6 +262,7 @@ export const CALCULATOR_CATEGORIES: NavCategory[] = [
         shortLabel: "Vehicle Loan",
         description: "Weigh buying with a vehicle loan versus paying cash or investing the difference.",
         completed: true,
+        uiPolished: true,
         excelFile:
           "Nivra Tools - Full Set/Nivra Vehicle Loan Benefit Analysis-v2.xlsx",
       },
@@ -275,6 +281,7 @@ export const CALCULATOR_CATEGORIES: NavCategory[] = [
         description: "Standard EMI with an optional interest-recovery investment overlay.",
         excelFile: "Unprotected/Nivra Loan EMI Calculator v1.xlsm",
         completed: true,
+        uiPolished: true,
       },
       {
         id: "loan-extra-vs-invest",
@@ -285,6 +292,7 @@ export const CALCULATOR_CATEGORIES: NavCategory[] = [
         description: "Compare one extra loan payment against investing the same cash.",
         excelFile: "Unprotected/Nivra Loan Extra Payment vs Investment v2.xlsm",
         completed: true,
+        uiPolished: true,
       },
       {
         id: "loan-recovery",
@@ -295,6 +303,7 @@ export const CALCULATOR_CATEGORIES: NavCategory[] = [
         description: "Restructure EMI and recover interest drag through a parallel SIP.",
         excelFile: "Unprotected/Nivra Loan Interest Recovery v7.xlsm",
         completed: true,
+        uiPolished: true,
       },
       {
         id: "loan-prepay",
@@ -305,6 +314,7 @@ export const CALCULATOR_CATEGORIES: NavCategory[] = [
         description: "See the impact of yearly extra payments on tenure and interest.",
         excelFile: "Unprotected/Nivra Loan with Periodic Extra Payments - v1.xlsm",
         completed: true,
+        uiPolished: true,
       },
     ],
   },
@@ -320,6 +330,7 @@ export const CALCULATOR_CATEGORIES: NavCategory[] = [
         shortLabel: "Ins. IRR",
         description: "Measure traditional policy maturity, tax drag, and full-term XIRR.",
         completed: true,
+        uiPolished: true,
         excelFile: "Unprotected/Nivra Insurance IRR Calculator v1.xlsm",
       },
       {
@@ -330,6 +341,7 @@ export const CALCULATOR_CATEGORIES: NavCategory[] = [
         shortLabel: "Term + Invest",
         description: "Compare keeping the policy versus switching to term cover plus investment.",
         completed: true,
+        uiPolished: true,
         excelFile:
           "Unprotected/Nivra Insurance - Convert to TP and Investment Planner v3.xlsm",
       },

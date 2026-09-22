@@ -24,7 +24,7 @@ export function WealthSegmented<T extends string>({
   if (variant === "underline") {
     return (
       <div
-        className="flex gap-1.5 overflow-x-auto border-b border-slate-200"
+        className="flex gap-1.5 overflow-x-auto overflow-y-hidden border-b border-slate-200"
         role="tablist"
       >
         {options.map((opt) => {
@@ -48,7 +48,7 @@ export function WealthSegmented<T extends string>({
               {active ? (
                 <motion.span
                   layoutId={layoutId}
-                  className="absolute inset-x-2.5 -bottom-px h-0.5 rounded-full bg-emerald-500"
+                  className="absolute inset-x-2.5 bottom-0 h-0.5 rounded-full bg-emerald-500"
                   transition={{ type: "spring", stiffness: 420, damping: 34 }}
                 />
               ) : null}

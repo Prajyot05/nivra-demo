@@ -17,7 +17,7 @@ export function WealthAnalyticsChrome({
 }) {
   return (
     <div className={cn("space-y-5", className)}>
-      <div className="overflow-x-auto pt-1">{tabs}</div>
+      <div className="overflow-x-auto overflow-y-hidden pt-1">{tabs}</div>
       <div className="min-w-0">{children}</div>
     </div>
   );

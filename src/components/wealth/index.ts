@@ -1,4 +1,5 @@
 export { WealthProfileGrid } from "./wealth-profile-grid";
+export { ClientProfileFields } from "./wealth-profile-fields";
 export { WealthHero } from "./wealth-hero";
 export { WealthSection } from "./wealth-section";
 export { WealthMetricCard } from "./wealth-metric-card";
@@ -60,7 +61,16 @@ export type { WealthComparePoint } from "./charts/wealth-compare-bars";
 export { WealthWaterfallBars } from "./charts/wealth-waterfall-bars";
 export type { WealthWaterfallStep } from "./charts/wealth-waterfall-bars";
 export { WealthGrowthLine, wealthGrowthColors } from "./charts/wealth-growth-line";
-export type { WealthSeries, WealthGrowthMarker } from "./charts/wealth-growth-line";
+export type { WealthSeries, WealthGrowthMarker, WealthGrowthDot } from "./charts/wealth-growth-line";
+export { WealthStackedBars } from "./charts/wealth-stacked-bars";
+export type { WealthStackedPoint } from "./charts/wealth-stacked-bars";
+export { WealthStackedArea } from "./charts/wealth-stacked-area";
+export type { WealthStackedAreaPoint } from "./charts/wealth-stacked-area";
+export { WealthWithdrawalPath } from "./charts/wealth-withdrawal-path";
+export type {
+  WealthWithdrawalMilestone,
+  WealthWithdrawalPathPoint,
+} from "./charts/wealth-withdrawal-path";
 export { GrowthCompareChart } from "./charts/growth-compare-chart";
 export { WealthTimelineChart } from "./charts/wealth-timeline-chart";
 export { InflationImpactChart } from "./charts/inflation-impact-chart";
@@ -90,4 +100,12 @@ export {
   IconGrad,
   IconCheck,
   IconFlag,
+  IconPlus,
+  IconTrash,
+  IconCopy,
+  IconCar,
+  IconHome,
+  IconGem,
+  IconSunset,
+  IconPlane,
 } from "./wealth-icons";

@@ -13,6 +13,7 @@ export function WealthMetricCard({
   footer,
   trend,
   mark,
+  display,
 }: {
   title: string;
   value: number;
@@ -22,6 +23,8 @@ export function WealthMetricCard({
   footer?: React.ReactNode;
   trend?: string;
   mark?: React.ReactNode;
+  /** Replaces the currency counter when the headline is a percent or label. */
+  display?: React.ReactNode;
 }) {
   const shell = {
     neutral: "border-slate-200/80",
@@ -62,7 +65,7 @@ export function WealthMetricCard({
           valueTone[tone],
         )}
       >
-        <AnimatedCurrency value={value} />
+        {display ?? <AnimatedCurrency value={value} />}
       </div>
       {description ? (
         <p className="mt-2.5 text-sm leading-relaxed text-slate-500">{description}</p>

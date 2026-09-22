@@ -25,17 +25,17 @@ Switch calculator via the **sidebar only**. In-page FIRE / Health / SIP / Step-u
 
 ## Open for Prajyot
 
-- [ ] Mutual Fund vs Fixed Deposit (`mf-fd`)
-- [ ] SIP Required for Multiple Withdrawals (`multi-withdrawals`)
-- [ ] Multiple Goals – Corpus Assignment (`multi-goal-assign`)
-- [ ] Loan EMI with Interest Recovery (`loan-emi`)
-- [ ] Loan – One Extra Payment vs Investment (`loan-extra-vs-invest`)
-- [ ] Loan Restructuring with Interest Recovery (`loan-recovery`)
-- [ ] Loan with Extra Yearly Payments (`loan-prepay`)
-- [ ] Child Education Planner (`education`)
-- [ ] Vehicle Loan Benefit Analysis (`vehicle-loan`)
-- [ ] Insurance IRR Calculator (`insurance-irr`)
-- [ ] Insurance – Convert to Term Plan + Investment (`insurance-tp`)
+- [x] Mutual Fund vs Fixed Deposit (`mf-fd`)
+- [x] SIP Required for Multiple Withdrawals (`multi-withdrawals`)
+- [x] Multiple Goals – Corpus Assignment (`multi-goal-assign`)
+- [x] Loan EMI with Interest Recovery (`loan-emi`)
+- [x] Loan – One Extra Payment vs Investment (`loan-extra-vs-invest`)
+- [x] Loan Restructuring with Interest Recovery (`loan-recovery`)
+- [x] Loan with Extra Yearly Payments (`loan-prepay`)
+- [x] Child Education Planner (`education`)
+- [x] Vehicle Loan Benefit Analysis (`vehicle-loan`)
+- [x] Insurance IRR Calculator (`insurance-irr`)
+- [x] Insurance – Convert to Term Plan + Investment (`insurance-tp`)
 
 ## When Prajyot finishes a page
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { generatePdfFromElement } from "@/lib/pdf-generator";
 import {
   LOAN_EMI_REPORT_ID,
@@ -26,14 +27,11 @@ import { DUMMY_REPORT_CONTACT } from "@/components/reports/executive-dossier";
 import {
   ageError,
   emailError,
-  formatCompactINR,
   formatINRCurrency,
   formatPercent,
   nameError,
   phoneError,
   rateError,
-  StackedAreaChart,
-  StackedBarChart,
 } from "@nivra/ui";
 import { CalculatorPage } from "@/components/layout/calculator-page-with-nav";
 import { ReportDownloadButton } from "@/components/calc/report-download-button";
@@ -41,7 +39,7 @@ import { useCalculate } from "@/hooks/use-calculate";
 import { useCalculatorMode } from "@/hooks/use-calculator-mode";
 import { getCalculatorPageDescription, getCalculatorPageTitle } from "@/lib/calculator-nav";
 import {
-  ChartFrame,
+  ClientProfileFields,
   IconCalendar,
   IconChart,
   IconDonut,
@@ -53,6 +51,8 @@ import {
   IconTimeline,
   moneyCell,
   WEALTH_CONTENT_CLASS,
+  WealthAnalyticsChrome,
+  WealthAuditLedger,
   WealthCompareBars,
   WealthDataTable,
   WealthDisclaimer,
@@ -66,8 +66,9 @@ import {
   WealthProfileGrid,
   WealthSection,
   WealthSegmented,
+  WealthStackedArea,
+  WealthStackedBars,
   WealthStatusNote,
-  WealthTextField,
   WealthYearField,
   wealthChart,
   wealthMixColors,
@@ -234,65 +235,8 @@ const MODE_COPY: Record<
   },
 };
 
-function DetailPanel({
-  title,
-  accent,
-  children,
-}: {
-  title: string;
-  accent?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <div
-      className={`overflow-hidden rounded-2xl border bg-white ${
-        accent ? "border-emerald-200/80" : "border-slate-200/80"
-      }`}
-    >
-      <div
-        className={`border-b px-4 py-2.5 text-[11px] font-medium uppercase tracking-[0.14em] ${
-          accent
-            ? "border-emerald-100 bg-emerald-50/60 text-emerald-800"
-            : "border-slate-100 bg-slate-50 text-slate-500"
-        }`}
-      >
-        {title}
-      </div>
-      <div className="divide-y divide-slate-100">{children}</div>
-    </div>
-  );
-}
-
-function DetailRow({
-  label,
-  value,
-  hint,
-  highlight,
-}: {
-  label: string;
-  value: React.ReactNode;
-  hint?: string;
-  highlight?: boolean;
-}) {
-  return (
-    <div className="flex items-start justify-between gap-3 px-4 py-2.5">
-      <div className="min-w-0">
-        <div className="text-sm text-slate-600">{label}</div>
-        {hint ? <div className="mt-0.5 text-xs text-slate-400">{hint}</div> : null}
-      </div>
-      <div
-        className={`shrink-0 text-right text-sm font-medium tabular-nums ${
-          highlight ? "text-emerald-700" : "text-slate-900"
-        }`}
-      >
-        {value}
-      </div>
-    </div>
-  );
-}
-
 export function LoansCalculator() {
-  const [mode, setMode] = useCalculatorMode(MODE_IDS, "emi");
+  const [mode] = useCalculatorMode(MODE_IDS, "emi");
   const [name, setName] = useState("Mr. Anshu Kaul");
   const [age, setAge] = useState(40);
   const [email, setEmail] = useState(DUMMY_REPORT_CONTACT.email);
@@ -841,10 +785,60 @@ export function LoansCalculator() {
           goalLabel={MODE_COPY[mode].goal}
           tenure={activeTenure}
           strategy={MODE_COPY[mode].strategy}
-          targetCorpus={canCalculate && result ? heroPrimary : activePrincipal}
-          monthlySip={canCalculate && result ? heroSecondary : 0}
-          realReturnPct={activeRate}
           onEdit={scrollToAssumptions}
+          metrics={[
+            {
+              label:
+                mode === "vehicle"
+                  ? "Tax saved"
+                  : mode === "extra-vs-invest"
+                    ? "Best saving"
+                    : mode === "prepay"
+                      ? "Interest saved"
+                      : mode === "recovery"
+                        ? "Additional wealth"
+                        : "Total paid",
+              value: canCalculate && result ? heroPrimary : activePrincipal,
+              kind: "currency",
+              tone: "emerald",
+              mark: (
+                <WealthIconMark tone="emerald" className="h-6 w-6">
+                  <IconTarget className="h-3.5 w-3.5" />
+                </WealthIconMark>
+              ),
+            },
+            {
+              label:
+                mode === "vehicle"
+                  ? "EMI"
+                  : mode === "extra-vs-invest"
+                    ? "Extra payment"
+                    : mode === "prepay"
+                      ? "Yearly extra"
+                      : mode === "recovery"
+                        ? "Monthly SIP"
+                        : "EMI",
+              value: canCalculate && result ? heroSecondary : 0,
+              kind: "currency",
+              tone: "slate",
+              mark: (
+                <WealthIconMark className="h-6 w-6">
+                  <IconSip className="h-3.5 w-3.5" />
+                </WealthIconMark>
+              ),
+            },
+            {
+              label: "Loan rate",
+              value: activeRate,
+              kind: "percent",
+              tone: "slate",
+              mark: (
+                <WealthIconMark className="h-6 w-6">
+                  <IconRates className="h-3.5 w-3.5" />
+                </WealthIconMark>
+              ),
+            },
+          ]}
         />
       }
       form={
@@ -876,38 +870,19 @@ export function LoansCalculator() {
               {mode === "emi" ? (
                 <div className="py-2">
                   <WealthProfileGrid>
-                    <WealthTextField
-                      label="Client name"
-                      value={name}
-                      onChange={setName}
-                      error={clientNameError}
-                      autoComplete="name"
-                    />
-                    <WealthYearField
-                      label="Age"
-                      value={age}
-                      onChange={setAge}
-                      min={0}
-                      max={120}
-                      error={clientAgeError}
-                    />
-                    <WealthTextField
-                      label="Email"
-                      type="email"
-                      value={email}
-                      onChange={setEmail}
-                      error={clientEmailError}
-                      placeholder="client@email.com"
-                      autoComplete="email"
-                    />
-                    <WealthTextField
-                      label="Phone"
-                      type="tel"
-                      value={phone}
-                      onChange={setPhone}
-                      error={clientPhoneError}
-                      placeholder="+91 98765 43210"
-                      autoComplete="tel"
+                    <ClientProfileFields
+                      name={name}
+                      onName={setName}
+                      nameError={clientNameError}
+                      age={age}
+                      onAge={setAge}
+                      ageError={clientAgeError}
+                      email={email}
+                      onEmail={setEmail}
+                      emailError={clientEmailError}
+                      phone={phone}
+                      onPhone={setPhone}
+                      phoneError={clientPhoneError}
                     />
                     <WealthMoneyField
                       label="Principal"
@@ -963,38 +938,19 @@ export function LoansCalculator() {
               ) : mode === "prepay" ? (
                 <div className="py-2">
                   <WealthProfileGrid>
-                    <WealthTextField
-                      label="Client name"
-                      value={name}
-                      onChange={setName}
-                      error={clientNameError}
-                      autoComplete="name"
-                    />
-                    <WealthYearField
-                      label="Age"
-                      value={age}
-                      onChange={setAge}
-                      min={0}
-                      max={120}
-                      error={clientAgeError}
-                    />
-                    <WealthTextField
-                      label="Email"
-                      type="email"
-                      value={email}
-                      onChange={setEmail}
-                      error={clientEmailError}
-                      placeholder="client@email.com"
-                      autoComplete="email"
-                    />
-                    <WealthTextField
-                      label="Phone"
-                      type="tel"
-                      value={phone}
-                      onChange={setPhone}
-                      error={clientPhoneError}
-                      placeholder="+91 98765 43210"
-                      autoComplete="tel"
+                    <ClientProfileFields
+                      name={name}
+                      onName={setName}
+                      nameError={clientNameError}
+                      age={age}
+                      onAge={setAge}
+                      ageError={clientAgeError}
+                      email={email}
+                      onEmail={setEmail}
+                      emailError={clientEmailError}
+                      phone={phone}
+                      onPhone={setPhone}
+                      phoneError={clientPhoneError}
                     />
                     <WealthMoneyField
                       label="Loan principal"
@@ -1047,38 +1003,19 @@ export function LoansCalculator() {
               ) : mode === "extra-vs-invest" ? (
                 <div className="py-2">
                   <WealthProfileGrid>
-                    <WealthTextField
-                      label="Client name"
-                      value={name}
-                      onChange={setName}
-                      error={clientNameError}
-                      autoComplete="name"
-                    />
-                    <WealthYearField
-                      label="Age"
-                      value={age}
-                      onChange={setAge}
-                      min={0}
-                      max={120}
-                      error={clientAgeError}
-                    />
-                    <WealthTextField
-                      label="Email"
-                      type="email"
-                      value={email}
-                      onChange={setEmail}
-                      error={clientEmailError}
-                      placeholder="client@email.com"
-                      autoComplete="email"
-                    />
-                    <WealthTextField
-                      label="Phone"
-                      type="tel"
-                      value={phone}
-                      onChange={setPhone}
-                      error={clientPhoneError}
-                      placeholder="+91 98765 43210"
-                      autoComplete="tel"
+                    <ClientProfileFields
+                      name={name}
+                      onName={setName}
+                      nameError={clientNameError}
+                      age={age}
+                      onAge={setAge}
+                      ageError={clientAgeError}
+                      email={email}
+                      onEmail={setEmail}
+                      emailError={clientEmailError}
+                      phone={phone}
+                      onPhone={setPhone}
+                      phoneError={clientPhoneError}
                     />
                     <WealthMoneyField
                       label="Loan principal"
@@ -1153,38 +1090,19 @@ export function LoansCalculator() {
               ) : mode === "recovery" ? (
                 <div className="py-2">
                   <WealthProfileGrid>
-                    <WealthTextField
-                      label="Client name"
-                      value={name}
-                      onChange={setName}
-                      error={clientNameError}
-                      autoComplete="name"
-                    />
-                    <WealthYearField
-                      label="Age"
-                      value={age}
-                      onChange={setAge}
-                      min={0}
-                      max={120}
-                      error={clientAgeError}
-                    />
-                    <WealthTextField
-                      label="Email"
-                      type="email"
-                      value={email}
-                      onChange={setEmail}
-                      error={clientEmailError}
-                      placeholder="client@email.com"
-                      autoComplete="email"
-                    />
-                    <WealthTextField
-                      label="Phone"
-                      type="tel"
-                      value={phone}
-                      onChange={setPhone}
-                      error={clientPhoneError}
-                      placeholder="+91 98765 43210"
-                      autoComplete="tel"
+                    <ClientProfileFields
+                      name={name}
+                      onName={setName}
+                      nameError={clientNameError}
+                      age={age}
+                      onAge={setAge}
+                      ageError={clientAgeError}
+                      email={email}
+                      onEmail={setEmail}
+                      emailError={clientEmailError}
+                      phone={phone}
+                      onPhone={setPhone}
+                      phoneError={clientPhoneError}
                     />
                     <WealthMoneyField
                       label="Loan principal"
@@ -1247,38 +1165,19 @@ export function LoansCalculator() {
               ) : (
                 <div className="py-2">
                   <WealthProfileGrid>
-                    <WealthTextField
-                      label="Client name"
-                      value={name}
-                      onChange={setName}
-                      error={clientNameError}
-                      autoComplete="name"
-                    />
-                    <WealthYearField
-                      label="Age"
-                      value={age}
-                      onChange={setAge}
-                      min={0}
-                      max={120}
-                      error={clientAgeError}
-                    />
-                    <WealthTextField
-                      label="Email"
-                      type="email"
-                      value={email}
-                      onChange={setEmail}
-                      error={clientEmailError}
-                      placeholder="client@email.com"
-                      autoComplete="email"
-                    />
-                    <WealthTextField
-                      label="Phone"
-                      type="tel"
-                      value={phone}
-                      onChange={setPhone}
-                      error={clientPhoneError}
-                      placeholder="+91 98765 43210"
-                      autoComplete="tel"
+                    <ClientProfileFields
+                      name={name}
+                      onName={setName}
+                      nameError={clientNameError}
+                      age={age}
+                      onAge={setAge}
+                      ageError={clientAgeError}
+                      email={email}
+                      onEmail={setEmail}
+                      emailError={clientEmailError}
+                      phone={phone}
+                      onPhone={setPhone}
+                      phoneError={clientPhoneError}
                     />
                     <WealthMoneyField
                       label="On-road cost"
@@ -1451,6 +1350,7 @@ export function LoansCalculator() {
         </div>
       }
       footer={
+        result ? (
         <WealthDisclaimer
           notes={[
             "EMI and interest savings depend on the stated rate, tenure, and payment schedule.",
@@ -1461,6 +1361,7 @@ export function LoansCalculator() {
           Figures are for illustration only. Loan EMIs, interest savings, and investment outcomes
           depend on assumed rates, taxes, and lender terms. Actual lender policies may differ.
         </WealthDisclaimer>
+        ) : null
       }
     />
     {mode === "emi" && result && Array.isArray(result.schedule) ? (
@@ -1617,7 +1518,6 @@ export function LoansCalculator() {
 
 function WealthResultCard({
   title,
-  accent,
   items,
 }: {
   title: string;
@@ -1631,21 +1531,33 @@ function WealthResultCard({
     tone?: string;
   }>;
 }) {
+  const hints = items.filter((item) => item.hint);
   return (
-    <DetailPanel title={title} accent={accent}>
-      {items.map((item) => (
-        <DetailRow
-          key={item.label}
-          label={item.label}
-          value={
-            item.displayValue ??
-            (item.value != null ? formatINRCurrency(item.value) : "—")
-          }
-          hint={item.hint}
-          highlight={item.highlight}
-        />
-      ))}
-    </DetailPanel>
+    <WealthAuditLedger
+      tableTitle={title}
+      columns={["Metric", "Amount"]}
+      rows={items.map((item) => ({
+        label: item.label,
+        highlight: item.highlight,
+        cells: [
+          {
+            text:
+              item.displayValue ??
+              (item.value != null ? formatINRCurrency(item.value) : "—"),
+            tone: item.highlight
+              ? ("pill" as const)
+              : item.tone === "tax" || item.tone === "rose"
+                ? ("rose" as const)
+                : ("default" as const),
+          },
+        ],
+      }))}
+      note={
+        hints.length > 0
+          ? hints.map((item) => `${item.label}: ${item.hint}`).join(" ")
+          : undefined
+      }
+    />
   );
 }
 
@@ -1808,39 +1720,60 @@ function EmiResults({
         ) : null}
 
         <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <DetailPanel title="Loan summary">
-            <DetailRow label="EMI" value={formatINRCurrency(result.emi)} />
-            <DetailRow label="Principal" value={formatINRCurrency(result.totalPrincipal)} />
-            <DetailRow
-              label="Interest"
-              value={formatINRCurrency(result.totalInterest)}
-              hint={`${formatPercent(interestBurdenPct, 0)} of principal`}
-            />
-            <DetailRow label="Total paid" value={formatINRCurrency(result.totalPaid)} />
-          </DetailPanel>
-          <DetailPanel title="Recover interest" accent>
-            <DetailRow label="Total interest" value={formatINRCurrency(result.totalInterest)} />
-            <DetailRow
-              label="Return / term"
-              value={`${formatPercent(result.recoverReturnPct, 0)} · ${result.recoverMonths / 12}y`}
-            />
-            <DetailRow
-              label="SIP start now"
-              value={formatINRCurrency(result.recoverMonthlySip)}
-              highlight
-            />
-            <DetailRow label="Total invested" value={formatINRCurrency(result.recoverInvested)} />
-            <DetailRow
-              label={`SIP after ${result.delayMonths} mo`}
-              value={formatINRCurrency(result.delayedRecoverMonthlySip)}
-              hint={
-                delayExtra > 0
-                  ? `+${formatINRCurrency(delayExtra)}/mo if you wait`
-                  : undefined
-              }
-            />
-          </DetailPanel>
+          <WealthAuditLedger
+            tableTitle="Loan summary"
+            columns={["Metric", "Amount"]}
+            rows={[
+              { label: "EMI", cells: [{ text: formatINRCurrency(result.emi) }] },
+              { label: "Principal", cells: [{ text: formatINRCurrency(result.totalPrincipal) }] },
+              {
+                label: "Interest",
+                tax: true,
+                cells: [{ text: formatINRCurrency(result.totalInterest), tone: "rose" as const }],
+              },
+              {
+                label: "Total paid",
+                highlight: true,
+                cells: [{ text: formatINRCurrency(result.totalPaid), tone: "pill" as const }],
+              },
+            ]}
+            note={`Interest is ${formatPercent(interestBurdenPct, 0)} of principal.`}
+          />
+          <WealthAuditLedger
+            tableTitle="Recover interest"
+            columns={["Metric", "Amount"]}
+            rows={[
+              { label: "Total interest", cells: [{ text: formatINRCurrency(result.totalInterest) }] },
+              {
+                label: "Return / term",
+                cells: [
+                  {
+                    text: `${formatPercent(result.recoverReturnPct, 0)} · ${result.recoverMonths / 12}y`,
+                  },
+                ],
+              },
+              {
+                label: "SIP start now",
+                highlight: true,
+                cells: [{ text: formatINRCurrency(result.recoverMonthlySip), tone: "pill" as const }],
+              },
+              {
+                label: "Total invested",
+                cells: [{ text: formatINRCurrency(result.recoverInvested), tone: "emerald" as const }],
+              },
+            ]}
+          />
         </div>
+        {delayExtra > 0 ? (
+          <div className="mt-4 rounded-xl border border-dashed border-rose-300 bg-rose-50/70 p-4">
+            <p className="text-xs font-semibold text-rose-800">Cost of a delayed recovery SIP</p>
+            <p className="mt-1 text-[11px] leading-relaxed text-rose-700">
+              Waiting {result.delayMonths} months raises the recovery SIP to{" "}
+              {formatINRCurrency(result.delayedRecoverMonthlySip)}, about{" "}
+              {formatINRCurrency(delayExtra)} more each month.
+            </p>
+          </div>
+        ) : null}
 
         {milestones.length > 0 ? (
           <div className="mt-4 rounded-2xl border border-slate-200/80 bg-white px-4 py-3">
@@ -1915,19 +1848,30 @@ function EmiResults({
           </WealthIconMark>
         }
       >
-        <WealthSegmented
-          variant="underline"
-          fullWidth
-          layoutId="emi-chart-tab"
-          value={chartTab}
-          onChange={setChartTab}
-          options={[
-            { id: "payments", label: "Payments", icon: <IconChart className="h-3.5 w-3.5" /> },
-            { id: "mix", label: "Mix", icon: <IconDonut className="h-3.5 w-3.5" /> },
-            { id: "balance", label: "Balance", icon: <IconTimeline className="h-3.5 w-3.5" /> },
-          ]}
-        />
-        <div className="mt-5 pt-0.5">
+        <WealthAnalyticsChrome
+          tabs={
+            <WealthSegmented
+              variant="underline"
+              fullWidth
+              layoutId="emi-chart-tab"
+              value={chartTab}
+              onChange={setChartTab}
+              options={[
+                { id: "payments", label: "Payments", icon: <IconChart className="h-3.5 w-3.5" /> },
+                { id: "mix", label: "Mix", icon: <IconDonut className="h-3.5 w-3.5" /> },
+                { id: "balance", label: "Balance", icon: <IconTimeline className="h-3.5 w-3.5" /> },
+              ]}
+            />
+          }
+        >
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={chartTab}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.22 }}
+          >
           {chartTab === "payments" ? (
             <WealthGrowthLine
               data={result.schedule.map((row) => ({
@@ -1954,24 +1898,22 @@ function EmiResults({
             />
           ) : null}
           {chartTab === "balance" ? (
-            <ChartFrame height="h-[280px] sm:h-[320px]">
-              <StackedAreaChart
-                title="Remaining principal vs cumulative interest paid"
-                className="h-full min-h-0"
-                data={area}
-                series={[
-                  { key: "remaining", label: "Remaining principal", color: wealthChart.invested },
-                  {
-                    key: "interestPaid",
-                    label: "Cumulative interest paid",
-                    color: wealthChart.tax,
-                  },
-                ]}
-                xTickFormatter={(month) => monthTickLabel(month, totalMonths)}
-              />
-            </ChartFrame>
+            <WealthStackedArea
+              data={area}
+              xTick={(month) => monthTickLabel(Number(month), totalMonths)}
+              series={[
+                { key: "remaining", label: "Remaining principal", color: wealthChart.invested },
+                {
+                  key: "interestPaid",
+                  label: "Cumulative interest paid",
+                  color: wealthChart.tax,
+                },
+              ]}
+            />
           ) : null}
-        </div>
+          </motion.div>
+        </AnimatePresence>
+        </WealthAnalyticsChrome>
       </WealthSection>
 
       <WealthSection
@@ -1986,6 +1928,21 @@ function EmiResults({
           </WealthIconMark>
         }
       >
+        <WealthAuditLedger
+          className="mb-5"
+          stats={[
+            { label: "Tenure", value: `${totalMonths} mo` },
+            { label: "Monthly EMI", value: formatINRCurrency(result.emi), tone: "emerald" },
+            { label: "Total interest", value: formatINRCurrency(result.totalInterest) },
+          ]}
+          columns={["Metric", "Amount"]}
+          rows={[
+            { label: "Principal", cells: [{ text: formatINRCurrency(result.totalPrincipal) }] },
+            { label: "Interest", cells: [{ text: formatINRCurrency(result.totalInterest) }] },
+            { label: "Total paid", cells: [{ text: formatINRCurrency(result.totalPaid) }], highlight: true },
+          ]}
+          note="Month rows below split each EMI into principal, interest, and remaining balance."
+        />
         <WealthDataTable
           rows={scheduleRows}
           getRowKey={(row, i) => `${row.month}-${row.marker}-${i}`}
@@ -2072,6 +2029,7 @@ function PrepayResults({
   const originalTerm = formatLoanRemaining(originalMonths);
   const timeSaved = formatLoanRemaining(result.monthsSaved);
   const sipLower = Math.max(0, result.recoverSip - result.revisedRecoverSip);
+  const [prepayTab, setPrepayTab] = useState<"path" | "compare" | "results">("path");
 
   const scheduleRows = result.schedule as Array<
     AmortRow & { extra?: number }
@@ -2105,38 +2063,38 @@ function PrepayResults({
           </span>
         }
       >
-      <div className="grid w-full grid-cols-4 gap-2">
-        <div className="relative flex min-h-[5.25rem] min-w-0 flex-col justify-center overflow-hidden rounded-xl border border-[var(--app-step-text)]/30 bg-[var(--app-step-bg)] px-3 py-2.5">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-step-text)]">
+      <div className="grid w-full grid-cols-2 gap-2 lg:grid-cols-4">
+        <div className="relative flex min-h-[5.25rem] min-w-0 flex-col justify-center overflow-hidden rounded-xl border border-emerald-200/70 bg-emerald-50/70 px-3 py-2.5">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700">
             Yearly extra payments
           </div>
           {result.monthsSaved > 0 || result.interestSaved > 0 ? (
             <div className="mt-1.5 grid grid-cols-2 gap-2">
-              <div className="rounded-lg bg-[var(--app-surface)]/70 px-2 py-1.5">
-                <div className="text-[9px] font-semibold uppercase tracking-wide text-[var(--app-step-text)]">
+              <div className="rounded-lg bg-white/70 px-2 py-1.5">
+                <div className="text-[9px] font-semibold uppercase tracking-wide text-emerald-700">
                   Debt-free sooner
                 </div>
-                <div className="mt-0.5 text-sm font-semibold tabular-nums text-[var(--app-step-text-strong)]">
+                <div className="mt-0.5 text-sm font-semibold tabular-nums text-emerald-900">
                   {timeSaved.primary} saved
                 </div>
-                <div className="mt-0.5 text-[10px] tabular-nums text-[var(--app-step-text)]">
+                <div className="mt-0.5 text-[10px] tabular-nums text-emerald-700">
                   {originalMonths}m → {monthsPaid}m
                 </div>
               </div>
-              <div className="rounded-lg bg-[var(--app-surface)]/70 px-2 py-1.5">
-                <div className="text-[9px] font-semibold uppercase tracking-wide text-[var(--app-step-text)]">
+              <div className="rounded-lg bg-white/70 px-2 py-1.5">
+                <div className="text-[9px] font-semibold uppercase tracking-wide text-emerald-700">
                   Interest saved
                 </div>
-                <div className="mt-0.5 text-sm font-semibold tabular-nums text-[var(--app-step-text-strong)]">
+                <div className="mt-0.5 text-sm font-semibold tabular-nums text-emerald-900">
                   {formatINRCurrency(result.interestSaved)}
                 </div>
-                <div className="mt-0.5 text-[10px] tabular-nums text-[var(--app-step-text)]">
+                <div className="mt-0.5 text-[10px] tabular-nums text-emerald-700">
                   Paid in {paidIn.primary}
                 </div>
               </div>
             </div>
           ) : (
-            <div className="mt-1.5 text-sm font-semibold leading-snug text-[var(--app-step-text-strong)]">
+            <div className="mt-1.5 text-sm font-semibold leading-snug text-emerald-900">
               Add a yearly extra payment to shorten the loan and reduce interest.
             </div>
           )}
@@ -2161,9 +2119,9 @@ function PrepayResults({
       </div>
 
       {extraMonths.length > 0 ? (
-        <div className="rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-2.5 sm:px-4">
+        <div className="rounded-xl border border-slate-200/80 bg-white px-3 py-2.5 sm:px-4">
           <div className="mb-2.5 flex flex-wrap items-baseline justify-between gap-2">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
               Extra payment timeline
             </div>
             <div className="text-xs text-slate-400">
@@ -2172,7 +2130,7 @@ function PrepayResults({
           </div>
           <div className="relative w-full overflow-x-auto pt-1">
             <div
-              className="pointer-events-none absolute left-6 right-6 top-[0.95rem] h-0.5 bg-[var(--app-border)]"
+              className="pointer-events-none absolute left-6 right-6 top-[0.95rem] h-0.5 bg-slate-200"
               aria-hidden
             />
             <div className="relative z-[1] flex min-w-[28rem] items-start justify-between gap-2">
@@ -2181,28 +2139,28 @@ function PrepayResults({
                   key={month}
                   className="flex min-w-0 flex-1 flex-col items-center"
                 >
-                  <div className="flex size-8 items-center justify-center rounded-full border-2 border-[var(--app-warn-border)] bg-[var(--app-warn-bg)] text-[var(--app-warn-text-strong)]">
+                  <div className="flex size-8 items-center justify-center rounded-full border-2 border-amber-200 bg-amber-50 text-amber-800">
                     <span className="text-[10px] font-bold">Y{index + 1}</span>
                   </div>
                   <div className="mt-1.5 text-center">
-                    <div className="text-[10px] font-semibold uppercase tracking-wide text-[var(--app-text-muted)]">
+                    <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
                       Month {month}
                     </div>
-                    <div className="text-[11px] font-semibold tabular-nums text-[var(--app-warn-text)]">
-                      +{formatCompactINR(yearlyExtra)}
+                    <div className="text-[11px] font-semibold tabular-nums text-amber-800">
+                      +{formatINRCurrency(yearlyExtra)}
                     </div>
                   </div>
                 </div>
               ))}
               <div className="flex min-w-0 flex-1 flex-col items-center">
-                <div className="flex size-8 items-center justify-center rounded-full border-2 border-[var(--app-step-text)] bg-[var(--app-step-bg)] text-[var(--app-step-text-strong)]">
+                <div className="flex size-8 items-center justify-center rounded-full border-2 border-emerald-600 bg-emerald-50 text-emerald-900">
                   <span className="text-[10px] font-bold">✓</span>
                 </div>
                 <div className="mt-1.5 text-center">
-                  <div className="text-[10px] font-semibold uppercase tracking-wide text-[var(--app-step-text)]">
+                  <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
                     Paid off
                   </div>
-                  <div className="text-[11px] font-semibold tabular-nums text-[var(--app-step-text-strong)]">
+                  <div className="text-[11px] font-semibold tabular-nums text-emerald-900">
                     Month {monthsPaid}
                   </div>
                 </div>
@@ -2225,8 +2183,31 @@ function PrepayResults({
           </WealthIconMark>
         }
       >
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:items-start">
-        <div className="space-y-4 lg:col-span-7">
+      <WealthAnalyticsChrome
+        tabs={
+          <WealthSegmented
+            variant="underline"
+            layoutId="prepay-analytics"
+            value={prepayTab}
+            onChange={setPrepayTab}
+            options={[
+              { id: "path", label: "Path", icon: <IconTimeline className="h-3.5 w-3.5" /> },
+              { id: "compare", label: "Compare", icon: <IconChart className="h-3.5 w-3.5" /> },
+              { id: "results", label: "Results", icon: <IconRates className="h-3.5 w-3.5" /> },
+            ]}
+          />
+        }
+      >
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={prepayTab}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.22 }}
+        >
+      {prepayTab === "path" ? (
+        <div className="space-y-4">
           <WealthGrowthLine
             data={line}
             xTick={(month) => {
@@ -2247,20 +2228,17 @@ function PrepayResults({
               },
             ]}
           />
-          <div className="-mt-1 px-0.5 text-xs text-slate-400">
+          <div className="px-0.5 text-xs text-slate-400">
             Debt-free in {monthsPaid} months ({paidIn.primary}). Scheduled term was{" "}
             {originalTerm.primary}.
           </div>
         </div>
-
-        <div className="space-y-4 lg:col-span-5">
+      ) : null}
+      {prepayTab === "results" ? (
           <WealthResultCard
             title="Results"
             items={[
-              {
-                label: "EMI",
-                value: result.emi,
-              },
+              { label: "EMI", value: result.emi },
               {
                 label: "Loan paid in",
                 displayValue: `${paidIn.primary} (${monthsPaid} months)`,
@@ -2277,10 +2255,7 @@ function PrepayResults({
                 tone: "gain",
                 highlight: true,
               },
-              {
-                label: "Total extra payments",
-                value: result.totalExtra,
-              },
+              { label: "Total extra payments", value: result.totalExtra },
               {
                 label: "SIP to recover original interest",
                 value: result.recoverSip,
@@ -2296,9 +2271,8 @@ function PrepayResults({
               },
             ]}
           />
-        </div>
-      </div>
-
+      ) : null}
+      {prepayTab === "compare" ? (
       <div className="grid w-full grid-cols-1 gap-3 md:grid-cols-2">
         <WealthCompareBars
           data={[
@@ -2313,48 +2287,48 @@ function PrepayResults({
           ]}
           series={[{ key: "value", label: "Interest", color: wealthChart.tax }]}
         />
-        <div className="flex min-h-[240px] flex-col overflow-hidden rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)]">
-          <div className="border-b border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-2.5">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
+        <div className="flex min-h-[240px] flex-col overflow-hidden rounded-xl border border-slate-200/80 bg-white">
+          <div className="border-b border-slate-200/80 bg-slate-50 px-3 py-2.5">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
               Loan duration
             </div>
           </div>
           <div className="flex flex-1 flex-col gap-2.5 p-3">
             <div className="grid flex-1 grid-cols-2 gap-2.5">
-              <div className="flex flex-col justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-2.5">
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-[var(--app-text-muted)]">
+              <div className="flex flex-col justify-center rounded-lg border border-slate-200/80 bg-slate-50 px-3 py-2.5">
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
                   Original
                 </div>
-                <div className="mt-1 text-xl font-semibold tabular-nums leading-none text-[var(--app-text)]">
+                <div className="mt-1 text-xl font-semibold tabular-nums leading-none text-slate-900">
                   {originalMonths}
-                  <span className="ml-1 text-sm font-semibold text-[var(--app-text-muted)]">mo</span>
+                  <span className="ml-1 text-sm font-semibold text-slate-500">mo</span>
                 </div>
                 <div className="mt-1.5 text-xs text-slate-400">{originalTerm.primary}</div>
               </div>
-              <div className="flex flex-col justify-center rounded-lg border border-[var(--app-step-text)]/30 bg-[var(--app-step-bg)] px-3 py-2.5">
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-[var(--app-step-text)]">
+              <div className="flex flex-col justify-center rounded-lg border border-emerald-200/70 bg-emerald-50/70 px-3 py-2.5">
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
                   With extra
                 </div>
-                <div className="mt-1 text-xl font-semibold tabular-nums leading-none text-[var(--app-step-text-strong)]">
+                <div className="mt-1 text-xl font-semibold tabular-nums leading-none text-emerald-900">
                   {monthsPaid}
-                  <span className="ml-1 text-sm font-semibold text-[var(--app-step-text)]">mo</span>
+                  <span className="ml-1 text-sm font-semibold text-emerald-700">mo</span>
                 </div>
-                <div className="mt-1.5 text-[11px] font-medium tabular-nums text-[var(--app-step-text)]">
+                <div className="mt-1.5 text-[11px] font-medium tabular-nums text-emerald-700">
                   {paidIn.primary}
                 </div>
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-[10px] font-semibold tabular-nums text-[var(--app-text-muted)]">
+              <div className="flex items-center justify-between text-[10px] font-semibold tabular-nums text-slate-500">
                 <span>Paid off by</span>
                 <span>
                   {monthsPaid}/{originalMonths} mo
                 </span>
               </div>
-              <div className="relative h-2 overflow-hidden rounded-full bg-[var(--app-surface-muted)]">
+              <div className="relative h-2 overflow-hidden rounded-full bg-slate-50">
                 <div
-                  className="absolute inset-y-0 left-0 rounded-full bg-[var(--app-step-text)]/70"
+                  className="absolute inset-y-0 left-0 rounded-full bg-emerald-600/70"
                   style={{
                     width: `${Math.min(100, (monthsPaid / Math.max(1, originalMonths)) * 100)}%`,
                   }}
@@ -2362,15 +2336,19 @@ function PrepayResults({
               </div>
             </div>
 
-            <div className="rounded-lg border border-[var(--app-step-text)]/30 bg-[var(--app-step-bg)] px-3 py-2 text-sm font-semibold text-[var(--app-step-text-strong)]">
+            <div className="rounded-lg border border-emerald-200/70 bg-emerald-50/70 px-3 py-2 text-sm font-semibold text-emerald-900">
               {result.monthsSaved} month{result.monthsSaved === 1 ? "" : "s"} saved
-              <span className="ml-1.5 font-normal text-[var(--app-step-text)]">
+              <span className="ml-1.5 font-normal text-emerald-700">
                 · {originalMonths} → {monthsPaid} mo
               </span>
             </div>
           </div>
         </div>
       </div>
+      ) : null}
+      </motion.div>
+      </AnimatePresence>
+      </WealthAnalyticsChrome>
       </WealthSection>
 
       <WealthSection
@@ -2385,6 +2363,24 @@ function PrepayResults({
           </WealthIconMark>
         }
       >
+        <WealthAuditLedger
+          className="mb-5"
+          stats={[
+            { label: "Months paid", value: String(monthsPaid) },
+            { label: "EMI", value: formatINRCurrency(result.emi) },
+            {
+              label: "Interest saved",
+              value: formatINRCurrency(result.interestSaved),
+              tone: "emerald",
+            },
+          ]}
+          columns={["Metric", "Amount"]}
+          rows={[
+            { label: "Total extra paid", cells: [{ text: formatINRCurrency(result.totalExtra) }] },
+            { label: "Months saved", cells: [{ text: String(result.monthsSaved) }], highlight: true },
+          ]}
+          note="The schedule below shows each EMI month after the yearly extra is applied."
+        />
         <WealthDataTable
           rows={scheduleRows}
           getRowKey={(row) => row.month}
@@ -2478,6 +2474,7 @@ function ExtraVsInvestResults({
   const investWins = result.option2Saving > result.option1Saving + 1e-6;
   const prepayWins = result.option1Saving > result.option2Saving + 1e-6;
   const tie = !investWins && !prepayWins;
+  const [extraTab, setExtraTab] = useState<"compare" | "path" | "results">("compare");
   const originalMonths = tenureYears * 12;
   const debtFreeFaster = result.remainingMonths + decisionMonth < originalMonths;
 
@@ -2543,15 +2540,15 @@ function ExtraVsInvestResults({
         }
       >
       <div className="grid grid-cols-1 gap-2 lg:grid-cols-3">
-        <div className="flex min-w-0 flex-col justify-center rounded-xl border border-[var(--app-border)] bg-[var(--app-surface)] px-3.5 py-3">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-text-muted)]">
+        <div className="flex min-w-0 flex-col justify-center rounded-xl border border-slate-200/80 bg-white px-3.5 py-3">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
             Which is financially better?
           </div>
-          <div className="mt-1 text-sm font-semibold leading-snug text-[var(--app-text)] sm:text-[15px]">
+          <div className="mt-1 text-sm font-semibold leading-snug text-slate-900 sm:text-[15px]">
             {decisionTitle}
           </div>
           {!tie ? (
-            <div className="mt-1.5 text-[12px] font-semibold tabular-nums text-[var(--app-step-text)]">
+            <div className="mt-1.5 text-[12px] font-semibold tabular-nums text-emerald-700">
               Advantage {formatINRCurrency(advantage)}
               <span className="ml-1.5 font-normal text-xs text-slate-400">
                 · {formatPercent(investReturnPct, 1)}
@@ -2581,8 +2578,31 @@ function ExtraVsInvestResults({
           </WealthIconMark>
         }
       >
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:items-start">
-        <div className="space-y-4 lg:col-span-7">
+      <WealthAnalyticsChrome
+        tabs={
+          <WealthSegmented
+            variant="underline"
+            layoutId="extra-analytics"
+            value={extraTab}
+            onChange={setExtraTab}
+            options={[
+              { id: "compare", label: "Compare", icon: <IconChart className="h-3.5 w-3.5" /> },
+              { id: "path", label: "Path", icon: <IconTimeline className="h-3.5 w-3.5" /> },
+              { id: "results", label: "Results", icon: <IconRates className="h-3.5 w-3.5" /> }
+            ]}
+          />
+        }
+      >
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={extraTab}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.22 }}
+        >
+      {extraTab === "compare" ? (
+        <div className="space-y-4">
           <WealthCompareBars
             data={[
               {
@@ -2606,7 +2626,11 @@ function ExtraVsInvestResults({
               { key: "invest", label: "Invest extra", color: wealthChart.stepUp },
             ]}
           />
-          <div className="flex flex-col gap-1.5">
+        </div>
+      ) : null}
+      {extraTab === "path" ? (
+        <div className="space-y-4">
+<div className="flex flex-col gap-1.5">
             <WealthGrowthLine
               data={result.path.map((row) => ({
                 year: row.month,
@@ -2624,15 +2648,17 @@ function ExtraVsInvestResults({
               ]}
             />
             <div className="px-0.5 text-xs text-slate-400">
-              ₹{formatCompactINR(extraAmount)} invested at Month {decisionMonth}
+              {formatINRCurrency(extraAmount)} invested at Month {decisionMonth}
               {endPoint
                 ? `. At month ${endPoint.month}: loan ${formatINRCurrency(endPoint.outstandingPrepay)}, investment ${formatINRCurrency(endPoint.investment)}.`
                 : "."}
             </div>
           </div>
         </div>
-
-        <div className="space-y-4 lg:col-span-5">
+      ) : null}
+      {extraTab === "results" ? (
+        <div className="space-y-4">
+<div className="space-y-4 lg:col-span-5">
           <WealthResultCard
             title="Option 1 · Prepay"
             items={[
@@ -2680,11 +2706,16 @@ function ExtraVsInvestResults({
             ]}
           />
         </div>
-      </div>
+        </div>
+      ) : null}
+        </motion.div>
+      </AnimatePresence>
+      </WealthAnalyticsChrome>
+
       </WealthSection>
 
       <WealthSection
-        badge="04 · Ledger"
+        badge="04 · Audit"
         title="Decision Comparison Ledger"
         subtitle="Side-by-side metrics for prepay versus invest the extra amount"
         open={openSchedule}
@@ -2695,6 +2726,30 @@ function ExtraVsInvestResults({
           </WealthIconMark>
         }
       >
+        <WealthAuditLedger
+          className="mb-5"
+          stats={[
+            { label: "Extra amount", value: formatINRCurrency(extraAmount) },
+            { label: "Decision month", value: `M${decisionMonth}` },
+            {
+              label: prepayWins ? "Prepay saving" : "Invest saving",
+              value: formatINRCurrency(prepayWins ? result.option1Saving : result.option2Saving),
+              tone: "emerald",
+            },
+          ]}
+          columns={["Metric", "Prepay", "Invest"]}
+          rows={[
+            {
+              label: "Saving vs original",
+              cells: [
+                { text: formatINRCurrency(result.option1Saving), tone: prepayWins ? "emerald" : "default" },
+                { text: formatINRCurrency(result.option2Saving), tone: investWins ? "emerald" : "default" },
+              ],
+              highlight: true,
+            },
+          ]}
+          note="The table below lists every compared metric for the two uses of the extra amount."
+        />
         <WealthDataTable
           rows={compareRows}
           getRowKey={(row) => row.label}
@@ -2772,6 +2827,7 @@ function RecoveryResults({
   const totalInvested =
     result.totalInvestedLoanPlusSip ?? result.proposedPaid + result.sipInvested;
   const accelerated = yearsSaved > 0;
+  const [recoveryTab, setRecoveryTab] = useState<"path" | "compare" | "results">("path");
 
   const compareRows: Array<{ label: string; baseline: string; proposed: string }> = [
     {
@@ -2825,38 +2881,38 @@ function RecoveryResults({
           </span>
         }
       >
-      <div className="grid w-full grid-cols-4 gap-2">
-        <div className="relative flex min-h-[5.25rem] min-w-0 flex-col justify-center overflow-hidden rounded-xl border border-[var(--app-step-text)]/30 bg-[var(--app-step-bg)] px-3 py-2.5">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-step-text)]">
+      <div className="grid w-full grid-cols-2 gap-2 lg:grid-cols-4">
+        <div className="relative flex min-h-[5.25rem] min-w-0 flex-col justify-center overflow-hidden rounded-xl border border-emerald-200/70 bg-emerald-50/70 px-3 py-2.5">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700">
             Loan shortening strategy
           </div>
           {accelerated ? (
             <div className="mt-1.5 grid grid-cols-2 gap-2">
-              <div className="rounded-lg bg-[var(--app-surface)]/70 px-2 py-1.5">
-                <div className="text-[9px] font-semibold uppercase tracking-wide text-[var(--app-step-text)]">
+              <div className="rounded-lg bg-white/70 px-2 py-1.5">
+                <div className="text-[9px] font-semibold uppercase tracking-wide text-emerald-700">
                   Debt-free sooner
                 </div>
-                <div className="mt-0.5 text-sm font-semibold tabular-nums text-[var(--app-step-text-strong)]">
+                <div className="mt-0.5 text-sm font-semibold tabular-nums text-emerald-900">
                   {yearsSaved}y earlier
                 </div>
-                <div className="mt-0.5 text-[10px] tabular-nums text-[var(--app-step-text)]">
+                <div className="mt-0.5 text-[10px] tabular-nums text-emerald-700">
                   {baselineYears}y → {proposedYears}y
                 </div>
               </div>
-              <div className="rounded-lg bg-[var(--app-surface)]/70 px-2 py-1.5">
-                <div className="text-[9px] font-semibold uppercase tracking-wide text-[var(--app-step-text)]">
+              <div className="rounded-lg bg-white/70 px-2 py-1.5">
+                <div className="text-[9px] font-semibold uppercase tracking-wide text-emerald-700">
                   Extra wealth
                 </div>
-                <div className="mt-0.5 text-sm font-semibold tabular-nums text-[var(--app-step-text-strong)]">
+                <div className="mt-0.5 text-sm font-semibold tabular-nums text-emerald-900">
                   +{formatINRCurrency(result.additionalWealth)}
                 </div>
-                <div className="mt-0.5 text-[10px] tabular-nums text-[var(--app-step-text)]">
+                <div className="mt-0.5 text-[10px] tabular-nums text-emerald-700">
                   Interest saved {formatINRCurrency(interestSaved)}
                 </div>
               </div>
             </div>
           ) : (
-            <div className="mt-1.5 text-sm font-semibold leading-snug text-[var(--app-step-text-strong)]">
+            <div className="mt-1.5 text-sm font-semibold leading-snug text-emerald-900">
               Shorten tenure to accelerate payoff and build SIP wealth
             </div>
           )}
@@ -2890,9 +2946,32 @@ function RecoveryResults({
           </WealthIconMark>
         }
       >
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:items-start">
-        <div className="space-y-4 lg:col-span-7">
-          <WealthGrowthLine
+      <WealthAnalyticsChrome
+        tabs={
+          <WealthSegmented
+            variant="underline"
+            layoutId="recovery-analytics"
+            value={recoveryTab}
+            onChange={setRecoveryTab}
+            options={[
+              { id: "path", label: "Path", icon: <IconTimeline className="h-3.5 w-3.5" /> },
+              { id: "compare", label: "Compare", icon: <IconChart className="h-3.5 w-3.5" /> },
+              { id: "results", label: "Results", icon: <IconRates className="h-3.5 w-3.5" /> }
+            ]}
+          />
+        }
+      >
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={recoveryTab}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.22 }}
+        >
+      {recoveryTab === "path" ? (
+        <div className="space-y-4">
+<WealthGrowthLine
             height="h-[420px] sm:h-[460px]"
             data={result.schedule.map((row) => ({
               year: row.year,
@@ -2918,13 +2997,14 @@ function RecoveryResults({
               },
             ]}
           />
-          <div className="px-0.5 text-xs text-slate-400">
+<div className="px-0.5 text-xs text-slate-400">
             Accelerated payoff at year {proposedYears}. Baseline repaid at year {baselineYears}.
           </div>
         </div>
-
-        <div className="space-y-4 lg:col-span-5">
-          <WealthCompareBars
+      ) : null}
+      {recoveryTab === "compare" ? (
+        <div className="space-y-4">
+<WealthCompareBars
             data={[
               {
                 category: "Baseline",
@@ -2946,7 +3026,11 @@ function RecoveryResults({
             Proposed total {formatINRCurrency(result.totalAssetPlusWealth)}. Additional wealth{" "}
             {formatINRCurrency(result.additionalWealth)}.
           </div>
-          <WealthResultCard
+        </div>
+      ) : null}
+      {recoveryTab === "results" ? (
+        <div className="space-y-4">
+<WealthResultCard
             title="Proposed + SIP"
             accent
             items={[
@@ -3009,7 +3093,11 @@ function RecoveryResults({
             ]}
           />
         </div>
-      </div>
+      ) : null}
+        </motion.div>
+      </AnimatePresence>
+      </WealthAnalyticsChrome>
+
       </WealthSection>
 
       <WealthSection
@@ -3024,6 +3112,25 @@ function RecoveryResults({
           </WealthIconMark>
         }
       >
+        <WealthAuditLedger
+          className="mb-5"
+          stats={[
+            { label: "Baseline", value: `${baselineYears} yr` },
+            { label: "Proposed", value: `${proposedYears} yr`, tone: "emerald" },
+            { label: "Extra wealth", value: formatINRCurrency(result.additionalWealth) },
+          ]}
+          columns={["Metric", "Amount"]}
+          rows={[
+            { label: "Baseline interest", cells: [{ text: formatINRCurrency(result.baselineInterest) }] },
+            { label: "Proposed interest", cells: [{ text: formatINRCurrency(result.proposedInterest) }] },
+            {
+              label: "Additional wealth",
+              cells: [{ text: formatINRCurrency(result.additionalWealth) }],
+              highlight: true,
+            },
+          ]}
+          note="Year rows below track baseline outstanding, SIP value, and proposed loan-plus-SIP wealth."
+        />
         <WealthDataTable
           rows={result.schedule}
           getRowKey={(row) => row.year}
@@ -3143,6 +3250,7 @@ function VehicleResults({
     best && runnerUp ? best.financialBenefit - runnerUp.financialBenefit : 0;
   const downPayment = Math.max(0, onRoadCost - loanAmount);
   const lastDep = result.depreciation[result.depreciation.length - 1];
+  const [vehicleTab, setVehicleTab] = useState<"compare" | "stack" | "results">("compare");
   const depRows: Array<Record<string, unknown>> = [
     ...result.depreciation.map((row) => ({ ...row })),
     {
@@ -3164,7 +3272,7 @@ function VehicleResults({
         returnPct == null
           ? `Rank #${rank}`
           : `${formatPercent(returnPct, 0)} · #${rank}`,
-      fill: isBest ? "var(--app-chart-gain)" : "var(--app-chart-invested)",
+      fill: isBest ? wealthChart.stepUp : wealthChart.invested,
       tooltipDetails: [
         ...(returnPct == null
           ? []
@@ -3215,35 +3323,35 @@ function VehicleResults({
         }
       >
       <div className="grid w-full grid-cols-1 gap-2 min-[640px]:grid-cols-4">
-        <div className="relative flex min-h-[5.25rem] min-w-0 flex-col justify-center overflow-hidden rounded-xl border border-[var(--app-step-text)]/30 bg-[var(--app-step-bg)] px-3 py-2.5">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--app-step-text)]">
+        <div className="relative flex min-h-[5.25rem] min-w-0 flex-col justify-center overflow-hidden rounded-xl border border-emerald-200/70 bg-emerald-50/70 px-3 py-2.5">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700">
             Best financing path
           </div>
           {best ? (
             <div className="mt-1.5 grid grid-cols-2 gap-2">
-              <div className="rounded-lg bg-[var(--app-surface)]/70 px-2 py-1.5">
-                <div className="text-[9px] font-semibold uppercase tracking-wide text-[var(--app-step-text)]">
+              <div className="rounded-lg bg-white/70 px-2 py-1.5">
+                <div className="text-[9px] font-semibold uppercase tracking-wide text-emerald-700">
                   Rank #1
                 </div>
-                <div className="mt-0.5 text-sm font-semibold text-[var(--app-step-text-strong)]">
+                <div className="mt-0.5 text-sm font-semibold text-emerald-900">
                   {best.name}
                 </div>
-                <div className="mt-0.5 text-[10px] tabular-nums text-[var(--app-step-text)]">
+                <div className="mt-0.5 text-[10px] tabular-nums text-emerald-700">
                   {formatINRCurrency(best.financialBenefit)}
                 </div>
               </div>
-              <div className="rounded-lg bg-[var(--app-surface)]/70 px-2 py-1.5">
-                <div className="text-[9px] font-semibold uppercase tracking-wide text-[var(--app-step-text)]">
+              <div className="rounded-lg bg-white/70 px-2 py-1.5">
+                <div className="text-[9px] font-semibold uppercase tracking-wide text-emerald-700">
                   {vsNoLoan > 0 ? "Vs no loan" : "Edge vs #2"}
                 </div>
-                <div className="mt-0.5 text-sm font-semibold tabular-nums text-[var(--app-step-text-strong)]">
+                <div className="mt-0.5 text-sm font-semibold tabular-nums text-emerald-900">
                   {vsNoLoan > 0
                     ? formatINRCurrency(vsNoLoan)
                     : vsRunnerUp > 0
                       ? formatINRCurrency(vsRunnerUp)
                       : "—"}
                 </div>
-                <div className="mt-0.5 text-[10px] text-[var(--app-step-text)]">
+                <div className="mt-0.5 text-[10px] text-emerald-700">
                   {vsNoLoan > 0
                     ? "Extra benefit"
                     : runnerUp
@@ -3253,7 +3361,7 @@ function VehicleResults({
               </div>
             </div>
           ) : (
-            <div className="mt-1.5 text-sm font-semibold leading-snug text-[var(--app-step-text-strong)]">
+            <div className="mt-1.5 text-sm font-semibold leading-snug text-emerald-900">
               Compare loan-plus-invest options against paying cash.
             </div>
           )}
@@ -3288,12 +3396,12 @@ function VehicleResults({
                 key={opt.name}
                 className={`rounded-lg border px-2.5 py-1.5 text-[11px] ${
                   isBest
-                    ? "border-[var(--app-step-text)]/35 bg-[var(--app-step-bg)] text-[var(--app-step-text-strong)]"
-                    : "border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-text)]"
+                    ? "border-emerald-200/80 bg-emerald-50 text-emerald-900"
+                    : "border-slate-200/80 bg-white text-slate-900"
                 }`}
               >
                 <span className="font-semibold">#{rank} {opt.name}</span>
-                <span className="ml-1.5 tabular-nums text-[var(--app-text-muted)]">
+                <span className="ml-1.5 tabular-nums text-slate-500">
                   {formatINRCurrency(opt.financialBenefit)}
                 </span>
               </div>
@@ -3315,9 +3423,32 @@ function VehicleResults({
           </WealthIconMark>
         }
       >
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:items-start">
-        <div className="space-y-4 lg:col-span-7">
-          <WealthCompareBars
+      <WealthAnalyticsChrome
+        tabs={
+          <WealthSegmented
+            variant="underline"
+            layoutId="vehicle-analytics"
+            value={vehicleTab}
+            onChange={setVehicleTab}
+            options={[
+              { id: "compare", label: "Compare", icon: <IconChart className="h-3.5 w-3.5" /> },
+              { id: "stack", label: "Breakdown", icon: <IconDonut className="h-3.5 w-3.5" /> },
+              { id: "results", label: "Results", icon: <IconRates className="h-3.5 w-3.5" /> }
+            ]}
+          />
+        }
+      >
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={vehicleTab}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.22 }}
+        >
+      {vehicleTab === "compare" ? (
+        <div className="space-y-4">
+<WealthCompareBars
             showBarLabels
             height="h-[360px] sm:h-[400px]"
             data={compareData.map((row) => ({
@@ -3336,39 +3467,41 @@ function VehicleResults({
             Sorted best to worst. Assumes the loan amount is invested at each option&apos;s return
             while the EMI runs.
           </div>
-
-          <ChartFrame>
-            <StackedBarChart
-            title="Tax shield, investment gain, and net benefit"
-            className="h-[320px] min-h-[320px] w-full flex-none sm:h-[360px] sm:min-h-[360px]"
+        </div>
+      ) : null}
+      {vehicleTab === "stack" ? (
+        <div className="space-y-4">
+<WealthStackedBars
+            height="h-[320px] sm:h-[360px]"
             data={stackedData}
             series={[
               {
                 key: "taxShield",
                 label: "Tax shield",
-                color: "var(--app-chart-invested)",
+                color: wealthChart.invested,
               },
               {
                 key: "opportunity",
                 label: "After-tax investment gain",
-                color: "var(--app-chart-gain)",
+                color: wealthChart.stepUp,
               },
               {
                 key: "netBenefit",
                 label: "Net financial benefit",
-                color: "var(--app-chart-tax)",
+                color: wealthChart.tax,
               },
             ]}
           />
-          </ChartFrame>
           <div className="-mt-1 px-0.5 text-xs text-slate-400">
             Tax shield is the loan interest and depreciation tax benefit. Investment gain is
             after-tax profit on deploying the loan. Net benefit is the final outcome per option.
             Segments are shown for comparison and are not strictly additive.
           </div>
         </div>
-
-        <div className="space-y-4 lg:col-span-5">
+      ) : null}
+      {vehicleTab === "results" ? (
+        <div className="space-y-4">
+<div className="space-y-4 lg:col-span-5">
           <WealthResultCard
             title="Financing breakdown"
             items={[
@@ -3406,7 +3539,12 @@ function VehicleResults({
             ]}
           />
         </div>
-      </div>
+        </div>
+      ) : null}
+        </motion.div>
+      </AnimatePresence>
+      </WealthAnalyticsChrome>
+
       </WealthSection>
 
       <WealthSection
@@ -3421,6 +3559,31 @@ function VehicleResults({
           </WealthIconMark>
         }
       >
+        <WealthAuditLedger
+          className="mb-5"
+          stats={[
+            { label: "Options", value: String(ranked.length) },
+            {
+              label: "Best benefit",
+              value: best ? formatINRCurrency(best.financialBenefit) : "—",
+              tone: "emerald",
+            },
+            { label: "Tax saved", value: formatINRCurrency(result.totalTaxSaved) },
+          ]}
+          columns={["Metric", "Amount"]}
+          rows={[
+            {
+              label: "Best option",
+              cells: [{ text: best?.name ?? "—" }],
+              highlight: true,
+            },
+            {
+              label: "Total tax saved",
+              cells: [{ text: formatINRCurrency(result.totalTaxSaved) }],
+            },
+          ]}
+          note="Ranking rows below compare each financing path. Depreciation follows in the second table."
+        />
         <WealthDataTable
           rows={ranked.map((opt) => ({
             rank: rankByName[opt.name] ?? 0,

@@ -1,11 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   formatINRCurrency,
-  parseDigits,
-  StackedBarChart,
-  StatusNote,
   ageError,
   emailError,
   nameError,
@@ -26,8 +24,7 @@ import {
 } from "@/lib/calculator-nav";
 import { generatePdfFromElement } from "@/lib/pdf-generator";
 import {
-  ChartFrame,
-  IconAlert,
+  ClientProfileFields,
   IconBook,
   IconCalendar,
   IconChart,
@@ -43,20 +40,25 @@ import {
   IconTimeline,
   moneyCell,
   WEALTH_CONTENT_CLASS,
+  WealthAnalyticsChrome,
+  WealthAuditChip,
+  WealthAuditLedger,
   WealthCompareBars,
   WealthDataTable,
   WealthDisclaimer,
-  WealthFieldShell,
   wealthChart,
-  wealthInputClass,
   WealthHero,
   WealthIconMark,
   WealthMetricCard,
   WealthMoneyField,
+  WealthPercentField,
   WealthProfileGrid,
   WealthSection,
   WealthSegmented,
-  WEALTH_MONEY_PRESETS_DEFAULT,
+  WealthStackedBars,
+  WealthStatusNote,
+  WealthTextField,
+  WealthYearField,
 } from "@/components/wealth";
 
 const FEE_MIN = 1_000;
@@ -298,10 +300,42 @@ export function ChildEducationPlanner() {
             goalLabel={childName.trim() || "Child education"}
             tenure={result?.sipYears ?? Math.max(0, (result?.lastFeeAge ?? childAge) - childAge)}
             strategy="Education corpus planning"
-            targetCorpus={canCalculate && result ? result.totalWithdrawal : 0}
-            monthlySip={canCalculate && result ? result.sip.monthlySip : 0}
-            realReturnPct={returnPct}
             onEdit={scrollToAssumptions}
+            metrics={[
+              {
+                label: "Total withdrawal",
+                value: result?.totalWithdrawal ?? 0,
+                kind: "currency",
+                tone: "emerald",
+                mark: (
+                  <WealthIconMark tone="emerald" className="h-6 w-6">
+                    <IconTarget className="h-3.5 w-3.5" />
+                  </WealthIconMark>
+                ),
+              },
+              {
+                label: "Monthly SIP",
+                value: result?.sip.monthlySip ?? 0,
+                kind: "currency",
+                tone: "slate",
+                mark: (
+                  <WealthIconMark className="h-6 w-6">
+                    <IconSip className="h-3.5 w-3.5" />
+                  </WealthIconMark>
+                ),
+              },
+              {
+                label: "Lumpsum today",
+                value: result?.lumpsum.lumpsum ?? 0,
+                kind: "currency",
+                tone: "slate",
+                mark: (
+                  <WealthIconMark className="h-6 w-6">
+                    <IconChart className="h-3.5 w-3.5" />
+                  </WealthIconMark>
+                ),
+              },
+            ]}
           />
         }
         form={
@@ -331,84 +365,46 @@ export function ChildEducationPlanner() {
             >
               <div className="py-2">
                 <WealthProfileGrid>
-                  <WealthFieldShell label="Client name" error={clientNameError}>
-                    <input
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className={wealthInputClass}
-                      autoComplete="name"
-                    />
-                  </WealthFieldShell>
-                  <WealthFieldShell
-                    label="Age"
-                    suffix="Years"
-                    error={clientAgeError}
-                  >
-                    <input
-                      inputMode="numeric"
-                      value={String(age)}
-                      onChange={(e) => setAge(Math.round(parseDigits(e.target.value)))}
-                      className={`${wealthInputClass} !pr-14`}
-                    />
-                  </WealthFieldShell>
-                  <WealthFieldShell label="Email" error={clientEmailError}>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="client@email.com"
-                      className={wealthInputClass}
-                      autoComplete="email"
-                    />
-                  </WealthFieldShell>
-                  <WealthFieldShell label="Phone" error={clientPhoneError}>
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="+91 98765 43210"
-                      className={wealthInputClass}
-                      autoComplete="tel"
-                    />
-                  </WealthFieldShell>
-                  <WealthFieldShell label="Child name" error={childNameErr}>
-                    <input
-                      value={childName}
-                      onChange={(e) => setChildName(e.target.value)}
-                      className={wealthInputClass}
-                    />
-                  </WealthFieldShell>
-                  <WealthFieldShell
+                  <ClientProfileFields
+                    name={name}
+                    onName={setName}
+                    nameError={clientNameError}
+                    age={age}
+                    onAge={setAge}
+                    ageError={clientAgeError}
+                    email={email}
+                    onEmail={setEmail}
+                    emailError={clientEmailError}
+                    phone={phone}
+                    onPhone={setPhone}
+                    phoneError={clientPhoneError}
+                  />
+                  <WealthTextField
+                    label="Child name"
+                    value={childName}
+                    onChange={setChildName}
+                    error={childNameErr}
+                  />
+                  <WealthYearField
                     label="Child age"
-                    suffix="Years"
+                    value={childAge}
+                    min={0}
+                    max={40}
+                    onChange={setChildAge}
                     error={childAgeErr}
-                  >
-                    <input
-                      inputMode="numeric"
-                      value={String(childAge)}
-                      onChange={(e) => {
-                        const next = Math.round(parseDigits(e.target.value));
-                        setChildAge(Math.min(40, Math.max(0, next)));
-                      }}
-                      className={`${wealthInputClass} !pr-14`}
-                    />
-                  </WealthFieldShell>
-                  <WealthFieldShell label="Expected return" suffix="%" error={returnError}>
-                    <input
-                      inputMode="decimal"
-                      value={String(returnPct)}
-                      onChange={(e) => setReturnPct(Math.max(0, parseDigits(e.target.value)))}
-                      className={`${wealthInputClass} !pr-8`}
-                    />
-                  </WealthFieldShell>
-                  <WealthFieldShell label="Tax on gains" suffix="%" error={taxError}>
-                    <input
-                      inputMode="decimal"
-                      value={String(taxPct)}
-                      onChange={(e) => setTaxPct(Math.max(0, parseDigits(e.target.value)))}
-                      className={`${wealthInputClass} !pr-8`}
-                    />
-                  </WealthFieldShell>
+                  />
+                  <WealthPercentField
+                    label="Expected return"
+                    value={returnPct}
+                    onChange={(v) => setReturnPct(Math.max(0, v))}
+                    error={returnError}
+                  />
+                  <WealthPercentField
+                    label="Tax on gains"
+                    value={taxPct}
+                    onChange={(v) => setTaxPct(Math.max(0, v))}
+                    error={taxError}
+                  />
                   <div className="min-w-0">
                     <div className="mb-1.5 text-sm text-slate-600">Phase mix</div>
                     <div className="flex h-[42px] items-center justify-between rounded-lg bg-slate-50 px-3 ring-1 ring-slate-200">
@@ -440,9 +436,9 @@ export function ChildEducationPlanner() {
         }
         results={
           <>
-            {error ? <StatusNote tone="error">{error}</StatusNote> : null}
+            {error ? <WealthStatusNote tone="error">{error}</WealthStatusNote> : null}
             {!canCalculate ? (
-              <StatusNote tone="error">
+              <WealthStatusNote tone="error">
                 <div className="flex flex-col gap-1">
                   <span className="font-semibold">
                     Fix the inputs above to refresh the calculation
@@ -454,10 +450,10 @@ export function ChildEducationPlanner() {
                     ))}
                   </ul>
                 </div>
-              </StatusNote>
+              </WealthStatusNote>
             ) : null}
             {loading && !result && canCalculate ? (
-              <StatusNote tone="pending">Calculating…</StatusNote>
+              <WealthStatusNote tone="info">Calculating…</WealthStatusNote>
             ) : null}
             {result ? (
               <EducationResults
@@ -478,6 +474,7 @@ export function ChildEducationPlanner() {
           </>
         }
         footer={
+          result ? (
           <WealthDisclaimer
             notes={[
               "Fee inflation compounds the future education cost faster than headline tuition suggests.",
@@ -489,30 +486,9 @@ export function ChildEducationPlanner() {
             gains at withdrawal, and the fee schedule entered. Markets carry risk; past performance
             does not guarantee future results.
           </WealthDisclaimer>
+          ) : null
         }
       />
-
-      {result ? (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/80 bg-white/95 p-3 backdrop-blur sm:hidden">
-          <div className="mx-auto flex max-w-[94rem] gap-2">
-            <button
-              type="button"
-              onClick={handleDownload}
-              disabled={isDownloading}
-              className="flex-1 rounded-[14px] bg-emerald-700 py-3 text-sm font-medium text-white disabled:opacity-50"
-            >
-              {isDownloading ? "Exporting…" : "Export PDF"}
-            </button>
-            <button
-              type="button"
-              onClick={scrollToAssumptions}
-              className="rounded-[14px] border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700"
-            >
-              Edit
-            </button>
-          </div>
-        </div>
-      ) : null}
 
       {result ? (
         <ChildEducationDossier
@@ -850,6 +826,9 @@ function FeePhaseRail({
         </span>
       </div>
 
+      <div className="relative">
+      <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-5 bg-gradient-to-r from-white to-transparent" aria-hidden />
+      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-5 bg-gradient-to-l from-white to-transparent" aria-hidden />
       <div className="custom-scrollbar w-full overflow-x-auto pb-1.5 pt-4">
         <div
           className="relative flex w-full items-start justify-between px-1 sm:px-2"
@@ -957,6 +936,7 @@ function FeePhaseRail({
           </div>
         </div>
       </div>
+      </div>
 
       {editPanel}
     </div>
@@ -1005,8 +985,8 @@ function EducationResults({
   const hasShortfall = shortfallRows.length > 0 || result.sip.remaining < -0.5;
 
   const costSeries = [
-    { key: "cost", label: "Edu. cost", color: "var(--app-chart-invested)" },
-    { key: "tax", label: "Cap. gains", color: "var(--app-chart-tax)" },
+    { key: "cost", label: "Edu. cost", color: wealthChart.invested },
+    { key: "tax", label: "Cap. gains", color: wealthChart.tax },
   ] as const;
 
   return (
@@ -1038,7 +1018,9 @@ function EducationResults({
             trend={`Peak ${formatINRCurrency(result.lumpsum.peakCorpus)}`}
             footer={
               <>
-                Invested path ·{" "}
+                School from age {childAge}
+                {childName.trim() ? ` · ${childName.trim()}` : ""}
+                {" · invested "}
                 <span className="font-semibold tabular-nums text-slate-700">
                   {formatINRCurrency(result.lumpsum.invested)}
                 </span>
@@ -1058,10 +1040,11 @@ function EducationResults({
             tone="positive"
             footer={
               <>
-                SIP invested ·{" "}
-                <span className="font-semibold tabular-nums text-emerald-700">
-                  {formatINRCurrency(result.sip.invested)}
-                </span>
+                {firstCollege ? `College from age ${firstCollege.age}` : "No college fees"}
+                {" · horizon age "}
+                {result.lastFeeAge}
+                {" · tax "}
+                {taxPct}%
               </>
             }
             mark={
@@ -1072,48 +1055,17 @@ function EducationResults({
           />
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-2 lg:grid-cols-4">
-          <QuickStat
-            icon={<IconBook className="h-3.5 w-3.5" />}
-            label="School start"
-            value={`Age ${childAge}`}
-            sub={childName.trim() || "Current age"}
-          />
-          <QuickStat
-            icon={<IconGrad className="h-3.5 w-3.5" />}
-            label="College start"
-            value={firstCollege ? `Age ${firstCollege.age}` : "None"}
-            sub={firstCollege?.classLabel ?? "No college fees"}
-          />
-          <QuickStat
-            icon={<IconCalendar className="h-3.5 w-3.5" />}
-            label="Horizon"
-            value={`Age ${result.lastFeeAge}`}
-            sub={`${result.sipYears} SIP years`}
-          />
-          <QuickStat
-            icon={<IconFlag className="h-3.5 w-3.5" />}
-            label="Total withdrawal"
-            value={formatINRCurrency(result.totalWithdrawal)}
-            sub={`Tax ${taxPct}% on fees`}
-          />
-        </div>
-
         {hasShortfall ? (
-          <div className="mt-5 pt-0.5">
-            <StatusNote tone="error">
-              <span className="inline-flex items-start gap-2">
-                <IconAlert className="mt-0.5 h-4 w-4 shrink-0" />
-                <span>
-                  Funding shortfall detected
-                  {shortfallRows[0]
-                    ? ` from ${shortfallRows[0].classLabel} (age ${shortfallRows[0].age})`
-                    : ""}
-                  . SIP balance turns negative before fees end. Raise monthly SIP or add a lumpsum
-                  top-up.
-                </span>
-              </span>
-            </StatusNote>
+          <div className="mt-6 rounded-xl border border-dashed border-rose-300 bg-rose-50/70 p-4">
+            <p className="text-xs font-semibold text-rose-800">Funding shortfall</p>
+            <p className="mt-1 text-[11px] leading-relaxed text-rose-700">
+              SIP balance turns negative
+              {shortfallRows[0]
+                ? ` from ${shortfallRows[0].classLabel} (age ${shortfallRows[0].age})`
+                : ""}
+              {" "}
+              before fees end. Raise the monthly SIP or add a lumpsum top-up.
+            </p>
           </div>
         ) : null}
       </WealthSection>
@@ -1130,31 +1082,41 @@ function EducationResults({
           </WealthIconMark>
         }
       >
-        <WealthSegmented
-          variant="underline"
-          layoutId="education-analytics-tab"
-          value={analyticsTab}
-          onChange={onAnalyticsTabChange}
-          options={[
-            {
-              id: "compare",
-              label: "Compare",
-              icon: <IconChart className="h-3.5 w-3.5" />,
-            },
-            {
-              id: "costs",
-              label: "Fee mix",
-              icon: <IconDonut className="h-3.5 w-3.5" />,
-            },
-            {
-              id: "summary",
-              label: "Summary",
-              icon: <IconTimeline className="h-3.5 w-3.5" />,
-            },
-          ]}
-        />
-
-        <div className="mt-5">
+        <WealthAnalyticsChrome
+          tabs={
+            <WealthSegmented
+              variant="underline"
+              layoutId="education-analytics-tab"
+              value={analyticsTab}
+              onChange={onAnalyticsTabChange}
+              options={[
+                {
+                  id: "compare",
+                  label: "Compare",
+                  icon: <IconChart className="h-3.5 w-3.5" />,
+                },
+                {
+                  id: "costs",
+                  label: "Fee mix",
+                  icon: <IconDonut className="h-3.5 w-3.5" />,
+                },
+                {
+                  id: "summary",
+                  label: "Summary",
+                  icon: <IconTimeline className="h-3.5 w-3.5" />,
+                },
+              ]}
+            />
+          }
+        >
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={analyticsTab}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.22 }}
+          >
           {analyticsTab === "compare" ? (
             <WealthCompareBars
               data={result.compare}
@@ -1168,55 +1130,87 @@ function EducationResults({
           {analyticsTab === "costs" ? (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {schoolChart.length > 0 ? (
-                <ChartFrame height="h-[260px]">
-                  <StackedBarChart
-                    title="School costs"
-                    orientation="horizontal"
-                    totalLabel="Total withdrawal"
-                    className="h-full min-h-0"
-                    data={schoolChart.map((row) => ({
-                      category: row.classLabel,
-                      cost: row.cost,
-                      tax: row.tax,
-                    }))}
-                    series={[...costSeries]}
-                  />
-                </ChartFrame>
+                <WealthStackedBars
+                  orientation="horizontal"
+                  totalLabel="Total withdrawal"
+                  height="h-[min(70vh,520px)]"
+                  data={schoolChart.map((row) => ({
+                    category: row.classLabel,
+                    cost: row.cost,
+                    tax: row.tax,
+                  }))}
+                  series={[...costSeries]}
+                />
               ) : null}
               {collegeChart.length > 0 ? (
-                <ChartFrame height="h-[220px]">
-                  <StackedBarChart
-                    title="College costs"
-                    orientation="horizontal"
-                    totalLabel="Total withdrawal"
-                    className="h-full min-h-0"
-                    data={collegeChart.map((row) => ({
-                      category: row.classLabel,
-                      cost: row.cost,
-                      tax: row.tax,
-                    }))}
-                    series={[...costSeries]}
-                  />
-                </ChartFrame>
+                <WealthStackedBars
+                  orientation="horizontal"
+                  totalLabel="Total withdrawal"
+                  height="h-[280px]"
+                  data={collegeChart.map((row) => ({
+                    category: row.classLabel,
+                    cost: row.cost,
+                    tax: row.tax,
+                  }))}
+                  series={[...costSeries]}
+                />
+              ) : null}
+              {schoolChart.length === 0 && collegeChart.length === 0 ? (
+                <div className="col-span-full rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
+                  No funded fee years yet. Add school or college costs in the timeline above.
+                </div>
               ) : null}
             </div>
           ) : null}
 
           {analyticsTab === "summary" ? (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <SummaryRow label="Lumpsum required today" value={result.lumpsum.lumpsum} accent />
-              <SummaryRow
-                label="Monthly SIP"
-                value={result.sip.monthlySip}
-                hint={`${result.sipYears} years`}
-              />
-              <SummaryRow label="SIP invested" value={result.sip.invested} />
-              <SummaryRow label="Peak corpus (SIP)" value={result.sip.peakCorpus} />
-              <SummaryRow label="Total withdrawal" value={result.totalWithdrawal} />
-              <SummaryRow label="Total tax drag" value={result.totalTax} />
-            </div>
+            <WealthAuditLedger
+              stats={[
+                {
+                  label: "Lumpsum today",
+                  value: formatINRCurrency(result.lumpsum.lumpsum),
+                  hint: `Peak ${formatINRCurrency(result.lumpsum.peakCorpus)}`,
+                },
+                {
+                  label: "Monthly SIP",
+                  value: formatINRCurrency(result.sip.monthlySip),
+                  hint: `${result.sipYears} years`,
+                  tone: "emerald",
+                },
+                {
+                  label: "Total withdrawal",
+                  value: formatINRCurrency(result.totalWithdrawal),
+                  hint: `Tax ${formatINRCurrency(result.totalTax)}`,
+                },
+              ]}
+              chips={
+                <WealthAuditChip label="SIP invested">
+                  {formatINRCurrency(result.sip.invested)} · peak corpus{" "}
+                  {formatINRCurrency(result.sip.peakCorpus)}
+                </WealthAuditChip>
+              }
+              columns={["Metric", "Amount"]}
+              rows={[
+                {
+                  label: "SIP invested",
+                  cells: [{ text: formatINRCurrency(result.sip.invested) }],
+                },
+                {
+                  label: "Peak corpus (SIP)",
+                  cells: [{ text: formatINRCurrency(result.sip.peakCorpus), tone: "emerald" as const }],
+                },
+                {
+                  label: "Total tax drag",
+                  tax: true,
+                  cells: [{ text: formatINRCurrency(result.totalTax), tone: "rose" as const }],
+                },
+              ]}
+              note="Summary compares the one-time corpus with the SIP path that funds the same fee schedule."
+            />
           ) : null}
-        </div>
+          </motion.div>
+        </AnimatePresence>
+        </WealthAnalyticsChrome>
       </WealthSection>
 
       <WealthSection
@@ -1231,6 +1225,45 @@ function EducationResults({
           </WealthIconMark>
         }
       >
+        <div className="space-y-5">
+        <WealthAuditLedger
+          stats={[
+            {
+              label: "SIP monthly",
+              value: formatINRCurrency(result.sip.monthlySip),
+              hint: `${result.sipYears} years`,
+              tone: "emerald",
+            },
+            {
+              label: "Withdrawals",
+              value: formatINRCurrency(result.totalWithdrawal),
+              hint: firstWithdrawal ? `First at age ${firstWithdrawal.age}` : "Fee schedule",
+            },
+            {
+              label: "Tax drag",
+              value: formatINRCurrency(result.totalTax),
+              hint: `${taxPct}% on gains`,
+            },
+          ]}
+          chips={
+            <WealthAuditChip label="SIP invested">
+              {formatINRCurrency(result.sip.invested)}
+            </WealthAuditChip>
+          }
+          columns={["Metric", "Amount"]}
+          rows={[
+            {
+              label: "Lumpsum today",
+              cells: [{ text: formatINRCurrency(result.lumpsum.lumpsum) }],
+            },
+            {
+              label: "Total withdrawal",
+              highlight: true,
+              cells: [{ text: formatINRCurrency(result.totalWithdrawal), tone: "pill" as const }],
+            },
+          ]}
+          note="Year rows list each fee year, the tax on the withdrawal, and the remaining SIP and lumpsum balances."
+        />
         <WealthDataTable
           rows={result.schedule}
           getRowKey={(row) => `${row.age}-${row.classLabel}`}
@@ -1330,62 +1363,9 @@ function EducationResults({
             },
           ]}
         />
+        </div>
       </WealthSection>
     </div>
   );
 }
 
-function QuickStat({
-  icon,
-  label,
-  value,
-  sub,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  sub?: string;
-}) {
-  return (
-    <div className="rounded-2xl border border-slate-200/80 bg-white p-3 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
-      <div className="flex items-center gap-2">
-        <WealthIconMark className="h-7 w-7">{icon}</WealthIconMark>
-        <div className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
-          {label}
-        </div>
-      </div>
-      <div className="mt-2 break-words text-[14px] font-medium leading-snug text-slate-900 sm:text-[15px]">
-        {value}
-      </div>
-      {sub ? <div className="mt-0.5 text-xs text-slate-400">{sub}</div> : null}
-    </div>
-  );
-}
-
-function SummaryRow({
-  label,
-  value,
-  hint,
-  accent,
-}: {
-  label: string;
-  value: number;
-  hint?: string;
-  accent?: boolean;
-}) {
-  return (
-    <div className="rounded-2xl border border-slate-200/80 bg-white px-4 py-3">
-      <div className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
-        {label}
-      </div>
-      <div
-        className={`mt-1.5 text-[20px] font-medium tabular-nums tracking-tight ${
-          accent ? "text-emerald-800" : "text-slate-900"
-        }`}
-      >
-        {formatINRCurrency(value)}
-      </div>
-      {hint ? <div className="mt-0.5 text-xs text-slate-400">{hint}</div> : null}
-    </div>
-  );
-}

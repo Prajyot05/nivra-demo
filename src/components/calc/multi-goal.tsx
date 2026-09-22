@@ -1,12 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { generatePdfFromElement } from "@/lib/pdf-generator";
 import {
   formatINRCurrency,
-  StackedBarChart,
-  StatusNote,
-  WithdrawalPathChart,
   ageError,
   emailError,
   nameError,
@@ -29,6 +27,9 @@ import { useCalculatorMode } from "@/hooks/use-calculator-mode";
 import { getCalculatorPageDescription, getCalculatorPageTitle } from "@/lib/calculator-nav";
 import {
   WEALTH_CONTENT_CLASS,
+  WealthAnalyticsChrome,
+  WealthAuditChip,
+  WealthAuditLedger,
   WealthSection,
   WealthProfileGrid,
   WealthMoneyField,
@@ -40,12 +41,14 @@ import {
   wealthInputClass,
   WealthMetricCard,
   WealthSegmented,
-  ChartFrame,
   WealthCompareBars,
   WealthDisclaimer,
   WealthDataTable,
   WealthHero,
   WealthMixDonut,
+  WealthStackedBars,
+  WealthStatusNote,
+  WealthWithdrawalPath,
   moneyCell,
   WealthIconMark,
   IconPerson,
@@ -58,6 +61,14 @@ import {
   IconChevron,
   IconDonut,
   IconTimeline,
+  IconPlus,
+  IconTrash,
+  IconCopy,
+  IconCar,
+  IconHome,
+  IconGem,
+  IconSunset,
+  IconPlane,
   wealthChart,
   wealthMixColors,
   WEALTH_MONEY_PRESETS_DEFAULT,
@@ -67,67 +78,6 @@ import {
 const CORPUS_MIN = 10_000;
 const CORPUS_MAX = 10_00_00_000;
 const ST_YEARS_MAX = 20;
-
-type MiniIconProps = { className?: string };
-function IconPlus({ className }: MiniIconProps) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
-      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  );
-}
-function IconTrash({ className }: MiniIconProps) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
-      <path d="M6 7h12M9 7V5.5h6V7M8 7l.8 12h6.4L16 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-function IconCopy({ className }: MiniIconProps) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
-      <path d="M8 8h10v12H8z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-      <path d="M6 16V4.5h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-function IconCar({ className }: MiniIconProps) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
-      <path d="M4 14.5h16l-1.5-5.5H5.5L4 14.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-      <path d="M6.5 17a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM17.5 17a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" stroke="currentColor" strokeWidth="1.5" />
-    </svg>
-  );
-}
-function IconHome({ className }: MiniIconProps) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
-      <path d="m4 11 8-6.5L20 11v8.5H4V11Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-    </svg>
-  );
-}
-function IconGem({ className }: MiniIconProps) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
-      <path d="M7 7h10l3 4-8 8-8-8 3-4Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-    </svg>
-  );
-}
-function IconSunset({ className }: MiniIconProps) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
-      <path d="M4 16h16M6 16a6 6 0 0 1 12 0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-      <path d="M12 6v2M5.5 9.5l1.5 1.5M18.5 9.5 17 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  );
-}
-function IconPlane({ className }: MiniIconProps) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
-      <path d="M4 13.5 20 8.5l-3.5 7-4-.8-2.2 3.3-.8-3.5L4 13.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-    </svg>
-  );
-}
 
 const BTN_SECONDARY =
   "inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50 disabled:opacity-50";
@@ -144,7 +94,6 @@ const MODES = [
   { id: "withdrawals", label: "Withdrawals" },
 ] as const;
 
-type Mode = (typeof MODES)[number]["id"];
 const MODE_IDS = MODES.map((m) => m.id);
 
 const MAX_GOALS = 20;
@@ -159,13 +108,13 @@ type GoalCategory =
   | "custom";
 
 const GOAL_CATEGORIES: Array<{ id: GoalCategory; label: string; icon: React.ElementType; color: string }> = [
-  { id: "car", label: "Car", icon: IconCar, color: "bg-[var(--app-std-bg)] text-[var(--app-std-text)]" },
-  { id: "education", label: "Education", icon: IconGrad, color: "bg-[var(--app-std-bg)] text-[var(--app-std-text)]" },
-  { id: "marriage", label: "Marriage", icon: IconGem, color: "bg-[var(--app-step-bg)] text-[var(--app-step-text)]" },
-  { id: "retirement", label: "Retirement", icon: IconSunset, color: "bg-[var(--app-warn-bg)] text-[var(--app-warn-text)]" },
-  { id: "house", label: "House", icon: IconHome, color: "bg-[var(--app-step-bg)] text-[var(--app-step-text)]" },
-  { id: "vacation", label: "Vacation", icon: IconPlane, color: "bg-[var(--app-std-bg)] text-[var(--app-std-text)]" },
-  { id: "custom", label: "Custom", icon: IconTarget, color: "bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]" },
+  { id: "car", label: "Car", icon: IconCar, color: "bg-slate-100 text-slate-700" },
+  { id: "education", label: "Education", icon: IconGrad, color: "bg-slate-100 text-slate-700" },
+  { id: "marriage", label: "Marriage", icon: IconGem, color: "bg-emerald-50 text-emerald-800" },
+  { id: "retirement", label: "Retirement", icon: IconSunset, color: "bg-amber-50 text-amber-800" },
+  { id: "house", label: "House", icon: IconHome, color: "bg-emerald-50 text-emerald-800" },
+  { id: "vacation", label: "Vacation", icon: IconPlane, color: "bg-slate-100 text-slate-700" },
+  { id: "custom", label: "Custom", icon: IconTarget, color: "bg-slate-50 text-slate-500" },
 ];
 
 const CATEGORY_OPTIONS = GOAL_CATEGORIES.map((c) => ({
@@ -222,17 +171,6 @@ function newGoalId() {
     return crypto.randomUUID();
   }
   return `wg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-}
-
-function inferCategory(name: string): GoalCategory {
-  const n = name.toLowerCase();
-  if (n.includes("car")) return "car";
-  if (n.includes("edu") || n.includes("school") || n.includes("college")) return "education";
-  if (n.includes("marri") || n.includes("wed")) return "marriage";
-  if (n.includes("retir") || n.includes("old") || n.includes("pension")) return "retirement";
-  if (n.includes("house") || n.includes("home") || n.includes("flat")) return "house";
-  if (n.includes("vacat") || n.includes("travel") || n.includes("trip")) return "vacation";
-  return "custom";
 }
 
 type AssignResult = {
@@ -371,7 +309,7 @@ function ConfirmResetDialog({
 }
 
 export function MultiGoalCalculator() {
-  const [mode, setMode] = useCalculatorMode(MODE_IDS, "withdrawals");
+  const [mode] = useCalculatorMode(MODE_IDS, "withdrawals");
   const [name, setName] = useState("Janardhan");
   const [age, setAge] = useState(43);
   const [email, setEmail] = useState(DUMMY_REPORT_CONTACT.email);
@@ -1103,9 +1041,9 @@ export function MultiGoalCalculator() {
       }
       results={
         <>
-          {error ? <StatusNote tone="error">{error}</StatusNote> : null}
+          {error ? <WealthStatusNote tone="error">{error}</WealthStatusNote> : null}
           {fieldErrors.length > 0 ? (
-            <StatusNote tone="error">
+            <WealthStatusNote tone="error">
               <div className="flex flex-col gap-1">
                 <span className="font-semibold">
                   Fix the inputs above to refresh the calculation
@@ -1117,20 +1055,26 @@ export function MultiGoalCalculator() {
                   ))}
                 </ul>
               </div>
-            </StatusNote>
+            </WealthStatusNote>
           ) : null}
           {loading && !result && canCalculate ? (
-            <StatusNote tone="pending">Calculating…</StatusNote>
+            <WealthStatusNote tone="info">Calculating…</WealthStatusNote>
           ) : null}
           {mode === "assign" && assignGoalErrors.size > 0 && validAssignGoals.length > 0 ? (
-            <StatusNote tone="warn">
-              Some goals are incomplete or duplicated and are skipped until fixed.
-            </StatusNote>
+            <div className="rounded-xl border border-dashed border-rose-300 bg-rose-50/70 p-4">
+              <p className="text-xs font-semibold text-rose-800">Incomplete goals</p>
+              <p className="mt-1 text-[11px] leading-relaxed text-rose-700">
+                Some goals are incomplete or duplicated and are skipped until fixed.
+              </p>
+            </div>
           ) : null}
           {mode === "withdrawals" && hasInvalidGoals && validWithdrawalGoals.length > 0 ? (
-            <StatusNote tone="warn">
-              Some goals are incomplete and are skipped until amount and age are fixed.
-            </StatusNote>
+            <div className="rounded-xl border border-dashed border-rose-300 bg-rose-50/70 p-4">
+              <p className="text-xs font-semibold text-rose-800">Incomplete goals</p>
+              <p className="mt-1 text-[11px] leading-relaxed text-rose-700">
+                Some goals are incomplete and are skipped until amount and age are fixed.
+              </p>
+            </div>
           ) : null}
           {mode === "assign" && assignResult ? (
             <AssignDashboard
@@ -1176,6 +1120,7 @@ export function MultiGoalCalculator() {
         </>
       }
       footer={
+        result ? (
         <WealthDisclaimer
           notes={[
             "Corpus assignment follows the schedule and priority rules entered for each goal.",
@@ -1187,6 +1132,7 @@ export function MultiGoalCalculator() {
           inflation, tax, corpus assignment rules, and the goal schedule entered. Markets carry
           risk; past performance does not guarantee future results.
         </WealthDisclaimer>
+        ) : null
       }
     />
     {mode === "withdrawals" && withdrawResult ? (
@@ -1401,24 +1347,51 @@ function AssignDashboard({
                 : "Combined monthly SIP across goals"
             }
             tone="positive"
+            mark={
+              <WealthIconMark tone="emerald" className="h-7 w-7">
+                <IconChart className="h-3.5 w-3.5" />
+              </WealthIconMark>
+            }
           />
           <WealthMetricCard
             title="Total Investment (One-Time)"
             value={result.totalLumpsum}
             description={largest ? `Largest goal · ${largest.name}` : "One-time investment alternative"}
             tone="neutral"
+            mark={
+              <WealthIconMark className="h-7 w-7">
+                <IconTarget className="h-3.5 w-3.5" />
+              </WealthIconMark>
+            }
           />
           <WealthMetricCard
             title="Total Investment (SIP)"
             value={result.totalSipInvested}
             description="Total SIP capital over the horizon"
             tone="neutral"
+            mark={
+              <WealthIconMark className="h-7 w-7">
+                <IconTimeline className="h-3.5 w-3.5" />
+              </WealthIconMark>
+            }
           />
           <WealthMetricCard
             title="Corpus Assigned"
             value={result.totalAssigned}
             description="Amount of current corpus allocated to goals."
             tone="positive"
+            footer={
+              <>
+                {soonest ? `${soonest.name} in ${soonest.years} years` : `${active.length} goals`}
+                {" · "}
+                {stCount} short term, {ltCount} long term
+              </>
+            }
+            mark={
+              <WealthIconMark tone="emerald" className="h-7 w-7">
+                <IconCalendar className="h-3.5 w-3.5" />
+              </WealthIconMark>
+            }
           />
           {hasUnassigned ? (
             <WealthMetricCard
@@ -1426,43 +1399,13 @@ function AssignDashboard({
               value={result.unassignedCorpus}
               description="Corpus not yet allocated to a goal"
               tone="neutral"
+              mark={
+                <WealthIconMark className="h-7 w-7">
+                  <IconDonut className="h-3.5 w-3.5" />
+                </WealthIconMark>
+              }
             />
           ) : null}
-        </div>
-
-        <div className="mt-6 grid grid-cols-2 gap-2.5 lg:grid-cols-4">
-          <QuickStat
-            icon={
-              soonest
-                ? (CATEGORY_META[inferCategory(soonest.name)] || CATEGORY_META.custom).icon
-                : IconTarget
-            }
-            label="Soonest"
-            value={soonest ? soonest.name : "-"}
-            sub={soonest ? `${soonest.years} years` : undefined}
-          />
-          <QuickStat
-            icon={
-              largest
-                ? (CATEGORY_META[inferCategory(largest.name)] || CATEGORY_META.custom).icon
-                : IconTarget
-            }
-            label="Largest"
-            value={largest ? largest.name : "-"}
-            sub={largest ? formatINRCurrency(largest.amount) : undefined}
-          />
-          <QuickStat
-            icon={IconTarget}
-            label="Goals"
-            value={`${active.length}`}
-            sub={`${stCount} ST · ${ltCount} LT`}
-          />
-          <QuickStat
-            icon={IconCalendar}
-            label="Horizon"
-            value={`${maxYears} yrs`}
-            sub="Longest goal term"
-          />
         </div>
       </WealthSection>
 
@@ -1478,19 +1421,30 @@ function AssignDashboard({
           </WealthIconMark>
         }
       >
-        <div className="space-y-5 pt-1">
-          <WealthSegmented
-            variant="underline"
-            fullWidth
-            layoutId="assign-chart-tab"
-            value={chartTab}
-            onChange={setChartTab}
-            options={[
-              { id: "sip", label: "Monthly SIP", icon: <IconChart className="h-4 w-4" /> },
-              { id: "lumpsum", label: "Lumpsum", icon: <IconChart className="h-4 w-4" /> },
-              { id: "mix", label: "Funding mix", icon: <IconDonut className="h-4 w-4" /> },
-            ]}
-          />
+        <WealthAnalyticsChrome
+          tabs={
+            <WealthSegmented
+              variant="underline"
+              fullWidth
+              layoutId="assign-chart-tab"
+              value={chartTab}
+              onChange={setChartTab}
+              options={[
+                { id: "sip", label: "Monthly SIP", icon: <IconChart className="h-4 w-4" /> },
+                { id: "lumpsum", label: "Lumpsum", icon: <IconChart className="h-4 w-4" /> },
+                { id: "mix", label: "Funding mix", icon: <IconDonut className="h-4 w-4" /> },
+              ]}
+            />
+          }
+        >
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={chartTab}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.22 }}
+          >
           {chartTab === "sip" ? (
             <WealthCompareBars
               showBarLabels
@@ -1499,21 +1453,18 @@ function AssignDashboard({
             />
           ) : null}
           {chartTab === "lumpsum" ? (
-            <ChartFrame>
-              <StackedBarChart
-                title="Corpus assigned vs remaining lumpsum"
-                className="min-h-[290px] w-full flex-1 sm:min-h-[310px]"
-                data={result.compare.map((row) => ({
-                  category: row.category,
-                  assigned: row.assigned,
-                  remaining: row.remaining,
-                }))}
-                series={[
-                  { key: "assigned", label: "Assigned", color: wealthChart.invested },
-                  { key: "remaining", label: "Remaining LS", color: wealthChart.standard },
-                ]}
-              />
-            </ChartFrame>
+            <WealthStackedBars
+              data={result.compare.map((row) => ({
+                category: row.category,
+                assigned: row.assigned,
+                remaining: row.remaining,
+              }))}
+              series={[
+                { key: "assigned", label: "Assigned", color: wealthChart.invested },
+                { key: "remaining", label: "Remaining LS", color: wealthChart.standard },
+              ]}
+              totalLabel="Goal need"
+            />
           ) : null}
           {chartTab === "mix" ? (
             <>
@@ -1546,7 +1497,9 @@ function AssignDashboard({
               )}
             </>
           ) : null}
-        </div>
+          </motion.div>
+        </AnimatePresence>
+        </WealthAnalyticsChrome>
       </WealthSection>
 
       <WealthSection
@@ -1561,6 +1514,50 @@ function AssignDashboard({
           </WealthIconMark>
         }
       >
+        <div className="space-y-5">
+        <WealthAuditLedger
+          stats={[
+            {
+              label: "Goals",
+              value: String(active.length),
+              hint: `${stCount} short term · ${ltCount} long term`,
+            },
+            {
+              label: "Monthly SIP",
+              value: formatINRCurrency(result.totalMonthlySip),
+              hint: soonest ? `Soonest · ${soonest.name} in ${soonest.years} years` : "Combined SIP",
+              tone: "emerald",
+            },
+            {
+              label: "Horizon",
+              value: `${maxYears} yrs`,
+              hint: largest ? `Largest · ${largest.name}` : "Longest goal term",
+            },
+          ]}
+          chips={
+            <WealthAuditChip label="Assigned corpus">
+              {formatINRCurrency(result.totalAssigned)}
+              {hasUnassigned ? ` · unused ${formatINRCurrency(result.unassignedCorpus)}` : ""}
+            </WealthAuditChip>
+          }
+          columns={["Path", "Amount"]}
+          rows={[
+            {
+              label: "One-time investment",
+              cells: [{ text: formatINRCurrency(result.totalLumpsum) }],
+            },
+            {
+              label: "SIP invested",
+              cells: [{ text: formatINRCurrency(result.totalSipInvested), tone: "emerald" as const }],
+            },
+            {
+              label: "Corpus assigned",
+              highlight: true,
+              cells: [{ text: formatINRCurrency(result.totalAssigned), tone: "pill" as const }],
+            },
+          ]}
+          note="Assigned is corpus allocated today. Monthly SIP and lumpsum are alternate paths to close the remaining need."
+        />
         <WealthDataTable
           rows={tableRows}
           getRowKey={(row) => `${row.name}-${row.years}`}
@@ -1648,6 +1645,7 @@ function AssignDashboard({
             },
           ]}
         />
+        </div>
       </WealthSection>
     </div>
   );
@@ -1800,6 +1798,8 @@ function AssignGoalEditTimeline({
         </div>
       ) : (
         <div className="relative w-full">
+          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r from-white to-transparent" aria-hidden />
+          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-gradient-to-l from-white to-transparent" aria-hidden />
           <div className="custom-scrollbar w-full overflow-x-auto pb-3 pt-6">
             <div
               className="relative flex w-full items-start justify-between px-2 sm:px-4"
@@ -2121,63 +2121,51 @@ function WithdrawalsDashboard({
             value={result.startMonthlySip}
             description="Required starting SIP"
             tone="positive"
+            footer={earliest ? <>Earliest · {earliest.name} at age {earliest.atAge}</> : undefined}
+            mark={
+              <WealthIconMark tone="emerald" className="h-7 w-7">
+                <IconChart className="h-3.5 w-3.5" />
+              </WealthIconMark>
+            }
           />
           <WealthMetricCard
             title="Total goals value"
             value={result.totalWithdrawn}
             description="Sum of planned withdrawals"
             tone="neutral"
+            footer={largest ? <>Largest · {largest.name}</> : undefined}
+            mark={
+              <WealthIconMark className="h-7 w-7">
+                <IconTarget className="h-3.5 w-3.5" />
+              </WealthIconMark>
+            }
           />
           <WealthMetricCard
             title="Total investment"
             value={result.totalInvested}
             description="Capital contributed"
             tone="neutral"
+            mark={
+              <WealthIconMark className="h-7 w-7">
+                <IconTimeline className="h-3.5 w-3.5" />
+              </WealthIconMark>
+            }
           />
           <WealthMetricCard
             title="Total tax"
             value={result.totalTax}
             description="Estimated tax on gains"
             tone="accent"
-          />
-        </div>
-
-        <div className="mt-6 grid grid-cols-2 gap-2.5 lg:grid-cols-4">
-          <QuickStat
-            icon={
-              earliest
-                ? (CATEGORY_META[inferCategory(earliest.name)] || CATEGORY_META.custom).icon
-                : IconTarget
+            footer={
+              <>
+                {rows.length} goals · {durationYears} years · age {clientAge} to {maxAge}
+              </>
             }
-            label="Earliest"
-            value={earliest ? earliest.name : "-"}
-            sub={earliest ? `Age ${earliest.atAge}` : undefined}
-          />
-          <QuickStat
-            icon={
-              largest
-                ? (CATEGORY_META[inferCategory(largest.name)] || CATEGORY_META.custom).icon
-                : IconTarget
+            mark={
+              <WealthIconMark className="h-7 w-7">
+                <IconCalendar className="h-3.5 w-3.5" />
+              </WealthIconMark>
             }
-            label="Largest"
-            value={largest ? largest.name : "-"}
-            sub={largest ? formatINRCurrency(largest.amount) : undefined}
-          />
-          <QuickStat
-            icon={IconTarget}
-            label="Goals"
-            value={`${rows.length}`}
-            sub={
-              distinctPayoutAges > 0
-                ? `${distinctPayoutAges} payout age${distinctPayoutAges === 1 ? "" : "s"}`
-                : "Planned"
-            }
-          />
-          <QuickStat
-            icon={IconCalendar}
-            label="Duration"
-            value={`${durationYears} yrs`}
-            sub={`Age ${clientAge} to ${maxAge}`}
           />
         </div>
       </WealthSection>
@@ -2194,30 +2182,35 @@ function WithdrawalsDashboard({
           </WealthIconMark>
         }
       >
-        <div className="space-y-5 pt-1">
-          <WealthSegmented
-            variant="underline"
-            fullWidth
-            layoutId="withdraw-chart-tab"
-            value={chartTab}
-            onChange={setChartTab}
-            options={[
-              { id: "path", label: "Path", icon: <IconTimeline className="h-4 w-4" /> },
-              {
-                id: "withdrawals",
-                label: "Withdrawals",
-                icon: <IconChart className="h-4 w-4" />,
-              },
-            ]}
-          />
+        <WealthAnalyticsChrome
+          tabs={
+            <WealthSegmented
+              variant="underline"
+              fullWidth
+              layoutId="withdraw-chart-tab"
+              value={chartTab}
+              onChange={setChartTab}
+              options={[
+                { id: "path", label: "Path", icon: <IconTimeline className="h-4 w-4" /> },
+                {
+                  id: "withdrawals",
+                  label: "Withdrawals",
+                  icon: <IconChart className="h-4 w-4" />,
+                },
+              ]}
+            />
+          }
+        >
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={chartTab}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.22 }}
+          >
           {chartTab === "path" ? (
-            <ChartFrame>
-              <WithdrawalPathChart
-                data={pathData}
-                milestones={milestones}
-                title="Corpus over age"
-              />
-            </ChartFrame>
+            <WealthWithdrawalPath data={pathData} milestones={milestones} />
           ) : (
             <WealthCompareBars
               showBarLabels
@@ -2225,7 +2218,9 @@ function WithdrawalsDashboard({
               series={[{ key: "corpus", label: "Corpus", color: wealthChart.stepUp }]}
             />
           )}
-        </div>
+          </motion.div>
+        </AnimatePresence>
+        </WealthAnalyticsChrome>
       </WealthSection>
 
       <WealthSection
@@ -2240,6 +2235,54 @@ function WithdrawalsDashboard({
           </WealthIconMark>
         }
       >
+        <div className="space-y-5">
+        <WealthAuditLedger
+          stats={[
+            {
+              label: "Goals",
+              value: String(rows.length),
+              hint:
+                distinctPayoutAges > 0
+                  ? `${distinctPayoutAges} payout age${distinctPayoutAges === 1 ? "" : "s"}`
+                  : "Planned",
+            },
+            {
+              label: "Combined SIP",
+              value: formatINRCurrency(totalSip),
+              hint: earliest ? `Earliest · ${earliest.name}` : "Starting SIP",
+              tone: "emerald",
+            },
+            {
+              label: "Duration",
+              value: `${durationYears} yrs`,
+              hint: `Age ${clientAge} to ${maxAge}`,
+            },
+          ]}
+          chips={
+            <WealthAuditChip label="Invested">
+              {formatINRCurrency(totalInvestedRows)}
+              {largest ? ` · largest ${largest.name}` : ""}
+            </WealthAuditChip>
+          }
+          columns={["Metric", "Amount"]}
+          rows={[
+            {
+              label: "Total withdrawn",
+              cells: [{ text: formatINRCurrency(result.totalWithdrawn) }],
+            },
+            {
+              label: "Total tax",
+              tax: true,
+              cells: [{ text: formatINRCurrency(result.totalTax), tone: "rose" as const }],
+            },
+            {
+              label: "Total invested",
+              highlight: true,
+              cells: [{ text: formatINRCurrency(result.totalInvested), tone: "pill" as const }],
+            },
+          ]}
+          note="Each withdrawal is funded by its own SIP until the payout age."
+        />
         <WealthDataTable
           rows={tableRows}
           getRowKey={(row, i) => `${row.goal}-${row.atAge}-${i}`}
@@ -2312,40 +2355,11 @@ function WithdrawalsDashboard({
             },
           ]}
         />
+        </div>
       </WealthSection>
     </div>
   );
 }
-
-function QuickStat({
-  icon: Icon,
-  label,
-  value,
-  sub,
-}: {
-  icon: React.ElementType;
-  label: string;
-  value: string;
-  sub?: string;
-}) {
-  return (
-    <div className="flex h-full flex-col gap-2.5 rounded-2xl border border-slate-200/80 bg-white p-4">
-      <div className="flex items-center gap-2.5">
-        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[var(--app-surface-muted)] text-[var(--app-text-muted)]">
-          <Icon className="size-4" />
-        </div>
-        <div className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</div>
-      </div>
-      <div className="min-w-0">
-        <div className="break-words text-[15px] font-semibold leading-snug text-[var(--app-text)] sm:text-base">
-          {value}
-        </div>
-        {sub ? <div className={`mt-1 ${META_TEXT}`}>{sub}</div> : null}
-      </div>
-    </div>
-  );
-}
-
 
 function GoalEditTimeline({
   goals,
@@ -2506,6 +2520,8 @@ function GoalEditTimeline({
         </div>
       ) : (
         <div className="relative w-full">
+          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r from-white to-transparent" aria-hidden />
+          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-gradient-to-l from-white to-transparent" aria-hidden />
           <div className="custom-scrollbar w-full overflow-x-auto pb-3 pt-6">
             <div
               className="relative flex w-full items-start justify-between px-2 sm:px-4"

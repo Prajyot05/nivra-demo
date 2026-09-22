@@ -355,6 +355,114 @@ export function IconCheck({ className, strokeWidth = 1.5 }: IconProps) {
   );
 }
 
+export function IconPlus({ className, strokeWidth = 1.5 }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={cn(base, className)} aria-hidden>
+      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function IconTrash({ className, strokeWidth = 1.5 }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={cn(base, className)} aria-hidden>
+      <path
+        d="M6 7h12M9 7V5.5h6V7M8 7l.8 12h6.4L16 7"
+        stroke="currentColor"
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function IconCopy({ className, strokeWidth = 1.5 }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={cn(base, className)} aria-hidden>
+      <path d="M8 8h10v12H8z" stroke="currentColor" strokeWidth={strokeWidth} strokeLinejoin="round" />
+      <path
+        d="M6 16V4.5h10"
+        stroke="currentColor"
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function IconCar({ className, strokeWidth = 1.5 }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={cn(base, className)} aria-hidden>
+      <path
+        d="M4 14.5h16l-1.5-5.5H5.5L4 14.5Z"
+        stroke="currentColor"
+        strokeWidth={strokeWidth}
+        strokeLinejoin="round"
+      />
+      <path
+        d="M6.5 17a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM17.5 17a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"
+        stroke="currentColor"
+        strokeWidth={strokeWidth}
+      />
+    </svg>
+  );
+}
+
+export function IconHome({ className, strokeWidth = 1.5 }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={cn(base, className)} aria-hidden>
+      <path
+        d="m4 11 8-6.5L20 11v8.5H4V11Z"
+        stroke="currentColor"
+        strokeWidth={strokeWidth}
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function IconGem({ className, strokeWidth = 1.5 }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={cn(base, className)} aria-hidden>
+      <path
+        d="M7 7h10l3 4-8 8-8-8 3-4Z"
+        stroke="currentColor"
+        strokeWidth={strokeWidth}
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function IconSunset({ className, strokeWidth = 1.5 }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={cn(base, className)} aria-hidden>
+      <path d="M4 16h16M6 16a6 6 0 0 1 12 0" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" />
+      <path
+        d="M12 6v2M5.5 9.5l1.5 1.5M18.5 9.5 17 11"
+        stroke="currentColor"
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+export function IconPlane({ className, strokeWidth = 1.5 }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={cn(base, className)} aria-hidden>
+      <path
+        d="M4 13.5 20 8.5l-3.5 7-4-.8-2.2 3.3-.8-3.5L4 13.5Z"
+        stroke="currentColor"
+        strokeWidth={strokeWidth}
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function IconFlag({ className, strokeWidth = 1.5 }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={cn(base, className)} aria-hidden>

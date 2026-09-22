@@ -2,11 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  formatINRCurrency,
-  formatPercent,
-  StatusNote,
-} from "@nivra/ui";
+import { formatINRCurrency, formatPercent } from "@nivra/ui";
 import { CalculatorPage } from "@/components/layout/calculator-page-with-nav";
 import { ReportDownloadButton } from "@/components/calc/report-download-button";
 import {
@@ -44,6 +40,7 @@ import {
   WealthSegmented,
   WealthAnalyticsChrome,
   WealthSection,
+  WealthStatusNote,
   WealthTextField,
   WealthYearField,
   wealthChart,
@@ -656,9 +653,9 @@ export function MfVsFd() {
         }
         results={
           <>
-            {error ? <StatusNote tone="error">{error}</StatusNote> : null}
+            {error ? <WealthStatusNote tone="error">{error}</WealthStatusNote> : null}
             {!canCalculate ? (
-              <StatusNote tone="error">
+              <WealthStatusNote tone="error">
                 <div className="flex flex-col gap-1">
                   <span className="font-semibold">
                     Fix the inputs above to refresh the calculation
@@ -670,15 +667,15 @@ export function MfVsFd() {
                     ))}
                   </ul>
                 </div>
-              </StatusNote>
+              </WealthStatusNote>
             ) : null}
             {loading && !result && canCalculate ? (
-              <StatusNote tone="pending">Calculating…</StatusNote>
+              <WealthStatusNote tone="info">Calculating…</WealthStatusNote>
             ) : null}
             {result && insight ? (
               <div className="space-y-5">
                 <WealthSection
-                  badge="02 · Results"
+                  badge="02 · Milestones"
                   title="Post-Tax Return Arbitrage"
                   subtitle="Equity-style MF vs bank FD over the selected horizon, after tax"
                   open={openArbitrage}

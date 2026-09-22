@@ -8,13 +8,14 @@ import {
   Line,
   ReferenceLine,
   ResponsiveContainer,
+  Scatter,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
 import { formatAxisINR } from "@nivra/ui";
 import { ChartFrame, ChartTooltipCard, chartAxisTick } from "./chart-frame";
-import { wealthChart } from "../wealth-tokens";
+import { wealth, wealthChart } from "../wealth-tokens";
 
 export type WealthSeries = {
   key: string;
@@ -31,6 +32,14 @@ export type WealthGrowthMarker = {
   color?: string;
 };
 
+/** Point markers overlaid on the path (withdrawal ages, fee years). */
+export type WealthGrowthDot = {
+  /** Must match a value on `xKey`. */
+  x: number | string;
+  y: number;
+  color?: string;
+};
+
 /**
  * Multi-series growth / path chart matching Goal SIP Compare/Timeline chrome.
  */
@@ -43,6 +52,8 @@ export function WealthGrowthLine({
   /** Explicit x-axis tick values (e.g. every 5th age). */
   xTicks,
   markers,
+  dots,
+  dotsLabel = "Marker",
 }: {
   data: Array<Record<string, string | number>>;
   xKey?: string;
@@ -51,6 +62,9 @@ export function WealthGrowthLine({
   height?: string;
   xTicks?: Array<string | number>;
   markers?: WealthGrowthMarker[];
+  /** Scatter points drawn on top of the series (e.g. withdrawal events). */
+  dots?: WealthGrowthDot[];
+  dotsLabel?: string;
 }) {
   const gid = useId().replace(/:/g, "");
 
@@ -82,6 +96,12 @@ export function WealthGrowthLine({
             {m.label}
           </span>
         ))}
+        {dots && dots.length > 0 ? (
+          <span className="inline-flex items-center gap-2 text-xs font-medium text-slate-600">
+            <span className="h-2 w-2 rounded-full" style={{ background: wealth.rose }} />
+            {dotsLabel}
+          </span>
+        ) : null}
       </div>
       <ChartFrame height={height}>
         <ResponsiveContainer width="100%" height="100%">
@@ -146,6 +166,24 @@ export function WealthGrowthLine({
                 }}
               />
             ))}
+            {dots && dots.length > 0 ? (
+              <Scatter
+                data={dots.map((dot) => ({ [xKey]: dot.x, dotY: dot.y }))}
+                dataKey="dotY"
+                fill={wealth.rose}
+                isAnimationActive={false}
+                legendType="none"
+                shape={(props: { cx?: number; cy?: number }) => {
+                  const { cx = 0, cy = 0 } = props;
+                  return (
+                    <g>
+                      <circle cx={cx} cy={cy} r={7} fill={wealth.rose} fillOpacity={0.16} />
+                      <circle cx={cx} cy={cy} r={3.5} fill={wealth.rose} stroke="#fff" strokeWidth={1.5} />
+                    </g>
+                  );
+                }}
+              />
+            ) : null}
             {series.map((s, i) =>
               (s.kind ?? "area") === "area" ? (
                 <Area
