@@ -21,7 +21,9 @@ export type ComparePoint = {
   fill?: string;
   /** Optional withdrawal total for tooltip context. */
   withdrawal?: number;
-  [series: string]: string | number | undefined;
+  /** Extra tooltip rows (e.g. return, net profit, investment value). */
+  tooltipDetails?: Array<{ label: string; value: string }>;
+  [series: string]: string | number | Array<{ label: string; value: string }> | undefined;
 };
 
 function DualLineTick({
@@ -189,6 +191,17 @@ export function CompareChart({
                           Withdrawal: {formatINRCurrency(point.withdrawal)}
                         </div>
                       ) : null}
+                      {Array.isArray(point?.tooltipDetails)
+                        ? point.tooltipDetails.map((detail) => (
+                            <div
+                              key={detail.label}
+                              className="mt-1 flex justify-between gap-3 tabular-nums text-[var(--app-text-muted)]"
+                            >
+                              <span>{detail.label}</span>
+                              <span className="font-semibold text-[var(--app-text)]">{detail.value}</span>
+                            </div>
+                          ))
+                        : null}
                     </div>
                   );
                 }}

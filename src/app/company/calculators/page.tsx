@@ -1,11 +1,9 @@
-import { Gem, Calculator } from "lucide-react";
-import { AdminPageHeader, Panel, StatTile } from "@/components/admin/admin-ui";
-import { Badge } from "@/components/ui/badge";
-import {
-  DEMO_COMPANY_ID,
-  TIER_CALCULATORS,
-  getCompany,
-} from "@/lib/admin/dummy-data";
+import { Check } from "lucide-react";
+import { notFound } from "next/navigation";
+import { AdminPageHeader, Panel, StatStrip } from "@/components/admin/admin-ui";
+import { getCompanyById, getDemoCompanyId } from "@/lib/admin/queries";
+import { requireSignedIn } from "@/lib/require-signed-in";
+import { cn } from "@/lib/utils";
 
 const ALL_CALCULATORS = [
   "Goal SIP Planner",
@@ -19,59 +17,62 @@ const ALL_CALCULATORS = [
   "Multi-Goal",
 ];
 
-export default function CompanyCalculatorsPage() {
-  const company = getCompany(DEMO_COMPANY_ID)!;
+export default async function CompanyCalculatorsPage() {
+  await requireSignedIn();
+  const companyId = await getDemoCompanyId();
+  const company = await getCompanyById(companyId);
+  if (!company) notFound();
   const included = new Set(company.calculators);
 
   return (
     <>
       <AdminPageHeader
-        title="Calculator access"
-        description="Access follows the subscription plan. Tier names are placeholders until launch tiers are confirmed."
+        title="Calculators"
+        description="Access follows the subscription plan tier (minTierLevel on Calculator rows)."
       />
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <StatTile label="Current plan" value={company.tier} icon={Gem} />
-        <StatTile
-          label="Calculators included"
-          value={`${company.calculators.length} / ${ALL_CALCULATORS.length}`}
-          icon={Calculator}
-        />
-      </div>
+      <StatStrip
+        items={[
+          { label: "Current plan", value: company.tier },
+          {
+            label: "Calculators included",
+            value: `${company.calculators.length} / ${ALL_CALCULATORS.length}`,
+            tone: "positive",
+          },
+        ]}
+        className="lg:grid-cols-2 sm:grid-cols-2"
+      />
 
-      <Panel title="On this plan">
-        <ul className="grid gap-2 sm:grid-cols-2">
+      <Panel title="Suite" description="What this plan unlocks">
+        <ul className="divide-y divide-[var(--admin-line)] rounded-[var(--admin-radius-sm)] border border-[var(--admin-line)]">
           {ALL_CALCULATORS.map((name) => {
             const on = included.has(name);
             return (
               <li
                 key={name}
-                className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm"
+                className="flex items-center justify-between gap-3 px-4 py-3 text-[13px]"
               >
-                <span className={on ? "font-medium" : "text-muted-foreground"}>{name}</span>
-                <Badge variant={on ? "default" : "outline"}>{on ? "Included" : "Locked"}</Badge>
+                <span
+                  className={cn(
+                    on ? "font-medium text-[var(--admin-ink)]" : "text-[var(--admin-faint)]",
+                  )}
+                >
+                  {name}
+                </span>
+                {on ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[var(--admin-brand)]">
+                    <Check className="h-3 w-3" />
+                    Included
+                  </span>
+                ) : (
+                  <span className="text-[11px] font-medium text-[var(--admin-faint)]">
+                    Upgrade
+                  </span>
+                )}
               </li>
             );
           })}
         </ul>
-      </Panel>
-
-      <Panel title="Plan comparison (placeholder)" description="Awaiting Sasmith confirmation">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {(Object.keys(TIER_CALCULATORS) as Array<keyof typeof TIER_CALCULATORS>).map(
-            (tier) => (
-              <div
-                key={tier}
-                className="rounded-lg border border-border bg-muted/30 p-3"
-              >
-                <p className="text-sm font-semibold">{tier}</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {TIER_CALCULATORS[tier].length} calculators
-                </p>
-              </div>
-            ),
-          )}
-        </div>
       </Panel>
     </>
   );

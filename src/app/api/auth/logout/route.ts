@@ -1,14 +1,11 @@
+import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { SESSION_COOKIE } from "@/lib/auth";
 
+/** Clerk handles sign-out on the client via useClerk().signOut(). This route is a no-op keep-alive for older callers. */
 export async function POST() {
-  const response = NextResponse.json({ ok: true });
-  response.cookies.set(SESSION_COOKIE, "", {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 0,
-  });
-  return response;
+  const { userId } = await auth();
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  return NextResponse.json({ ok: true, hint: "Use Clerk signOut on the client" });
 }

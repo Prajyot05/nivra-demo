@@ -40,6 +40,11 @@ export function ScheduleTable<T extends Record<string, unknown>>({
   zebra = false,
   highlightLastRow = false,
   emphasizeRow,
+  dangerRow,
+  fillHeight = false,
+  stretchRows,
+  fitContent = true,
+  dense = false,
 }: {
   columns: ScheduleColumn<T>[];
   rows: T[];
@@ -53,17 +58,31 @@ export function ScheduleTable<T extends Record<string, unknown>>({
   highlightLastRow?: boolean;
   /** Highlight specific rows (e.g. highest SIP). */
   emphasizeRow?: (row: T, index: number) => boolean;
+  /** Rose treatment for shortfall / negative-balance rows. Wins over emphasize. */
+  dangerRow?: (row: T, index: number) => boolean;
+  /** Stretch the card to fill the parent. Extra rows scroll unless `stretchRows`. */
+  fillHeight?: boolean;
+  /** Distribute row height so the table body fills the card. Defaults to `fillHeight`. */
+  stretchRows?: boolean;
+  /** Size table to content instead of stretching columns across the card. */
+  fitContent?: boolean;
+  /** Tighter cell padding for long schedules. */
+  dense?: boolean;
 }) {
-  // Narrow schedules should fit a phone instead of forcing a horizontal scroll.
-  const minWidth = `${Math.max(18, columns.length * 6.5)}rem`;
+  const growRows = stretchRows ?? fillHeight;
+  const cellPad = dense ? "px-2 py-1.5" : "px-3 py-2";
 
   return (
-    <Card className={`custom-scrollbar max-h-[540px] ${className ?? ""}`}>
+    <Card
+      className={`mx-auto ${fitContent ? "w-fit" : "w-full"} ${fillHeight ? "h-full max-h-none overflow-hidden" : "max-h-[540px]"} custom-scrollbar ${className ?? ""}`}
+    >
       {caption || meta ? (
-        <SectionHeader title={caption} meta={meta} className="mb-2.5 shrink-0" />
+        <SectionHeader title={caption} meta={meta} className="mb-2 shrink-0" />
       ) : null}
-      <div className="custom-scrollbar overflow-auto rounded-lg border border-[var(--app-border)]">
-        <table className="w-full text-xs" style={{ minWidth }}>
+      <div className="custom-scrollbar min-h-0 flex-1 overflow-auto rounded-lg border border-[var(--app-border)]">
+        <table
+          className={`w-max max-w-full text-xs mx-auto ${growRows ? "h-full" : ""}`}
+        >
           <thead>
             <tr className="text-left text-[10px] font-semibold uppercase tracking-wider sm:text-[11px]">
               {columns.map((col) => {
@@ -71,7 +90,7 @@ export function ScheduleTable<T extends Record<string, unknown>>({
                 return (
                   <th
                     key={String(col.key)}
-                    className={`sticky top-0 z-10 border-b border-[var(--app-border)] bg-[var(--app-surface-muted)] px-3 py-2 whitespace-nowrap ${
+                    className={`sticky top-0 z-10 border-b border-slate-200 bg-slate-50 ${cellPad} whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-slate-600 ${
                       HEAD_TONE[tone]
                     } ${col.align === "right" ? "text-right" : ""} ${
                       col.sticky ? "left-0 z-20 shadow-[1px_0_0_var(--app-border)]" : ""
@@ -86,34 +105,43 @@ export function ScheduleTable<T extends Record<string, unknown>>({
           <tbody>
             {rows.map((row, i) => {
               const isLast = highlightLastRow && i === rows.length - 1;
-              const isEmphasized = emphasizeRow?.(row, i) ?? false;
+              const isDanger = dangerRow?.(row, i) ?? false;
+              const isEmphasized = !isDanger && (emphasizeRow?.(row, i) ?? false);
               const zebraBg =
-                zebra && !isLast && !isEmphasized && i % 2 === 1
+                zebra && !isLast && !isEmphasized && !isDanger && i % 2 === 1
                   ? "bg-[var(--app-surface-muted)]/50"
                   : "";
               const lastBg = isLast
-                ? "border-y border-[var(--app-step-text)]/35 bg-[var(--app-step-bg)] font-semibold"
+                ? "border-t-2 border-emerald-200 bg-emerald-50/50 font-semibold"
                 : "";
+              const dangerBg =
+                isDanger && !isLast
+                  ? "bg-[var(--app-danger)]/10 font-semibold text-[var(--app-danger)]"
+                  : "";
               const emphBg =
-                isEmphasized && !isLast ? "bg-[var(--app-warn-bg)] font-semibold" : "";
+                isEmphasized && !isLast ? "bg-emerald-50/40 font-semibold" : "";
               return (
                 <tr
                   key={i}
                   className={`${
-                    isLast ? "" : "border-b border-[var(--app-border)]"
-                  } transition-colors hover:bg-[var(--app-surface-muted)]/60 ${zebraBg} ${lastBg} ${emphBg}`}
+                    isLast ? "" : "border-b border-slate-100"
+                  } transition-colors hover:bg-slate-50/70 ${zebraBg} ${lastBg} ${dangerBg} ${emphBg} ${
+                    growRows ? "h-[1%]" : ""
+                  }`}
                 >
                   {columns.map((col) => {
                     const raw = row[col.key as keyof T];
                     const tone = col.tone ?? "default";
                     const stickyBg = col.sticky
                       ? isLast
-                        ? "bg-[var(--app-step-bg)]"
-                        : isEmphasized
-                          ? "bg-[var(--app-warn-bg)]"
-                          : zebra && i % 2 === 1
-                            ? "bg-[var(--app-surface-muted)]"
-                            : "bg-[var(--app-surface)]"
+                        ? "bg-emerald-50"
+                        : isDanger
+                          ? "bg-[var(--app-danger)]/10"
+                          : isEmphasized
+                            ? "bg-emerald-50/40"
+                            : zebra && i % 2 === 1
+                              ? "bg-slate-50"
+                              : "bg-white"
                       : "";
                     const content = col.render
                       ? col.render(raw, row, i)
@@ -129,11 +157,11 @@ export function ScheduleTable<T extends Record<string, unknown>>({
                     return (
                       <td
                         key={String(col.key)}
-                        className={`px-3 py-2 text-[11px] font-medium tabular-nums sm:text-xs ${
-                          col.render ? "whitespace-normal" : "whitespace-nowrap"
-                        } ${col.sticky ? "" : CELL_TONE[tone]} ${
-                          col.align === "right" ? "text-right" : ""
-                        } ${
+                        className={`${cellPad} text-[11px] font-medium tabular-nums sm:text-xs ${
+                          growRows && !dense ? "py-3.5" : ""
+                        } ${col.render ? "whitespace-normal" : "whitespace-nowrap"} ${
+                          col.sticky || isDanger ? "" : CELL_TONE[tone]
+                        } ${col.align === "right" ? "text-right" : ""} ${
                           col.sticky
                             ? `sticky left-0 z-[5] shadow-[1px_0_0_var(--app-border)] ${stickyBg}`
                             : ""

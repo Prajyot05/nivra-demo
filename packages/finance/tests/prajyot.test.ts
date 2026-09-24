@@ -142,6 +142,9 @@ test("insurance TP Unprotected v3 keep net and switch corpus", () => {
   close(result.keep.net, 4_000_000);
   close(result.keep.irr, 0.073076365241983909, 1e-6);
   close(result.switch.investMaturity, 10927767.16119045, 1e-8);
+  close(result.switch.irr, 0.12212852348663139, 1e-8);
+  close(result.switch.surrenderIrr, 0.12006607005097925, 1e-8);
+  close(result.additionalWealth, 10927767.16119045 - 4_000_000, 1e-8);
 });
 
 test("multi-goal Goal Calculator sample education 10y 7% tax 0", () => {

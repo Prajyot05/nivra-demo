@@ -1,58 +1,39 @@
+import { clerkMiddleware } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
-import {
-  CALCULATOR_ROUTES,
-  getFirstEnabledRoute,
-  hrefFor,
-  isCalculatorAccessAllowed,
-  getVisibleCalculators,
-} from "@/lib/calculator-nav";
+import { PATHNAME_HEADER } from "@/lib/pathname-header";
 
-const PUBLIC_PATHS = ["/login", "/api/auth/login"];
-
+/**
+ * Early hop for signed-out visitors. This is not the auth guarantee.
+ * Pages, layouts, and route handlers call `requireSignedIn()` or `auth()`.
+ */
 function isPublicPath(pathname: string): boolean {
-  return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+  if (pathname === "/api/health") return true;
+  return ["/login", "/sign-in", "/sign-up", "/api/webhooks"].some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
 }
 
-function isCalculatorRoute(pathname: string): boolean {
-  return CALCULATOR_ROUTES.includes(pathname as (typeof CALCULATOR_ROUTES)[number]);
-}
+export default clerkMiddleware(async (auth, request) => {
+  const { pathname, search } = request.nextUrl;
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set(PATHNAME_HEADER, `${pathname}${search}`);
 
-export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  const sessionToken = request.cookies.get(SESSION_COOKIE)?.value;
-  const profileId = await verifySessionToken(sessionToken);
-
-  if (isPublicPath(pathname)) {
-    if (profileId && pathname === "/login") {
-      return NextResponse.redirect(new URL(getFirstEnabledRoute(profileId), request.url));
-    }
-    return NextResponse.next();
-  }
-
-  if (!profileId) {
-    if (pathname.startsWith("/api/")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("from", pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  if (isCalculatorRoute(pathname)) {
-    const mode = request.nextUrl.searchParams.get("mode");
-    if (!isCalculatorAccessAllowed(pathname, mode, profileId)) {
-      const fallback = getVisibleCalculators(profileId).find((item) => item.to === pathname);
-      const dest = fallback
-        ? hrefFor(fallback)
-        : getFirstEnabledRoute(profileId);
-      return NextResponse.redirect(new URL(dest, request.url));
+  if (!isPublicPath(pathname)) {
+    const { userId } = await auth();
+    if (!userId) {
+      if (pathname.startsWith("/api/")) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+      const login = new URL("/login", request.url);
+      login.searchParams.set("from", `${pathname}${search}`);
+      return NextResponse.redirect(login);
     }
   }
 
-  return NextResponse.next();
-}
+  return NextResponse.next({
+    request: { headers: requestHeaders },
+  });
+});
 
 export const config = {
   matcher: [

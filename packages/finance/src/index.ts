@@ -14,7 +14,12 @@ export { inflate, deflate } from "./inflation";
 export { capitalGain, capitalGainsTax, netAfterTax } from "./tax";
 export { calculateSip, calculateLumpsum } from "./sip";
 export type { SipInput, SipResult, YearRow } from "./sip";
-export { calculateStepUpSip, stepUpProjection, stepUpMonthly } from "./stepup";
+export {
+  calculateStepUpSip,
+  stepUpProjection,
+  stepUpMonthly,
+  stepIndexForMonth,
+} from "./stepup";
 export type { StepUpSipInput } from "./stepup";
 export { calculatePeriodic } from "./periodic";
 export type { PeriodicInput, PeriodicRow } from "./periodic";
@@ -27,6 +32,7 @@ export {
   calculateGoalExistingSip,
   calculateGoalPeriodicLumpsum,
   calculateGoalCompounding,
+  compoundingGrowthSteps,
   requiredSip,
   requiredLumpsum,
   requiredStepUpSip,
@@ -43,6 +49,8 @@ export type {
   GoalExistingSipInput,
   GoalPeriodicInput,
   GoalCompoundingInput,
+  GoalCompoundingInvestmentType,
+  GrowthStep,
   FundingLeg,
 } from "./goal";
 export {
@@ -68,6 +76,12 @@ export type { MultiGoalInput, MultiGoalItem } from "./multi-goal";
 export { calculateMultiWithdrawals } from "./withdrawals";
 export type { MultiWithdrawalsInput, WithdrawalItem } from "./withdrawals";
 export { calculateFirePlanner, corpusRequiredAtRetirement } from "./fire";
-export type { FireInput, FireResult, FireCorpusSlice, FireAgeRow } from "./fire";
+export type {
+  FireInput,
+  FireResult,
+  FireCorpusSlice,
+  FireAgeRow,
+  FireEvent,
+} from "./fire";
 export { calculateFinancialHealth } from "./health";
 export type { HealthInput, HealthResult, HealthEvent, HealthAgeRow } from "./health";

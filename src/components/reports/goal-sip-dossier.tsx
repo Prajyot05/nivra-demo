@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import { formatINRCurrency, formatPercent } from "@nivra/ui";
 import {
   DUMMY_REPORT_CONTACT,
@@ -27,6 +28,7 @@ export type GoalSipReportData = {
   stepUp: number;
   standardSIP: number;
   stepUpSIP: number;
+  stepUpEndSIP?: number;
   stdInvested: number;
   stepInvested: number;
   stdGain: number;
@@ -35,6 +37,8 @@ export type GoalSipReportData = {
   stepTax: number;
   stdCorpus: number;
   stepCorpus: number;
+  stdNet?: number;
+  stepNet?: number;
   stdSchedule: { year: number; monthly: number; yearEnd: number }[];
   stepSchedule: { year: number; monthly: number; yearEnd: number }[];
   delays: { mo: number; sip: number; extra: number }[];
@@ -88,29 +92,42 @@ function milestoneForYear(
  */
 export function GoalSipDossier({ id = GOAL_SIP_REPORT_ID, data }: GoalSipDossierProps) {
   const endAge = data.age + data.tenure;
+  const stdNet = data.stdNet ?? data.targetGoal;
+  const stepNet = data.stepNet ?? data.targetGoal;
+  const stepEnd = data.stepUpEndSIP ?? 0;
   const savingsPct =
     data.standardSIP > 0
       ? ((data.standardSIP - data.stepUpSIP) / data.standardSIP) * 100
       : 0;
+
   const contact: ExecutiveContact = {
     email: data.email || DUMMY_REPORT_CONTACT.email,
     phone: data.phone || DUMMY_REPORT_CONTACT.phone,
   };
+
   const playbook = getReportPlaybook("goal-sip").map((p) =>
-    p.id === "02"
+    p.id === "01"
       ? {
           ...p,
-          title: `Annual +${formatPercent(data.stepUp, 0)} Escalation Review`,
-          description: `For the Step-Up path, sync the +${formatPercent(data.stepUp, 0)} automated top-up with annual appraisal cycle. This allows ${formatINRCurrency(data.stepUpSIP)}/mo to naturally scale in Yr 2 without noticeable impact on lifestyle expenses.`,
+          description: `Start the chosen SIP path immediately (${formatINRCurrency(data.standardSIP)}/mo flat, or ${formatINRCurrency(data.stepUpSIP)}/mo step-up). Use ECS / OTM on the 1st business day each month so compounding is not delayed.`,
         }
-      : p.id === "03"
+      : p.id === "02"
         ? {
             ...p,
-            title: `Glidepath De-risking at Yr ${Math.max(1, data.tenure - 2)}`,
-            description: `Transition accumulated equity exposure to short-duration debt or ultra-short hybrid instruments via Systematic Transfer Plan (STP) during years ${Math.max(1, data.tenure - 2)} to ${data.tenure} to lock in the target corpus safely.`,
+            title: `Annual +${formatPercent(data.stepUp, 0)} Step-Up Review`,
+            description: `If using Step-Up, sync the +${formatPercent(data.stepUp, 0)} increase with the appraisal cycle so the starting SIP of ${formatINRCurrency(data.stepUpSIP)}/mo scales to about ${formatINRCurrency(stepEnd)}/mo by year ${data.tenure} without a sudden cashflow shock.`,
           }
-        : p,
+        : p.id === "03"
+          ? {
+              ...p,
+              title: `Glidepath De-risking at Yr ${Math.max(1, data.tenure - 2)}`,
+              description: `Shift equity exposure toward short-duration debt via STP during years ${Math.max(1, data.tenure - 2)} to ${data.tenure} so the ${formatINRCurrency(data.targetGoal)} net target is locked in before the goal date.`,
+            }
+          : p,
   );
+
+  const midYear = Math.max(1, Math.floor(data.tenure / 2));
+  const midStep = data.stepSchedule.find((r) => r.year === midYear)?.monthly ?? data.stepUpSIP;
 
   const scheduleRows = data.stdSchedule.map((std, i) => {
     const step = data.stepSchedule[i] ?? { year: std.year, monthly: 0, yearEnd: 0 };
@@ -128,406 +145,497 @@ export function GoalSipDossier({ id = GOAL_SIP_REPORT_ID, data }: GoalSipDossier
     return { std, step, milestone };
   });
 
+  const truncated = scheduleRows.length > 15;
+  const shown = truncated
+    ? [...scheduleRows.slice(0, 8), ...scheduleRows.slice(-7)]
+    : scheduleRows;
+  const midOmit = truncated ? Math.max(0, scheduleRows.length - 15) : 0;
+
   return (
     <ExecutiveDossierSheet
       id={id}
       title="Goal SIP Investment Planner"
-      subtitle="Goal funding comparison"
+      subtitle="Standard SIP vs Step-Up SIP"
       contact={contact}
+      disclaimer={false}
       meta={[
         { label: "Client Name", value: data.clientName || "Client" },
         {
-          label: "Timeline Window",
+          label: "Timeline",
           value: `Age ${data.age} to ${endAge} (${data.tenure} Yrs)`,
         },
-        { label: "Target Goal", value: formatINRCurrency(data.targetGoal) },
+        {
+          label: "Net Target",
+          value: formatINRCurrency(data.targetGoal),
+          emphasize: "emerald",
+        },
       ]}
     >
+      {/* ── Page 1: decision summary + delay friction ── */}
       <section className="space-y-4" data-purpose="primary-milestones">
         <ExecutiveSectionHeading
           variant="square"
-          title="Primary Goal & Accumulation Milestones"
-          hint={`All figures modeled over ${data.tenure}-year tenure (${formatPercent(data.returnPct)} CAGR baseline)`}
+          title="Primary Goal Funding Paths"
+          hint={`${formatPercent(data.returnPct)} CAGR · ${data.useInflAdj ? "Inflation-adjusted" : "Stated"} goal`}
         />
 
-        <div className="flex gap-4">
-          <div className="relative flex flex-1 flex-col justify-between overflow-hidden rounded-xl border border-slate-900 bg-slate-950 p-5 text-white shadow-sm">
-            <div className="flex items-start justify-between gap-3 border-b border-slate-800 pb-3">
-              <div className="min-w-0 flex-1">
-                <span className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                  Fixed Monthly Allocation
-                </span>
-                <h3 className="text-sm font-bold text-slate-100">Standard SIP plan</h3>
-              </div>
-              <span className="inline-flex shrink-0 items-center self-start whitespace-nowrap rounded-full border border-slate-700 bg-slate-800 px-2.5 py-1 text-[10px] font-semibold leading-none text-slate-300">
-                Flat SIP
+        <div className="flex gap-3">
+          <div className="relative flex flex-1 flex-col justify-between overflow-hidden rounded-xl border border-slate-900 bg-slate-950 p-4 text-white shadow-sm">
+            <div className="border-b border-slate-800 pb-2">
+              <span className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                Flat Monthly Path
               </span>
+              <h3 className="text-sm font-bold text-slate-100">Standard SIP</h3>
             </div>
-            <div className="flex items-baseline space-x-2 py-4">
-              <span className="text-3xl font-black tracking-tight tabular-nums text-white sm:text-4xl">
+            <div className="flex items-baseline space-x-2 py-3">
+              <span className="text-3xl font-black tracking-tight tabular-nums text-white">
                 {formatINRCurrency(data.standardSIP)}
               </span>
               <span className="text-xs font-medium text-slate-400">/ month</span>
             </div>
-            <div className="flex gap-2 border-t border-slate-800 pt-3 text-[11px]">
-              <div className="flex-1">
-                <span className="block text-[10px] text-slate-400">Net Final Corpus</span>
-                <span className="font-bold tabular-nums text-emerald-400">
-                  {formatINRCurrency(data.stdCorpus)}
-                </span>
-              </div>
-              <div className="flex-1">
-                <span className="block text-[10px] text-slate-400">Total Invested</span>
-                <span className="font-medium tabular-nums text-slate-200">
+            <div className="flex gap-3 border-t border-slate-800 pt-2.5 text-[11px]">
+              <div className="min-w-0 flex-1">
+                <span className="block text-[10px] text-slate-400">Invested</span>
+                <span className="block truncate font-medium tabular-nums text-slate-200">
                   {formatINRCurrency(data.stdInvested)}
                 </span>
               </div>
-              <div className="flex-1">
-                <span className="block text-[10px] text-slate-400">Pre-Tax Gain</span>
-                <span className="font-medium tabular-nums text-emerald-300">
-                  +{formatINRCurrency(data.stdGain)}
+              <div className="min-w-0 flex-1">
+                <span className="block text-[10px] text-slate-400">Pre-Tax</span>
+                <span className="block truncate font-medium tabular-nums text-slate-200">
+                  {formatINRCurrency(data.stdCorpus)}
+                </span>
+              </div>
+              <div className="min-w-0 flex-1">
+                <span className="block text-[10px] text-slate-400">Tax</span>
+                <span className="block truncate font-medium tabular-nums text-rose-300">
+                  {formatINRCurrency(data.stdTax)}
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="relative flex flex-1 flex-col justify-between overflow-hidden rounded-xl border border-emerald-200 bg-emerald-50/50 p-5 shadow-sm">
-            <div className="flex items-start justify-between gap-3 border-b border-emerald-200/60 pb-3">
-              <div className="min-w-0 flex-1">
-                <span className="block text-[10px] font-bold uppercase tracking-wider text-emerald-800">
-                  Accelerated Outlay Route
-                </span>
-                <h3 className="text-sm font-bold text-emerald-950">
-                  Step-Up SIP (+{formatPercent(data.stepUp, 0)} Annual Escalation)
-                </h3>
-              </div>
-              <span className="inline-flex shrink-0 items-center self-start whitespace-nowrap rounded-full bg-emerald-600 px-2.5 py-1 text-[10px] font-bold leading-none text-white">
-                Step-Up SIP
+          <div className="relative flex flex-1 flex-col justify-between overflow-hidden rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 shadow-sm">
+            <div className="border-b border-emerald-200/60 pb-2">
+              <span className="block text-[10px] font-bold uppercase tracking-wider text-emerald-800">
+                Step-Up (+{formatPercent(data.stepUp, 0)} p.a.)
               </span>
+              <h3 className="text-sm font-bold text-emerald-950">Step-Up SIP</h3>
             </div>
-            <div className="flex items-baseline space-x-2 py-4">
-              <span className="text-3xl font-black tracking-tight tabular-nums text-emerald-950 sm:text-4xl">
+            <div className="flex items-baseline space-x-2 py-2.5">
+              <span className="text-3xl font-black tracking-tight tabular-nums text-emerald-950">
                 {formatINRCurrency(data.stepUpSIP)}
               </span>
-              <span className="text-xs font-semibold text-emerald-800">/ month (Initial)</span>
+              <span className="text-xs font-semibold text-emerald-800">starting /mo</span>
             </div>
-            <div className="flex gap-2 border-t border-emerald-200/60 pt-3 text-[11px]">
-              <div className="flex-1">
-                <span className="block text-[10px] text-emerald-800">Net Final Corpus</span>
-                <span className="font-bold tabular-nums text-emerald-950">
-                  {formatINRCurrency(data.stepCorpus)}
-                </span>
-              </div>
-              <div className="flex-1">
-                <span className="block text-[10px] text-emerald-800">Total Invested</span>
-                <span className="font-medium tabular-nums text-slate-700">
+            <div className="mb-2 rounded-md border border-emerald-200/80 bg-white/70 px-2.5 py-1.5 text-[11px]">
+              <span className="text-emerald-800">Ends at</span>
+              <span className="ml-1.5 font-bold tabular-nums text-emerald-950">
+                {formatINRCurrency(stepEnd)}/mo
+              </span>
+            </div>
+            <div className="flex gap-3 border-t border-emerald-200/60 pt-2.5 text-[11px]">
+              <div className="min-w-0 flex-1">
+                <span className="block text-[10px] text-emerald-800">Invested</span>
+                <span className="block truncate font-medium tabular-nums text-slate-700">
                   {formatINRCurrency(data.stepInvested)}
                 </span>
               </div>
-              <div className="flex-1">
-                <span className="block text-[10px] text-emerald-800">Pre-Tax Gain</span>
-                <span className="font-medium tabular-nums text-emerald-700">
-                  +{formatINRCurrency(data.stepGain)}
+              <div className="min-w-0 flex-1">
+                <span className="block text-[10px] text-emerald-800">Pre-Tax</span>
+                <span className="block truncate font-medium tabular-nums text-slate-700">
+                  {formatINRCurrency(data.stepCorpus)}
+                </span>
+              </div>
+              <div className="min-w-0 flex-1">
+                <span className="block text-[10px] text-emerald-800">Tax</span>
+                <span className="block truncate font-medium tabular-nums text-rose-600">
+                  {formatINRCurrency(data.stepTax)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="relative flex w-[26%] min-w-[10.5rem] flex-col justify-between overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="border-b border-slate-100 pb-2">
+              <span className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                Net Target
+              </span>
+              <h3 className="text-sm font-bold text-slate-900">Target Corpus</h3>
+            </div>
+            <div className="py-2.5">
+              <span className="block text-2xl font-black tracking-tight tabular-nums text-emerald-700">
+                {formatINRCurrency(data.targetGoal)}
+              </span>
+              <span className="mt-1 block text-[10px] text-slate-500">
+                After capital gains tax
+              </span>
+            </div>
+            <div className="border-t border-slate-100 pt-2.5 text-[11px]">
+              <div className="flex justify-between gap-2">
+                <span className="text-slate-500">Std net</span>
+                <span className="font-semibold tabular-nums text-slate-800">
+                  {formatINRCurrency(stdNet)}
+                </span>
+              </div>
+              <div className="mt-1 flex justify-between gap-2">
+                <span className="text-slate-500">Step-Up net</span>
+                <span className="font-semibold tabular-nums text-emerald-800">
+                  {formatINRCurrency(stepNet)}
                 </span>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs">
-          <div className="flex items-center space-x-2">
-            <span className="h-2 w-2 rounded-full bg-emerald-500" />
-            <span className="text-slate-700">
-              <strong>Note:</strong> Step-Up SIP initiates at a{" "}
-              <strong>{savingsPct.toFixed(1)}% lower commitment</strong> (
-              {formatINRCurrency(data.stepUpSIP)} vs. {formatINRCurrency(data.standardSIP)}/mo),
-              substantially reducing initial liquidity strain while fully delivering the required
-              goal post.
+        <p className="rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs text-slate-700">
+          <strong>Cashflow.</strong> Step-Up starts{" "}
+          <strong>{savingsPct.toFixed(1)}% lower</strong> (
+          {formatINRCurrency(data.stepUpSIP)} vs {formatINRCurrency(data.standardSIP)}
+          /mo) with the same net target.
+        </p>
+      </section>
+
+      <section
+        className="mt-5 grid grid-cols-[1.15fr_0.85fr] gap-4"
+        data-purpose="page1-secondary"
+      >
+        <div className="space-y-4">
+          <div className="space-y-2.5">
+            <ExecutiveSectionHeading title="Goal Basis & Assumptions" />
+            <div className="grid grid-cols-3 gap-3">
+              <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5">
+                <span className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                  Stated
+                </span>
+                <span className="mt-1 block text-sm font-bold tabular-nums text-slate-900">
+                  {formatINRCurrency(data.goal)}
+                </span>
+              </div>
+              <div className="rounded-xl border border-amber-200 bg-amber-50/40 px-3 py-2.5">
+                <span className="block text-[10px] font-semibold uppercase tracking-wider text-amber-700">
+                  Infl. Adj.
+                </span>
+                <span className="mt-1 block text-sm font-bold tabular-nums text-amber-950">
+                  {formatINRCurrency(data.inflAdjGoal)}
+                </span>
+              </div>
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 px-3 py-2.5">
+                <span className="block text-[10px] font-semibold uppercase tracking-wider text-emerald-700">
+                  Active ({data.useInflAdj ? "Infl." : "Stated"})
+                </span>
+                <span className="mt-1 block text-sm font-bold tabular-nums text-emerald-900">
+                  {formatINRCurrency(data.targetGoal)}
+                </span>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-x-4 gap-y-2 rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-center">
+              <Param label="Age" value={`${data.age}y`} />
+              <Param label="Tenure" value={`${data.tenure}y`} />
+              <Param
+                label="Return"
+                value={formatPercent(data.returnPct)}
+                valueClass="text-emerald-700"
+              />
+              <Param label="Inflation" value={formatPercent(data.inflation)} />
+              <Param label="Tax" value={formatPercent(data.tax)} />
+              <Param
+                label="Step-Up"
+                value={formatPercent(data.stepUp)}
+                valueClass="text-emerald-700"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2.5">
+            <ExecutiveSectionHeading
+              title="Step-Up Timeline"
+              hint={`+${formatPercent(data.stepUp, 0)} p.a.`}
+            />
+            <div className="flex gap-3">
+              {[
+                { label: "Yr 1", value: data.stepUpSIP },
+                { label: `Yr ${midYear}`, value: midStep },
+                { label: `Yr ${data.tenure}`, value: stepEnd },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  className="flex flex-1 flex-col rounded-xl border border-emerald-100 bg-emerald-50/30 px-3 py-2.5"
+                >
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-emerald-800">
+                    {item.label}
+                  </span>
+                  <span className="mt-1 text-base font-black tabular-nums text-emerald-950">
+                    {formatINRCurrency(item.value)}
+                    <span className="ml-1 text-[11px] font-semibold text-emerald-700">/mo</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div
+          className="flex flex-col rounded-xl border border-rose-200 bg-rose-50/30 p-4"
+          data-purpose="cost-of-delay"
+          data-pdf-keep-together
+        >
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-rose-100 text-xs font-bold text-rose-700">
+                !
+              </span>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-rose-950">
+                Cost of Delay
+              </h3>
+            </div>
+            <span className="rounded-full border border-rose-200 bg-rose-100 px-2.5 py-0.5 text-[10px] font-bold text-rose-700">
+              vs flat SIP
             </span>
           </div>
-          <span className="whitespace-nowrap pl-4 text-[11px] font-semibold text-emerald-700">
-            Target: {formatINRCurrency(data.targetGoal)}
-          </span>
+          <p className="mb-3 text-[11px] leading-relaxed text-slate-600">
+            Waiting to start raises the flat SIP needed to still hit the same net target.
+          </p>
+          <div className="flex flex-1 flex-col gap-2">
+            {data.delays.map((d) => {
+              const severe = d.mo >= 12;
+              return (
+                <div
+                  key={d.mo}
+                  className={`rounded-lg border px-3 py-2.5 ${
+                    severe ? "border-rose-200 bg-rose-50/50" : "border-rose-100 bg-white"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2 text-xs">
+                    <span
+                      className={`font-semibold ${severe ? "text-rose-900" : "text-slate-700"}`}
+                    >
+                      {d.mo} Mo delay
+                    </span>
+                    <span
+                      className={`whitespace-nowrap font-bold tabular-nums ${
+                        severe ? "text-rose-800" : "text-slate-900"
+                      }`}
+                    >
+                      {formatINRCurrency(d.sip)}/mo
+                    </span>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between gap-2 text-[11px]">
+                    <span className={severe ? "text-rose-700" : "text-rose-600"}>
+                      Additional cost
+                    </span>
+                    <span
+                      className={`whitespace-nowrap font-bold tabular-nums ${
+                        severe ? "text-rose-800" : "text-rose-600"
+                      }`}
+                    >
+                      +{formatINRCurrency(d.extra)}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </section>
 
-      <section className="space-y-3" data-purpose="assumptions-grid">
-        <ExecutiveSectionHeading title="Assumptions" />
-        <div className="flex flex-wrap gap-4 rounded-xl border border-slate-200 bg-white p-4 text-center">
-          <Param label="Client Age" value={`${data.age} Yrs`} />
-          <Param label="Goal Amount" value={formatINRCurrency(data.goal)} />
-          <Param label="Tenure" value={`${data.tenure} Yrs`} />
-          <Param
-            label="Return CAGR"
-            value={formatPercent(data.returnPct)}
-            valueClass="text-emerald-700"
-          />
-          <Param label="Inflation" value={formatPercent(data.inflation)} />
-          <Param label="Tax on Gains" value={formatPercent(data.tax)} />
-          <Param
-            label="Annual Step-Up"
-            value={formatPercent(data.stepUp)}
-            valueClass="text-emerald-700"
-          />
-          <div className="flex-1">
-            <span className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-              Infl. Adjusted
-            </span>
-            <span
-              className={`mt-1 inline-flex items-center rounded px-2 py-0.5 text-[10px] font-bold ${
-                data.useInflAdj
-                  ? "bg-emerald-100 text-emerald-800"
-                  : "bg-slate-100 text-slate-600"
-              }`}
-            >
-              {data.useInflAdj ? "ENABLED" : "OFF"}
-            </span>
-          </div>
-        </div>
-      </section>
-
-      <section className="space-y-4" data-purpose="corpus-visual-analytics">
+      {/* ── Page 2: composition + schedule + close ── */}
+      <section
+        className="mt-6 space-y-3"
+        data-purpose="corpus-visual-analytics"
+        data-pdf-keep-together
+      >
         <ExecutiveSectionHeading
-          title="Corpus Composition & Capital Gains Breakdown"
-          hint="Net Final Valuation after LTCG Tax Deduction"
+          title="Corpus Composition"
+          hint="Net corpus after capital gains tax"
         />
         <div className="flex gap-4">
-          <div className="flex-1">
+          <div className="min-w-0 flex-1">
             <ReportCompositionDonut
               title="Standard SIP mix"
               centerLabel="Net Corpus"
-              centerValue={data.stdCorpus}
+              centerValue={stdNet}
               invested={data.stdInvested}
               gain={data.stdGain}
               tax={data.stdTax}
-              taxLabel="Capital Tax"
+              taxLabel="Capital Gains Tax"
             />
           </div>
-          <div className="flex-1">
+          <div className="min-w-0 flex-1">
             <ReportCompositionDonut
               title="Step-Up SIP mix"
               centerLabel="Net Corpus"
-              centerValue={data.stepCorpus}
+              centerValue={stepNet}
               invested={data.stepInvested}
               gain={data.stepGain}
               tax={data.stepTax}
-              taxLabel="Capital Tax"
+              taxLabel="Capital Gains Tax"
               accent
             />
           </div>
         </div>
       </section>
 
-      <section
-        className="-mt-1 space-y-3 rounded-xl border border-rose-200 bg-rose-50/30 p-4"
-        data-purpose="cost-of-delay"
-        data-pdf-keep-together
-      >
-        <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-          <div className="flex items-center space-x-2">
-            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-rose-100 text-xs font-bold text-rose-700">
-              !
+      <section className="mt-6 space-y-3" data-purpose="yearly-schedule">
+        <div className="flex items-center justify-between gap-2">
+          <ExecutiveSectionHeading title="Yearly Accumulation Schedule" />
+          <div className="flex items-center gap-2 text-[11px]">
+            <span className="rounded bg-slate-100 px-2 py-0.5 font-semibold text-slate-700">
+              Flat SIP
             </span>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-rose-950">
-              Cost of delay
-            </h3>
-          </div>
-          <span className="self-start rounded-full border border-rose-200 bg-rose-100 px-2.5 py-0.5 text-xs font-bold text-rose-700 sm:self-auto">
-            Friction Penalty Analysis
-          </span>
-        </div>
-        <p className="text-xs text-slate-600">
-          Delaying SIP inception compresses compounding runway, forcing higher recurring monthly
-          commitments to bridge the exact same {formatINRCurrency(data.targetGoal)} corpus.
-        </p>
-        <div className="flex gap-3 pt-1">
-          {data.delays.map((d) => {
-            const severe = d.mo >= 12;
-            return (
-              <div
-                key={d.mo}
-                className={`flex-1 rounded-lg border p-3.5 shadow-sm ${
-                  severe
-                    ? "border-rose-200 bg-rose-50/20"
-                    : "border-rose-100 bg-white"
-                }`}
-              >
-                <div
-                  className={`flex items-center justify-between text-xs font-medium ${
-                    severe ? "font-bold text-rose-800" : "text-slate-500"
-                  }`}
-                >
-                  <span>Delay</span>
-                  <span className={severe ? "text-rose-950" : "font-bold text-slate-800"}>
-                    {d.mo} Months
-                  </span>
-                </div>
-                <div className="mt-2 flex items-baseline justify-between">
-                  <span className="text-xs text-slate-600">SIP Needed:</span>
-                  <span
-                    className={`tabular-nums ${
-                      severe
-                        ? "text-sm font-black text-rose-900"
-                        : "text-sm font-bold text-slate-900"
-                    }`}
-                  >
-                    {formatINRCurrency(d.sip)}/mo
-                  </span>
-                </div>
-                <div className="mt-2 flex items-center justify-between border-t border-slate-100 pt-2 text-xs">
-                  <span className={`font-medium ${severe ? "font-bold text-rose-700" : "text-rose-600"}`}>
-                    Capital Penalty:
-                  </span>
-                  <span
-                    className={`tabular-nums ${
-                      severe ? "font-black text-rose-700" : "font-bold text-rose-600"
-                    }`}
-                  >
-                    +{formatINRCurrency(d.extra)}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      <section className="mt-9 space-y-3" data-purpose="yearly-schedule">
-        <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-          <ExecutiveSectionHeading title="Yearly Accumulation & Portfolio Growth Schedule" />
-          <div className="flex items-center space-x-2 text-[11px]">
-            <span className="inline-flex items-center rounded bg-slate-100 px-2 py-0.5 font-semibold text-slate-700">
-              Standard: Flat SIP
+            <span className="rounded bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-800">
+              Step-Up +{formatPercent(data.stepUp, 0)}
             </span>
-            <span className="inline-flex items-center rounded bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-800">
-              Step-Up: +{formatPercent(data.stepUp, 0)} p.a.
-            </span>
-            <span className="text-slate-400">• {data.tenure} Cycles Validated</span>
           </div>
         </div>
 
         <div className="overflow-hidden rounded-xl border border-slate-200 shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs tabular-nums">
-              <thead className="bg-slate-900 text-[10px] uppercase tracking-wider text-white">
-                <tr>
-                  <th className="px-3 py-2.5 text-center font-bold" scope="col">
-                    Yr
-                  </th>
-                  <th className="px-3 py-2.5 font-semibold text-slate-300" scope="col">
-                    Std SIP (Mo)
-                  </th>
-                  <th className="px-4 py-2.5 font-semibold text-slate-200" scope="col">
-                    Standard Corpus (End)
-                  </th>
-                  <th
-                    className="bg-slate-800/80 px-3 py-2.5 font-semibold text-emerald-300"
-                    scope="col"
-                  >
-                    Step-Up SIP (Mo)
-                  </th>
-                  <th
-                    className="bg-slate-800/80 px-4 py-2.5 font-semibold text-emerald-300"
-                    scope="col"
-                  >
-                    Step-Up Corpus (End)
-                  </th>
-                  <th className="px-3 py-2.5 text-right font-semibold" scope="col">
-                    Milestone Progress
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700">
-                {scheduleRows.map(({ std, step, milestone }) => {
-                  if (milestone.row === "goal") {
-                    return (
-                      <tr
-                        key={std.year}
-                        className="border-t-2 border-emerald-500 bg-emerald-100/70 font-bold"
+          <table className="w-full text-left text-xs tabular-nums">
+            <thead className="bg-slate-900 text-[10px] uppercase tracking-wider text-white">
+              <tr>
+                <th className="px-3 py-2.5 text-center font-bold" scope="col">
+                  Yr
+                </th>
+                <th className="px-3 py-2.5 font-semibold text-slate-300" scope="col">
+                  Std SIP
+                </th>
+                <th className="px-3.5 py-2.5 font-semibold text-slate-200" scope="col">
+                  Std End
+                </th>
+                <th
+                  className="bg-slate-800/80 px-3 py-2.5 font-semibold text-emerald-300"
+                  scope="col"
+                >
+                  Step SIP
+                </th>
+                <th
+                  className="bg-slate-800/80 px-3.5 py-2.5 font-semibold text-emerald-300"
+                  scope="col"
+                >
+                  Step End
+                </th>
+                <th className="px-3 py-2.5 text-right font-semibold" scope="col">
+                  Note
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 text-slate-700">
+              {shown.map(({ std, step, milestone }, idx) => {
+                const omitRow =
+                  truncated && idx === 8 && midOmit > 0 ? (
+                    <tr key={`omit-${std.year}`} className="bg-slate-50">
+                      <td
+                        colSpan={6}
+                        className="px-3 py-2 text-center text-[11px] font-medium text-slate-500"
                       >
-                        <td className="px-3 py-3 text-center text-sm font-black text-emerald-950">
+                        … {midOmit} years omitted …
+                      </td>
+                    </tr>
+                  ) : null;
+
+                if (milestone.row === "goal") {
+                  return (
+                    <Fragment key={std.year}>
+                      {omitRow}
+                      <tr className="border-t-2 border-emerald-500 bg-emerald-100/70 font-bold">
+                        <td className="px-3 py-2.5 text-center text-sm font-black text-emerald-950">
                           {std.year}
                         </td>
-                        <td className="px-3 py-3 text-emerald-900">
+                        <td className="px-3 py-2.5 text-emerald-900">
                           {formatINRCurrency(std.monthly)}
                         </td>
-                        <td className="px-4 py-3 text-sm font-black text-emerald-950">
+                        <td className="px-3.5 py-2.5 font-black text-emerald-950">
                           {formatINRCurrency(std.yearEnd)}
                         </td>
-                        <td className="bg-emerald-200/60 px-3 py-3 font-bold text-emerald-950">
+                        <td className="bg-emerald-200/60 px-3 py-2.5 text-emerald-950">
                           {formatINRCurrency(step.monthly)}
                         </td>
-                        <td className="bg-emerald-200/60 px-4 py-3 text-sm font-black text-emerald-950">
+                        <td className="bg-emerald-200/60 px-3.5 py-2.5 font-black text-emerald-950">
                           {formatINRCurrency(step.yearEnd)}
                         </td>
-                        <td className="px-3 py-3 text-right text-xs font-black text-emerald-800">
+                        <td className="px-3 py-2.5 text-right text-[11px] font-black text-emerald-800">
                           <span className="inline-flex items-center gap-1">
                             <CheckIcon />
-                            Goal Achieved
+                            Goal
                           </span>
                         </td>
                       </tr>
-                    );
-                  }
-                  if (milestone.row === "halfway") {
-                    return (
-                      <tr key={std.year} className="bg-amber-50/40">
+                    </Fragment>
+                  );
+                }
+
+                if (milestone.row === "halfway") {
+                  return (
+                    <Fragment key={std.year}>
+                      {omitRow}
+                      <tr className="bg-amber-50/40">
                         <td className="px-3 py-2 text-center font-black text-amber-900">
                           {std.year}
                         </td>
                         <td className="px-3 py-2 font-medium">
                           {formatINRCurrency(std.monthly)}
                         </td>
-                        <td className="px-4 py-2 font-black text-amber-950">
+                        <td className="px-3.5 py-2 font-black text-amber-950">
                           {formatINRCurrency(std.yearEnd)}
                         </td>
-                        <td className="bg-emerald-50/40 px-3 py-2 font-medium text-emerald-900">
+                        <td className="bg-emerald-50/40 px-3 py-2 text-emerald-900">
                           {formatINRCurrency(step.monthly)}
                         </td>
-                        <td className="bg-emerald-50/40 px-4 py-2 font-semibold text-emerald-950">
+                        <td className="bg-emerald-50/40 px-3.5 py-2 font-semibold text-emerald-950">
                           {formatINRCurrency(step.yearEnd)}
                         </td>
                         <td className="px-3 py-2 text-right text-[11px] font-bold text-amber-800">
-                          {milestone.label}
+                          Halfway
                         </td>
                       </tr>
-                    );
-                  }
-                  return (
-                    <tr key={std.year}>
+                    </Fragment>
+                  );
+                }
+
+                return (
+                  <Fragment key={std.year}>
+                    {omitRow}
+                    <tr>
                       <td className="px-3 py-2 text-center font-bold text-slate-900">
                         {std.year}
                       </td>
                       <td className="px-3 py-2">{formatINRCurrency(std.monthly)}</td>
-                      <td className="px-4 py-2 font-semibold text-slate-900">
+                      <td className="px-3.5 py-2 font-semibold text-slate-900">
                         {formatINRCurrency(std.yearEnd)}
                       </td>
                       <td className="bg-emerald-50/40 px-3 py-2 text-emerald-900">
                         {formatINRCurrency(step.monthly)}
                       </td>
-                      <td className="bg-emerald-50/40 px-4 py-2 font-semibold text-emerald-950">
+                      <td className="bg-emerald-50/40 px-3.5 py-2 font-semibold text-emerald-950">
                         {formatINRCurrency(step.yearEnd)}
                       </td>
-                      <td
-                        className={`px-3 py-2 text-right text-[11px] ${
-                          milestone.label.includes("Step-Up")
-                            ? "font-medium text-emerald-700"
-                            : "text-slate-400"
-                        }`}
-                      >
-                        {milestone.label}
+                      <td className="px-3 py-2 text-right text-[11px] text-slate-400">
+                        {milestone.label === "Compounding" ? "" : milestone.label}
                       </td>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                  </Fragment>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       </section>
 
-      <div data-pdf-keep-together>
+      <div className="mt-6 space-y-4" data-pdf-keep-together>
         <ExecutivePlaybook pillars={playbook} />
+        <footer className="border-t border-slate-200 pt-4 text-[11px] leading-relaxed text-slate-500">
+          <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-700">
+            Disclaimer
+          </span>
+          <p>
+            This report is for illustrative planning only. Return and inflation assumptions are not
+            guaranteed. Mutual fund investments are subject to market risks. Please read all
+            scheme-related documents carefully before investing.
+          </p>
+          <p className="mt-3 text-center text-[10px] text-slate-400">
+            Powered by <span className="font-medium text-slate-600">Nivra</span>
+          </p>
+        </footer>
       </div>
     </ExecutiveDossierSheet>
   );
@@ -543,7 +651,7 @@ function Param({
   valueClass?: string;
 }) {
   return (
-    <div className="flex-1 border-r border-slate-100 pr-2 last:border-0">
+    <div className="min-w-[5rem] flex-1 border-r border-slate-100 pr-3 last:border-0">
       <span className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400">
         {label}
       </span>
@@ -554,7 +662,7 @@ function Param({
 
 function CheckIcon() {
   return (
-    <svg className="h-3.5 w-3.5 text-emerald-700" fill="currentColor" viewBox="0 0 20 20">
+    <svg className="h-3.5 w-3.5 text-emerald-700" fill="currentColor" viewBox="0 0 20 20" aria-hidden>
       <path
         fillRule="evenodd"
         clipRule="evenodd"

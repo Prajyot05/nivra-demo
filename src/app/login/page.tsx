@@ -16,7 +16,7 @@ export default function LoginPage() {
           <div className="flex justify-center">
             <NivraMark />
           </div>
-          <p className="mt-3 text-sm text-muted-foreground">Sign in to continue</p>
+          <p className="mt-3 text-sm text-muted-foreground">Sign in with Clerk</p>
         </div>
         <Suspense fallback={<div className="h-40 animate-pulse rounded-md bg-muted" />}>
           <LoginForm />

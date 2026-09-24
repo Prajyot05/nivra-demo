@@ -12,32 +12,32 @@
 /* ── Vertical rhythm ─────────────────────────────────────────────────────── */
 
 /** Gap between major blocks of a page (stat band, split, table, notes). */
-export const STACK = "flex flex-col gap-4";
+export const STACK = "flex flex-col gap-6 sm:gap-8";
 /** Gap between a heading and the block it introduces. */
-export const STACK_TIGHT = "flex flex-col gap-2.5";
+export const STACK_TIGHT = "flex flex-col gap-4";
 /** Gap inside a card between stacked rows. */
-export const STACK_INNER = "flex flex-col gap-3";
+export const STACK_INNER = "flex flex-col gap-4";
 
 /* ── Cards ───────────────────────────────────────────────────────────────── */
 
-const CARD_SHAPE = "rounded-xl border";
+const CARD_SHAPE = "rounded-2xl border";
 
 /** Default card: charts, tables, result panels, supporting info. */
-export const CARD = `${CARD_SHAPE} border-[var(--app-border)] bg-[var(--app-surface)]`;
+export const CARD = `${CARD_SHAPE} border-slate-200 bg-white shadow-sm`;
 /** Recessed card: the input / assumptions area. */
-export const CARD_MUTED = `${CARD_SHAPE} border-[var(--app-border)] bg-[var(--app-surface-muted)]`;
+export const CARD_MUTED = `${CARD_SHAPE} border-slate-200 bg-slate-50/60`;
 /** Advisory card: notes, caveats, cost-of-delay callouts. */
 export const CARD_WARN = `${CARD_SHAPE} border-[var(--app-warn-border)] bg-[var(--app-warn-bg)]`;
 /** Empty state. */
 export const CARD_EMPTY =
-  "rounded-xl border border-dashed border-[var(--app-border)] bg-[var(--app-surface)]";
+  "rounded-2xl border border-dashed border-slate-200 bg-white";
 
 /** Standard card padding. */
-export const CARD_PAD = "p-3.5 sm:p-4";
+export const CARD_PAD = "p-5 sm:p-6";
 /** Compact card padding for dense secondary cards. */
-export const CARD_PAD_TIGHT = "p-3";
+export const CARD_PAD_TIGHT = "p-4";
 /** Horizontal padding for row-based cards (ResultCard) so rows align edge to edge. */
-export const ROW_PAD_X = "px-3.5 sm:px-4";
+export const ROW_PAD_X = "px-4 sm:px-5";
 
 /* ── Typography ──────────────────────────────────────────────────────────── */
 
@@ -73,9 +73,9 @@ export const FORM_GRID =
  * Two-column results: charts on the left, numbers on the right.
  * Left grows; right column matches height and scrolls when needed.
  */
-export const RESULTS_SPLIT = "grid grid-cols-1 gap-4 lg:grid-cols-12";
-export const RESULTS_LEFT = "flex min-w-0 flex-col gap-4 lg:col-span-7";
-export const RESULTS_RIGHT = "flex min-w-0 flex-col gap-4 lg:col-span-5";
+export const RESULTS_SPLIT = "grid grid-cols-1 gap-5 sm:gap-6 lg:grid-cols-12";
+export const RESULTS_LEFT = "flex min-w-0 flex-col gap-5 lg:col-span-7";
+export const RESULTS_RIGHT = "flex min-w-0 flex-col gap-5 lg:col-span-5";
 
 /** Column counts for the headline stat band, keyed by number of stats. */
 /**
@@ -96,7 +96,7 @@ export function statGridClass(count: number): string {
             : count === 5
               ? "grid-cols-1 @sm:grid-cols-2 @xl:grid-cols-3 @5xl:grid-cols-5"
               : "grid-cols-1 @sm:grid-cols-2 @xl:grid-cols-3";
-  return `grid gap-2.5 ${columns}`;
+  return `grid gap-4 sm:gap-6 ${columns}`;
 }
 
 /* ── Controls ────────────────────────────────────────────────────────────── */
@@ -119,9 +119,9 @@ export const BUTTON_DANGER = `${CONTROL_BASE} border border-[var(--app-border)] 
 export const CHIP =
   "rounded-md border px-2 py-1 text-[11px] font-medium tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--app-primary)]";
 export const CHIP_ON =
-  "border-[var(--app-primary)] bg-[var(--app-primary)] text-[var(--app-primary-fg)]";
+  "border-emerald-600 bg-emerald-600 text-white shadow-sm";
 export const CHIP_OFF =
-  "border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-text-muted)] hover:border-[var(--app-primary-soft)] hover:text-[var(--app-text)]";
+  "border-slate-200 bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-800";
 
 /** Status pill used for buckets / categories in tables and timelines. */
 export const PILL =

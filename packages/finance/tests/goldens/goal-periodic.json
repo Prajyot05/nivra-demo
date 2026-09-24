@@ -59,7 +59,7 @@
       },
       "expect": {
         "standard.monthlySip": 0,
-        "periodic.maturity": 309519361.8090382,
+        "periodic.maturity": 309519361.80903816,
         "periodic.payments": 80
       }
     }

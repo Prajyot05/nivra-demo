@@ -228,3 +228,66 @@ test("compounding growth steps: SIP net hits goal; extra years grow the corpus",
   assert.equal(result.schedule.length, 20);
   assert.equal(result.delays.length, 4);
 });
+
+test("compounding matches Unprotected Growth Steps Excel (50L / 15y / 14%)", () => {
+  const result = calculateGoalCompounding({
+    goalAmount: 5_000_000,
+    tenureYears: 15,
+    annualReturn: 0.14,
+    inflationRate: 0,
+    taxRate: 0.125,
+    useInflationAdjustedGoal: false,
+    extraYears: 0,
+    investmentType: "one-time",
+    stepSize: 1_000_000,
+  });
+  close(result.lumpsum.lumpsum, 784843.635774286);
+  close(result.standard.monthlySip, 9670.1278438884419);
+  close(result.lumpsum.maturity, 5602165.194889388);
+  close(result.standard.maturity, 5465625.2840142976);
+  close(result.standard.invested, 1740623.0118999195);
+  close(result.lumpsum.tax, 602165.19488938781);
+  close(result.standard.tax, 465625.2840142973);
+  close(result.standard.netAfterTax, 5_000_000, 1e-8);
+  close(result.lumpsum.netAfterTax, 5_000_000, 1e-8);
+  assert.equal(result.schedule.length, 15);
+  assert.deepEqual(
+    result.growthSteps.map((row) => row.months),
+    [23, 86, 123, 150, 170],
+  );
+  assert.deepEqual(
+    result.growthSteps.map((row) => row.step),
+    [1, 2, 3, 4, 5],
+  );
+  const sipSteps = calculateGoalCompounding({
+    goalAmount: 5_000_000,
+    tenureYears: 15,
+    annualReturn: 0.14,
+    inflationRate: 0,
+    taxRate: 0.125,
+    useInflationAdjustedGoal: false,
+    extraYears: 0,
+    investmentType: "sip",
+    stepSize: 1_000_000,
+  });
+  assert.deepEqual(
+    sipSteps.growthSteps.map((row) => row.months),
+    [69, 108, 136, 156, 174],
+  );
+});
+
+test("compounding growth steps: 1Cr step size is insufficient for a 50L goal", () => {
+  const result = calculateGoalCompounding({
+    goalAmount: 5_000_000,
+    tenureYears: 15,
+    annualReturn: 0.14,
+    inflationRate: 0,
+    taxRate: 0.125,
+    useInflationAdjustedGoal: false,
+    extraYears: 0,
+    investmentType: "one-time",
+    stepSize: 10_000_000,
+  });
+  assert.equal(result.growthSteps.length, 0);
+});
+

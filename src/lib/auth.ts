@@ -1,107 +1,285 @@
-export const AUTH_PROFILES = [
-  { id: "dev", username: "devteam", password: "nivra-dev", label: "Dev Team" },
-  { id: "client", username: "client", password: "nivra-client", label: "Client" },
-] as const;
+import { auth, currentUser, clerkClient } from "@clerk/nextjs/server";
+import { UserRole, UserStatus, type User } from "@prisma/client";
+import { getPrisma, isDatabaseConfigured, resetPrisma } from "@/lib/db";
+import { getEntitlements, type Entitlements } from "@/lib/entitlements";
 
-export type AuthProfileId = (typeof AUTH_PROFILES)[number]["id"];
+export type AppUser = User & {
+  entitlements: Entitlements;
+};
 
-export const SESSION_COOKIE = "nivra-session";
-
-const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
-
-function getAuthSecret(): string {
-  return process.env.AUTH_SECRET ?? "nivra-local-dev-secret";
-}
-
-function toBase64Url(bytes: Uint8Array): string {
-  let binary = "";
-  for (const byte of bytes) {
-    binary += String.fromCharCode(byte);
+/** Map Clerk publicMetadata.role → UserRole. Default COMPANY_EMPLOYEE. */
+export function roleFromClerkMetadata(
+  metadata: Record<string, unknown> | undefined,
+): UserRole {
+  const raw = typeof metadata?.role === "string" ? metadata.role : "";
+  if (raw === "NIVRA_ADMIN" || raw === "nivra_admin") return UserRole.NIVRA_ADMIN;
+  if (raw === "COMPANY_ADMIN" || raw === "company_admin" || raw === "admin") {
+    return UserRole.COMPANY_ADMIN;
   }
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return UserRole.COMPANY_EMPLOYEE;
 }
 
-function fromBase64Url(value: string): Uint8Array {
-  const pad = value.length % 4 === 0 ? "" : "=".repeat(4 - (value.length % 4));
-  const base64 = value.replace(/-/g, "+").replace(/_/g, "/") + pad;
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes;
-}
-
-async function getSigningKey(): Promise<CryptoKey> {
-  return crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(getAuthSecret()),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign", "verify"],
+/** Comma-separated PLATFORM_ADMIN_EMAIL list (case-insensitive). */
+export function platformAdminEmails(): Set<string> {
+  const raw = process.env.PLATFORM_ADMIN_EMAIL ?? "";
+  return new Set(
+    raw
+      .split(",")
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean),
   );
 }
 
-export async function createSessionToken(profileId: AuthProfileId): Promise<string> {
-  const expiresAt = Date.now() + SESSION_MAX_AGE_SECONDS * 1000;
-  const payload = `${profileId}:${expiresAt}`;
-  const payloadBytes = new TextEncoder().encode(payload);
-  const key = await getSigningKey();
-  const signature = await crypto.subtle.sign("HMAC", key, payloadBytes);
-  return `${toBase64Url(payloadBytes)}.${toBase64Url(new Uint8Array(signature))}`;
+export function isPlatformAdminEmail(email: string | null | undefined): boolean {
+  if (!email) return false;
+  return platformAdminEmails().has(email.trim().toLowerCase());
 }
 
-export async function verifySessionToken(
-  token: string | undefined,
-): Promise<AuthProfileId | null> {
-  if (!token) return null;
-
-  const [encodedPayload, encodedSignature] = token.split(".");
-  if (!encodedPayload || !encodedSignature) return null;
-
-  const payloadBytes = fromBase64Url(encodedPayload);
-  const signatureBytes = fromBase64Url(encodedSignature);
-  const payload = new TextDecoder().decode(payloadBytes);
-
-  const key = await getSigningKey();
-  const valid = await crypto.subtle.verify(
-    "HMAC",
-    key,
-    Uint8Array.from(signatureBytes),
-    Uint8Array.from(payloadBytes),
+function isPrismaConnectionError(error: unknown): boolean {
+  const msg = error instanceof Error ? error.message : String(error);
+  return (
+    msg.includes("Closed") ||
+    msg.includes("Can't reach database") ||
+    msg.includes("Connection terminated") ||
+    msg.includes("ECONNRESET") ||
+    msg.includes("server closed the connection")
   );
-  if (!valid) return null;
+}
 
-  const [profileId, expiresAtRaw] = payload.split(":");
-  const expiresAt = Number(expiresAtRaw);
-  if (!profileId || !Number.isFinite(expiresAt) || Date.now() > expiresAt) {
-    return null;
+async function loadUserByClerkId(clerkUserId: string): Promise<User | null> {
+  if (!isDatabaseConfigured()) return null;
+  try {
+    return await getPrisma()!.user.findUnique({ where: { clerkUserId } });
+  } catch (error) {
+    if (!isPrismaConnectionError(error)) throw error;
+    console.warn("Prisma connection closed; reconnecting for user lookup");
+    resetPrisma();
+    try {
+      return await getPrisma()!.user.findUnique({ where: { clerkUserId } });
+    } catch (retryError) {
+      console.warn("Prisma user lookup failed after reconnect", retryError);
+      return null;
+    }
   }
-
-  const profile = AUTH_PROFILES.find((p) => p.id === profileId);
-  return profile ? profile.id : null;
 }
 
-export function authenticateUser(
-  username: string,
-  password: string,
-): AuthProfileId | null {
-  const profile = AUTH_PROFILES.find(
-    (p) => p.username === username && p.password === password,
-  );
-  return profile ? profile.id : null;
-}
+function sessionFallbackUser(clerkUserId: string, email?: string, name?: string, role?: UserRole): User {
+  const resolvedEmail = email ?? `${clerkUserId}@session.local`;
+  const resolvedRole =
+    role ??
+    (isPlatformAdminEmail(resolvedEmail)
+      ? UserRole.NIVRA_ADMIN
+      : UserRole.COMPANY_EMPLOYEE);
 
-export function getSessionCookieOptions(secure: boolean) {
   return {
-    httpOnly: true,
-    sameSite: "lax" as const,
-    secure,
-    path: "/",
-    maxAge: SESSION_MAX_AGE_SECONDS,
+    id: `session_${clerkUserId}`,
+    clerkUserId,
+    email: resolvedEmail,
+    name: name || resolvedEmail,
+    role: resolvedRole,
+    organizationId: null,
+    status: UserStatus.ACTIVE,
+    lastLoginAt: new Date(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    deletedAt: null,
   };
 }
 
-export function getProfileLabel(profileId: AuthProfileId): string {
-  return AUTH_PROFILES.find((p) => p.id === profileId)?.label ?? profileId;
+/**
+ * Ensure a Neon User row exists for the signed-in Clerk user.
+ * Organization is never created by Clerk — assign organizationId in Neon / admin.
+ */
+export async function syncUserFromClerk(): Promise<User | null> {
+  const { userId } = await auth();
+  if (!userId) return null;
+
+  let clerkUser: Awaited<ReturnType<typeof currentUser>> = null;
+  try {
+    clerkUser = await currentUser();
+  } catch (error) {
+    // Clerk Backend API can flake (rate limit / network). Do not fail calculate.
+    console.warn("Clerk currentUser() failed; falling back to Neon/session user", error);
+  }
+
+  if (!clerkUser) {
+    const existing = await loadUserByClerkId(userId);
+    if (existing) return existing;
+    return sessionFallbackUser(userId);
+  }
+
+  const email =
+    clerkUser.primaryEmailAddress?.emailAddress ??
+    clerkUser.emailAddresses[0]?.emailAddress;
+  if (!email) {
+    const existing = await loadUserByClerkId(userId);
+    if (existing) return existing;
+    return sessionFallbackUser(userId);
+  }
+
+  const name =
+    [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") ||
+    email;
+
+  if (!isDatabaseConfigured()) {
+    return sessionFallbackUser(
+      userId,
+      email,
+      name,
+      roleFromClerkMetadata(clerkUser.publicMetadata as Record<string, unknown>),
+    );
+  }
+
+  const role = roleFromClerkMetadata(
+    clerkUser.publicMetadata as Record<string, unknown>,
+  );
+
+  const runDb = async <T,>(fn: () => Promise<T>): Promise<T> => {
+    try {
+      return await fn();
+    } catch (error) {
+      if (!isPrismaConnectionError(error)) throw error;
+      console.warn("Prisma connection closed during user sync; reconnecting");
+      resetPrisma();
+      return fn();
+    }
+  };
+
+  try {
+    return await runDb(async () => {
+      const prisma = getPrisma()!;
+      const existing = await prisma.user.findUnique({ where: { clerkUserId: userId } });
+
+      if (existing) {
+        const elevateToAdmin = isPlatformAdminEmail(email);
+        return prisma.user.update({
+          where: { id: existing.id },
+          data: {
+            email,
+            name,
+            ...(elevateToAdmin && existing.role !== UserRole.NIVRA_ADMIN
+              ? { role: UserRole.NIVRA_ADMIN, organizationId: null }
+              : {}),
+            ...(existing.role === UserRole.COMPANY_EMPLOYEE &&
+            role !== UserRole.COMPANY_EMPLOYEE
+              ? { role }
+              : {}),
+            lastLoginAt: new Date(),
+            status: UserStatus.ACTIVE,
+          },
+        });
+      }
+
+      const byEmail = await prisma.user.findFirst({
+        where: { email: { equals: email, mode: "insensitive" }, deletedAt: null },
+      });
+      if (byEmail) {
+        const elevateToAdmin = isPlatformAdminEmail(email)
+          ? UserRole.NIVRA_ADMIN
+          : undefined;
+        return prisma.user.update({
+          where: { id: byEmail.id },
+          data: {
+            clerkUserId: userId,
+            email,
+            name,
+            ...(elevateToAdmin ? { role: elevateToAdmin } : {}),
+            ...(byEmail.role === UserRole.COMPANY_EMPLOYEE &&
+            role !== UserRole.COMPANY_EMPLOYEE
+              ? { role }
+              : {}),
+            lastLoginAt: new Date(),
+            status: UserStatus.ACTIVE,
+          },
+        });
+      }
+
+      const bootstrapRole = isPlatformAdminEmail(email)
+        ? UserRole.NIVRA_ADMIN
+        : role;
+
+      return prisma.user.create({
+        data: {
+          clerkUserId: userId,
+          email,
+          name,
+          role: bootstrapRole,
+          organizationId: null,
+          status: UserStatus.ACTIVE,
+          lastLoginAt: new Date(),
+        },
+      });
+    });
+  } catch (error) {
+    console.warn("User sync to Neon failed; using session fallback", error);
+    return sessionFallbackUser(userId, email, name, role);
+  }
+}
+
+export async function getCurrentAppUser(): Promise<AppUser | null> {
+  const user = await syncUserFromClerk();
+  if (!user) return null;
+  try {
+    const entitlements = await getEntitlements({
+      role: user.role,
+      organizationId: user.organizationId,
+    });
+    return { ...user, entitlements };
+  } catch (error) {
+    console.warn("getEntitlements failed; allowing calculator use", error);
+    return {
+      ...user,
+      entitlements: {
+        role: user.role,
+        organizationId: user.organizationId,
+        organization: null,
+        tierLevel: 99,
+        tierName: "Degraded",
+        subscriptionStatus: null,
+        lockMode: "none",
+        softLockEndsAt: null,
+        canUseCalculators: true,
+        canGenerateReports: true,
+        allowedCalculatorIds: ["*"],
+        reportsGenerated: 0,
+        reportLimit: null,
+        reportsRemaining: null,
+      },
+    };
+  }
+}
+
+/**
+ * New login wins: revoke every other active Clerk session for this user.
+ * Call from the session.created webhook.
+ */
+export async function revokeOtherClerkSessions(
+  clerkUserId: string,
+  keepSessionId: string,
+): Promise<number> {
+  const client = await clerkClient();
+  const list = await client.sessions.getSessionList({
+    userId: clerkUserId,
+    status: "active",
+  });
+  let revoked = 0;
+  for (const session of list.data) {
+    if (session.id === keepSessionId) continue;
+    await client.sessions.revokeSession(session.id);
+    revoked += 1;
+  }
+  return revoked;
+}
+
+export function isNivraAdmin(role: UserRole): boolean {
+  return role === UserRole.NIVRA_ADMIN;
+}
+
+export function isCompanyAdmin(role: UserRole): boolean {
+  return role === UserRole.COMPANY_ADMIN;
+}
+
+/** Nav visibility profile: platform admins see all calculators (incl. incomplete). */
+export function navProfileForRole(role: UserRole): "dev" | "client" {
+  return role === UserRole.NIVRA_ADMIN ? "dev" : "client";
 }

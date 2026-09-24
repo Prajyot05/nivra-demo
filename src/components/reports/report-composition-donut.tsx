@@ -27,6 +27,8 @@ type ReportCompositionDonutProps = {
    * `row` = chart beside legend (needs ~420px+ width).
    */
   layout?: "row" | "stacked";
+  /** Smaller padding / chart for dense 2-page dossiers. */
+  compact?: boolean;
 };
 
 const CX = 50;
@@ -91,6 +93,7 @@ export function ReportCompositionDonut({
   accent = false,
   taxLabel = "Tax on Profit",
   layout = "row",
+  compact = false,
 }: ReportCompositionDonutProps) {
   const slices = buildSlices(invested, gain, tax, taxLabel);
   const total = Math.max(
@@ -115,16 +118,24 @@ export function ReportCompositionDonut({
     .filter(Boolean) as Array<Slice & { start: number; end: number; pct: number }>;
 
   const stacked = layout === "stacked";
+  const centerAmount = formatINRCurrency(centerValue);
+  const centerAmountLong = centerAmount.length > 12;
 
   return (
     <div
-      className={`min-w-0 overflow-hidden rounded-xl border p-4 ${
+      className={`min-w-0 overflow-hidden rounded-xl border ${
+        compact ? "p-2.5" : "p-4"
+      } ${
         accent
           ? "border-emerald-200 bg-emerald-50/30"
           : "border-slate-200 bg-slate-50/40"
       }`}
     >
-      <div className="flex min-w-0 items-start justify-between gap-2 border-b border-slate-200 pb-2.5">
+      <div
+        className={`flex min-w-0 items-start justify-between gap-2 border-b border-slate-200 ${
+          compact ? "pb-1.5" : "pb-2.5"
+        }`}
+      >
         <h4 className="min-w-0 flex-1 truncate text-xs font-bold uppercase tracking-wide text-slate-900">
           {title}
         </h4>
@@ -138,11 +149,13 @@ export function ReportCompositionDonut({
       <div
         className={
           stacked
-            ? "flex flex-col items-center gap-4 py-4"
-            : "flex min-w-0 flex-col items-center gap-4 py-4 sm:flex-row sm:items-center sm:justify-center sm:gap-4"
+            ? `flex flex-col items-center ${compact ? "gap-2 py-2" : "gap-4 py-4"}`
+            : `flex min-w-0 flex-col items-center sm:flex-row sm:items-center sm:justify-center ${
+                compact ? "gap-2 py-2 sm:gap-3" : "gap-4 py-4 sm:gap-4"
+              }`
         }
       >
-        <div className="relative h-40 w-40 shrink-0">
+        <div className={`relative shrink-0 ${compact ? "h-32 w-32" : "h-40 w-40"}`}>
           <svg className="h-full w-full" viewBox="0 0 100 100">
             <circle cx={CX} cy={CY} r={R} fill="none" stroke="#f1f5f9" strokeWidth={STROKE} />
             <circle cx={CX} cy={CY} r={R - STROKE / 2 - 1.5} fill="#ffffff" />
@@ -157,12 +170,27 @@ export function ReportCompositionDonut({
               />
             ))}
           </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center px-5 text-center">
-            <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400">
+          {/* Keep label + amount inside the white hole (~62% of chart). */}
+          <div className="absolute inset-[19%] flex flex-col items-center justify-center overflow-hidden px-1 text-center">
+            <span
+              className={`block max-w-full truncate font-bold uppercase tracking-wider text-slate-400 ${
+                compact ? "text-[7px] leading-none" : "text-[8px] leading-tight"
+              }`}
+            >
               {centerLabel}
             </span>
-            <span className="mt-0.5 max-w-full break-all text-[11px] font-black leading-tight tabular-nums text-slate-900">
-              {formatINRCurrency(centerValue)}
+            <span
+              className={`mt-0.5 max-w-full font-black tabular-nums text-slate-900 ${
+                centerAmountLong
+                  ? compact
+                    ? "text-[8px] leading-none"
+                    : "text-[9px] leading-tight"
+                  : compact
+                    ? "text-[10px] leading-none"
+                    : "text-[11px] leading-tight"
+              }`}
+            >
+              {centerAmount}
             </span>
           </div>
         </div>

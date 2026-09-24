@@ -1,40 +1,81 @@
 "use client";
 
+import { useAuth, useClerk } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
-import type { AuthProfileId } from "@/lib/auth";
+
+/** Legacy nav filter: platform admins see all tools; company users see completed suite. */
+export type AuthProfileId = "dev" | "client";
+
+export type AuthSession = {
+  profileId: AuthProfileId | null;
+  name: string | null;
+  email: string | null;
+  role: string | null;
+  loading: boolean;
+};
 
 /**
- * Current login profile for nav filtering. Defaults to `dev` until /api/auth/me resolves
- * so SSR and first paint stay dense for the engineering team.
+ * Current login for nav filtering and admin chrome (name + email).
  */
-export function useAuthProfile(): {
-  profileId: AuthProfileId | null;
-  loading: boolean;
-} {
+export function useAuthProfile(): AuthSession {
+  const { isLoaded, isSignedIn } = useAuth();
   const [profileId, setProfileId] = useState<AuthProfileId | null>(null);
+  const [name, setName] = useState<string | null>(null);
+  const [email, setEmail] = useState<string | null>(null);
+  const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!isLoaded) return;
+    if (!isSignedIn) {
+      setProfileId(null);
+      setName(null);
+      setEmail(null);
+      setRole(null);
+      setLoading(false);
+      return;
+    }
+
     let cancelled = false;
+    setLoading(true);
     fetch("/api/auth/me")
       .then(async (res) => {
         if (!res.ok) return null;
-        const body = (await res.json()) as { profileId?: AuthProfileId };
-        return body.profileId ?? null;
+        return (await res.json()) as {
+          profileId?: AuthProfileId;
+          name?: string;
+          email?: string;
+          role?: string;
+        };
       })
-      .then((id) => {
-        if (!cancelled) setProfileId(id);
+      .then((body) => {
+        if (cancelled) return;
+        setProfileId(body?.profileId ?? "client");
+        setName(body?.name ?? null);
+        setEmail(body?.email ?? null);
+        setRole(body?.role ?? null);
       })
       .catch(() => {
-        if (!cancelled) setProfileId(null);
+        if (!cancelled) {
+          setProfileId("client");
+          setName(null);
+          setEmail(null);
+          setRole(null);
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
+
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isLoaded, isSignedIn]);
 
-  return { profileId, loading };
+  return { profileId, name, email, role, loading };
+}
+
+export function useSignOut() {
+  const { signOut } = useClerk();
+  return () => signOut({ redirectUrl: "/login" });
 }

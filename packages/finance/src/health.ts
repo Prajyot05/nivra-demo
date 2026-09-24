@@ -165,11 +165,14 @@ export function calculateFinancialHealth(input: HealthInput): HealthResult {
       : 0;
 
   const funded = yearsLasting >= retiredYears;
-  const message = funded
-    ? "You have more funds than you need."
-    : yearsLasting === 0
-      ? "Corpus does not cover the first retirement year."
-      : `Corpus lasts about ${yearsLasting} of ${retiredYears} retirement years.`;
+  // Excel-style health states: surplus · exact · shortfall.
+  const nearExact =
+    funded && remainingAtSurvival <= Math.max(1_000, corpusAtRetirement * 0.001);
+  const message = !funded
+    ? "You do not have sufficient funds."
+    : nearExact
+      ? "Your retirement plan is fully funded."
+      : "You have more funds than you need.";
 
   // Gap vs FIRE-style required corpus (for donut): required at ret for same expenses.
   let required = 0;

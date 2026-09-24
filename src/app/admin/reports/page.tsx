@@ -1,79 +1,50 @@
-import { BarChart3, FileBarChart } from "lucide-react";
-import { AdminPageHeader, Panel, StatTile } from "@/components/admin/admin-ui";
-import { CompanyLogoMark, CompanyStatusBadge } from "@/components/admin/status-badges";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { DUMMY_COMPANIES, platformStats } from "@/lib/admin/dummy-data";
+import { AdminPageHeader, StatStrip } from "@/components/admin/admin-ui";
+import { CompaniesMetricsTable } from "@/components/admin/companies-metrics-table";
+import { getPlatformStats, listCompanies } from "@/lib/admin/queries";
+import { isDatabaseConfigured } from "@/lib/db";
+import { requireSignedIn } from "@/lib/require-signed-in";
 
-export default function AdminReportsPage() {
-  const stats = platformStats();
-  const byVolume = [...DUMMY_COMPANIES].sort(
+export default async function AdminReportsPage() {
+  await requireSignedIn();
+  const stats = await getPlatformStats();
+  const companies = await listCompanies();
+  const byVolume = [...companies].sort(
     (a, b) => b.reportsThisMonth - a.reportsThisMonth,
   );
+  const source = isDatabaseConfigured() ? "Neon" : "dummy fallback";
 
   return (
     <>
       <AdminPageHeader
         title="Reports"
-        description="Aggregate report generation across tenants. Soft-locked companies stay view-only for a few days."
+        description={`PDF volume across tenants. Soft-lock: 3 days view-only, then hard lock. Paginated for large corpora. Source: ${source}.`}
       />
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <StatTile
-          label="Reports this month"
-          value={stats.reportsThisMonth.toLocaleString("en-IN")}
-          icon={BarChart3}
-        />
-        <StatTile
-          label="Reports all time"
-          value={stats.reportsTotal.toLocaleString("en-IN")}
-          icon={FileBarChart}
-        />
-      </div>
+      <StatStrip
+        items={[
+          {
+            label: "Reports this month",
+            value: stats.reportsThisMonth.toLocaleString("en-IN"),
+            tone: "positive",
+          },
+          {
+            label: "Reports all time",
+            value: stats.reportsTotal.toLocaleString("en-IN"),
+          },
+          {
+            label: "Companies",
+            value: stats.totalCompanies.toLocaleString("en-IN"),
+            hint: `${stats.active.toLocaleString("en-IN")} active`,
+          },
+        ]}
+        className="lg:grid-cols-3 sm:grid-cols-3"
+      />
 
-      <Panel title="By company">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Company</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">This month</TableHead>
-              <TableHead className="text-right">All time</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {byVolume.map((company) => (
-              <TableRow key={company.id}>
-                <TableCell>
-                  <div className="flex items-center gap-3">
-                    <CompanyLogoMark
-                      initials={company.logoInitials}
-                      color={company.logoColor}
-                      size="sm"
-                    />
-                    <span className="font-medium">{company.name}</span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <CompanyStatusBadge status={company.status} />
-                </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {company.reportsThisMonth.toLocaleString("en-IN")}
-                </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {company.reportsGenerated.toLocaleString("en-IN")}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </Panel>
+      <CompaniesMetricsTable
+        companies={byVolume}
+        title="By company"
+        description="Sorted by this month · search and page through the full list"
+      />
     </>
   );
 }

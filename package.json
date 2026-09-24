@@ -8,22 +8,36 @@
   ],
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint .",
     "test": "npm run test -w @nivra/finance && tsx --test src/lib/calculate-dispatch.test.ts",
     "test:goldens": "tsx packages/finance/tests/goldens/generate.ts",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:push": "prisma db push",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:link-admin": "node --env-file=.env --import tsx scripts/link-platform-admin.ts",
+    "postinstall": "prisma generate"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@clerk/backend": "^3.17.2",
+    "@clerk/nextjs": "^7.9.2",
     "@nivra/finance": "*",
     "@nivra/ui": "*",
+    "@prisma/client": "^6.19.3",
     "@radix-ui/react-label": "^2.1.8",
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-slot": "^1.2.4",
     "@radix-ui/react-switch": "^1.2.6",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "framer-motion": "^13.4.0",
+    "geist": "^1.7.2",
     "html-to-image": "^1.11.13",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
@@ -47,7 +61,8 @@
     "eslint": "^9.32.0",
     "eslint-config-next": "^15.5.0",
     "prettier": "^3.7.3",
-    "tsx": "^4.20.5",
+    "prisma": "^6.19.3",
+    "tsx": "^4.23.13",
     "typescript": "^5.8.3"
   }
 }

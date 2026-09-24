@@ -6,15 +6,17 @@ export function PercentInput({
   onChange,
   hint,
   error,
+  wrapLabel = false,
 }: {
   label: string;
   value: number;
   onChange: (value: number) => void;
   hint?: string;
   error?: string;
+  wrapLabel?: boolean;
 }) {
   return (
-    <Field label={label} hint={hint} error={error}>
+    <Field label={label} hint={hint} error={error} wrapLabel={wrapLabel}>
       <div className="relative">
         <TextInput
           type="number"

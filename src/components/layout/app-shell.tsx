@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { LogOut, PanelLeftClose } from "lucide-react";
 import { Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { CalculatorNavRow } from "@/components/layout/calculator-nav-row";
@@ -9,7 +9,7 @@ import { NavOverlay } from "@/components/layout/nav-overlay";
 import { SidebarProvider, useSidebar } from "@/components/layout/sidebar-context";
 import { NivraMark, PoweredByNivra } from "@/components/admin/branding";
 import { Button } from "@/components/ui/button";
-import { useAuthProfile } from "@/hooks/use-auth-profile";
+import { useAuthProfile, useSignOut } from "@/hooks/use-auth-profile";
 import { useCalculatorQaChecklist } from "@/hooks/use-calculator-qa-checklist";
 import {
   getVisibleCalculators,
@@ -44,6 +44,7 @@ function NavLinks({
       <>
         {items.map((item) => {
           const active = isNavItemActive(item, pathname, mode);
+          const done = item.uiPolished === true || checked[item.id];
           return (
             <Link
               key={item.id}
@@ -51,17 +52,13 @@ function NavLinks({
               className={cn(
                 "shrink-0 rounded-full border px-3 py-1 text-xs",
                 active
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border text-muted-foreground",
-                showQaChecklist &&
-                  (item.completed || checked[item.id]) &&
-                  "ring-1 ring-emerald-500/40",
+                  ? "border-emerald-600 bg-emerald-600 text-white"
+                  : "border-slate-200 bg-white text-slate-600",
+                showQaChecklist && done && !active && "ring-1 ring-emerald-500/30",
               )}
-              title={item.excelFile}
+              title={item.description}
             >
-              {showQaChecklist && (item.completed || checked[item.id])
-                ? "✓ "
-                : ""}
+              {showQaChecklist && done ? "✓ " : ""}
               {item.shortLabel}
             </Link>
           );
@@ -73,8 +70,8 @@ function NavLinks({
   return (
     <>
       {categories.map((category) => (
-        <div key={category.id} className="mb-3">
-          <p className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <div key={category.id} className="mb-5">
+          <p className="px-2.5 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
             {category.label}
           </p>
           <div className="flex flex-col gap-0.5">
@@ -100,11 +97,10 @@ function NavLinks({
 
 function AppShellInner({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const mode = searchParams.get("mode");
   const { profileId } = useAuthProfile();
-  // Restrict until profile loads so clients never flash the full suite.
+  const signOut = useSignOut();
   const navProfile = profileId ?? "client";
   const enabledCalculators = useMemo(
     () => getVisibleCalculators(navProfile),
@@ -117,19 +113,15 @@ function AppShellInner({ children }: { children: ReactNode }) {
   const showQaChecklist = profileId === "dev";
   const { collapsed, overlayOpen, collapse, expand, closeOverlay } = useSidebar();
   const { checked, toggle, clearAll } = useCalculatorQaChecklist();
-  // Defer localStorage sidebar preference until after mount so SSR HTML always
-  // matches the first client paint (Suspense remounts skip getServerSnapshot).
   const [ready, setReady] = useState(false);
   useEffect(() => {
     setReady(true);
   }, []);
 
   const handleLogout = useCallback(async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
     closeOverlay();
-    router.replace("/login");
-    router.refresh();
-  }, [router, closeOverlay]);
+    await signOut();
+  }, [signOut, closeOverlay]);
 
   if (
     pathname === "/login" ||
@@ -140,46 +132,52 @@ function AppShellInner({ children }: { children: ReactNode }) {
   }
 
   const showSidebar = !ready || !collapsed;
-  const checkedCount = enabledCalculators.filter(
-    (item) => item.completed === true || checked[item.id],
+  const polishedCount = enabledCalculators.filter(
+    (item) => item.uiPolished === true || checked[item.id],
   ).length;
   const totalCount = enabledCalculators.length;
+  const openForPrajyot = enabledCalculators.filter(
+    (item) => item.uiPolished !== true && !checked[item.id],
+  ).length;
 
   return (
-    <div className="flex min-h-dvh bg-background">
+    <div className="flex min-h-dvh bg-slate-50">
       <aside
         className={cn(
-          "shrink-0 border-r border-border bg-sidebar",
+          "shrink-0 border-r border-slate-200/80 bg-white",
           "hidden md:flex md:flex-col",
-          showSidebar ? "w-80" : "md:hidden",
+          showSidebar ? "w-[17.5rem]" : "md:hidden",
         )}
         aria-hidden={!showSidebar}
       >
-        <div className="flex items-start justify-between border-b border-sidebar-border px-4 py-4">
-          <div>
+        <div className="flex items-start justify-between gap-2 border-b border-slate-200/80 px-4 py-4">
+          <div className="min-w-0">
             <NivraMark />
-            <p className="mt-1 text-[11px] text-muted-foreground">Calculators</p>
+            <p className="mt-1.5 text-[11px] leading-snug text-slate-500">
+              Advisor calculators
+            </p>
             {showQaChecklist ? (
-              <p className="mt-1 text-[10px] font-medium text-muted-foreground">
-                Done · {checkedCount}/{totalCount}
+              <p className="mt-1 text-[10px] font-medium text-slate-400">
+                UI polish · {polishedCount}/{totalCount}
+                {openForPrajyot > 0 ? ` · ${openForPrajyot} open` : ""}
               </p>
             ) : (
-              <p className="mt-1 text-[10px] font-medium text-muted-foreground">
-                Client suite · {totalCount} tools
+              <p className="mt-1 text-[10px] font-medium text-slate-400">
+                {totalCount} tools in suite
               </p>
             )}
           </div>
           <Button
             variant="ghost"
             size="icon"
-            className="shrink-0"
+            className="shrink-0 text-slate-500"
             onClick={collapse}
             aria-label="Collapse sidebar"
           >
             <PanelLeftClose />
           </Button>
         </div>
-        <nav className="flex flex-1 flex-col overflow-y-auto p-2">
+        <nav className="flex flex-1 flex-col overflow-y-auto px-2 py-3">
           <NavLinks
             pathname={pathname}
             mode={mode}
@@ -191,21 +189,21 @@ function AppShellInner({ children }: { children: ReactNode }) {
             showQaChecklist={showQaChecklist}
           />
         </nav>
-        <div className="space-y-2 border-t border-sidebar-border p-2">
+        <div className="space-y-1.5 border-t border-slate-200/80 p-3">
           {showQaChecklist ? (
             <Button
               variant="ghost"
               size="sm"
-              className="w-full justify-start text-muted-foreground"
+              className="w-full justify-start text-slate-500"
               onClick={clearAll}
             >
-              Clear Excel QA ticks
+              Clear extra UI ticks
             </Button>
           ) : null}
           <Button
             variant="ghost"
             size="sm"
-            className="w-full justify-start"
+            className="w-full justify-start text-slate-600"
             onClick={handleLogout}
           >
             <LogOut />
@@ -228,7 +226,7 @@ function AppShellInner({ children }: { children: ReactNode }) {
       />
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <div className="flex gap-2 overflow-x-auto border-b border-border px-2 py-2 md:hidden">
+        <div className="flex gap-2 overflow-x-auto border-b border-slate-200/80 bg-white px-2 py-2 md:hidden">
           <NavLinks
             pathname={pathname}
             mode={mode}

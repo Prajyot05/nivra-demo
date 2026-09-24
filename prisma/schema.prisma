@@ -1,0 +1,289 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  NIVRA_ADMIN
+  COMPANY_ADMIN
+  COMPANY_EMPLOYEE
+}
+
+enum OrgType {
+  PERSONAL
+  COMPANY
+}
+
+enum CompanyStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  TRIAL
+}
+
+enum SoftLockState {
+  NONE
+  VIEW_ONLY
+  HARD_LOCKED
+}
+
+enum UserStatus {
+  ACTIVE
+  INVITED
+  DISABLED
+  SUSPENDED
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  EXPIRED
+  CANCELLED
+}
+
+enum PlanInterval {
+  MONTHLY
+  ANNUAL
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+  EXPIRED
+}
+
+// ─── Platform catalog ─────────────────────────────────────────────────────────
+
+model Plan {
+  id                   String       @id @default(uuid())
+  code                 String       @unique
+  name                 String
+  tierLevel            Int
+  priceMinor           Int          @default(0)
+  currency             String       @default("INR")
+  interval             PlanInterval @default(MONTHLY)
+  reportLimitPerPeriod Int?
+  trialDays            Int?
+  trialReportLimit     Int?
+  razorpayPlanId       String?
+  isPublic             Boolean      @default(true)
+  isActive             Boolean      @default(true)
+  sortOrder            Int          @default(0)
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+
+  subscriptions Subscription[]
+}
+
+model Calculator {
+  id           String   @id
+  name         String
+  category     String
+  route        String
+  mode         String?
+  minTierLevel Int      @default(1)
+  isActive     Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  reportEvents ReportEvent[]
+}
+
+// ─── Organization ─────────────────────────────────────────────────────────────
+
+model Organization {
+  id             String        @id @default(uuid())
+  name           String
+  slug           String        @unique
+  type           OrgType       @default(COMPANY)
+  status         CompanyStatus @default(TRIAL)
+  softLock       SoftLockState @default(NONE)
+  softLockEndsAt DateTime?
+  billingEmail   String?
+  phone          String?
+  email          String?
+  gstin          String?
+  logoUrl        String?
+  logoInitials   String?
+  logoColor      String?
+  disclaimer     String?
+  defaultTheme   String        @default("classic")
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  deletedAt      DateTime?
+
+  users         User[]
+  subscriptions Subscription[]
+  invitations   Invitation[]
+  usagePeriods  UsagePeriod[]
+  reportEvents  ReportEvent[]
+  auditLogs     AuditLog[]
+}
+
+// ─── User (Clerk identity; org in Neon only) ──────────────────────────────────
+
+model User {
+  id             String     @id @default(uuid())
+  clerkUserId    String     @unique
+  email          String
+  name           String
+  role           UserRole
+  organizationId String?
+  status         UserStatus @default(ACTIVE)
+  lastLoginAt    DateTime?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization? @relation(fields: [organizationId], references: [id])
+  reportEvents ReportEvent[]
+  loginEvents  LoginEvent[]
+  auditLogs    AuditLog[]    @relation("AuditActor")
+
+  @@index([organizationId])
+  @@index([email])
+}
+
+// ─── Subscription ─────────────────────────────────────────────────────────────
+
+model Subscription {
+  id                     String             @id @default(uuid())
+  organizationId         String
+  planId                 String
+  status                 SubscriptionStatus @default(TRIALING)
+  currentPeriodStart     DateTime
+  currentPeriodEnd       DateTime
+  trialEndsAt            DateTime?
+  cancelAtPeriodEnd      Boolean            @default(false)
+  razorpaySubscriptionId String?
+  razorpayCustomerId     String?
+  startedAt              DateTime           @default(now())
+  endedAt                DateTime?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  plan         Plan         @relation(fields: [planId], references: [id])
+  usagePeriods UsagePeriod[]
+
+  @@index([organizationId])
+  @@index([planId])
+}
+
+// ─── Usage ────────────────────────────────────────────────────────────────────
+
+model UsagePeriod {
+  id               String   @id @default(uuid())
+  organizationId   String
+  subscriptionId   String
+  periodStart      DateTime
+  periodEnd        DateTime
+  reportsGenerated Int      @default(0)
+  reportLimit      Int?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  organization Organization  @relation(fields: [organizationId], references: [id])
+  subscription Subscription  @relation(fields: [subscriptionId], references: [id])
+  reportEvents ReportEvent[]
+
+  @@unique([subscriptionId, periodStart])
+  @@index([organizationId])
+}
+
+model ReportEvent {
+  id             String   @id @default(uuid())
+  organizationId String
+  userId         String
+  calculatorId   String
+  usagePeriodId  String
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
+  calculator   Calculator   @relation(fields: [calculatorId], references: [id])
+  usagePeriod  UsagePeriod  @relation(fields: [usagePeriodId], references: [id])
+
+  @@index([organizationId, createdAt])
+  @@index([userId, createdAt])
+  @@index([calculatorId, createdAt])
+}
+
+model Invitation {
+  id              String           @id @default(uuid())
+  organizationId  String
+  email           String
+  role            UserRole
+  tokenHash       String
+  status          InvitationStatus @default(PENDING)
+  invitedByUserId String?
+  expiresAt       DateTime
+  acceptedAt      DateTime?
+  acceptedUserId  String?
+  createdAt       DateTime         @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+  @@index([email])
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  organizationId String?
+  actorUserId String?
+  action      String
+  targetType  String?
+  targetId    String?
+  metadata    Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  organization Organization? @relation(fields: [organizationId], references: [id])
+  actor        User?         @relation("AuditActor", fields: [actorUserId], references: [id])
+
+  @@index([organizationId, createdAt])
+  @@index([actorUserId, createdAt])
+}
+
+model LoginEvent {
+  id            String   @id @default(uuid())
+  userId        String?
+  email         String
+  organizationId String?
+  success       Boolean
+  failureReason String?
+  ipAddress     String?
+  userAgent     String?
+  createdAt     DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([email, createdAt])
+  @@index([userId, createdAt])
+}
+
+model WebhookEvent {
+  id          String    @id @default(uuid())
+  provider    String
+  eventId     String
+  eventType   String
+  payload     Json
+  receivedAt  DateTime  @default(now())
+  processedAt DateTime?
+  error       String?
+
+  @@unique([provider, eventId])
+  @@index([provider, receivedAt])
+}

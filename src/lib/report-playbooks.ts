@@ -15,7 +15,9 @@ export type CalculatorReportId =
   | "goal-sip"
   | "goal-ls-sip"
   | "goal-current"
+  | "goal-existing"
   | "goal-periodic"
+  | "goal-compounding"
   | "unified-goal"
   | "investment-growth"
   | "child-education"
@@ -24,6 +26,8 @@ export type CalculatorReportId =
   | "mf-vs-fd"
   | "loan-emi"
   | "loan-extra"
+  | "loan-recovery"
+  | "loan-vehicle"
   | "insurance"
   | "multi-goal"
   | "multi-withdrawals";
@@ -92,6 +96,27 @@ const PLAYBOOKS: Record<CalculatorReportId, PlaybookPillar[]> = {
         "Whenever the current corpus or SIP changes, recalculate the residual so additional contributions stay matched to the remaining gap.",
     },
   ],
+  "goal-existing": [
+    {
+      id: "01",
+      title: "Keep the Existing SIP Running",
+      description:
+        "Do not pause or reduce the current SIP. Its net credit is already priced into the residual shortfall.",
+    },
+    {
+      id: "02",
+      title: "Pick One Additional Path",
+      accent: true,
+      description:
+        "Fund the leftover gap with extra lumpsum, flat SIP, or step-up SIP. Choose the cashflow that fits without stacking all three.",
+    },
+    {
+      id: "03",
+      title: "Re-run When Current SIP Changes",
+      description:
+        "If the existing SIP amount changes, recalculate so additional contributions stay matched to the new residual.",
+    },
+  ],
   "goal-periodic": [
     {
       id: "01",
@@ -111,6 +136,27 @@ const PLAYBOOKS: Record<CalculatorReportId, PlaybookPillar[]> = {
       title: "Re-run When Periodic Amount Changes",
       description:
         "If the periodic amount or frequency changes, recalculate so additional SIP or lumpsum stays matched to the new residual.",
+    },
+  ],
+  "goal-compounding": [
+    {
+      id: "01",
+      title: "Start the Chosen Path Immediately",
+      description:
+        "Begin the SIP mandate or park the lumpsum on day one. Each delayed month lengthens the time to every wealth step under the same return path.",
+    },
+    {
+      id: "02",
+      title: "Track Corpus Against Wealth Steps",
+      accent: true,
+      description:
+        "Review progress at each modeled milestone so the plan stays aligned with the SIP or One Time path used in this report.",
+    },
+    {
+      id: "03",
+      title: "De-risk in the Final Years",
+      description:
+        "Move a rising share of the corpus into shorter-duration debt as the goal year approaches so a late market drawdown does not miss the target.",
     },
   ],
   "unified-goal": [
@@ -279,6 +325,48 @@ const PLAYBOOKS: Record<CalculatorReportId, PlaybookPillar[]> = {
       title: "Tenure Compression Mandate",
       description:
         "Prefer keeping EMI constant and cutting tenure when making extras, unless cash-flow relief is the explicit priority.",
+    },
+  ],
+  "loan-recovery": [
+    {
+      id: "01",
+      title: "Shorter Tenure Commitment",
+      description:
+        "Lock the accelerated EMI on day one so the proposed tenure compresses as modeled, rather than drifting back to the baseline schedule.",
+    },
+    {
+      id: "02",
+      title: "Parallel SIP Discipline",
+      accent: true,
+      description:
+        "Fund the interest-recovery SIP on the same payday as the EMI so wealth compounds alongside the shorter loan path.",
+    },
+    {
+      id: "03",
+      title: "Annual Path Recheck",
+      description:
+        "Re-run baseline vs proposed each year after rate resets or income changes so the SIP size and horizon wealth stay on track.",
+    },
+  ],
+  "loan-vehicle": [
+    {
+      id: "01",
+      title: "Loan-Plus-Invest Discipline",
+      description:
+        "If financing, deploy the loan proceeds into the selected sleeve on day one so opportunity gain offsets interest cost over the EMI tenure.",
+    },
+    {
+      id: "02",
+      title: "Tax Shield Capture",
+      accent: true,
+      description:
+        "Confirm interest and depreciation tax treatment with the CA before locking tenure, so modeled tax savings match the filing position.",
+    },
+    {
+      id: "03",
+      title: "Risk-Matched Sleeve Choice",
+      description:
+        "Match the investment sleeve to the loan horizon. Shorter tenures favor debt or conservative paths; equity needs stomach for mark-to-market swings.",
     },
   ],
   insurance: [

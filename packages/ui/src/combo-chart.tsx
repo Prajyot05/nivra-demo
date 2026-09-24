@@ -4,6 +4,7 @@ import {
   ComposedChart,
   Legend,
   Line,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -17,27 +18,38 @@ export type ComboPoint = {
   [series: string]: number;
 };
 
+export type ComboAgeMarker = {
+  age: number;
+  label: string;
+  color?: string;
+};
+
 /** Columns + line overlay vs age (Financial Health Excel pattern). */
 export function ComboChart({
   data,
   bars,
   lines,
   title = "Corpus vs age",
+  ageMarkers,
+  className,
 }: {
   data: ComboPoint[];
   bars: Array<{ key: string; label: string; color: string }>;
   lines: Array<{ key: string; label: string; color: string }>;
   title?: string;
+  /** Vertical markers (retirement, major events). */
+  ageMarkers?: ComboAgeMarker[];
+  className?: string;
 }) {
   return (
-    <div className={`flex min-h-[240px] flex-1 flex-col overflow-hidden ${CARD} ${CARD_PAD}`}>
-      <div className={`mb-2.5 shrink-0 ${SECTION_TITLE}`}>
-        {title}
-      </div>
+    <div
+      className={`flex min-h-[240px] flex-1 flex-col overflow-hidden ${CARD} ${CARD_PAD} ${className ?? ""}`}
+    >
+      <div className={`mb-2.5 shrink-0 ${SECTION_TITLE}`}>{title}</div>
       <div className="relative min-h-0 flex-1">
         <div className="absolute inset-0">
           <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+            <ComposedChart data={data} margin={{ top: 12, right: 12, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--app-border)" vertical={false} />
               <XAxis
                 dataKey="age"
@@ -49,6 +61,7 @@ export function ComboChart({
                 tick={{ fontSize: 11, fill: "var(--app-text-muted)" }}
                 width={48}
                 stroke="transparent"
+                domain={[0, (dataMax: number) => Math.ceil(dataMax * 1.12) || "auto"]}
               />
               <Tooltip
                 contentStyle={{
@@ -66,6 +79,22 @@ export function ComboChart({
                 ]}
               />
               <Legend wrapperStyle={{ fontSize: "12px", color: "var(--app-text-muted)" }} />
+              {(ageMarkers ?? []).map((marker, index) => (
+                <ReferenceLine
+                  key={`age-marker-${index}-${marker.age}`}
+                  x={marker.age}
+                  stroke={marker.color ?? "var(--app-text-subtle)"}
+                  strokeDasharray="4 4"
+                  strokeOpacity={0.85}
+                  label={{
+                    value: marker.label,
+                    position: index % 2 === 0 ? "insideTopLeft" : "insideTopRight",
+                    fill: "var(--app-text-muted)",
+                    fontSize: 9,
+                    fontWeight: 600,
+                  }}
+                />
+              ))}
               {bars.map((s) => (
                 <Bar
                   key={s.key}

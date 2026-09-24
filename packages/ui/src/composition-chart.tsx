@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Sector, Tooltip } from "recharts";
 import { formatINRCurrency, formatPercent } from "./format";
-import { CARD, CARD_PAD, SECTION_TITLE } from "./tokens";
+import { CARD, CARD_PAD, CARD_PAD_TIGHT, SECTION_TITLE } from "./tokens";
 
 export type CompositionSlice = {
   name: string;
@@ -43,17 +43,22 @@ export function CompositionChart({
   slices,
   centerLabel = "Total",
   centerValue,
+  /** Override the formatted centre amount (e.g. compact ₹16.91 Cr). */
+  centerValueDisplay,
   className,
   compact = false,
   showPercentages = false,
   size = "default",
   /** Thin ring stroke like Periodic / capital-paid gauge. Default on for all donuts. */
   thinRing = true,
+  /** Tax / net corpus callouts below the donut (not pie slices). */
+  footer,
 }: {
   title?: string;
   slices: CompositionSlice[];
   centerLabel?: string;
   centerValue?: number;
+  centerValueDisplay?: string;
   className?: string;
   /** Tighter vertical footprint — less empty space above/below the donut. */
   compact?: boolean;
@@ -61,49 +66,71 @@ export function CompositionChart({
   /** Larger donut + legend (side panel aligned with growth chart). */
   size?: "default" | "lg";
   thinRing?: boolean;
+  footer?: ReactNode;
 }) {
   const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
   const large = size === "lg";
   const data = slices.filter((s) => s.value > 0);
   const sliceSum = slices.reduce((sum, s) => sum + Math.max(0, s.value), 0);
   const total = centerValue ?? data.reduce((sum, s) => sum + s.value, 0);
-  const label = formatINRCurrency(total);
+  const label = centerValueDisplay ?? formatINRCurrency(total);
   const len = label.length;
-  const corpusFont = large
-    ? len > 14
-      ? "text-xs sm:text-sm"
-      : len > 11
-        ? "text-sm sm:text-base"
-        : "text-base sm:text-lg"
-    : len > 14
-      ? "text-[10px] sm:text-xs"
-      : len > 11
+  const corpusFont = compact
+    ? len > 13
+      ? "text-[9px] leading-none"
+      : len > 10
+        ? "text-[10px] leading-tight"
+        : "text-xs leading-tight"
+    : large
+      ? len > 14
         ? "text-xs sm:text-sm"
-        : len > 8
+        : len > 11
           ? "text-sm sm:text-base"
-          : "text-base sm:text-lg";
+          : "text-base sm:text-lg"
+      : len > 14
+        ? "text-[10px] sm:text-xs"
+        : len > 11
+          ? "text-xs sm:text-sm"
+          : len > 8
+            ? "text-sm sm:text-base"
+            : "text-base sm:text-lg";
 
   // Donut + legend sit side by side only when the card itself is wide enough.
   // Viewport breakpoints lie here: these cards are often in a narrow column.
   const shell = large
     ? `@container flex h-full min-h-0 flex-1 flex-col ${CARD} ${CARD_PAD} ${className ?? ""}`
     : compact
-      ? `@container flex min-h-[230px] flex-none flex-col justify-center ${CARD} ${CARD_PAD} ${className ?? ""}`
+      ? `@container flex h-full min-h-0 flex-col ${CARD} ${CARD_PAD_TIGHT} ${className ?? ""}`
       : `@container flex min-h-[260px] flex-1 flex-col ${CARD} ${CARD_PAD} ${className ?? ""}`;
 
   const donutBox = large
     ? "relative aspect-square h-[168px] w-[168px] max-w-full shrink-0 sm:h-[184px] sm:w-[184px]"
     : compact
-      ? "relative aspect-square h-[170px] w-[170px] max-w-full"
+      ? "relative aspect-square h-[168px] w-[168px] max-w-full"
       : "relative aspect-square h-[176px] w-[176px] max-w-full";
 
-  const innerRadius = thinRing ? (large ? "74%" : "72%") : large ? "58%" : "56%";
+  // Compact: slightly smaller hole so long INR amounts keep clear of the ring.
+  const innerRadius = thinRing
+    ? large
+      ? "74%"
+      : compact
+        ? "66%"
+        : "72%"
+    : large
+      ? "58%"
+      : "56%";
   const outerRadius = thinRing ? (large ? "90%" : "88%") : large ? "94%" : "92%";
 
   return (
     <div className={shell}>
-      <div className={`mb-2.5 shrink-0 ${SECTION_TITLE}`}>{title}</div>
-      <div className="flex min-h-0 flex-1 flex-col items-center gap-4 @sm:flex-row @sm:items-center @sm:gap-5">
+      <div className={`mb-2 shrink-0 ${SECTION_TITLE}`}>{title}</div>
+      <div
+        className={`flex min-h-0 w-full flex-1 flex-col items-center ${
+          compact
+            ? "gap-3 @sm:flex-row @sm:items-center @sm:justify-between"
+            : "gap-4 @sm:flex-row @sm:items-center @sm:gap-5"
+        }`}
+      >
         <div className="flex shrink-0 items-center justify-center overflow-visible">
           <div className={`${donutBox} overflow-visible`}>
             <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100}>
@@ -163,18 +190,24 @@ export function CompositionChart({
               {/* Keep the centre label inside the ring hole (innerRadius above). */}
               <div
                 className={`flex flex-col items-center justify-center overflow-hidden text-center ${
-                  thinRing ? "w-[68%]" : "w-[54%]"
+                  compact ? "w-[54%]" : thinRing ? "w-[68%]" : "w-[54%]"
                 }`}
               >
                 <div
-                  className={`w-full font-bold leading-tight tabular-nums text-[var(--app-text)] ${corpusFont}`}
-                  style={{ wordBreak: "break-all" }}
+                  className={`w-full font-bold tabular-nums text-[var(--app-text)] ${corpusFont} ${
+                    compact ? "whitespace-nowrap" : ""
+                  }`}
+                  style={compact ? undefined : { wordBreak: "break-all" }}
                 >
                   {label}
                 </div>
                 <div
-                  className={`mt-0.5 font-semibold uppercase tracking-widest text-[var(--app-text-subtle)] ${
-                    large ? "text-[10px] sm:text-xs" : "text-[9px] sm:text-[10px]"
+                  className={`mt-0.5 font-semibold uppercase tracking-wide text-[var(--app-text-subtle)] ${
+                    compact
+                      ? "text-[8px] leading-tight"
+                      : large
+                        ? "text-[9px] leading-tight sm:text-[10px]"
+                        : "text-[8px] leading-tight sm:text-[9px]"
                   }`}
                 >
                   {centerLabel}
@@ -183,14 +216,20 @@ export function CompositionChart({
             </div>
           </div>
         </div>
-        <div className="custom-scrollbar min-w-0 w-full flex-1 space-y-2.5 sm:max-h-none">
+        <div
+          className={
+            compact
+              ? "min-w-0 shrink-0 space-y-2 @sm:pr-1"
+              : "custom-scrollbar min-w-0 w-full flex-1 space-y-2.5 sm:max-h-none"
+          }
+        >
           {slices.map((s) => {
             const pct = sliceSum > 0 ? (Math.max(0, s.value) / sliceSum) * 100 : 0;
             const pctLabel = pct >= 10 ? pct.toFixed(1) : pct.toFixed(2);
             return (
               <div
                 key={s.name}
-                className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-0.5"
+                className="grid grid-cols-[auto_auto] items-center gap-x-3 gap-y-0.5"
               >
                 <div className="flex min-w-0 items-center gap-2 text-[var(--app-text-muted)]">
                   <span
@@ -203,6 +242,11 @@ export function CompositionChart({
                     }`}
                   >
                     {s.name}
+                    {showPercentages && s.value > 0 ? (
+                      <span className="ml-1.5 font-normal text-[var(--app-text-subtle)]">
+                        {pctLabel}%
+                      </span>
+                    ) : null}
                   </span>
                 </div>
                 <div
@@ -212,16 +256,14 @@ export function CompositionChart({
                 >
                   {formatINRCurrency(s.value)}
                 </div>
-                {showPercentages && s.value > 0 ? (
-                  <div className="col-span-2 pl-4 text-[10px] text-[var(--app-text-subtle)] sm:pl-5">
-                    {pctLabel}% of mix
-                  </div>
-                ) : null}
               </div>
             );
           })}
         </div>
       </div>
+      {footer ? (
+        <div className="mt-3 shrink-0 border-t border-[var(--app-border)] pt-3">{footer}</div>
+      ) : null}
     </div>
   );
 }

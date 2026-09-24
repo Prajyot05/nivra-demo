@@ -43,14 +43,15 @@ export type GoalSipInput = {
   useInflationAdjustedGoal: boolean;
 };
 
-export function useGoalSip(input: GoalSipInput) {
+export function useGoalSip(input: GoalSipInput, enabled = true) {
   const [result, setResult] = useState<GoalSipResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (input.tenureYears <= 0 || input.goalAmount < 0) {
-      setError("Tenure and goal must be valid");
+    if (!enabled) {
+      setResult(null);
+      setError(null);
       setLoading(false);
       return;
     }
@@ -88,6 +89,7 @@ export function useGoalSip(input: GoalSipInput) {
       window.clearTimeout(handle);
     };
   }, [
+    enabled,
     input.clientName,
     input.age,
     input.goalAmount,

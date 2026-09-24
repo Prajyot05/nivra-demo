@@ -40,17 +40,23 @@ export function ResultCard({
   items,
   accent = false,
   className,
+  fillHeight = false,
 }: {
   title: string;
   items: ResultItem[];
   /** Emerald title + values (e.g. Mutual Fund column). */
   accent?: boolean;
   className?: string;
+  /** Stretch rows evenly to match a sibling panel height. */
+  fillHeight?: boolean;
 }) {
   return (
-    <Card padding="none" className={`shrink-0 overflow-hidden ${className ?? ""}`}>
+    <Card
+      padding="none"
+      className={`${fillHeight ? "flex h-full flex-col" : "shrink-0"} overflow-hidden ${className ?? ""}`}
+    >
       <div
-        className={`border-b border-[var(--app-border)] bg-[var(--app-surface-muted)] ${ROW_PAD_X} py-2.5`}
+        className={`shrink-0 border-b border-[var(--app-border)] bg-[var(--app-surface-muted)] ${ROW_PAD_X} py-2.5`}
       >
         <SectionTitle
           as="h3"
@@ -60,7 +66,7 @@ export function ResultCard({
           {title}
         </SectionTitle>
       </div>
-      <dl className="flex flex-col">
+      <dl className={`flex flex-col ${fillHeight ? "min-h-0 flex-1 justify-evenly" : ""}`}>
         {items.map((item, index) => {
           const tone = item.tone ?? (item.highlight ? "maturity" : "default");
           const isHighlight = Boolean(item.highlight);
@@ -80,7 +86,7 @@ export function ResultCard({
             >
               <dt
                 className={`min-w-0 flex-1 text-[13px] leading-snug ${
-                  isHighlight
+                  isHighlight || tone === "maturity" || tone === "net"
                     ? "font-semibold text-[var(--app-text)]"
                     : "font-medium text-[var(--app-text-muted)]"
                 }`}
@@ -90,7 +96,9 @@ export function ResultCard({
               <dd className="shrink-0 text-right">
                 <div
                   className={`font-semibold tabular-nums leading-snug ${
-                    isHighlight ? "text-[15px] sm:text-base" : "text-[13px] sm:text-sm"
+                    isHighlight || tone === "maturity" || tone === "net"
+                      ? "text-[15px] sm:text-base"
+                      : "text-[13px] sm:text-sm"
                   } ${accent ? "text-[var(--app-step-text)]" : VALUE_TONE[tone]}`}
                 >
                   {item.displayValue != null

@@ -8,17 +8,26 @@ export type StepUpSipInput = {
   sipYears: number;
   annualReturn: number;
   stepUpRate: number;
+  /** Step the SIP once every N years (Excel "Once every (years)"). Default 1. */
+  stepUpEveryYears?: number;
   inflationRate?: number;
   taxRate?: number;
 };
 
-function yearIndexForMonth(monthNumber: number): number {
-  if (monthNumber % 12 === 0) return monthNumber / 12 - 1;
-  return Math.floor(monthNumber / 12);
+/** Excel FIRE L-column step index: floor((month-1) / (everyYears*12)). */
+export function stepIndexForMonth(monthNumber: number, everyYears = 1): number {
+  const every = Math.max(1, Math.floor(everyYears));
+  const everyMonths = every * 12;
+  return Math.floor((monthNumber - 1) / everyMonths);
 }
 
-export function stepUpMonthly(startMonthly: number, stepUpRate: number, monthNumber: number): number {
-  return startMonthly * (1 + stepUpRate) ** yearIndexForMonth(monthNumber);
+export function stepUpMonthly(
+  startMonthly: number,
+  stepUpRate: number,
+  monthNumber: number,
+  everyYears = 1,
+): number {
+  return startMonthly * (1 + stepUpRate) ** stepIndexForMonth(monthNumber, everyYears);
 }
 
 /**
@@ -35,8 +44,9 @@ export function stepUpProjection(input: StepUpSipInput): {
   let maturity = 0;
   let totalInvested = 0;
   let endMonthly = 0;
+  const everyYears = input.stepUpEveryYears ?? 1;
   for (let month = 1; month <= n; month += 1) {
-    const monthly = stepUpMonthly(input.startMonthly, input.stepUpRate, month);
+    const monthly = stepUpMonthly(input.startMonthly, input.stepUpRate, month, everyYears);
     endMonthly = monthly;
     totalInvested += monthly;
     const monthsRemainingIncl = n - month + 1;
@@ -78,8 +88,10 @@ function buildStepUpSchedule(input: StepUpSipInput): YearRow[] {
   let corpus = 0;
   let invested = 0;
   const n = input.sipYears * 12;
+  const everyYears = input.stepUpEveryYears ?? 1;
   for (let year = 0; year < input.sipYears; year += 1) {
-    const monthly = input.startMonthly * (1 + input.stepUpRate) ** year;
+    const monthNumber = year * 12 + 1;
+    const monthly = stepUpMonthly(input.startMonthly, input.stepUpRate, monthNumber, everyYears);
     for (let m = 0; m < 12; m += 1) {
       corpus += monthly;
       invested += monthly;

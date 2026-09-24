@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-const STORAGE_KEY = "nivra-dev-calc-qa-checklist";
+const STORAGE_KEY = "nivra-dev-ui-polish-checklist";
 
 function readChecked(): Record<string, boolean> {
   if (typeof window === "undefined") return {};
@@ -17,7 +17,10 @@ function readChecked(): Record<string, boolean> {
   }
 }
 
-/** Excel QA ticks — persisted in this browser's localStorage (not in git). */
+/**
+ * Extra UI-polish ticks for calculators not yet locked via `uiPolished` in nav.
+ * Persisted in this browser only. See docs/UI_HANDOFF.md.
+ */
 export function useCalculatorQaChecklist() {
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [ready, setReady] = useState(false);

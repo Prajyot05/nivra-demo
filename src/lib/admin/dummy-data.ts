@@ -212,6 +212,131 @@ export const DUMMY_COMPANIES: Company[] = [
   },
 ];
 
+/** Target demo corpus size for list/analytics UX at multi-tenant scale. */
+export const DUMMY_SCALE_TARGET = 720;
+
+const FIRM_PREFIXES = [
+  "Aarohan",
+  "Beacon",
+  "Crest",
+  "Dhan",
+  "Elevate",
+  "Forge",
+  "Granite",
+  "Harbor",
+  "Indigo",
+  "Jade",
+  "Keystone",
+  "Lumen",
+  "Meridian",
+  "Northstar",
+  "Oak",
+  "Pinnacle",
+  "Quantum",
+  "Ridge",
+  "Summit",
+  "TrueNorth",
+  "Unity",
+  "Vertex",
+  "Willow",
+  "Yatra",
+  "Zephyr",
+];
+
+const FIRM_SUFFIXES = [
+  "Wealth",
+  "Advisors",
+  "Capital",
+  "Finserve",
+  "Partners",
+  "Portfolio",
+  "Moneyworks",
+  "Advisory",
+  "Wealth Desk",
+  "Financial",
+];
+
+const LOGO_COLORS = [
+  "#0f172a",
+  "#1d4ed8",
+  "#047857",
+  "#7c2d12",
+  "#6d28d9",
+  "#be123c",
+  "#0b7443",
+  "#0369a1",
+  "#854d0e",
+  "#334155",
+];
+
+const STATUSES: CompanyStatus[] = ["active", "active", "active", "active", "trial", "suspended", "inactive"];
+const TIERS: SubscriptionTier[] = ["Starter", "Growth", "Growth", "Pro", "Pro", "Enterprise"];
+
+function padDate(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+/**
+ * Synthesize a large tenant corpus so admin UX can be validated at
+ * 500–1000 company scale without hand-authoring rows.
+ */
+export function buildScaledCompanies(target = DUMMY_SCALE_TARGET): Company[] {
+  const seed = DUMMY_COMPANIES;
+  const out: Company[] = [...seed];
+  let i = 0;
+  while (out.length < target) {
+    const prefix = FIRM_PREFIXES[i % FIRM_PREFIXES.length]!;
+    const suffix = FIRM_SUFFIXES[Math.floor(i / FIRM_PREFIXES.length) % FIRM_SUFFIXES.length]!;
+    const n = i + 1;
+    const name = `${prefix} ${suffix} ${n}`;
+    const status = STATUSES[i % STATUSES.length]!;
+    const tier = TIERS[i % TIERS.length]!;
+    const seats = tier === "Enterprise" ? 40 : tier === "Pro" ? 16 : tier === "Growth" ? 8 : 4;
+    const seatsUsed = Math.max(1, Math.min(seats, (i % seats) + 1));
+    const reportsThisMonth =
+      status === "inactive" || status === "suspended" ? 0 : 4 + ((i * 13) % 180);
+    const reportsGenerated = reportsThisMonth * (8 + (i % 20)) + (i % 50);
+    const softLock: SoftLockState =
+      status === "suspended" ? "view_only" : status === "inactive" ? "hard_locked" : "none";
+    const slug = `${prefix.toLowerCase()}${n}`;
+    const y = 2024 + (i % 3);
+    const m = 1 + (i % 12);
+    const d = 1 + (i % 27);
+
+    out.push({
+      id: `co_scale_${n}`,
+      name,
+      logoInitials: `${prefix[0]}${suffix[0]}`.toUpperCase(),
+      logoColor: LOGO_COLORS[i % LOGO_COLORS.length]!,
+      status,
+      softLock,
+      softLockEndsAt: softLock === "view_only" ? "2026-10-01" : null,
+      tier,
+      seats,
+      seatsUsed,
+      reportsGenerated,
+      reportsThisMonth,
+      renewsAt: `${2026 + (i % 2)}-${padDate(1 + (i % 12))}-${padDate(1 + (i % 28))}`,
+      ownerEmail: `owner@${slug}.in`,
+      phone: `+91 9${String(800000000 + (i % 99999999)).slice(0, 9)}`,
+      email: `hello@${slug}.in`,
+      createdAt: `${y}-${padDate(m)}-${padDate(d)}`,
+      defaultTheme: "classic",
+      calculators: TIER_CALCULATORS[tier],
+    });
+    i += 1;
+  }
+  return out;
+}
+
+let _scaledCache: Company[] | null = null;
+
+/** Full dummy tenant list (seed + scaled). Prefer this over DUMMY_COMPANIES for admin lists. */
+export function getAllDummyCompanies(): Company[] {
+  if (!_scaledCache) _scaledCache = buildScaledCompanies();
+  return _scaledCache;
+}
+
 export const DUMMY_COMPANY_USERS: CompanyUser[] = [
   {
     id: "u1",
@@ -361,7 +486,7 @@ export const DUMMY_NIVRA_STAFF: NivraStaff[] = [
 export const DEMO_COMPANY_ID = "co_acme";
 
 export function getCompany(id: string): Company | undefined {
-  return DUMMY_COMPANIES.find((c) => c.id === id);
+  return getAllDummyCompanies().find((c) => c.id === id);
 }
 
 export function getCompanyUsers(companyId: string): CompanyUser[] {
@@ -369,7 +494,7 @@ export function getCompanyUsers(companyId: string): CompanyUser[] {
 }
 
 export function platformStats() {
-  const companies = DUMMY_COMPANIES;
+  const companies = getAllDummyCompanies();
   return {
     totalCompanies: companies.length,
     active: companies.filter((c) => c.status === "active").length,

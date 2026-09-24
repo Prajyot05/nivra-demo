@@ -75,6 +75,8 @@ export type GoalCurrentReportData = {
 type GoalCurrentDossierProps = {
   id?: string;
   data: GoalCurrentReportData;
+  title?: string;
+  subtitle?: string;
 };
 
 export const GOAL_CURRENT_REPORT_ID = "goal-current-report";
@@ -85,6 +87,8 @@ export const GOAL_CURRENT_REPORT_ID = "goal-current-report";
 export function GoalCurrentDossier({
   id = GOAL_CURRENT_REPORT_ID,
   data,
+  title = "Goal with Current Investments",
+  subtitle = "Goal funding · Current investments",
 }: GoalCurrentDossierProps) {
   const contact: ExecutiveContact = {
     email: data.email || DUMMY_REPORT_CONTACT.email,
@@ -123,8 +127,8 @@ export function GoalCurrentDossier({
   return (
     <ExecutiveDossierSheet
       id={id}
-      title="Goal with Current Investments"
-      subtitle="Goal funding · Current investments"
+      title={title}
+      subtitle={subtitle}
       contact={contact}
       meta={[
         { label: "Client Name", value: data.clientName || "Client" },

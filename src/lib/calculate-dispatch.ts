@@ -178,6 +178,8 @@ export function dispatch(id: string, body: unknown) {
         taxRate: pct(input.taxPct),
         useInflationAdjustedGoal: input.useInflationAdjustedGoal,
         extraYears: input.extraYears,
+        investmentType: input.investmentType,
+        stepSize: input.stepSize,
       });
     }
     case "loan-emi": {
@@ -186,6 +188,8 @@ export function dispatch(id: string, body: unknown) {
         principal: input.principal,
         years: input.years,
         annualRate: pct(input.interestPct),
+        recoverReturn: pct(input.recoverReturnPct),
+        delayMonths: input.delayMonths,
       });
       return {
         emi: result.emi,
@@ -193,6 +197,14 @@ export function dispatch(id: string, body: unknown) {
         totalInterest: result.totalInterest,
         totalPaid: result.totalPaid,
         schedule: result.schedule,
+        recoverReturnPct: input.recoverReturnPct,
+        delayMonths: result.delayMonths,
+        recoverMonths: result.recoverMonths,
+        delayedRecoverMonths: result.delayedRecoverMonths,
+        recoverMonthlySip: result.recoverMonthlySip,
+        recoverInvested: result.recoverInvested,
+        delayedRecoverMonthlySip: result.delayedRecoverMonthlySip,
+        delayedRecoverInvested: result.delayedRecoverInvested,
       };
     }
     case "loan-prepay": {
@@ -283,6 +295,7 @@ export function dispatch(id: string, body: unknown) {
         termPremium: input.termPremium,
         termYears: input.termYears,
         expectedReturn: pct(input.returnPct),
+        termCover: input.termCover,
       });
     }
     case "multi-goal-assign": {
@@ -339,7 +352,22 @@ export function dispatch(id: string, body: unknown) {
         currentSipReturn: pct(input.currentSipReturnPct),
         limitSipYears: input.limitSipYears,
         stepUpRate: pct(input.stepUpPct),
+        stepUpEveryYears: input.stepUpEveryYears,
         delayMonths: input.delayMonths,
+        events: input.events.map((ev) => {
+          if ((ev.income ?? 0) > 0 || (ev.expense ?? 0) > 0) {
+            return {
+              age: ev.age,
+              income: ev.income ?? 0,
+              expense: ev.expense ?? 0,
+            };
+          }
+          return {
+            age: ev.age,
+            amount: ev.amount ?? 0,
+            type: ev.type,
+          };
+        }),
       });
     }
     case "financial-health": {

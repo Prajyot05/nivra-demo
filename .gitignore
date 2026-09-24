@@ -13,6 +13,11 @@ tsconfig.tsbuildinfo
 dist
 *.local
 
+# Env
+.env
+.env.local
+.env.*.local
+
 # Editor
 .vscode/*
 !.vscode/extensions.json

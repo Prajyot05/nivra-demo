@@ -78,7 +78,7 @@
         "equityTaxPct": 12.5
       },
       "expect": {
-        "emi": 184648.78194346125,
+        "emi": 184648.7819434613,
         "totalInterest": 2078926.916607674,
         "totalTaxSaved": 1750892.6333215348,
         "totalDepreciation": 6675536.25
