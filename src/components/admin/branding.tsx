@@ -5,11 +5,11 @@ export function NivraMark({ className }: { className?: string }) {
     <div className={cn("flex items-center gap-2", className)}>
       <span
         aria-hidden
-        className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-[11px] font-bold tracking-tight text-primary-foreground"
+        className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--admin-brand,#0b7443)] text-[11px] font-bold tracking-tight text-white"
       >
         N
       </span>
-      <span className="text-sm font-semibold tracking-tight text-sidebar-foreground">
+      <span className="text-[14px] font-semibold tracking-tight text-[var(--admin-ink,#0a0a0a)]">
         Nivra
       </span>
     </div>
@@ -18,8 +18,13 @@ export function NivraMark({ className }: { className?: string }) {
 
 export function PoweredByNivra({ className }: { className?: string }) {
   return (
-    <p className={cn("text-center text-[11px] text-muted-foreground", className)}>
-      Powered by <span className="font-medium text-foreground/80">Nivra</span>
+    <p
+      className={cn(
+        "text-center text-[10px] text-[var(--admin-faint,#a3a3a3)]",
+        className,
+      )}
+    >
+      Powered by <span className="font-medium text-[var(--admin-muted,#737373)]">Nivra</span>
     </p>
   );
 }

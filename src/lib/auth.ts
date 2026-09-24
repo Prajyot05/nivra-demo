@@ -19,6 +19,22 @@ export function roleFromClerkMetadata(
   return UserRole.COMPANY_EMPLOYEE;
 }
 
+/** Comma-separated PLATFORM_ADMIN_EMAIL list (case-insensitive). */
+export function platformAdminEmails(): Set<string> {
+  const raw = process.env.PLATFORM_ADMIN_EMAIL ?? "";
+  return new Set(
+    raw
+      .split(",")
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean),
+  );
+}
+
+export function isPlatformAdminEmail(email: string | null | undefined): boolean {
+  if (!email) return false;
+  return platformAdminEmails().has(email.trim().toLowerCase());
+}
+
 function isPrismaConnectionError(error: unknown): boolean {
   const msg = error instanceof Error ? error.message : String(error);
   return (
@@ -48,11 +64,10 @@ async function loadUserByClerkId(clerkUserId: string): Promise<User | null> {
 }
 
 function sessionFallbackUser(clerkUserId: string, email?: string, name?: string, role?: UserRole): User {
-  const platformEmail = process.env.PLATFORM_ADMIN_EMAIL?.trim().toLowerCase();
   const resolvedEmail = email ?? `${clerkUserId}@session.local`;
   const resolvedRole =
     role ??
-    (platformEmail && resolvedEmail.toLowerCase() === platformEmail
+    (isPlatformAdminEmail(resolvedEmail)
       ? UserRole.NIVRA_ADMIN
       : UserRole.COMPANY_EMPLOYEE);
 
@@ -136,11 +151,15 @@ export async function syncUserFromClerk(): Promise<User | null> {
       const existing = await prisma.user.findUnique({ where: { clerkUserId: userId } });
 
       if (existing) {
+        const elevateToAdmin = isPlatformAdminEmail(email);
         return prisma.user.update({
           where: { id: existing.id },
           data: {
             email,
             name,
+            ...(elevateToAdmin && existing.role !== UserRole.NIVRA_ADMIN
+              ? { role: UserRole.NIVRA_ADMIN, organizationId: null }
+              : {}),
             ...(existing.role === UserRole.COMPANY_EMPLOYEE &&
             role !== UserRole.COMPANY_EMPLOYEE
               ? { role }
@@ -155,11 +174,9 @@ export async function syncUserFromClerk(): Promise<User | null> {
         where: { email: { equals: email, mode: "insensitive" }, deletedAt: null },
       });
       if (byEmail) {
-        const platformEmail = process.env.PLATFORM_ADMIN_EMAIL?.trim().toLowerCase();
-        const elevateToAdmin =
-          platformEmail && email.toLowerCase() === platformEmail
-            ? UserRole.NIVRA_ADMIN
-            : undefined;
+        const elevateToAdmin = isPlatformAdminEmail(email)
+          ? UserRole.NIVRA_ADMIN
+          : undefined;
         return prisma.user.update({
           where: { id: byEmail.id },
           data: {
@@ -177,11 +194,9 @@ export async function syncUserFromClerk(): Promise<User | null> {
         });
       }
 
-      const platformEmail = process.env.PLATFORM_ADMIN_EMAIL?.trim().toLowerCase();
-      const bootstrapRole =
-        platformEmail && email.toLowerCase() === platformEmail
-          ? UserRole.NIVRA_ADMIN
-          : role;
+      const bootstrapRole = isPlatformAdminEmail(email)
+        ? UserRole.NIVRA_ADMIN
+        : role;
 
       return prisma.user.create({
         data: {

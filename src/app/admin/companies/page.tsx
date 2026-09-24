@@ -11,7 +11,7 @@ export default async function AdminCompaniesPage() {
     <>
       <AdminPageHeader
         title="Companies"
-        description={`Active, trial, suspended, and inactive tenants. Source: ${source}.`}
+        description={`${companies.length.toLocaleString("en-IN")} tenants. Search, filter, sort, and page — built for 500–1000 firms. Source: ${source}.`}
       />
       <CompaniesTable companies={companies} />
     </>

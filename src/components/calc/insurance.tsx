@@ -30,7 +30,6 @@ import {
   ClientProfileFields,
   IconCalendar,
   IconChart,
-  IconChevron,
   IconDonut,
   IconPerson,
   IconRates,
@@ -42,6 +41,7 @@ import {
   moneyCell,
   WEALTH_CONTENT_CLASS,
   WealthAnalyticsChrome,
+  WealthAdvantagePanel,
   WealthAuditChip,
   WealthAuditLedger,
   WealthCompareBars,
@@ -52,7 +52,9 @@ import {
   WealthMetricCard,
   WealthMixDonut,
   WealthMoneyField,
+  WealthPathPair,
   WealthPercentField,
+  WealthProcessSteps,
   WealthProfileGrid,
   WealthSection,
   WealthSegmented,
@@ -1453,270 +1455,160 @@ function TpResults({
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-3">
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-4">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
+            <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-slate-400">
               Keep IRR
             </div>
-            <div className="mt-1 text-lg font-semibold tabular-nums text-slate-900 sm:text-xl">
+            <div className="mt-1.5 text-2xl font-semibold tabular-nums text-slate-900">
               {formatIrr(keepIrrPct)}
             </div>
-            <div className="mt-1 text-[11px] text-slate-500">Policy path</div>
+            <div className="mt-1 text-[12px] text-slate-500">Policy path</div>
           </div>
-          <div className="rounded-2xl border border-emerald-200/70 bg-emerald-50/60 p-4">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700">
+          <div className="rounded-2xl border border-emerald-200/70 bg-emerald-50/50 p-4 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
+            <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-emerald-700">
               Switch IRR
             </div>
-            <div className="mt-1 text-lg font-semibold tabular-nums text-emerald-900 sm:text-xl">
+            <div className="mt-1.5 text-2xl font-semibold tabular-nums text-emerald-950">
               {formatIrr(switchIrrPct)}
             </div>
-            <div className="mt-1 text-[11px] text-emerald-700">
+            <div className="mt-1 text-[12px] text-emerald-700/80">
               Investment
               {surrenderIrrPct != null ? ` · Surr. ${formatIrr(surrenderIrrPct)}` : null}
             </div>
           </div>
         </div>
 
-        <div className="relative mt-4 overflow-hidden rounded-2xl border border-emerald-200/50 bg-emerald-700 px-3 py-3.5 sm:px-4">
-          <div
-            className="pointer-events-none absolute -right-8 -top-10 size-36 rounded-full bg-white/10"
-            aria-hidden
-          />
-          <div className="relative z-[1] flex flex-col gap-3">
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-100/80">
-                  <IconStepUp className="size-3.5 shrink-0" aria-hidden />
-                  Switch advantage
-                </div>
-                <div className="mt-1 text-base font-semibold leading-snug text-white sm:text-lg">
-                  Switching could add {formatINRCurrency(additionalWealth)}
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                <div className="rounded-lg bg-white/12 px-2.5 py-1 text-[11px] text-white">
-                  <span className="text-emerald-100/80">Horizon</span>{" "}
-                  <span className="font-semibold tabular-nums">{yearsToMaturity}y</span>
-                </div>
-                <div className="rounded-lg bg-white/12 px-2.5 py-1 text-[11px] text-white">
-                  <span className="text-emerald-100/80">Assumed</span>{" "}
-                  <span className="font-semibold tabular-nums">
+        <div className="mt-4 space-y-4">
+          <WealthAdvantagePanel
+            eyebrow="Switch advantage"
+            title={<>Switching could add {formatINRCurrency(additionalWealth)}</>}
+            mark={
+              <WealthIconMark tone="emerald" className="h-7 w-7">
+                <IconStepUp className="h-3.5 w-3.5" />
+              </WealthIconMark>
+            }
+            meta={
+              <>
+                <span className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] text-slate-600">
+                  Horizon <span className="font-semibold tabular-nums text-slate-900">{yearsToMaturity}y</span>
+                </span>
+                <span className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] text-slate-600">
+                  Assumed{" "}
+                  <span className="font-semibold tabular-nums text-slate-900">
                     {formatPercent(expectedReturnPct, 2)}
                   </span>
-                </div>
+                </span>
                 {termCover > 0 ? (
-                  <div className="rounded-lg bg-white/12 px-2.5 py-1 text-[11px] text-white">
-                    <span className="text-emerald-100/80">Cover</span>{" "}
+                  <span className="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] text-emerald-800">
+                    Cover{" "}
                     <span className="font-semibold tabular-nums">
                       {formatINRCurrency(termCover)}
                     </span>
-                  </div>
+                  </span>
                 ) : null}
-              </div>
-            </div>
+              </>
+            }
+            left={{
+              label: "Keep net",
+              value: result.keep.net,
+              hint: `IRR ${formatIrr(keepIrrPct)}`,
+            }}
+            right={{
+              label: "Switch corpus",
+              value: result.switch.investMaturity,
+              hint: `IRR ${formatIrr(switchIrrPct)}`,
+            }}
+            shareLabel="Keep share of switch corpus"
+            sharePct={
+              result.switch.investMaturity > 0
+                ? (result.keep.net / result.switch.investMaturity) * 100
+                : 0
+            }
+          />
 
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
-              <div className="rounded-xl bg-white/10 px-3 py-2.5">
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-100/80">
-                  Keep net
-                </div>
-                <div className="mt-0.5 text-sm font-semibold tabular-nums text-white sm:text-base">
-                  {formatINRCurrency(result.keep.net)}
-                </div>
-                <div className="mt-0.5 text-[11px] text-emerald-100/80">
-                  IRR {formatIrr(keepIrrPct)}
-                </div>
-              </div>
-              <div className="hidden items-center justify-center sm:flex">
-                <div className="flex size-8 items-center justify-center rounded-full bg-white/15 text-white">
-                  <IconChevron className="size-4 -rotate-90" aria-hidden />
-                </div>
-              </div>
-              <div className="rounded-xl bg-white/15 px-3 py-2.5 ring-1 ring-white/20">
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-100/80">
-                  Switch corpus
-                </div>
-                <div className="mt-0.5 text-sm font-semibold tabular-nums text-white sm:text-base">
-                  {formatINRCurrency(result.switch.investMaturity)}
-                </div>
-                <div className="mt-0.5 text-[11px] text-emerald-100/80">
-                  IRR {formatIrr(switchIrrPct)}
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <div className="mb-1 flex items-center justify-between gap-2 text-[10px] text-emerald-100/80">
-                <span>Keep share of switch corpus</span>
-                <span className="font-semibold tabular-nums text-white">
-                  {result.switch.investMaturity > 0
-                    ? formatPercent((result.keep.net / result.switch.investMaturity) * 100, 0)
-                    : "—"}
-                </span>
-              </div>
-              <div className="h-2 overflow-hidden rounded-full bg-white/15">
-                <div
-                  className="h-full rounded-full bg-white/70"
-                  style={{
-                    width: `${
-                      result.switch.investMaturity > 0
-                        ? Math.min(100, (result.keep.net / result.switch.investMaturity) * 100)
-                        : 0
-                    }%`,
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-4 rounded-2xl border border-slate-200/80 bg-white px-3 py-3 sm:px-4">
-          <div className="mb-2.5 flex flex-wrap items-baseline justify-between gap-2">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-              How the switch works
-            </div>
-            <div className="text-[11px] text-slate-500">
-              Surrender → term cover → invest → grow
-            </div>
-          </div>
-          <div className="grid grid-cols-1 gap-2 min-[520px]:grid-cols-2 xl:grid-cols-4">
-            {[
+          <WealthProcessSteps
+            title="How the switch works"
+            subtitle="Surrender → term cover → invest → grow"
+            steps={[
               {
-                n: "1",
+                n: 1,
                 label: "Surrender",
                 value: formatINRCurrency(result.switch.surrenderValue),
                 sub: "Invested today",
-                box: "border-amber-200 bg-amber-50/80",
-                badge: "border-amber-200 bg-white text-amber-900",
-                labelTone: "text-amber-800",
-                valueTone: "text-amber-900",
+                tone: "amber",
               },
               {
-                n: "2",
+                n: 2,
                 label: "Buy term",
                 value: `${formatINRCurrency(termPremium)}/yr`,
                 sub: termCover > 0 ? `Cover ${formatINRCurrency(termCover)}` : "Life cover",
-                box: "border-slate-200 bg-slate-50",
-                badge: "border-slate-200 bg-white text-slate-500",
-                labelTone: "text-slate-500",
-                valueTone: "text-slate-900",
+                tone: "slate",
               },
               {
-                n: "3",
+                n: 3,
                 label: "Invest rest",
                 value: `${formatINRCurrency(result.switch.sipRedirectAnnual)}/yr`,
                 sub: "Premium redirected",
-                box: "border-emerald-200/70 bg-emerald-50/60",
-                badge: "border-emerald-200 bg-white text-emerald-700",
-                labelTone: "text-emerald-700",
-                valueTone: "text-emerald-900",
+                tone: "emerald",
               },
               {
-                n: "4",
+                n: 4,
                 label: "Projected corpus",
                 value: formatINRCurrency(result.switch.investMaturity),
                 sub: `In year ${yearsToMaturity}`,
-                box: "border-emerald-200/70 bg-emerald-50/80",
-                badge: "border-emerald-600 bg-emerald-700 text-white",
-                labelTone: "text-emerald-700",
-                valueTone: "text-emerald-900",
+                tone: "emerald",
               },
-            ].map((step) => (
-              <div
-                key={step.n}
-                className={`flex items-start gap-2.5 rounded-xl border px-2.5 py-2.5 ${step.box}`}
-              >
-                <div
-                  className={`flex size-7 shrink-0 items-center justify-center rounded-full border text-[10px] font-bold ${step.badge}`}
-                >
-                  {step.n}
-                </div>
-                <div className="min-w-0">
-                  <div
-                    className={`text-[10px] font-semibold uppercase tracking-wide ${step.labelTone}`}
-                  >
-                    {step.label}
-                  </div>
-                  <div
-                    className={`mt-0.5 text-[13px] font-semibold tabular-nums leading-snug ${step.valueTone}`}
-                  >
-                    {step.value}
-                  </div>
-                  <div className="mt-0.5 text-[11px] text-slate-500">{step.sub}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+            ]}
+          />
 
-        <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
-          <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white">
-            <div className="border-b border-slate-100 bg-slate-50/80 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-              Keep policy
-            </div>
-            <div className="grid grid-cols-2 gap-x-3 gap-y-2 p-3 text-[12px]">
-              <div>
-                <div className="text-[10px] text-slate-500">Gross maturity</div>
-                <div className="font-semibold tabular-nums">
-                  {formatINRCurrency(result.keep.maturity)}
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] text-slate-500">Tax on gain</div>
-                <div className="font-semibold tabular-nums text-amber-800">
-                  {formatINRCurrency(result.keep.tax)}
-                </div>
-              </div>
-              <div className="rounded-lg bg-slate-50 px-2 py-1.5">
-                <div className="text-[10px] text-slate-500">Net value</div>
-                <div className="font-semibold tabular-nums">
-                  {formatINRCurrency(result.keep.net)}
-                </div>
-              </div>
-              <div className="rounded-lg bg-slate-50 px-2 py-1.5">
-                <div className="text-[10px] text-slate-500">Keep IRR</div>
-                <div className="font-semibold tabular-nums">{formatIrr(keepIrrPct)}</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="overflow-hidden rounded-2xl border border-emerald-200/70 bg-white">
-            <div className="flex items-center justify-between gap-2 border-b border-emerald-100 bg-emerald-50/60 px-3 py-2">
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700">
-                Surrender + term + invest
-              </div>
-              {termCover > 0 ? (
-                <div className="rounded-md bg-white/80 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-emerald-900">
-                  {formatINRCurrency(termCover)} cover
-                </div>
-              ) : null}
-            </div>
-            <div className="grid grid-cols-2 gap-x-3 gap-y-2 p-3 text-[12px]">
-              <div>
-                <div className="text-[10px] text-slate-500">Surrender in</div>
-                <div className="font-semibold tabular-nums">
-                  {formatINRCurrency(result.switch.surrenderValue)}
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] text-slate-500">Term cost</div>
-                <div className="font-semibold tabular-nums">
-                  {formatINRCurrency(result.switch.termCost)}
-                </div>
-              </div>
-              <div className="rounded-lg bg-emerald-50/80 px-2 py-1.5">
-                <div className="text-[10px] text-emerald-700">Projected corpus</div>
-                <div className="font-semibold tabular-nums text-emerald-900">
-                  {formatINRCurrency(result.switch.investMaturity)}
-                </div>
-              </div>
-              <div className="rounded-lg bg-emerald-50/80 px-2 py-1.5">
-                <div className="text-[10px] text-emerald-700">Investment IRR</div>
-                <div className="font-semibold tabular-nums text-emerald-900">
-                  {formatIrr(switchIrrPct)}
-                </div>
-              </div>
-            </div>
-          </div>
+          <WealthPathPair
+            leftTitle="Keep policy"
+            leftStats={[
+              {
+                label: "Gross maturity",
+                value: formatINRCurrency(result.keep.maturity),
+              },
+              {
+                label: "Tax on gain",
+                value: formatINRCurrency(result.keep.tax),
+                tone: "amber",
+              },
+              {
+                label: "Net value",
+                value: formatINRCurrency(result.keep.net),
+                emphasize: true,
+              },
+              {
+                label: "Keep IRR",
+                value: formatIrr(keepIrrPct),
+                emphasize: true,
+              },
+            ]}
+            rightTitle="Surrender + term + invest"
+            rightBadge={termCover > 0 ? `${formatINRCurrency(termCover)} cover` : undefined}
+            rightStats={[
+              {
+                label: "Surrender in",
+                value: formatINRCurrency(result.switch.surrenderValue),
+              },
+              {
+                label: "Term cost",
+                value: formatINRCurrency(result.switch.termCost),
+              },
+              {
+                label: "Projected corpus",
+                value: formatINRCurrency(result.switch.investMaturity),
+                tone: "emerald",
+                emphasize: true,
+              },
+              {
+                label: "Investment IRR",
+                value: formatIrr(switchIrrPct),
+                tone: "emerald",
+                emphasize: true,
+              },
+            ]}
+          />
         </div>
       </WealthSection>
 

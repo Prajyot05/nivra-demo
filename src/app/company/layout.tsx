@@ -8,6 +8,7 @@ export const metadata: Metadata = {
 
 const NAV: AdminNavItem[] = [
   { href: "/company", label: "Overview", icon: "layout-dashboard", exact: true },
+  { href: "/company/analytics", label: "Analytics", icon: "chart-column" },
   { href: "/company/users", label: "Users & seats", icon: "users" },
   { href: "/company/branding", label: "Branding", icon: "image" },
   { href: "/company/calculators", label: "Calculators", icon: "calculator" },
@@ -17,9 +18,9 @@ const NAV: AdminNavItem[] = [
 export default function CompanyAdminLayout({ children }: { children: ReactNode }) {
   return (
     <DashboardShell
-      brandSubtitle="Acme Wealth Advisors · Company admin"
+      brandSubtitle="Acme Wealth Advisors"
       nav={NAV}
-      switchLink={{ href: "/admin", label: "Open Nivra admin" }}
+      switchLink={{ href: "/admin", label: "Nivra admin" }}
     >
       {children}
     </DashboardShell>

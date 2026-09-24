@@ -8,6 +8,7 @@ export const metadata: Metadata = {
 
 const NAV: AdminNavItem[] = [
   { href: "/admin", label: "Overview", icon: "layout-dashboard", exact: true },
+  { href: "/admin/analytics", label: "Analytics", icon: "chart-column" },
   { href: "/admin/companies", label: "Companies", icon: "building-2" },
   { href: "/admin/staff", label: "Staff & roles", icon: "shield-check" },
   { href: "/admin/reports", label: "Reports", icon: "file-bar-chart" },
@@ -16,9 +17,9 @@ const NAV: AdminNavItem[] = [
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <DashboardShell
-      brandSubtitle="Platform admin"
+      brandSubtitle="Platform"
       nav={NAV}
-      switchLink={{ href: "/company", label: "Open company demo" }}
+      switchLink={{ href: "/company", label: "Company admin" }}
     >
       {children}
     </DashboardShell>

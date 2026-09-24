@@ -1,8 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Users, UserPlus, Gem } from "lucide-react";
-import { AdminPageHeader, Panel, StatTile } from "@/components/admin/admin-ui";
+import { AdminPageHeader, Panel, StatStrip } from "@/components/admin/admin-ui";
 import { CompanyRoleBadge } from "@/components/admin/status-badges";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -80,45 +79,53 @@ export function CompanyUsersPanel({
     <>
       <AdminPageHeader
         title="Users"
-        description={`${company.name} — company admin and employees. Member seat caps deferred.`}
+        description={`${company.name}. Company admin and employees. Member seat caps deferred for v1.`}
       />
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <StatTile label="Users" value={activeCount} icon={Users} />
-        <StatTile label="Plan" value={company.tier} icon={Gem} />
-        <StatTile
-          label="Reports this month"
-          value={company.reportsThisMonth.toLocaleString("en-IN")}
-          icon={UserPlus}
-        />
-      </div>
+      <StatStrip
+        items={[
+          { label: "Users", value: activeCount, tone: "positive" },
+          { label: "Plan", value: company.tier },
+          {
+            label: "Reports this month",
+            value: company.reportsThisMonth.toLocaleString("en-IN"),
+          },
+        ]}
+        className="lg:grid-cols-3 sm:grid-cols-3"
+      />
 
       <Panel title="Invite user" description="Local staging until invite API is wired">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="space-y-2">
-            <Label htmlFor="invite-name">Name</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="invite-name" className="text-[12px]">
+              Name
+            </Label>
             <Input
               id="invite-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              className="h-9 border-[var(--admin-line)] shadow-none"
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="invite-email">Email</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="invite-email" className="text-[12px]">
+              Email
+            </Label>
             <Input
               id="invite-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              className="h-9 border-[var(--admin-line)] shadow-none"
             />
           </div>
-          <div className="space-y-2">
-            <Label>Role</Label>
+          <div className="space-y-1.5">
+            <Label className="text-[12px]">Role</Label>
             <Select
               value={role}
               onValueChange={(v) => setRole(v as CompanyUserRole)}
             >
-              <SelectTrigger>
+              <SelectTrigger className="h-9 border-[var(--admin-line)] shadow-none">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -129,47 +136,53 @@ export function CompanyUsersPanel({
             </Select>
           </div>
           <div className="flex items-end">
-            <Button className="w-full" onClick={addUser}>
+            <Button className="h-9 w-full text-[13px]" onClick={addUser}>
               Invite
             </Button>
           </div>
         </div>
         {message ? (
-          <p className="mt-3 text-sm text-muted-foreground">{message}</p>
+          <p className="mt-3 text-[12px] text-[var(--admin-muted)]">{message}</p>
         ) : null}
       </Panel>
 
-      <Panel title="Directory">
+      <Panel title="Directory" description="Everyone on this firm" flush>
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="pl-4">Name</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Last active</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="pr-4 text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {users.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell>
-                  <div className="font-medium">{user.name}</div>
-                  <div className="text-xs text-muted-foreground">{user.email}</div>
+              <TableRow
+                key={user.id}
+                className="border-[var(--admin-line)] hover:bg-[var(--admin-soft)]/60"
+              >
+                <TableCell className="pl-4">
+                  <div className="text-[13px] font-medium">{user.name}</div>
+                  <div className="text-[11px] text-[var(--admin-faint)]">
+                    {user.email}
+                  </div>
                 </TableCell>
                 <TableCell>
                   <CompanyRoleBadge role={user.role} />
                 </TableCell>
-                <TableCell className="capitalize text-muted-foreground">
+                <TableCell className="text-[13px] capitalize text-[var(--admin-muted)]">
                   {user.status}
                 </TableCell>
-                <TableCell className="tabular-nums text-muted-foreground">
+                <TableCell className="text-[13px] tabular-nums text-[var(--admin-muted)]">
                   {user.lastActiveAt}
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell className="pr-4 text-right">
                   <Button
                     variant="ghost"
                     size="sm"
+                    className="h-7 text-[12px] text-[var(--admin-muted)] hover:text-rose-700"
                     disabled={user.role === "admin"}
                     onClick={() => removeUser(user.id)}
                   >

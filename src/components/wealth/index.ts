@@ -25,6 +25,16 @@ export {
 export type { WealthSliderConfig, WealthRangePreset } from "./wealth-inputs";
 export { WealthSelectField } from "./wealth-select";
 export { DelayCostCards } from "./delay-cost-cards";
+export {
+  WealthAdvantagePanel,
+  WealthProcessSteps,
+  WealthPathPair,
+} from "./wealth-path-panels";
+export type {
+  WealthAdvantageSide,
+  WealthProcessStep,
+  WealthPathStat,
+} from "./wealth-path-panels";
 export { WealthDisclaimer } from "./wealth-disclaimer";
 export { WealthScheduleTable } from "./wealth-schedule-table";
 export type { ScheduleRow } from "./wealth-schedule-table";

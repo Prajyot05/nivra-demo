@@ -1,7 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Users, FileBarChart, BarChart3, Calendar } from "lucide-react";
-import { AdminPageHeader, Panel, StatTile } from "@/components/admin/admin-ui";
+import { ArrowLeft } from "lucide-react";
+import {
+  AdminIdentityCard,
+  AdminPageHeader,
+  Panel,
+  StatStrip,
+} from "@/components/admin/admin-ui";
 import {
   CompanyLogoMark,
   CompanyRoleBadge,
@@ -35,97 +40,138 @@ export default async function AdminCompanyDetailPage({
     <>
       <AdminPageHeader
         title={company.name}
-        description="Tenant detail — branding, subscription, users, and report volume."
+        description="Branding, subscription, users, and report volume."
         actions={
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/admin/companies">Back to list</Link>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 border-[var(--admin-line)] px-3 text-[13px] shadow-none"
+            asChild
+          >
+            <Link href="/admin/companies">
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Back
+            </Link>
           </Button>
         }
       />
 
-      <div className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 shadow-sm sm:flex-row sm:items-center">
-        <CompanyLogoMark initials={company.logoInitials} color={company.logoColor} />
-        <div className="min-w-0 flex-1 space-y-1">
-          <div className="flex flex-wrap items-center gap-2">
+      <AdminIdentityCard
+        mark={
+          <CompanyLogoMark
+            initials={company.logoInitials}
+            color={company.logoColor}
+          />
+        }
+        title={company.name}
+        badges={
+          <>
             <CompanyStatusBadge status={company.status} />
             <SoftLockBadge state={company.softLock} />
-            <Badge variant="outline">{company.tier}</Badge>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {company.email} · {company.phone}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Owner {company.ownerEmail} · Created {company.createdAt}
-            {company.softLockEndsAt
-              ? ` · Soft lock until ${company.softLockEndsAt}`
-              : null}
-          </p>
-        </div>
-      </div>
+            <Badge
+              variant="outline"
+              className="rounded-full border-[var(--admin-line)] text-[11px] font-medium"
+            >
+              {company.tier}
+            </Badge>
+          </>
+        }
+        meta={
+          <>
+            <p>
+              {company.email} · {company.phone}
+            </p>
+            <p className="mt-0.5 text-[12px] text-[var(--admin-faint)]">
+              Owner {company.ownerEmail} · Created {company.createdAt}
+              {company.softLockEndsAt
+                ? ` · Soft lock until ${company.softLockEndsAt}`
+                : null}
+            </p>
+          </>
+        }
+      />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatTile label="Seats" value={`${company.seatsUsed}/${company.seats}`} icon={Users} />
-        <StatTile
-          label="Reports (all time)"
-          value={company.reportsGenerated.toLocaleString("en-IN")}
-          icon={FileBarChart}
-        />
-        <StatTile
-          label="Reports this month"
-          value={company.reportsThisMonth.toLocaleString("en-IN")}
-          icon={BarChart3}
-        />
-        <StatTile label="Renews" value={company.renewsAt} hint={`Theme · ${company.defaultTheme}`} icon={Calendar} />
-      </div>
+      <StatStrip
+        items={[
+          {
+            label: "Users",
+            value: `${company.seatsUsed}/${company.seats}`,
+          },
+          {
+            label: "Reports (all time)",
+            value: company.reportsGenerated.toLocaleString("en-IN"),
+          },
+          {
+            label: "Reports this month",
+            value: company.reportsThisMonth.toLocaleString("en-IN"),
+            tone: "positive",
+          },
+          {
+            label: "Renews",
+            value: company.renewsAt,
+            hint: `Theme · ${company.defaultTheme}`,
+          },
+        ]}
+      />
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Panel title="Users" description={`${users.length} accounts on this tenant`}>
+      <div className="grid gap-8 lg:grid-cols-2">
+        <Panel title="Subscription" description="Access and renewal">
+          <dl className="rounded-[var(--admin-radius-sm)] border border-[var(--admin-line)] text-[13px]">
+            {(
+              [
+                ["Tier", company.tier],
+                ["Status", company.status],
+                ["Renewal", company.renewsAt],
+                ["Users", String(company.seatsUsed)],
+              ] as const
+            ).map(([label, value], i, arr) => (
+              <div
+                key={label}
+                className={`flex justify-between gap-4 px-4 py-2.5 ${
+                  i < arr.length - 1 ? "border-b border-[var(--admin-line)]" : ""
+                }`}
+              >
+                <dt className="text-[var(--admin-muted)]">{label}</dt>
+                <dd className="font-medium capitalize">{value}</dd>
+              </div>
+            ))}
+            <div className="flex justify-between gap-4 border-t border-[var(--admin-line)] px-4 py-2.5">
+              <dt className="text-[var(--admin-muted)]">Soft lock</dt>
+              <dd>
+                <SoftLockBadge state={company.softLock} />
+              </dd>
+            </div>
+          </dl>
+        </Panel>
+
+        <Panel title="Team" description="Users on this tenant" flush>
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="pl-4">Name</TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead className="pr-4">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={3} className="text-muted-foreground">
-                    No users in dummy set for this company.
+              {users.map((user) => (
+                <TableRow key={user.id} className="border-[var(--admin-line)]">
+                  <TableCell className="pl-4">
+                    <div className="text-[13px] font-medium">{user.name}</div>
+                    <div className="text-[11px] text-[var(--admin-faint)]">
+                      {user.email}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <CompanyRoleBadge role={user.role} />
+                  </TableCell>
+                  <TableCell className="pr-4 text-[13px] capitalize text-[var(--admin-muted)]">
+                    {user.status}
                   </TableCell>
                 </TableRow>
-              ) : (
-                users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>
-                      <div className="font-medium">{user.name}</div>
-                      <div className="text-xs text-muted-foreground">{user.email}</div>
-                    </TableCell>
-                    <TableCell>
-                      <CompanyRoleBadge role={user.role} />
-                    </TableCell>
-                    <TableCell className="capitalize text-muted-foreground">
-                      {user.status}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
+              ))}
             </TableBody>
           </Table>
-        </Panel>
-
-        <Panel title="Calculator access" description="Included in current tier (placeholder names)">
-          <ul className="grid gap-2 sm:grid-cols-1">
-            {company.calculators.map((name) => (
-              <li
-                key={name}
-                className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm"
-              >
-                {name}
-              </li>
-            ))}
-          </ul>
         </Panel>
       </div>
     </>

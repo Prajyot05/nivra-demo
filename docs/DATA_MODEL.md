@@ -28,7 +28,7 @@ Five domain entities. Physical tables hang under them. The calculator engine sta
 3. Set `DATABASE_URL` (pooled) + `DIRECT_URL` (direct) in `.env`
 4. Create / link a Clerk app: `npx clerk auth login` then `npx clerk apps create nivra-demo` and `npx clerk init --app <id> --framework next -y`
 5. Keep `NEXT_PUBLIC_CLERK_SIGN_IN_URL=/login` (branded login page)
-6. Set `PLATFORM_ADMIN_EMAIL` to your email (default `yashurade27@gmail.com`)
+6. Set `PLATFORM_ADMIN_EMAIL` to platform admin emails, comma-separated (default includes `yashurade27@gmail.com`)
 7. `npx prisma migrate deploy` then `npx prisma db seed`
 8. Optional: `node --env-file=.env --import tsx scripts/link-platform-admin.ts <clerkUserId>`
 9. In Clerk Dashboard → Webhooks, point `session.created` to `/api/webhooks/clerk` (use ngrok locally) and set `CLERK_WEBHOOK_SIGNING_SECRET`

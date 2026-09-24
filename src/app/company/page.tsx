@@ -1,7 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Gem, Users, FileBarChart, Briefcase } from "lucide-react";
-import { AdminPageHeader, Panel, StatTile } from "@/components/admin/admin-ui";
+import { ArrowRight } from "lucide-react";
+import {
+  AdminIdentityCard,
+  AdminPageHeader,
+  Panel,
+  StatStrip,
+} from "@/components/admin/admin-ui";
 import {
   CompanyLogoMark,
   CompanyStatusBadge,
@@ -29,99 +34,124 @@ export default async function CompanyOverviewPage() {
   return (
     <>
       <AdminPageHeader
-        title="Company overview"
-        description={`Plan, users, renewal, and usage. Company admin is the subscriber. Source: ${source}.`}
+        title="Overview"
+        description={`Plan, users, renewal, and usage for your firm. Source: ${source}.`}
         actions={
-          <Button size="sm" asChild>
-            <Link href="/company/users">Manage users</Link>
+          <Button size="sm" className="h-8 px-3 text-[13px]" asChild>
+            <Link href="/company/analytics">
+              Open analytics
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
           </Button>
         }
       />
 
-      <div className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 shadow-sm sm:flex-row sm:items-center">
-        <CompanyLogoMark initials={company.logoInitials} color={company.logoColor} />
-        <div className="min-w-0 flex-1 space-y-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-base font-semibold tracking-tight">{company.name}</h2>
+      <AdminIdentityCard
+        mark={
+          <CompanyLogoMark
+            initials={company.logoInitials}
+            color={company.logoColor}
+          />
+        }
+        title={company.name}
+        badges={
+          <>
             <CompanyStatusBadge status={company.status} />
             <SoftLockBadge state={company.softLock} />
-            <Badge variant="outline">{company.tier}</Badge>
-          </div>
-          <p className="text-sm text-muted-foreground">
+            <Badge
+              variant="outline"
+              className="rounded-full border-[var(--admin-line)] text-[11px] font-medium"
+            >
+              {company.tier}
+            </Badge>
+          </>
+        }
+        meta={
+          <p>
             Renews {company.renewsAt} · Default theme {company.defaultTheme}
           </p>
-        </div>
-      </div>
+        }
+      />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatTile
-          label="Plan"
-          value={company.tier}
-          hint={`Status · ${company.status}`}
-          icon={Gem}
-        />
-        <StatTile
-          label="Users"
-          value={`${company.seatsUsed} active`}
-          hint="Member seat caps deferred for v1"
-          icon={Users}
-        />
-        <StatTile
-          label="Reports this month"
-          value={company.reportsThisMonth.toLocaleString("en-IN")}
-          hint="Read-only usage"
-          icon={FileBarChart}
-        />
-        <StatTile
-          label="Active employees"
-          value={activeEmployees}
-          hint="Company employees (non-admin)"
-          icon={Briefcase}
-        />
-      </div>
+      <StatStrip
+        items={[
+          {
+            label: "Plan",
+            value: company.tier,
+            hint: `Status · ${company.status}`,
+          },
+          {
+            label: "Users",
+            value: `${company.seatsUsed} active`,
+            hint: "Member seat caps deferred for v1",
+          },
+          {
+            label: "Reports this month",
+            value: company.reportsThisMonth.toLocaleString("en-IN"),
+            hint: "Read-only usage",
+            tone: "positive",
+          },
+          {
+            label: "Active employees",
+            value: activeEmployees,
+            hint: "Company employees (non-admin)",
+          },
+        ]}
+      />
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-8 lg:grid-cols-2">
         <Panel title="Subscription" description="Renewal and access state">
-          <dl className="space-y-3 text-sm">
-            <div className="flex justify-between gap-4 border-b border-border pb-2">
-              <dt className="text-muted-foreground">Tier</dt>
-              <dd className="font-medium">{company.tier}</dd>
-            </div>
-            <div className="flex justify-between gap-4 border-b border-border pb-2">
-              <dt className="text-muted-foreground">Renewal date</dt>
-              <dd className="font-medium tabular-nums">{company.renewsAt}</dd>
-            </div>
-            <div className="flex justify-between gap-4 border-b border-border pb-2">
-              <dt className="text-muted-foreground">Users</dt>
-              <dd className="font-medium tabular-nums">{company.seatsUsed}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Soft lock</dt>
+          <dl className="rounded-[var(--admin-radius-sm)] border border-[var(--admin-line)] text-[13px]">
+            {(
+              [
+                ["Tier", company.tier],
+                ["Renewal date", company.renewsAt],
+                ["Users", String(company.seatsUsed)],
+              ] as const
+            ).map(([label, value], i, arr) => (
+              <div
+                key={label}
+                className={`flex justify-between gap-4 px-4 py-2.5 ${
+                  i < arr.length - 1 ? "border-b border-[var(--admin-line)]" : ""
+                }`}
+              >
+                <dt className="text-[var(--admin-muted)]">{label}</dt>
+                <dd className="font-medium tabular-nums">{value}</dd>
+              </div>
+            ))}
+            <div className="flex justify-between gap-4 border-t border-[var(--admin-line)] px-4 py-2.5">
+              <dt className="text-[var(--admin-muted)]">Soft lock</dt>
               <dd>
                 <SoftLockBadge state={company.softLock} />
               </dd>
             </div>
           </dl>
-          <p className="mt-4 text-xs text-muted-foreground">
-            Expired or suspended tenants get a 3-day view-only soft lock, then hard lock.
-            Razorpay billing is stubbed until gateway credentials land.
+          <p className="mt-3 text-[12px] leading-relaxed text-[var(--admin-muted)]">
+            Expired or suspended tenants get a 3-day view-only soft lock, then hard
+            lock. Razorpay billing is stubbed until gateway credentials land.
           </p>
         </Panel>
 
-        <Panel title="Quick links">
-          <div className="grid gap-2">
-            <Button variant="outline" className="justify-start" asChild>
-              <Link href="/company/users">Add or remove users</Link>
-            </Button>
-            <Button variant="outline" className="justify-start" asChild>
-              <Link href="/company/branding">Edit disclaimer, logo, contact</Link>
-            </Button>
-            <Button variant="outline" className="justify-start" asChild>
-              <Link href="/company/calculators">See calculators on this plan</Link>
-            </Button>
-            <Button variant="outline" className="justify-start" asChild>
-              <Link href="/">Open calculators</Link>
-            </Button>
+        <Panel title="Quick links" description="Common company admin tasks">
+          <div className="grid gap-1.5">
+            {[
+              { href: "/company/users", label: "Add or remove users" },
+              { href: "/company/branding", label: "Edit disclaimer, logo, contact" },
+              { href: "/company/calculators", label: "See calculators on this plan" },
+              { href: "/", label: "Open calculators" },
+            ].map((item) => (
+              <Button
+                key={item.href}
+                variant="outline"
+                className="h-9 justify-between border-[var(--admin-line)] bg-white text-[13px] font-normal text-[var(--admin-ink)] shadow-none hover:bg-[var(--admin-soft)]"
+                asChild
+              >
+                <Link href={item.href}>
+                  {item.label}
+                  <ArrowRight className="h-3.5 w-3.5 text-[var(--admin-faint)]" />
+                </Link>
+              </Button>
+            ))}
           </div>
         </Panel>
       </div>

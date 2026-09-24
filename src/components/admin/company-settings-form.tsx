@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FileBarChart, Briefcase } from "lucide-react";
-import { AdminPageHeader, Panel, StatTile } from "@/components/admin/admin-ui";
+import { AdminPageHeader, Panel, StatStrip } from "@/components/admin/admin-ui";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -52,27 +51,32 @@ export function CompanySettingsForm({
     <>
       <AdminPageHeader
         title="Settings"
-        description="Default theme and read-only usage. Theme persist to Organization.defaultTheme comes next."
+        description="Default calculator theme and read-only usage for this firm."
       />
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <StatTile
-          label="Reports this month"
-          value={company.reportsThisMonth.toLocaleString("en-IN")}
-          icon={FileBarChart}
-        />
-        <StatTile
-          label="Active employees"
-          value={activeEmployees}
-          icon={Briefcase}
-        />
-      </div>
+      <StatStrip
+        items={[
+          {
+            label: "Reports this month",
+            value: company.reportsThisMonth.toLocaleString("en-IN"),
+            tone: "positive",
+          },
+          {
+            label: "Active employees",
+            value: activeEmployees,
+          },
+        ]}
+        className="lg:grid-cols-2 sm:grid-cols-2"
+      />
 
-      <Panel title="Default theme">
-        <div className="max-w-xs space-y-2">
-          <Label>Theme</Label>
+      <Panel
+        title="Default theme"
+        description="Applied when advisors open calculators"
+      >
+        <div className="max-w-xs space-y-1.5">
+          <Label className="text-[12px]">Theme</Label>
           <Select value={theme} onValueChange={setTheme}>
-            <SelectTrigger>
+            <SelectTrigger className="h-9 border-[var(--admin-line)] shadow-none">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -83,7 +87,7 @@ export function CompanySettingsForm({
               ))}
             </SelectContent>
           </Select>
-          <Button className="mt-3" onClick={save}>
+          <Button className="mt-3 h-8 px-3 text-[13px]" onClick={save}>
             {saved ? "Saved (local)" : "Save theme"}
           </Button>
         </div>

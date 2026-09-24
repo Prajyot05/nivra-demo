@@ -11,6 +11,8 @@ export async function GET() {
     profileId: navProfileForRole(user.role),
     role: user.role,
     userId: user.id,
+    name: user.name,
+    email: user.email,
     organizationId: user.organizationId,
     entitlements: {
       lockMode: user.entitlements.lockMode,
