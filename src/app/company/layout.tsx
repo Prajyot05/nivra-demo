@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { DashboardShell, type AdminNavItem } from "@/components/admin/dashboard-shell";
+import { requireSignedIn } from "@/lib/require-signed-in";
 
 export const metadata: Metadata = {
   title: "Company Admin",
@@ -14,7 +15,8 @@ const NAV: AdminNavItem[] = [
   { href: "/company/settings", label: "Settings", icon: "settings" },
 ];
 
-export default function CompanyAdminLayout({ children }: { children: ReactNode }) {
+export default async function CompanyAdminLayout({ children }: { children: ReactNode }) {
+  await requireSignedIn();
   return (
     <DashboardShell
       brandSubtitle="Acme Wealth Advisors · Company admin"

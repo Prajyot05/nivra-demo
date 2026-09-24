@@ -19,12 +19,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getCompanyById, listCompanyUsers } from "@/lib/admin/queries";
+import { requireSignedIn } from "@/lib/require-signed-in";
 
 export default async function AdminCompanyDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await requireSignedIn();
   const { id } = await params;
   const company = await getCompanyById(id);
   if (!company) notFound();

@@ -15,8 +15,10 @@ import {
   listCompanyUsers,
 } from "@/lib/admin/queries";
 import { isDatabaseConfigured } from "@/lib/db";
+import { requireSignedIn } from "@/lib/require-signed-in";
 
 export default async function CompanyOverviewPage() {
+  await requireSignedIn();
   const companyId = await getDemoCompanyId();
   const company = await getCompanyById(companyId);
   if (!company) notFound();

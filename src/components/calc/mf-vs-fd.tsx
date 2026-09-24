@@ -151,16 +151,16 @@ function YieldSplitBar({
   multiplier: number;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4">
-      <div className="mb-2 flex flex-col gap-1 text-xs font-medium text-slate-600 sm:flex-row sm:items-center sm:justify-between">
-        <span>Relative Yield Distribution:</span>
-        <span>
-          Mutual Fund yields{" "}
-          <strong className="text-emerald-700">{multiplier.toFixed(2)}×</strong> of Traditional
-          Fixed Deposit
+    <div className="rounded-2xl border border-slate-200/80 bg-white p-4">
+      <div className="mb-3 flex flex-col gap-1 text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400 sm:flex-row sm:items-center sm:justify-between">
+        <span>Relative yield</span>
+        <span className="normal-case tracking-normal text-slate-500">
+          Mutual fund yields{" "}
+          <strong className="font-semibold text-emerald-700">{multiplier.toFixed(2)}×</strong> a
+          fixed deposit
         </span>
       </div>
-      <div className="flex h-3 w-full overflow-hidden rounded-full bg-slate-200">
+      <div className="flex h-2 w-full overflow-hidden rounded-full bg-slate-100">
         <div
           className="h-full rounded-l-full bg-emerald-600 transition-all duration-500"
           style={{ width: `${mfShare}%` }}
@@ -170,14 +170,14 @@ function YieldSplitBar({
           style={{ width: `${fdShare}%` }}
         />
       </div>
-      <div className="mt-2 flex flex-col gap-1 text-[11px] text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2.5 w-2.5 rounded-sm bg-emerald-600" />
-          Equity Mutual Fund Post-Tax ({mfShare.toFixed(1)}%)
+      <div className="mt-3 flex flex-col gap-1.5 text-xs text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+        <span className="inline-flex items-center gap-2">
+          <span className="h-2 w-2 rounded-full bg-emerald-600" />
+          Equity mutual fund post-tax ({mfShare.toFixed(1)}%)
         </span>
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2.5 w-2.5 rounded-sm bg-slate-400" />
-          Fixed Deposit Post-Tax ({fdShare.toFixed(1)}%)
+        <span className="inline-flex items-center gap-2">
+          <span className="h-2 w-2 rounded-full bg-slate-400" />
+          Fixed deposit post-tax ({fdShare.toFixed(1)}%)
         </span>
       </div>
     </div>

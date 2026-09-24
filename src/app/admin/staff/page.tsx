@@ -11,8 +11,10 @@ import {
 } from "@/components/ui/table";
 import { listNivraStaff } from "@/lib/admin/queries";
 import { isDatabaseConfigured } from "@/lib/db";
+import { requireSignedIn } from "@/lib/require-signed-in";
 
 export default async function AdminStaffPage() {
+  await requireSignedIn();
   const staff = await listNivraStaff();
   const source = isDatabaseConfigured() ? "Neon" : "dummy fallback";
 

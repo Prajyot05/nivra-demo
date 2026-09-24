@@ -18,8 +18,10 @@ import {
 } from "@/components/ui/table";
 import { getPlatformStats, listCompanies } from "@/lib/admin/queries";
 import { isDatabaseConfigured } from "@/lib/db";
+import { requireSignedIn } from "@/lib/require-signed-in";
 
 export default async function AdminOverviewPage() {
+  await requireSignedIn();
   const stats = await getPlatformStats();
   const companies = await listCompanies();
   const recent = [...companies].sort((a, b) => b.createdAt.localeCompare(a.createdAt));

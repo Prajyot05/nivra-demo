@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { AdminPageHeader, Panel, StatTile } from "@/components/admin/admin-ui";
 import { Badge } from "@/components/ui/badge";
 import { getCompanyById, getDemoCompanyId } from "@/lib/admin/queries";
+import { requireSignedIn } from "@/lib/require-signed-in";
 
 const ALL_CALCULATORS = [
   "Goal SIP Planner",
@@ -17,6 +18,7 @@ const ALL_CALCULATORS = [
 ];
 
 export default async function CompanyCalculatorsPage() {
+  await requireSignedIn();
   const companyId = await getDemoCompanyId();
   const company = await getCompanyById(companyId);
   if (!company) notFound();

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { DashboardShell, type AdminNavItem } from "@/components/admin/dashboard-shell";
+import { requireSignedIn } from "@/lib/require-signed-in";
 
 export const metadata: Metadata = {
   title: "Nivra Admin",
@@ -13,7 +14,8 @@ const NAV: AdminNavItem[] = [
   { href: "/admin/reports", label: "Reports", icon: "file-bar-chart" },
 ];
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
+export default async function AdminLayout({ children }: { children: ReactNode }) {
+  await requireSignedIn();
   return (
     <DashboardShell
       brandSubtitle="Platform admin"

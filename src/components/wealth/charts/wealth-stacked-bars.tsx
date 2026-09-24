@@ -46,6 +46,62 @@ export function WealthStackedBars({
   const yAxisWidth = horizontal
     ? Math.min(120, Math.max(64, ...data.map((d) => String(d.category).length * 6.5)))
     : 56;
+  const stackMax = Math.max(
+    1,
+    ...data.map((row) => series.reduce((sum, item) => sum + Number(row[item.key] ?? 0), 0)),
+  );
+
+  if (horizontal) {
+    return (
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center gap-4 px-1">
+          {series.map((s) => (
+            <span
+              key={s.key}
+              className="inline-flex items-center gap-2 text-xs font-medium text-slate-600"
+            >
+              <span className="h-2 w-2 rounded-full" style={{ background: s.color }} />
+              {s.label}
+            </span>
+          ))}
+        </div>
+        <ChartFrame height={frameHeight} className="overflow-hidden">
+          <div className="custom-scrollbar flex h-full flex-col justify-center gap-2.5 overflow-y-auto pr-1">
+            {data.map((row) => (
+              <div
+                key={row.category}
+                className="grid grid-cols-[minmax(4.5rem,7.5rem)_1fr_auto] items-center gap-3"
+              >
+                <span className="truncate text-[11px] font-medium text-slate-500">{row.category}</span>
+                <div className="flex h-2.5 overflow-hidden rounded-full bg-slate-100">
+                  {series.map((item) => {
+                    const value = Number(row[item.key] ?? 0);
+                    if (value <= 0) return null;
+                    return (
+                      <div
+                        key={item.key}
+                        className="h-full first:rounded-l-full last:rounded-r-full"
+                        style={{
+                          width: `${(value / stackMax) * 100}%`,
+                          background: item.color,
+                        }}
+                        title={`${item.label}: ${formatINRCurrency(value)}`}
+                      />
+                    );
+                  })}
+                </div>
+                <span className="text-[11px] font-semibold tabular-nums text-slate-700">
+                  {formatINRCurrency(
+                    series.reduce((sum, item) => sum + Number(row[item.key] ?? 0), 0),
+                  )}
+                </span>
+              </div>
+            ))}
+          </div>
+        </ChartFrame>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">

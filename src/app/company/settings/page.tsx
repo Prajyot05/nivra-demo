@@ -5,8 +5,10 @@ import {
   getDemoCompanyId,
   listCompanyUsers,
 } from "@/lib/admin/queries";
+import { requireSignedIn } from "@/lib/require-signed-in";
 
 export default async function CompanySettingsPage() {
+  await requireSignedIn();
   const companyId = await getDemoCompanyId();
   const company = await getCompanyById(companyId);
   if (!company) notFound();

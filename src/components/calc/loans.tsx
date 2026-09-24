@@ -3387,7 +3387,7 @@ function VehicleResults({
       </div>
 
       {ranked.length > 0 ? (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="mt-4 flex flex-wrap items-center gap-2">
           {ranked.slice(0, 3).map((opt) => {
             const rank = rankByName[opt.name] ?? 0;
             const isBest = rank === 1;

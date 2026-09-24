@@ -11,8 +11,10 @@ import {
 } from "@/components/ui/table";
 import { getPlatformStats, listCompanies } from "@/lib/admin/queries";
 import { isDatabaseConfigured } from "@/lib/db";
+import { requireSignedIn } from "@/lib/require-signed-in";
 
 export default async function AdminReportsPage() {
+  await requireSignedIn();
   const stats = await getPlatformStats();
   const companies = await listCompanies();
   const byVolume = [...companies].sort(
