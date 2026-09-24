@@ -52,6 +52,7 @@ import {
   moneyCell,
   WEALTH_CONTENT_CLASS,
   WealthAnalyticsChrome,
+  WealthAdvantagePanel,
   WealthAuditLedger,
   WealthCompareBars,
   WealthDataTable,
@@ -3322,93 +3323,92 @@ function VehicleResults({
           </span>
         }
       >
-      <div className="grid w-full grid-cols-1 gap-2 min-[640px]:grid-cols-4">
-        <div className="relative flex min-h-[5.25rem] min-w-0 flex-col justify-center overflow-hidden rounded-xl border border-emerald-200/70 bg-emerald-50/70 px-3 py-2.5">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700">
-            Best financing path
-          </div>
-          {best ? (
-            <div className="mt-1.5 grid grid-cols-2 gap-2">
-              <div className="rounded-lg bg-white/70 px-2 py-1.5">
-                <div className="text-[9px] font-semibold uppercase tracking-wide text-emerald-700">
-                  Rank #1
-                </div>
-                <div className="mt-0.5 text-sm font-semibold text-emerald-900">
-                  {best.name}
-                </div>
-                <div className="mt-0.5 text-[10px] tabular-nums text-emerald-700">
-                  {formatINRCurrency(best.financialBenefit)}
-                </div>
-              </div>
-              <div className="rounded-lg bg-white/70 px-2 py-1.5">
-                <div className="text-[9px] font-semibold uppercase tracking-wide text-emerald-700">
-                  {vsNoLoan > 0 ? "Vs no loan" : "Edge vs #2"}
-                </div>
-                <div className="mt-0.5 text-sm font-semibold tabular-nums text-emerald-900">
-                  {vsNoLoan > 0
-                    ? formatINRCurrency(vsNoLoan)
-                    : vsRunnerUp > 0
-                      ? formatINRCurrency(vsRunnerUp)
-                      : "—"}
-                </div>
-                <div className="mt-0.5 text-[10px] text-emerald-700">
-                  {vsNoLoan > 0
-                    ? "Extra benefit"
-                    : runnerUp
-                      ? `Over ${runnerUp.name}`
-                      : "Lead"}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="mt-1.5 text-sm font-semibold leading-snug text-emerald-900">
-              Compare loan-plus-invest options against paying cash.
-            </div>
-          )}
-        </div>
-        <div className="min-h-[5.25rem] min-w-0 [&>div]:h-full">
+      <div className="space-y-4">
+        <WealthAdvantagePanel
+          eyebrow="Best financing path"
+          title={
+            best ? (
+              <>
+                {best.name}
+                <span className="ml-2 text-base font-medium text-slate-500 sm:text-lg">
+                  ranks first on financial benefit
+                </span>
+              </>
+            ) : (
+              "Compare loan-plus-invest options against paying cash"
+            )
+          }
+          meta={
+            best ? (
+              <span className="rounded-lg border border-emerald-200/80 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-800">
+                Rank #1
+              </span>
+            ) : null
+          }
+          left={{
+            label: best ? `Rank #1 · ${best.name}` : "Best path",
+            value: best?.financialBenefit ?? 0,
+            hint: "Financial benefit",
+          }}
+          right={{
+            label: vsNoLoan > 0 ? "Vs no loan" : "Edge vs #2",
+            value:
+              vsNoLoan > 0
+                ? vsNoLoan
+                : vsRunnerUp > 0
+                  ? vsRunnerUp
+                  : "—",
+            kind: vsNoLoan > 0 || vsRunnerUp > 0 ? "currency" : "text",
+            hint:
+              vsNoLoan > 0
+                ? "Extra benefit"
+                : runnerUp
+                  ? `Over ${runnerUp.name}`
+                  : "Lead",
+          }}
+        />
+
+        <div className="grid w-full grid-cols-1 gap-3 min-[640px]:grid-cols-3">
           <WealthMetricCard title="EMI" value={result.emi} description="" tone="neutral" />
-        </div>
-        <div className="min-h-[5.25rem] min-w-0 [&>div]:h-full">
           <WealthMetricCard
             title="Total tax saved"
             value={result.totalTaxSaved}
             description="Loan interest + depreciation"
             tone="positive"
           />
-        </div>
-        <div className="min-h-[5.25rem] min-w-0 [&>div]:h-full">
           <WealthMetricCard
             title="Down payment"
             value={downPayment}
             description={`${formatINRCurrency(loanAmount)} financed`}
           />
         </div>
-      </div>
 
-      {ranked.length > 0 ? (
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          {ranked.slice(0, 3).map((opt) => {
-            const rank = rankByName[opt.name] ?? 0;
-            const isBest = rank === 1;
-            return (
-              <div
-                key={opt.name}
-                className={`rounded-lg border px-2.5 py-1.5 text-[11px] ${
-                  isBest
-                    ? "border-emerald-200/80 bg-emerald-50 text-emerald-900"
-                    : "border-slate-200/80 bg-white text-slate-900"
-                }`}
-              >
-                <span className="font-semibold">#{rank} {opt.name}</span>
-                <span className="ml-1.5 tabular-nums text-slate-500">
-                  {formatINRCurrency(opt.financialBenefit)}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      ) : null}
+        {ranked.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-2">
+            {ranked.slice(0, 3).map((opt) => {
+              const rank = rankByName[opt.name] ?? 0;
+              const isBest = rank === 1;
+              return (
+                <div
+                  key={opt.name}
+                  className={`rounded-lg border px-2.5 py-1.5 text-[11px] ${
+                    isBest
+                      ? "border-emerald-200/80 bg-emerald-50 text-emerald-900"
+                      : "border-slate-200/80 bg-white text-slate-900"
+                  }`}
+                >
+                  <span className="font-semibold">
+                    #{rank} {opt.name}
+                  </span>
+                  <span className="ml-1.5 tabular-nums text-slate-500">
+                    {formatINRCurrency(opt.financialBenefit)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        ) : null}
+      </div>
       </WealthSection>
 
       <WealthSection

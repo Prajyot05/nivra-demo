@@ -8,11 +8,11 @@ import {
 } from "@prisma/client";
 import { getPrisma, isDatabaseConfigured } from "@/lib/db";
 import {
-  DUMMY_COMPANIES,
   DUMMY_COMPANY_USERS,
   DUMMY_NIVRA_STAFF,
   DEMO_COMPANY_ID,
   TIER_CALCULATORS,
+  getAllDummyCompanies,
   getCompany as getDummyCompany,
   getCompanyUsers as getDummyCompanyUsers,
   platformStats as dummyPlatformStats,
@@ -87,7 +87,7 @@ async function orgToCompany(org: Organization): Promise<Company> {
 }
 
 export async function listCompanies(): Promise<Company[]> {
-  if (!isDatabaseConfigured()) return DUMMY_COMPANIES;
+  if (!isDatabaseConfigured()) return getAllDummyCompanies();
   const prisma = getPrisma()!;
   const orgs = await prisma.organization.findMany({
     where: { deletedAt: null },

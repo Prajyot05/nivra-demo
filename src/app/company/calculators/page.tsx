@@ -1,9 +1,9 @@
-import { Gem, Calculator } from "lucide-react";
+import { Check } from "lucide-react";
 import { notFound } from "next/navigation";
-import { AdminPageHeader, Panel, StatTile } from "@/components/admin/admin-ui";
-import { Badge } from "@/components/ui/badge";
+import { AdminPageHeader, Panel, StatStrip } from "@/components/admin/admin-ui";
 import { getCompanyById, getDemoCompanyId } from "@/lib/admin/queries";
 import { requireSignedIn } from "@/lib/require-signed-in";
+import { cn } from "@/lib/utils";
 
 const ALL_CALCULATORS = [
   "Goal SIP Planner",
@@ -27,34 +27,48 @@ export default async function CompanyCalculatorsPage() {
   return (
     <>
       <AdminPageHeader
-        title="Calculator access"
+        title="Calculators"
         description="Access follows the subscription plan tier (minTierLevel on Calculator rows)."
       />
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <StatTile label="Current plan" value={company.tier} icon={Gem} />
-        <StatTile
-          label="Calculators included"
-          value={`${company.calculators.length} / ${ALL_CALCULATORS.length}`}
-          icon={Calculator}
-        />
-      </div>
+      <StatStrip
+        items={[
+          { label: "Current plan", value: company.tier },
+          {
+            label: "Calculators included",
+            value: `${company.calculators.length} / ${ALL_CALCULATORS.length}`,
+            tone: "positive",
+          },
+        ]}
+        className="lg:grid-cols-2 sm:grid-cols-2"
+      />
 
-      <Panel title="Suite">
-        <ul className="divide-y divide-border">
+      <Panel title="Suite" description="What this plan unlocks">
+        <ul className="divide-y divide-[var(--admin-line)] rounded-[var(--admin-radius-sm)] border border-[var(--admin-line)]">
           {ALL_CALCULATORS.map((name) => {
             const on = included.has(name);
             return (
               <li
                 key={name}
-                className="flex items-center justify-between gap-3 py-3 text-sm"
+                className="flex items-center justify-between gap-3 px-4 py-3 text-[13px]"
               >
-                <span className={on ? "font-medium" : "text-muted-foreground"}>
+                <span
+                  className={cn(
+                    on ? "font-medium text-[var(--admin-ink)]" : "text-[var(--admin-faint)]",
+                  )}
+                >
                   {name}
                 </span>
-                <Badge variant={on ? "default" : "outline"}>
-                  {on ? "Included" : "Upgrade"}
-                </Badge>
+                {on ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[var(--admin-brand)]">
+                    <Check className="h-3 w-3" />
+                    Included
+                  </span>
+                ) : (
+                  <span className="text-[11px] font-medium text-[var(--admin-faint)]">
+                    Upgrade
+                  </span>
+                )}
               </li>
             );
           })}
