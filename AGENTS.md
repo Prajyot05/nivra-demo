@@ -92,7 +92,7 @@ Engine rates are **decimals** (`0.12`). API JSON rates are **percents** (`12`).
 
 - Default money: `formatINR` / `formatINRCurrency` (full `en-IN`).
 - `formatCompactINR` only for chart ticks / tiny labels.
-- Theme tokens live in `@nivra/ui` (`COLOR_THEMES`). New calculators use `CalculatorPage` (theme switcher included).
+- Theme tokens live in `@nivra/ui` (`COLOR_THEMES`). New calculators use `CalculatorPage` (always the classic theme; no theme switcher).
 - Charts: [`docs/charts.md`](docs/charts.md). Required chart from Excel; optional extras from the same file. Not one line chart for all.
 
 ---

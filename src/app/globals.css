@@ -450,3 +450,66 @@
 .admin-shell table td {
   border-color: var(--admin-line);
 }
+
+/* Clerk auth forms (/login, /sign-up) */
+.nivra-auth .cl-cardBox,
+.nivra-auth .cl-card {
+  overflow: visible !important;
+}
+
+.nivra-auth .cl-formFieldInput {
+  height: 2.5rem !important;
+  padding: 0 0.75rem !important;
+  border: 1px solid #e5e5e5 !important;
+  border-radius: 0.5rem !important;
+  background: #fff !important;
+  box-shadow: none !important;
+  outline: none !important;
+  font-size: 14px !important;
+  color: #0a0a0a !important;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.nivra-auth .cl-formFieldInput:hover {
+  border-color: #d4d4d4 !important;
+}
+
+.nivra-auth .cl-formFieldInput:focus,
+.nivra-auth .cl-formFieldInput:focus-visible {
+  border-color: #a3a3a3 !important;
+  box-shadow: 0 0 0 3px rgba(10, 10, 10, 0.06) !important;
+}
+
+.nivra-auth .cl-socialButtonsBlockButton {
+  height: 2.5rem !important;
+  border: 1px solid #e5e5e5 !important;
+  border-radius: 0.5rem !important;
+  background: #fff !important;
+  box-shadow: none !important;
+  outline: none !important;
+  color: #0a0a0a !important;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.nivra-auth .cl-socialButtonsBlockButton:hover {
+  background: #fafafa !important;
+  border-color: #d4d4d4 !important;
+}
+
+.nivra-auth .cl-socialButtonsBlockButton:focus-visible {
+  box-shadow: 0 0 0 3px rgba(10, 10, 10, 0.06) !important;
+}
+
+.nivra-auth .cl-socialButtonsBlockButtonText {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: #0a0a0a !important;
+}
+
+.nivra-auth .cl-lastAuthenticationStrategyBadge {
+  display: none !important;
+}
+
+.nivra-auth .cl-dividerLine {
+  background: #e5e5e5 !important;
+}

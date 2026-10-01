@@ -70,7 +70,7 @@ export default async function CompanyOverviewPage() {
         }
         meta={
           <p>
-            Renews {company.renewsAt} · Default theme {company.defaultTheme}
+            Renews {company.renewsAt}
           </p>
         }
       />
