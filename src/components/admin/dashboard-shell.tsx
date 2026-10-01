@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { NivraMark, PoweredByNivra } from "@/components/admin/branding";
+import { LinkPendingIcon } from "@/components/layout/link-pending-icon";
 import { Button } from "@/components/ui/button";
 import { useAuthProfile, useSignOut } from "@/hooks/use-auth-profile";
 import { cn } from "@/lib/utils";
@@ -154,7 +155,8 @@ export function DashboardShell({
             )}
           >
             {Icon ? (
-              <Icon
+              <LinkPendingIcon
+                icon={Icon}
                 className={cn(
                   "admin-nav-icon h-[15px] w-[15px] shrink-0",
                   active ? undefined : "text-[var(--admin-faint)]",
@@ -178,7 +180,10 @@ export function DashboardShell({
             className="flex items-center justify-between gap-2 rounded-[var(--admin-radius-sm)] bg-white px-2.5 py-2 text-[12px] font-medium text-[var(--admin-ink)] shadow-[0_0_0_1px_rgba(0,0,0,0.06)] transition-colors hover:bg-neutral-50"
           >
             <span className="truncate">{switchLink.label}</span>
-            <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-[var(--admin-faint)]" />
+            <LinkPendingIcon
+              icon={ArrowUpRight}
+              className="h-3.5 w-3.5 shrink-0 text-[var(--admin-faint)]"
+            />
           </Link>
         ) : null}
         <button
