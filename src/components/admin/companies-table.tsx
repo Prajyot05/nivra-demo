@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowDown, ArrowUp, ArrowUpDown, Search } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Loader2, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import {
   AdminPagination,
@@ -48,6 +48,8 @@ export function CompaniesTable({ companies }: { companies: Company[] }) {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+
+  const searching = query !== debouncedQuery;
 
   useEffect(() => {
     const t = window.setTimeout(() => setDebouncedQuery(query), 200);
@@ -161,7 +163,14 @@ export function CompaniesTable({ companies }: { companies: Company[] }) {
             <option value="Enterprise">Enterprise</option>
           </select>
           <div className="relative w-full sm:w-56">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--admin-faint)]" />
+            {searching ? (
+              <Loader2
+                aria-label="Searching"
+                className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 animate-spin text-[var(--admin-muted)]"
+              />
+            ) : (
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--admin-faint)]" />
+            )}
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -250,7 +259,10 @@ export function CompaniesTable({ companies }: { companies: Company[] }) {
               </TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody
+            aria-busy={searching}
+            className={cn("transition-opacity duration-150", searching && "opacity-50")}
+          >
             {pageRows.map((company) => (
               <TableRow
                 key={company.id}
