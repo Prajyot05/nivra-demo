@@ -4,8 +4,11 @@ import {
   UserRole,
   UserStatus,
   type Organization,
+  type Prisma,
   type User,
 } from "@prisma/client";
+import { unstable_cache } from "next/cache";
+import { cache } from "react";
 import { getPrisma, isDatabaseConfigured } from "@/lib/db";
 import {
   DUMMY_COMPANY_USERS,
@@ -40,28 +43,96 @@ function tierNameFromPlan(name: string | undefined): SubscriptionTier {
   return "Starter";
 }
 
-async function orgToCompany(org: Organization): Promise<Company> {
+/** Cross-request cache window for admin reads (seconds). */
+const ADMIN_CACHE_SECONDS = 60;
+export const ADMIN_CACHE_TAG = "admin-data";
+
+type OrgWithRelations = Organization & {
+  subscriptions: Array<{
+    id: string;
+    currentPeriodEnd: Date;
+    plan: { name: string };
+  }>;
+  _count: { users: number };
+};
+
+/**
+ * Loads companies in a fixed number of round trips (no per-org queries):
+ * orgs + active plan + user counts, then report counts and current usage in parallel.
+ */
+async function loadCompanies(where: Prisma.OrganizationWhereInput): Promise<Company[]> {
   const prisma = getPrisma()!;
-  const sub = await prisma.subscription.findFirst({
-    where: { organizationId: org.id, endedAt: null },
-    include: { plan: true },
-  });
-  const users = await prisma.user.count({
-    where: { organizationId: org.id, deletedAt: null, status: { not: UserStatus.DISABLED } },
-  });
-  const usage = sub
-    ? await prisma.usagePeriod.findFirst({
-        where: {
-          subscriptionId: sub.id,
-          periodStart: { lte: new Date() },
-          periodEnd: { gt: new Date() },
+  const orgs = (await prisma.organization.findMany({
+    where: { deletedAt: null, ...where },
+    orderBy: { createdAt: "desc" },
+    include: {
+      subscriptions: {
+        where: { endedAt: null },
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        select: { id: true, currentPeriodEnd: true, plan: { select: { name: true } } },
+      },
+      _count: {
+        select: {
+          users: { where: { deletedAt: null, status: { not: UserStatus.DISABLED } } },
         },
-      })
-    : null;
-  const reportsAll = await prisma.reportEvent.count({
-    where: { organizationId: org.id },
+      },
+    },
+  })) as OrgWithRelations[];
+  if (orgs.length === 0) return [];
+
+  const orgIds = orgs.map((o) => o.id);
+  const subIds = orgs.flatMap((o) => o.subscriptions.map((s) => s.id));
+  const now = new Date();
+
+  const [reportCounts, usages] = await Promise.all([
+    prisma.reportEvent.groupBy({
+      by: ["organizationId"],
+      where: { organizationId: { in: orgIds } },
+      _count: { _all: true },
+    }),
+    subIds.length
+      ? prisma.usagePeriod.findMany({
+          where: {
+            subscriptionId: { in: subIds },
+            periodStart: { lte: now },
+            periodEnd: { gt: now },
+          },
+          select: { subscriptionId: true, reportsGenerated: true },
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const reportsByOrg = new Map(reportCounts.map((r) => [r.organizationId, r._count._all]));
+  const usageBySub = new Map(usages.map((u) => [u.subscriptionId, u.reportsGenerated]));
+
+  return orgs.map((org) => {
+    const sub = org.subscriptions[0];
+    return orgToCompany(org, {
+      planName: sub?.plan.name,
+      renewsAt: sub?.currentPeriodEnd,
+      users: org._count.users,
+      reportsAll: reportsByOrg.get(org.id) ?? 0,
+      reportsThisMonth: sub ? (usageBySub.get(sub.id) ?? 0) : 0,
+    });
   });
-  const tier = tierNameFromPlan(sub?.plan.name);
+}
+
+function orgToCompany(
+  org: Organization,
+  facts: {
+    planName?: string;
+    renewsAt?: Date;
+    users: number;
+    reportsAll: number;
+    reportsThisMonth: number;
+  },
+): Company {
+  const tier = tierNameFromPlan(facts.planName);
+  const users = facts.users;
+  const reportsAll = facts.reportsAll;
+  const usage = { reportsGenerated: facts.reportsThisMonth };
+  const sub = facts.renewsAt ? { currentPeriodEnd: facts.renewsAt } : null;
 
   return {
     id: org.id,
@@ -74,8 +145,8 @@ async function orgToCompany(org: Organization): Promise<Company> {
     tier,
     seats: 0,
     seatsUsed: users,
-    reportsGenerated: reportsAll || (usage?.reportsGenerated ?? 0),
-    reportsThisMonth: usage?.reportsGenerated ?? 0,
+    reportsGenerated: reportsAll || usage.reportsGenerated,
+    reportsThisMonth: usage.reportsGenerated,
     renewsAt: sub?.currentPeriodEnd.toISOString().slice(0, 10) ?? "",
     ownerEmail: org.billingEmail ?? "",
     phone: org.phone ?? "",
@@ -86,40 +157,53 @@ async function orgToCompany(org: Organization): Promise<Company> {
   };
 }
 
-export async function listCompanies(): Promise<Company[]> {
+const listCompaniesCached = unstable_cache(
+  () => loadCompanies({}),
+  ["admin-companies"],
+  { revalidate: ADMIN_CACHE_SECONDS, tags: [ADMIN_CACHE_TAG] },
+);
+
+export const listCompanies = cache(async (): Promise<Company[]> => {
   if (!isDatabaseConfigured()) return getAllDummyCompanies();
-  const prisma = getPrisma()!;
-  const orgs = await prisma.organization.findMany({
-    where: { deletedAt: null },
-    orderBy: { createdAt: "desc" },
-  });
-  return Promise.all(orgs.map(orgToCompany));
-}
+  return listCompaniesCached();
+});
 
-export async function getCompanyById(id: string): Promise<Company | undefined> {
+const getCompanyCached = unstable_cache(
+  async (id: string) => (await loadCompanies({ OR: [{ id }, { slug: id }] }))[0] ?? null,
+  ["admin-company"],
+  { revalidate: ADMIN_CACHE_SECONDS, tags: [ADMIN_CACHE_TAG] },
+);
+
+export const getCompanyById = cache(async (id: string): Promise<Company | undefined> => {
   if (!isDatabaseConfigured()) return getDummyCompany(id);
-  const prisma = getPrisma()!;
-  const org = await prisma.organization.findFirst({
-    where: { OR: [{ id }, { slug: id }], deletedAt: null },
-  });
-  if (!org) return undefined;
-  return orgToCompany(org);
-}
+  return (await getCompanyCached(id)) ?? undefined;
+});
 
-export async function listCompanyUsers(companyId: string): Promise<CompanyUser[]> {
+const listCompanyUsersCached = unstable_cache(
+  async (companyId: string) => {
+    const prisma = getPrisma()!;
+    const users = await prisma.user.findMany({
+      where: {
+        deletedAt: null,
+        organization: { OR: [{ id: companyId }, { slug: companyId }], deletedAt: null },
+      },
+      orderBy: { name: "asc" },
+    });
+    return users.map(toCompanyUser);
+  },
+  ["admin-company-users"],
+  { revalidate: ADMIN_CACHE_SECONDS, tags: [ADMIN_CACHE_TAG] },
+);
+
+export const listCompanyUsers = cache(async (companyId: string): Promise<CompanyUser[]> => {
   if (!isDatabaseConfigured()) return getDummyCompanyUsers(companyId);
-  const prisma = getPrisma()!;
-  const org = await prisma.organization.findFirst({
-    where: { OR: [{ id: companyId }, { slug: companyId }], deletedAt: null },
-  });
-  if (!org) return [];
-  const users = await prisma.user.findMany({
-    where: { organizationId: org.id, deletedAt: null },
-    orderBy: { name: "asc" },
-  });
-  return users.map((u: User) => ({
+  return listCompanyUsersCached(companyId);
+});
+
+function toCompanyUser(u: User): CompanyUser {
+  return {
     id: u.id,
-    companyId: org.id,
+    companyId: u.organizationId ?? "",
     name: u.name,
     email: u.email,
     role:
@@ -133,16 +217,25 @@ export async function listCompanyUsers(companyId: string): Promise<CompanyUser[]
           ? ("disabled" as const)
           : ("active" as const),
     lastActiveAt: u.lastLoginAt?.toISOString().slice(0, 10) ?? "—",
-  }));
+  };
 }
 
-export async function listNivraStaff(): Promise<NivraStaff[]> {
+const listNivraStaffCached = unstable_cache(
+  async () => {
+    const prisma = getPrisma()!;
+    return prisma.user.findMany({
+      where: { role: UserRole.NIVRA_ADMIN, deletedAt: null },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, email: true, status: true },
+    });
+  },
+  ["admin-staff"],
+  { revalidate: ADMIN_CACHE_SECONDS, tags: [ADMIN_CACHE_TAG] },
+);
+
+export const listNivraStaff = cache(async (): Promise<NivraStaff[]> => {
   if (!isDatabaseConfigured()) return DUMMY_NIVRA_STAFF;
-  const prisma = getPrisma()!;
-  const users = await prisma.user.findMany({
-    where: { role: UserRole.NIVRA_ADMIN, deletedAt: null },
-    orderBy: { name: "asc" },
-  });
+  const users = await listNivraStaffCached();
   return users.map((u) => ({
     id: u.id,
     name: u.name,
@@ -151,7 +244,7 @@ export async function listNivraStaff(): Promise<NivraStaff[]> {
     reportsThisMonth: 0,
     status: u.status === UserStatus.DISABLED ? ("inactive" as const) : ("active" as const),
   }));
-}
+});
 
 export async function getPlatformStats() {
   if (!isDatabaseConfigured()) return dummyPlatformStats();
@@ -169,11 +262,22 @@ export async function getPlatformStats() {
   };
 }
 
-export async function getDemoCompanyId(): Promise<string> {
+const getDemoCompanyIdCached = unstable_cache(
+  async () => {
+    const prisma = getPrisma()!;
+    const acme = await prisma.organization.findUnique({
+      where: { slug: "acme-wealth" },
+      select: { id: true },
+    });
+    return acme?.id ?? DEMO_COMPANY_ID;
+  },
+  ["admin-demo-company-id"],
+  { revalidate: ADMIN_CACHE_SECONDS * 10, tags: [ADMIN_CACHE_TAG] },
+);
+
+export const getDemoCompanyId = cache(async (): Promise<string> => {
   if (!isDatabaseConfigured()) return DEMO_COMPANY_ID;
-  const prisma = getPrisma()!;
-  const acme = await prisma.organization.findUnique({ where: { slug: "acme-wealth" } });
-  return acme?.id ?? DEMO_COMPANY_ID;
-}
+  return getDemoCompanyIdCached();
+});
 
 export { DEMO_COMPANY_ID };
