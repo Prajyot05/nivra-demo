@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { getPrisma, isDatabaseConfigured } from "@/lib/db";
 import {
   platformStats as dummyPlatformStats,
@@ -6,6 +7,7 @@ import {
   type NivraStaff,
 } from "@/lib/admin/dummy-data";
 import {
+  ADMIN_CACHE_TAG,
   getCompanyById,
   getPlatformStats,
   listCompanies,
@@ -80,31 +82,44 @@ function synthesizeMonthly(totalThisMonth: number, months = 6): MonthPoint[] {
   });
 }
 
+const ADMIN_CACHE_SECONDS = 60;
+
+const monthlyReportCounts = unstable_cache(
+  async (organizationId: string | null, startIso: string) => {
+    const prisma = getPrisma()!;
+    const start = new Date(startIso);
+    const rows = organizationId
+      ? await prisma.$queryRaw<Array<{ month: string; count: number }>>`
+          SELECT to_char(date_trunc('month', "createdAt"), 'YYYY-MM') AS month, count(*)::int AS count
+          FROM "ReportEvent"
+          WHERE "createdAt" >= ${start} AND "organizationId" = ${organizationId}
+          GROUP BY 1`
+      : await prisma.$queryRaw<Array<{ month: string; count: number }>>`
+          SELECT to_char(date_trunc('month', "createdAt"), 'YYYY-MM') AS month, count(*)::int AS count
+          FROM "ReportEvent"
+          WHERE "createdAt" >= ${start}
+          GROUP BY 1`;
+    return rows;
+  },
+  ["admin-monthly-reports"],
+  { revalidate: ADMIN_CACHE_SECONDS, tags: [ADMIN_CACHE_TAG] },
+);
+
 async function monthlyReportsFromDb(organizationId?: string): Promise<MonthPoint[] | null> {
   if (!isDatabaseConfigured()) return null;
-  const prisma = getPrisma();
-  if (!prisma) return null;
 
   const labels = monthLabels(6);
   const start = new Date();
   start.setMonth(start.getMonth() - 5, 1);
   start.setHours(0, 0, 0, 0);
 
-  const events = await prisma.reportEvent.findMany({
-    where: {
-      createdAt: { gte: start },
-      ...(organizationId ? { organizationId } : {}),
-    },
-    select: { createdAt: true },
-  });
-
-  if (events.length === 0) return null;
+  const rows = await monthlyReportCounts(organizationId ?? null, start.toISOString());
+  if (rows.length === 0) return null;
 
   const buckets = new Map<string, number>();
   for (const m of labels) buckets.set(m.key, 0);
-  for (const e of events) {
-    const key = `${e.createdAt.getFullYear()}-${String(e.createdAt.getMonth() + 1).padStart(2, "0")}`;
-    if (buckets.has(key)) buckets.set(key, (buckets.get(key) ?? 0) + 1);
+  for (const r of rows) {
+    if (buckets.has(r.month)) buckets.set(r.month, Number(r.count));
   }
 
   return labels.map((m) => ({
@@ -115,10 +130,11 @@ async function monthlyReportsFromDb(organizationId?: string): Promise<MonthPoint
 }
 
 export async function getPlatformAnalytics(): Promise<PlatformAnalytics> {
-  const [stats, companies, staff] = await Promise.all([
+  const [stats, companies, staff, fromDb] = await Promise.all([
     getPlatformStats(),
     listCompanies(),
     listNivraStaff(),
+    monthlyReportsFromDb(),
   ]);
 
   const statusKeys = ["active", "trial", "suspended", "inactive"] as const;
@@ -153,7 +169,6 @@ export async function getPlatformAnalytics(): Promise<PlatformAnalytics> {
       fill: "#0a0a0a",
     }));
 
-  const fromDb = await monthlyReportsFromDb();
   const monthlyReports =
     fromDb ?? synthesizeMonthly(stats.reportsThisMonth || dummyPlatformStats().reportsThisMonth);
 
@@ -176,7 +191,10 @@ export async function getCompanyAnalytics(
 ): Promise<CompanyAnalytics | null> {
   const company = await getCompanyById(companyId);
   if (!company) return null;
-  const users = await listCompanyUsers(company.id);
+  const [users, fromDb] = await Promise.all([
+    listCompanyUsers(company.id),
+    monthlyReportsFromDb(company.id),
+  ]);
 
   const roleOrder = ["admin", "advisor", "viewer"] as const;
   const usersByRole: NamedCount[] = roleOrder.map((r) => ({
@@ -193,7 +211,6 @@ export async function getCompanyAnalytics(
       s === "active" ? "#0b7443" : s === "invited" ? "#0284c7" : "#a3a3a3",
   }));
 
-  const fromDb = await monthlyReportsFromDb(company.id);
   const monthlyReports =
     fromDb ?? synthesizeMonthly(company.reportsThisMonth || 12);
 
