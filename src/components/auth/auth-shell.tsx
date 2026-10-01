@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { NivraMark } from "@/components/admin/branding";
+import { SignedInRedirect } from "@/components/auth/signed-in-redirect";
 
 type AuthShellProps = {
   title: string;
@@ -21,8 +22,9 @@ export function AuthShell({
 }: AuthShellProps) {
   return (
     <div className="flex min-h-dvh flex-col bg-white px-5 py-6 text-[#0a0a0a] sm:px-10">
+      <SignedInRedirect />
       <header className="flex items-center justify-between gap-4">
-        <Link href="/" aria-label="Nivra home">
+        <Link href="/" prefetch={false} aria-label="Nivra home">
           <NivraMark />
         </Link>
         <p className="text-[13px] text-[#737373]">
