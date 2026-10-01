@@ -111,7 +111,6 @@ export default async function AdminCompanyDetailPage({
           {
             label: "Renews",
             value: company.renewsAt,
-            hint: `Theme · ${company.defaultTheme}`,
           },
         ]}
       />

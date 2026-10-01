@@ -1,7 +1,6 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { COLOR_THEMES, type ColorThemeId } from "./color-themes";
 
 /**
  * Calculator page title — same Geist family as body (Brex / shadcn / Composer pattern).
@@ -12,16 +11,12 @@ export function CalculatorPageHeader({
   description,
   meta,
   leading,
-  themeId,
-  onThemeChange,
   actions,
 }: {
   title: string;
   description?: string;
   meta?: ReactNode;
   leading?: ReactNode;
-  themeId: ColorThemeId;
-  onThemeChange: (id: ColorThemeId) => void;
   actions?: ReactNode;
 }) {
   return (
@@ -46,24 +41,11 @@ export function CalculatorPageHeader({
           </div>
         </div>
 
-        <div className="flex shrink-0 flex-wrap items-center gap-2 sm:pt-1.5">
-          {actions}
-          <label htmlFor="calc-theme" className="sr-only">
-            Color theme
-          </label>
-          <select
-            id="calc-theme"
-            className="h-9 min-w-[7rem] rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-700 shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-600"
-            value={themeId}
-            onChange={(e) => onThemeChange(e.target.value as ColorThemeId)}
-          >
-            {COLOR_THEMES.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        {actions ? (
+          <div className="flex shrink-0 flex-wrap items-center gap-2 sm:pt-1.5">
+            {actions}
+          </div>
+        ) : null}
       </div>
     </header>
   );

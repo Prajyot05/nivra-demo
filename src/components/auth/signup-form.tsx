@@ -1,14 +1,14 @@
 "use client";
 
-import { SignIn } from "@clerk/nextjs";
+import { SignUp } from "@clerk/nextjs";
 import { authAppearance } from "@/components/auth/clerk-appearance";
 
-export function LoginForm({ redirectUrl }: { redirectUrl: string }) {
+export function SignupForm({ redirectUrl }: { redirectUrl: string }) {
   return (
-    <SignIn
+    <SignUp
       routing="path"
-      path="/login"
-      signUpUrl="/sign-up"
+      path="/sign-up"
+      signInUrl="/login"
       fallbackRedirectUrl={redirectUrl}
       appearance={authAppearance}
     />

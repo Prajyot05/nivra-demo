@@ -1,10 +1,12 @@
 "use client";
 
-import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { CalculatorPageHeader } from "./calculator-page-header";
-import { getColorTheme, type ColorThemeId } from "./color-themes";
+import { getColorTheme } from "./color-themes";
 import { STACK } from "./tokens";
 import { ComplianceFootnote } from "./bento-components";
+
+const CLASSIC_THEME_VARS = getColorTheme("classic").vars as CSSProperties;
 
 /**
  * Shell for every calculator
@@ -33,13 +35,10 @@ export function CalculatorPage({
   /** Optional override for the centered content shell width. */
   contentClassName?: string;
 }) {
-  const [themeId, setThemeId] = useState<ColorThemeId>("classic");
-  const theme = useMemo(() => getColorTheme(themeId), [themeId]);
-
   return (
     <div
       className="flex flex-1 flex-col bg-[#f8fafc] text-slate-800 pt-[max(1.5rem,env(safe-area-inset-top))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(5rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] sm:px-6 lg:px-8 selection:bg-brand-100 selection:text-brand-900"
-      style={theme.vars as CSSProperties}
+      style={CLASSIC_THEME_VARS}
     >
       <div
         className={
@@ -52,8 +51,6 @@ export function CalculatorPage({
           description={description}
           leading={leading}
           actions={actions}
-          themeId={themeId}
-          onThemeChange={setThemeId}
         />
 
         {header}

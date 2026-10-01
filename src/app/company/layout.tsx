@@ -13,7 +13,6 @@ const NAV: AdminNavItem[] = [
   { href: "/company/users", label: "Users & seats", icon: "users" },
   { href: "/company/branding", label: "Branding", icon: "image" },
   { href: "/company/calculators", label: "Calculators", icon: "calculator" },
-  { href: "/company/settings", label: "Settings", icon: "settings" },
 ];
 
 export default async function CompanyAdminLayout({ children }: { children: ReactNode }) {

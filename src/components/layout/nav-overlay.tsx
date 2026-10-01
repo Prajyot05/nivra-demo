@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { PanelLeft, X } from "lucide-react";
 import { useEffect } from "react";
 import { NivraMark, PoweredByNivra } from "@/components/admin/branding";
+import { AdminDashboardLinks } from "@/components/layout/admin-dashboard-links";
 import { CalculatorNavRow } from "@/components/layout/calculator-nav-row";
 import { isNavItemActive, type NavCategory } from "@/lib/calculator-nav";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ type NavOverlayProps = {
   mode: string | null;
   onExpandSidebar: () => void;
   onLogout: () => void;
+  role?: string | null;
   showQaChecklist?: boolean;
   checked?: Record<string, boolean>;
   onToggle?: (id: string) => void;
@@ -27,6 +29,7 @@ export function NavOverlay({
   mode,
   onExpandSidebar,
   onLogout,
+  role = null,
   showQaChecklist = false,
   checked = {},
   onToggle,
@@ -107,6 +110,7 @@ export function NavOverlay({
           ))}
         </nav>
         <div className="flex flex-col gap-2 border-t border-slate-200/80 p-3">
+          <AdminDashboardLinks role={role} onNavigate={onClose} />
           <Button variant="outline" size="sm" onClick={onExpandSidebar} className="justify-start">
             <PanelLeft />
             Pin sidebar
