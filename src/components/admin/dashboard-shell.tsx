@@ -19,6 +19,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { AccountCardSkeleton } from "@/components/admin/admin-skeleton";
 import { NivraMark, PoweredByNivra } from "@/components/admin/branding";
 import { LinkPendingIcon } from "@/components/layout/link-pending-icon";
 import { Button } from "@/components/ui/button";
@@ -120,6 +121,9 @@ export function DashboardShell({
 
   const accountCard = (
     <div className="mx-2.5 mb-2 rounded-[var(--admin-radius-sm)] bg-white px-2.5 py-2.5 shadow-[0_0_0_1px_rgba(0,0,0,0.06)]">
+      {authLoading && !name && !email ? (
+        <AccountCardSkeleton />
+      ) : (
       <div className="flex items-center gap-2.5">
         <span
           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--admin-soft)] text-[10px] font-semibold text-[var(--admin-ink)]"
@@ -136,6 +140,7 @@ export function DashboardShell({
           </p>
         </div>
       </div>
+      )}
     </div>
   );
 
