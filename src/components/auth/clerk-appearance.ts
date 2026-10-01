@@ -33,10 +33,3 @@ export const authAppearance = {
     identityPreviewEditButton: "text-[#0a0a0a]",
   },
 } as const;
-
-/** Only same-origin relative paths are allowed as post-auth redirects. */
-export function safeRedirect(from: string | string[] | undefined): string {
-  const value = Array.isArray(from) ? from[0] : from;
-  if (!value || !value.startsWith("/") || value.startsWith("//")) return "/";
-  return value;
-}
