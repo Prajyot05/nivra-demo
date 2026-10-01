@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Building2, ShieldCheck } from "lucide-react";
+import { LinkPendingIcon } from "@/components/layout/link-pending-icon";
 import { Button } from "@/components/ui/button";
 
 const LINKS = {
@@ -33,7 +34,7 @@ export function AdminDashboardLinks({
           className="w-full justify-start text-slate-700"
         >
           <Link href={href} onClick={onNavigate}>
-            <Icon />
+            <LinkPendingIcon icon={Icon} />
             {label}
           </Link>
         </Button>

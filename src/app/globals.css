@@ -513,3 +513,26 @@
 .nivra-auth .cl-dividerLine {
   background: #e5e5e5 !important;
 }
+
+/* Admin route skeletons */
+.admin-bone {
+  background: linear-gradient(90deg, #f0f0f0 0%, #f7f7f7 40%, #f0f0f0 80%);
+  background-size: 200% 100%;
+  animation: admin-bone-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes admin-bone-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-bone {
+    animation: none;
+    background: #f0f0f0;
+  }
+}
