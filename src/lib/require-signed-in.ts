@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { headers } from "next/headers";
 import { PATHNAME_HEADER } from "@/lib/pathname-header";
+import { CALCULATORS_PUBLIC } from "@/lib/public-access";
 
 /**
  * Signed-in gate for Server Components (pages and layouts).
@@ -12,6 +13,12 @@ export async function requireSignedIn() {
   return auth.protect({
     unauthenticatedUrl: `/login?from=${encodeURIComponent(from)}`,
   });
+}
+
+/** Gate for calculator pages; no-op while `CALCULATORS_PUBLIC` is on. */
+export async function requireCalculatorAccess() {
+  if (CALCULATORS_PUBLIC) return;
+  await requireSignedIn();
 }
 
 function safeAppPath(value: string | null): string {

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { getCurrentAppUser } from "@/lib/auth";
 import { dispatch } from "@/lib/calculate-dispatch";
+import { CALCULATORS_PUBLIC } from "@/lib/public-access";
 
 export async function POST(
   request: Request,
@@ -16,18 +17,19 @@ export async function POST(
     console.error("getCurrentAppUser failed on calculate", error);
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  if (!user) {
+  if (!user && !CALCULATORS_PUBLIC) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { entitlements } = user;
-  if (!entitlements.canUseCalculators) {
+  const entitlements = user?.entitlements;
+  if (entitlements && !entitlements.canUseCalculators) {
     return NextResponse.json(
       { error: "Calculators are locked for this organization" },
       { status: 403 },
     );
   }
   if (
+    entitlements &&
     entitlements.allowedCalculatorIds.length > 0 &&
     !entitlements.allowedCalculatorIds.includes("*") &&
     !entitlements.allowedCalculatorIds.includes(id)

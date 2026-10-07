@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { GoalSipPlanner } from "@/components/goal-sip-planner";
-import { requireSignedIn } from "@/lib/require-signed-in";
+import { requireCalculatorAccess } from "@/lib/require-signed-in";
 
 export const metadata: Metadata = {
   title: "Goal – SIP & Step-Up SIP",
@@ -9,6 +9,6 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  await requireSignedIn();
+  await requireCalculatorAccess();
   return <GoalSipPlanner />;
 }
