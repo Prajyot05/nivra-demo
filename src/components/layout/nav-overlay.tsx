@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PanelLeft, X } from "lucide-react";
 import { useEffect } from "react";
@@ -16,6 +17,7 @@ type NavOverlayProps = {
   mode: string | null;
   onExpandSidebar: () => void;
   onLogout: () => void;
+  signedIn?: boolean;
   role?: string | null;
   showQaChecklist?: boolean;
   checked?: Record<string, boolean>;
@@ -29,6 +31,7 @@ export function NavOverlay({
   mode,
   onExpandSidebar,
   onLogout,
+  signedIn = true,
   role = null,
   showQaChecklist = false,
   checked = {},
@@ -115,9 +118,17 @@ export function NavOverlay({
             <PanelLeft />
             Pin sidebar
           </Button>
-          <Button variant="ghost" size="sm" onClick={onLogout} className="justify-start">
-            Sign out
-          </Button>
+          {signedIn ? (
+            <Button variant="ghost" size="sm" onClick={onLogout} className="justify-start">
+              Sign out
+            </Button>
+          ) : (
+            <Button asChild variant="ghost" size="sm" className="justify-start">
+              <Link href="/login" prefetch={false} onClick={onClose}>
+                Sign in
+              </Link>
+            </Button>
+          )}
           <PoweredByNivra />
         </div>
       </aside>

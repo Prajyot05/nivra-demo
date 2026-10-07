@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { LogOut, PanelLeftClose } from "lucide-react";
+import { useAuth } from "@clerk/nextjs";
+import { LogIn, LogOut, PanelLeftClose } from "lucide-react";
 import { Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { AdminDashboardLinks } from "@/components/layout/admin-dashboard-links";
 import { CalculatorNavRow } from "@/components/layout/calculator-nav-row";
@@ -89,6 +90,7 @@ function AppShellInner({ children }: { children: ReactNode }) {
   const searchParams = useSearchParams();
   const mode = searchParams.get("mode");
   const { profileId, role } = useAuthProfile();
+  const { isSignedIn } = useAuth();
   const signOut = useSignOut();
   const navProfile = profileId ?? "client";
   const enabledCalculators = useMemo(
@@ -164,15 +166,29 @@ function AppShellInner({ children }: { children: ReactNode }) {
         </nav>
         <div className="space-y-1.5 border-t border-slate-200/80 p-3">
           <AdminDashboardLinks role={role} />
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-start text-slate-600"
-            onClick={handleLogout}
-          >
-            <LogOut />
-            Sign out
-          </Button>
+          {isSignedIn ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start text-slate-600"
+              onClick={handleLogout}
+            >
+              <LogOut />
+              Sign out
+            </Button>
+          ) : (
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start text-slate-600"
+            >
+              <Link href="/login" prefetch={false}>
+                <LogIn />
+                Sign in
+              </Link>
+            </Button>
+          )}
           <PoweredByNivra />
         </div>
       </aside>
@@ -184,6 +200,7 @@ function AppShellInner({ children }: { children: ReactNode }) {
         mode={mode}
         onExpandSidebar={expand}
         onLogout={handleLogout}
+        signedIn={Boolean(isSignedIn)}
         role={role}
       />
 

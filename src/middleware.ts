@@ -1,16 +1,26 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { PATHNAME_HEADER } from "@/lib/pathname-header";
+import { CALCULATORS_PUBLIC } from "@/lib/public-access";
 
 /**
  * Early hop for signed-out visitors. This is not the auth guarantee.
  * Pages, layouts, and route handlers call `requireSignedIn()` or `auth()`.
  */
+const PUBLIC_PREFIXES = ["/login", "/sign-in", "/sign-up", "/api/webhooks"];
+const PROTECTED_WHEN_CALCULATORS_PUBLIC = ["/admin", "/company", "/api"];
+const PUBLIC_CALCULATOR_APIS = ["/api/calculate", "/api/calculators"];
+
+function matchesPrefix(pathname: string, prefixes: string[]): boolean {
+  return prefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
+
 function isPublicPath(pathname: string): boolean {
   if (pathname === "/api/health") return true;
-  return ["/login", "/sign-in", "/sign-up", "/api/webhooks"].some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
-  );
+  if (matchesPrefix(pathname, PUBLIC_PREFIXES)) return true;
+  if (!CALCULATORS_PUBLIC) return false;
+  if (matchesPrefix(pathname, PUBLIC_CALCULATOR_APIS)) return true;
+  return !matchesPrefix(pathname, PROTECTED_WHEN_CALCULATORS_PUBLIC);
 }
 
 export default clerkMiddleware(async (auth, request) => {
