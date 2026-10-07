@@ -27,8 +27,6 @@ export const authAppearance = {
     formFieldLabel: "text-[13px] font-medium text-[#0a0a0a]",
     formButtonPrimary:
       "h-10 rounded-lg! bg-[#0a0a0a]! bg-none! text-[14px] font-medium normal-case shadow-none! hover:bg-[#262626]! after:hidden!",
-    dividerLine: "bg-[#e5e5e5]",
-    dividerText: "text-[12px] text-[#a3a3a3]",
     formFieldAction: "text-[13px] font-medium text-[#525252] hover:text-[#0a0a0a]",
     identityPreviewEditButton: "text-[#0a0a0a]",
   },
