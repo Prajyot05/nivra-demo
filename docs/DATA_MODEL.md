@@ -14,8 +14,15 @@ Five domain entities. Physical tables hang under them. The calculator engine sta
 
 - **Clerk** for identity and sessions only. Organizations live in Neon, not Clerk Organizations.
 - Every login via Clerk.
-- **One session per user**: on `session.created` webhook, revoke all other active Clerk sessions (new login wins).
-- Sync Neon `User` on authenticated requests via `syncUserFromClerk()`.
+- **One session per user** (new login wins): every authenticated server request runs `enforceSingleSession()`. The newest Clerk session claims `User.activeSessionId`; older sessions are revoked and sent to `/signed-out`. The `session.created` webhook revokes others immediately when configured.
+- Sync Neon `User` on authenticated requests via `syncUserFromClerk()`. First login accepts a pending `Invitation` for that email (sets org + role).
+
+## Seats
+
+- `Plan.seatLimit` caps members per org (null = unlimited). Seats used = members (not deleted/disabled) + unexpired pending invitations.
+- Company Admin invites from `/company/users` → Clerk invitation email → invitee sets their own password. Seat is reserved at invite time.
+- Revoke invite or remove member frees the seat. Remove deletes the Clerk user (ends sessions, email can be re-invited).
+- Downgrading below current usage does not remove anyone; it only blocks new invites.
 
 ## Entitlements
 

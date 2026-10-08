@@ -13,8 +13,9 @@ Two dashboards: **Nivra admin** (`/admin`) and **Company admin** (`/company`).
 
 - **Tenancy:** shared app `nivra.app`; company branding after login. No custom subdomain/domain at launch. One org per user. Advisors only — no client logins.
 - **Roles:** `NIVRA_ADMIN` · `COMPANY_ADMIN` · `COMPANY_EMPLOYEE` (UI may still label employees as advisor/viewer).
-- **Sessions:** one Clerk session per user; new login revokes older sessions.
-- **Member seats:** not capped in v1.
+- **Sessions:** one Clerk session per user; new login revokes older sessions. Enforced in-app via `enforceSingleSession` (`src/lib/single-session.ts`); the `session.created` webhook only speeds it up.
+- **Logins:** one person per email. Members join only through a Company Admin invite (Clerk invitation); removing a member deletes their Clerk login.
+- **Member seats:** capped by `Plan.seatLimit` (null = unlimited). Seats = active members + pending invites. Checked in `inviteMember` under a per-org advisory lock.
 - **Lock:** soft-lock expired/suspended for **3 days** (view-only), then hard lock.
 - **Branding:** Nivra logo on app chrome; company branding on PDF reports. **"Powered by Nivra"** on every footer + report.
 - **Invariant:** calculator engine never stores client PII / inputs / results / PDFs.

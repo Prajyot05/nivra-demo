@@ -7,7 +7,7 @@ import { CALCULATORS_PUBLIC } from "@/lib/public-access";
  * Early hop for signed-out visitors. This is not the auth guarantee.
  * Pages, layouts, and route handlers call `requireSignedIn()` or `auth()`.
  */
-const PUBLIC_PREFIXES = ["/login", "/sign-in", "/sign-up", "/api/webhooks"];
+const PUBLIC_PREFIXES = ["/login", "/sign-in", "/sign-up", "/signed-out", "/api/webhooks"];
 const PROTECTED_WHEN_CALCULATORS_PUBLIC = ["/admin", "/company", "/api"];
 const PUBLIC_CALCULATOR_APIS = ["/api/calculate", "/api/calculators"];
 

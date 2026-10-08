@@ -97,7 +97,9 @@ export default async function AdminCompanyDetailPage({
         items={[
           {
             label: "Users",
-            value: `${company.seatsUsed}/${company.seats}`,
+            value: company.seats
+              ? `${company.seatsUsed}/${company.seats}`
+              : `${company.seatsUsed}/Unlimited`,
           },
           {
             label: "Reports (all time)",

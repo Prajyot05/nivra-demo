@@ -1,6 +1,6 @@
 import { verifyWebhook } from "@clerk/backend/webhooks";
 import { NextResponse } from "next/server";
-import { revokeOtherClerkSessions } from "@/lib/auth";
+import { revokeOtherClerkSessions } from "@/lib/single-session";
 import { getPrisma, isDatabaseConfigured } from "@/lib/db";
 
 export async function POST(request: Request) {

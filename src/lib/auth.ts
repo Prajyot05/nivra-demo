@@ -1,7 +1,10 @@
-import { auth, currentUser, clerkClient } from "@clerk/nextjs/server";
-import { UserRole, UserStatus, type User } from "@prisma/client";
+import { auth, currentUser } from "@clerk/nextjs/server";
+import { InvitationStatus, UserRole, UserStatus, type User } from "@prisma/client";
 import { getPrisma, isDatabaseConfigured, resetPrisma } from "@/lib/db";
 import { getEntitlements, type Entitlements } from "@/lib/entitlements";
+import { enforceSingleSession } from "@/lib/single-session";
+
+export { revokeOtherClerkSessions } from "@/lib/single-session";
 
 export type AppUser = User & {
   entitlements: Entitlements;
@@ -80,6 +83,8 @@ function sessionFallbackUser(clerkUserId: string, email?: string, name?: string,
     organizationId: null,
     status: UserStatus.ACTIVE,
     lastLoginAt: new Date(),
+    activeSessionId: null,
+    activeSessionStartedAt: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     deletedAt: null,
@@ -150,6 +155,10 @@ export async function syncUserFromClerk(): Promise<User | null> {
       const prisma = getPrisma()!;
       const existing = await prisma.user.findUnique({ where: { clerkUserId: userId } });
 
+      if (existing?.deletedAt || existing?.status === UserStatus.DISABLED) {
+        return existing;
+      }
+
       if (existing) {
         const elevateToAdmin = isPlatformAdminEmail(email);
         return prisma.user.update({
@@ -194,21 +203,21 @@ export async function syncUserFromClerk(): Promise<User | null> {
         });
       }
 
-      const bootstrapRole = isPlatformAdminEmail(email)
-        ? UserRole.NIVRA_ADMIN
-        : role;
+      if (isPlatformAdminEmail(email)) {
+        return prisma.user.create({
+          data: {
+            clerkUserId: userId,
+            email,
+            name,
+            role: UserRole.NIVRA_ADMIN,
+            organizationId: null,
+            status: UserStatus.ACTIVE,
+            lastLoginAt: new Date(),
+          },
+        });
+      }
 
-      return prisma.user.create({
-        data: {
-          clerkUserId: userId,
-          email,
-          name,
-          role: bootstrapRole,
-          organizationId: null,
-          status: UserStatus.ACTIVE,
-          lastLoginAt: new Date(),
-        },
-      });
+      return acceptPendingInvitation({ clerkUserId: userId, email, name, fallbackRole: role });
     });
   } catch (error) {
     console.warn("User sync to Neon failed; using session fallback", error);
@@ -216,9 +225,58 @@ export async function syncUserFromClerk(): Promise<User | null> {
   }
 }
 
+/** First login: join the org that invited this email (seat was reserved at invite time). */
+async function acceptPendingInvitation(input: {
+  clerkUserId: string;
+  email: string;
+  name: string;
+  fallbackRole: UserRole;
+}): Promise<User> {
+  const prisma = getPrisma()!;
+  return prisma.$transaction(async (tx) => {
+    const invitation = await tx.invitation.findFirst({
+      where: {
+        email: { equals: input.email, mode: "insensitive" },
+        status: InvitationStatus.PENDING,
+        expiresAt: { gt: new Date() },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const user = await tx.user.create({
+      data: {
+        clerkUserId: input.clerkUserId,
+        email: input.email,
+        name: invitation?.name || input.name,
+        role: invitation?.role ?? input.fallbackRole,
+        organizationId: invitation?.organizationId ?? null,
+        status: UserStatus.ACTIVE,
+        lastLoginAt: new Date(),
+      },
+    });
+
+    if (invitation) {
+      await tx.invitation.update({
+        where: { id: invitation.id },
+        data: {
+          status: InvitationStatus.ACCEPTED,
+          acceptedAt: new Date(),
+          acceptedUserId: user.id,
+        },
+      });
+    }
+    return user;
+  });
+}
+
 export async function getCurrentAppUser(): Promise<AppUser | null> {
   const user = await syncUserFromClerk();
   if (!user) return null;
+  const { sessionId } = await auth();
+  if (sessionId && (await enforceSingleSession(user.clerkUserId, sessionId)) === "evicted") {
+    return null;
+  }
+  if (user.deletedAt || user.status === UserStatus.DISABLED) return null;
   try {
     const entitlements = await getEntitlements({
       role: user.role,
@@ -247,28 +305,6 @@ export async function getCurrentAppUser(): Promise<AppUser | null> {
       },
     };
   }
-}
-
-/**
- * New login wins: revoke every other active Clerk session for this user.
- * Call from the session.created webhook.
- */
-export async function revokeOtherClerkSessions(
-  clerkUserId: string,
-  keepSessionId: string,
-): Promise<number> {
-  const client = await clerkClient();
-  const list = await client.sessions.getSessionList({
-    userId: clerkUserId,
-    status: "active",
-  });
-  let revoked = 0;
-  for (const session of list.data) {
-    if (session.id === keepSessionId) continue;
-    await client.sessions.revokeSession(session.id);
-    revoked += 1;
-  }
-  return revoked;
 }
 
 export function isNivraAdmin(role: UserRole): boolean {

@@ -51,7 +51,7 @@ type OrgWithRelations = Organization & {
   subscriptions: Array<{
     id: string;
     currentPeriodEnd: Date;
-    plan: { name: string };
+    plan: { name: string; seatLimit: number | null };
   }>;
   _count: { users: number };
 };
@@ -70,7 +70,11 @@ async function loadCompanies(where: Prisma.OrganizationWhereInput): Promise<Comp
         where: { endedAt: null },
         orderBy: { createdAt: "desc" },
         take: 1,
-        select: { id: true, currentPeriodEnd: true, plan: { select: { name: true } } },
+        select: {
+          id: true,
+          currentPeriodEnd: true,
+          plan: { select: { name: true, seatLimit: true } },
+        },
       },
       _count: {
         select: {
@@ -110,6 +114,7 @@ async function loadCompanies(where: Prisma.OrganizationWhereInput): Promise<Comp
     const sub = org.subscriptions[0];
     return orgToCompany(org, {
       planName: sub?.plan.name,
+      seatLimit: sub?.plan.seatLimit ?? null,
       renewsAt: sub?.currentPeriodEnd,
       users: org._count.users,
       reportsAll: reportsByOrg.get(org.id) ?? 0,
@@ -122,6 +127,7 @@ function orgToCompany(
   org: Organization,
   facts: {
     planName?: string;
+    seatLimit: number | null;
     renewsAt?: Date;
     users: number;
     reportsAll: number;
@@ -143,7 +149,7 @@ function orgToCompany(
     softLock: mapSoftLock(org.softLock),
     softLockEndsAt: org.softLockEndsAt?.toISOString().slice(0, 10) ?? null,
     tier,
-    seats: 0,
+    seats: facts.seatLimit ?? 0,
     seatsUsed: users,
     reportsGenerated: reportsAll || usage.reportsGenerated,
     reportsThisMonth: usage.reportsGenerated,
@@ -262,22 +268,14 @@ export async function getPlatformStats() {
   };
 }
 
-const getDemoCompanyIdCached = unstable_cache(
-  async () => {
-    const prisma = getPrisma()!;
-    const acme = await prisma.organization.findUnique({
-      where: { slug: "acme-wealth" },
-      select: { id: true },
-    });
-    return acme?.id ?? DEMO_COMPANY_ID;
-  },
-  ["admin-demo-company-id"],
-  { revalidate: ADMIN_CACHE_SECONDS * 10, tags: [ADMIN_CACHE_TAG] },
-);
-
+/** Per-request only: a persisted id goes stale when the database is re-seeded. */
 export const getDemoCompanyId = cache(async (): Promise<string> => {
   if (!isDatabaseConfigured()) return DEMO_COMPANY_ID;
-  return getDemoCompanyIdCached();
+  const acme = await getPrisma()!.organization.findUnique({
+    where: { slug: "acme-wealth" },
+    select: { id: true },
+  });
+  return acme?.id ?? DEMO_COMPANY_ID;
 });
 
 export { DEMO_COMPANY_ID };

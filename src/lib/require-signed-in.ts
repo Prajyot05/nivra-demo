@@ -1,5 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { enforceSingleSession, SIGNED_OUT_ELSEWHERE_PATH } from "@/lib/single-session";
 import { PATHNAME_HEADER } from "@/lib/pathname-header";
 import { CALCULATORS_PUBLIC } from "@/lib/public-access";
 
@@ -10,9 +12,16 @@ import { CALCULATORS_PUBLIC } from "@/lib/public-access";
 export async function requireSignedIn() {
   const headerStore = await headers();
   const from = safeAppPath(headerStore.get(PATHNAME_HEADER));
-  return auth.protect({
+  const session = await auth.protect({
     unauthenticatedUrl: `/login?from=${encodeURIComponent(from)}`,
   });
+  if (
+    session.sessionId &&
+    (await enforceSingleSession(session.userId, session.sessionId)) === "evicted"
+  ) {
+    redirect(SIGNED_OUT_ELSEWHERE_PATH);
+  }
+  return session;
 }
 
 /** Gate for calculator pages; no-op while `CALCULATORS_PUBLIC` is on. */

@@ -72,6 +72,8 @@ model Plan {
   currency             String       @default("INR")
   interval             PlanInterval @default(MONTHLY)
   reportLimitPerPeriod Int?
+  /// Max members (active + pending invites) per org. Null = unlimited.
+  seatLimit            Int?
   trialDays            Int?
   trialReportLimit     Int?
   razorpayPlanId       String?
@@ -133,17 +135,20 @@ model Organization {
 // ─── User (Clerk identity; org in Neon only) ──────────────────────────────────
 
 model User {
-  id             String     @id @default(uuid())
-  clerkUserId    String     @unique
-  email          String
-  name           String
-  role           UserRole
-  organizationId String?
-  status         UserStatus @default(ACTIVE)
-  lastLoginAt    DateTime?
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
-  deletedAt      DateTime?
+  id                     String     @id @default(uuid())
+  clerkUserId            String     @unique
+  email                  String
+  name                   String
+  role                   UserRole
+  organizationId         String?
+  status                 UserStatus @default(ACTIVE)
+  lastLoginAt            DateTime?
+  /// The only Clerk session allowed for this user. Newer logins take over.
+  activeSessionId        String?
+  activeSessionStartedAt DateTime?
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime   @updatedAt
+  deletedAt              DateTime?
 
   organization Organization? @relation(fields: [organizationId], references: [id])
   reportEvents ReportEvent[]
@@ -172,8 +177,8 @@ model Subscription {
   createdAt              DateTime           @default(now())
   updatedAt              DateTime           @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id])
-  plan         Plan         @relation(fields: [planId], references: [id])
+  organization Organization  @relation(fields: [organizationId], references: [id])
+  plan         Plan          @relation(fields: [planId], references: [id])
   usagePeriods UsagePeriod[]
 
   @@index([organizationId])
@@ -220,17 +225,19 @@ model ReportEvent {
 }
 
 model Invitation {
-  id              String           @id @default(uuid())
-  organizationId  String
-  email           String
-  role            UserRole
-  tokenHash       String
-  status          InvitationStatus @default(PENDING)
-  invitedByUserId String?
-  expiresAt       DateTime
-  acceptedAt      DateTime?
-  acceptedUserId  String?
-  createdAt       DateTime         @default(now())
+  id                String           @id @default(uuid())
+  organizationId    String
+  email             String
+  name              String?
+  role              UserRole
+  tokenHash         String
+  clerkInvitationId String?
+  status            InvitationStatus @default(PENDING)
+  invitedByUserId   String?
+  expiresAt         DateTime
+  acceptedAt        DateTime?
+  acceptedUserId    String?
+  createdAt         DateTime         @default(now())
 
   organization Organization @relation(fields: [organizationId], references: [id])
 
@@ -239,16 +246,16 @@ model Invitation {
 }
 
 model AuditLog {
-  id          String   @id @default(uuid())
+  id             String   @id @default(uuid())
   organizationId String?
-  actorUserId String?
-  action      String
-  targetType  String?
-  targetId    String?
-  metadata    Json?
-  ipAddress   String?
-  userAgent   String?
-  createdAt   DateTime @default(now())
+  actorUserId    String?
+  action         String
+  targetType     String?
+  targetId       String?
+  metadata       Json?
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
 
   organization Organization? @relation(fields: [organizationId], references: [id])
   actor        User?         @relation("AuditActor", fields: [actorUserId], references: [id])
@@ -258,15 +265,15 @@ model AuditLog {
 }
 
 model LoginEvent {
-  id            String   @id @default(uuid())
-  userId        String?
-  email         String
+  id             String   @id @default(uuid())
+  userId         String?
+  email          String
   organizationId String?
-  success       Boolean
-  failureReason String?
-  ipAddress     String?
-  userAgent     String?
-  createdAt     DateTime @default(now())
+  success        Boolean
+  failureReason  String?
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
 
   user User? @relation(fields: [userId], references: [id])
 

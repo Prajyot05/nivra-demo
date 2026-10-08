@@ -17,6 +17,7 @@ export type Company = {
   softLock: SoftLockState;
   softLockEndsAt: string | null;
   tier: SubscriptionTier;
+  /** Plan seat limit; 0 = unlimited. */
   seats: number;
   seatsUsed: number;
   reportsGenerated: number;
