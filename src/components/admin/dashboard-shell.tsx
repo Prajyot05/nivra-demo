@@ -6,6 +6,7 @@ import {
   Building2,
   Calculator,
   ChartColumn,
+  CreditCard,
   FileBarChart,
   Image as ImageIcon,
   LayoutDashboard,
@@ -35,6 +36,7 @@ export type AdminNavIcon =
   | "users"
   | "image"
   | "calculator"
+  | "credit-card"
   | "settings";
 
 export type AdminNavItem = {
@@ -53,6 +55,7 @@ const NAV_ICONS: Record<AdminNavIcon, LucideIcon> = {
   users: Users,
   image: ImageIcon,
   calculator: Calculator,
+  "credit-card": CreditCard,
   settings: Settings,
 };
 

@@ -354,6 +354,61 @@ export function CalculatorsSkeleton() {
   );
 }
 
+export function BillingSkeleton() {
+  return (
+    <SkeletonRoot label="Loading plan and billing">
+      <HeaderSkeleton action />
+      <div className="overflow-hidden rounded-[var(--admin-radius)] border border-[var(--admin-line)]">
+        <div className="flex items-start justify-between gap-4 px-5 py-5">
+          <div className="space-y-2">
+            <Bone className="h-2.5 w-20" />
+            <Bone className="h-6 w-32" />
+            <Bone className="h-3 w-72 max-w-full" />
+          </div>
+          <Bone className="h-8 w-28" />
+        </div>
+        <div className="grid border-t border-[var(--admin-line)] sm:grid-cols-3">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className={cn("space-y-2.5 px-4 py-4", i > 0 && "border-t border-[var(--admin-line)] sm:border-l sm:border-t-0")}
+            >
+              <Bone className="h-2.5 w-28" />
+              <Bone className="h-5 w-32" />
+              <Bone className="h-1.5 w-full rounded-full" />
+              <Bone className="h-2.5 w-36" />
+            </div>
+          ))}
+        </div>
+      </div>
+      <section className="space-y-4">
+        <div className="flex items-end justify-between">
+          <PanelHeadSkeleton wide />
+          <Bone className="h-8 w-44" />
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="space-y-5 rounded-[var(--admin-radius)] border border-[var(--admin-line)] p-5">
+              <div className="space-y-2">
+                <Bone className="h-4 w-20" />
+                <Bone className="h-3 w-full" />
+                <Bone className="h-3 w-3/4" />
+              </div>
+              <Bone className="h-7 w-28" />
+              <Bone className="h-9 w-full" />
+              <div className="space-y-2.5 border-t border-[var(--admin-line)] pt-4">
+                {[0, 1, 2, 3].map((j) => (
+                  <Bone key={j} className="h-3 w-5/6" />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    </SkeletonRoot>
+  );
+}
+
 /** Sidebar account card while the signed-in profile loads. */
 export function AccountCardSkeleton() {
   return (

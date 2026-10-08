@@ -130,13 +130,17 @@ export default async function CompanyOverviewPage() {
           </dl>
           <p className="mt-3 text-[12px] leading-relaxed text-[var(--admin-muted)]">
             Expired or suspended tenants get a 3-day view-only soft lock, then hard
-            lock. Razorpay billing is stubbed until gateway credentials land.
+            lock.{" "}
+            <Link href="/company/billing" className="font-medium text-[var(--admin-ink)] underline-offset-4 hover:underline">
+              Manage plan and billing
+            </Link>
           </p>
         </Panel>
 
         <Panel title="Quick links" description="Common company admin tasks">
           <div className="grid gap-1.5">
             {[
+              { href: "/company/billing", label: "Manage plan and billing" },
               { href: "/company/users", label: "Add or remove users" },
               { href: "/company/branding", label: "Edit disclaimer, logo, contact" },
               { href: "/company/calculators", label: "See calculators on this plan" },
