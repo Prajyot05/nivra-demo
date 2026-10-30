@@ -93,7 +93,7 @@ function VehicleCard({
           <h3 className="text-sm font-bold text-emerald-950">{title}</h3>
         </div>
         <div className="flex items-baseline space-x-2 py-4">
-          <span className="text-3xl font-black tracking-tight tabular-nums text-emerald-950 sm:text-4xl">
+          <span className="min-w-0 break-words text-2xl font-black leading-tight tracking-tight tabular-nums sm:text-3xl text-emerald-950">
             {formatINRCurrency(postTax)}
           </span>
           <span className="text-xs font-semibold text-emerald-800">post-tax return</span>
@@ -131,7 +131,7 @@ function VehicleCard({
         <h3 className="text-sm font-bold text-slate-100">{title}</h3>
       </div>
       <div className="flex items-baseline space-x-2 py-4">
-        <span className="text-3xl font-black tracking-tight tabular-nums text-white sm:text-4xl">
+        <span className="min-w-0 break-words text-2xl font-black leading-tight tracking-tight tabular-nums sm:text-3xl text-white">
           {formatINRCurrency(postTax)}
         </span>
         <span className="text-xs font-medium text-slate-400">post-tax return</span>

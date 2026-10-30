@@ -171,7 +171,7 @@ export function LoanInterestRecoveryDossier({
             {data.baselineYears}-year loan
           </h3>
           <div className="mt-2 flex items-baseline gap-1.5">
-            <span className="text-2xl font-black tabular-nums text-white">
+            <span className="min-w-0 break-words text-2xl font-black leading-tight tabular-nums text-white">
               {formatINRCurrency(data.baselineEmi)}
             </span>
             <span className="text-[10px] font-medium text-slate-400">/ month EMI</span>
@@ -210,7 +210,7 @@ export function LoanInterestRecoveryDossier({
             {data.proposedYears}-year loan
           </h3>
           <div className="mt-2 flex items-baseline gap-1.5">
-            <span className="text-2xl font-black tabular-nums text-emerald-950">
+            <span className="min-w-0 break-words text-2xl font-black leading-tight tabular-nums text-emerald-950">
               {formatINRCurrency(data.proposedEmi)}
             </span>
             <span className="text-[10px] font-medium text-emerald-700">/ month EMI</span>

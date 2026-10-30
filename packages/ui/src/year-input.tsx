@@ -32,7 +32,13 @@ export function YearInput({
           value={Number.isFinite(value) ? value : ""}
           onChange={(e) => {
             const raw = e.target.value;
-            onChange(raw === "" ? 0 : Number(raw));
+            if (raw === "") {
+              onChange(0);
+              return;
+            }
+            const n = Number(raw);
+            if (!Number.isFinite(n)) return;
+            onChange(Math.min(max, Math.max(min, Math.round(n))));
           }}
         />
         {suffix ? (

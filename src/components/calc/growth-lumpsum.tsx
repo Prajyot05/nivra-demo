@@ -1,5 +1,7 @@
 "use client";
 
+import { MONEY_INPUT_MAX, YEARS_MAX } from "@nivra/ui/limits";
+
 import { useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -57,14 +59,10 @@ import {
 } from "@/components/wealth";
 
 const AMOUNT_MIN = 10_000;
-const AMOUNT_MAX = 100_00_00_000; // ₹100 Cr
+const AMOUNT_MAX = MONEY_INPUT_MAX;
 const AMOUNT_STEP = 1_00_000;
-const AMOUNT_PRESETS = [
-  ...WEALTH_MONEY_PRESETS_DEFAULT,
-  { label: "₹10Cr", value: 10_00_00_000 },
-];
-const YEARS_MAX = 100;
-const YEARS_SLIDER_MAX = 40;
+const AMOUNT_PRESETS = WEALTH_MONEY_PRESETS_DEFAULT;
+const YEARS_SLIDER_MAX = YEARS_MAX;
 
 type YearRow = {
   year: number;

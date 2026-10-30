@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { formatINRCurrency } from "@nivra/ui";
+import { formatINRCurrency, inrAmountTextClass } from "@nivra/ui";
 import { IconAlert } from "./wealth-icons";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +22,8 @@ export function DelayCostCards({
         {delays.map((d, i) => {
           const lift = baselineSip > 0 ? ((d.sip - baselineSip) / baselineSip) * 100 : 0;
           const pct = Math.min(100, (d.extra / maxExtra) * 100);
+          const sipText = formatINRCurrency(d.sip);
+          const extraText = formatINRCurrency(d.extra);
           return (
             <motion.div
               key={d.mo}
@@ -40,12 +42,24 @@ export function DelayCostCards({
                 </span>
               </div>
               <div className="text-[11px] uppercase tracking-wider text-slate-400">Required SIP</div>
-              <div className="mt-1 text-2xl font-medium tabular-nums text-slate-900">
-                {formatINRCurrency(d.sip)}
+              <div
+                className={cn(
+                  "mt-1 break-words font-medium tabular-nums text-slate-900",
+                  inrAmountTextClass(sipText, "compact"),
+                )}
+              >
+                {sipText}
               </div>
               <div className="mt-3 text-[11px] uppercase tracking-wider text-slate-400">Extra Cost</div>
-              <div className="mt-1 text-lg font-medium tabular-nums text-rose-600">
-                {formatINRCurrency(d.extra)}
+              <div
+                className={cn(
+                  "mt-1 break-words font-medium tabular-nums text-rose-600",
+                  extraText.length >= 14
+                    ? inrAmountTextClass(extraText, "compact")
+                    : "text-lg",
+                )}
+              >
+                {extraText}
               </div>
               <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
                 <div

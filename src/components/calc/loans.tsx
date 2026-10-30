@@ -1,5 +1,7 @@
 "use client";
 
+import { MONEY_INPUT_MAX, YEARS_MAX } from "@nivra/ui/limits";
+
 import { useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { generatePdfFromElement } from "@/lib/pdf-generator";
@@ -78,9 +80,9 @@ import {
 } from "@/components/wealth";
 
 const PRINCIPAL_MIN = 10_000;
-const PRINCIPAL_MAX = 10_00_00_000;
-const YEARS_SLIDER_MAX = 40;
-const VEHICLE_YEARS_MAX = 15;
+const PRINCIPAL_MAX = MONEY_INPUT_MAX;
+const YEARS_SLIDER_MAX = YEARS_MAX;
+const VEHICLE_YEARS_MAX = YEARS_MAX;
 const VEHICLE_YEAR_PRESETS = WEALTH_YEAR_PRESETS_DEFAULT.filter((p) => p.value <= VEHICLE_YEARS_MAX);
 
 const MODES = [
@@ -307,8 +309,8 @@ export function LoansCalculator() {
   const emiYearsError =
     years <= 0
       ? "Enter a loan tenure greater than zero."
-      : years > 50
-        ? "Loan tenure cannot exceed 50 years."
+      : years > YEARS_MAX
+        ? "Loan tenure cannot exceed 100 years."
         : undefined;
   const emiInterestError =
     rateError(interest, "Loan interest rate") ??
@@ -903,7 +905,7 @@ export function LoansCalculator() {
                       label="Tenure"
                       value={years}
                       min={1}
-                      max={50}
+                      max={YEARS_MAX}
                       onChange={setYears}
                       error={emiYearsError}
                       slider={{
@@ -971,7 +973,7 @@ export function LoansCalculator() {
                       label="Loan tenure"
                       value={prepayYears}
                       min={1}
-                      max={50}
+                      max={YEARS_MAX}
                       onChange={setPrepayYears}
                       error={prepayYearsError}
                       slider={{
@@ -1036,7 +1038,7 @@ export function LoansCalculator() {
                       label="Tenure"
                       value={vsYears}
                       min={1}
-                      max={50}
+                      max={YEARS_MAX}
                       onChange={setVsYears}
                       error={vsYearsError}
                       slider={{
@@ -1123,7 +1125,7 @@ export function LoansCalculator() {
                       label="Baseline tenure"
                       value={recYears}
                       min={1}
-                      max={50}
+                      max={YEARS_MAX}
                       onChange={setRecYears}
                       error={recYearsError}
                       slider={{

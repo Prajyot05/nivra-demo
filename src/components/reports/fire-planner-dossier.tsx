@@ -173,7 +173,7 @@ export function FirePlannerDossier({
             Corpus required at age {data.retirementAge}
           </h3>
           <div className="mt-2 flex items-baseline gap-1.5">
-            <span className="text-2xl font-black tabular-nums text-white">
+            <span className="min-w-0 break-words text-2xl font-black leading-tight tabular-nums text-white">
               {formatINRCurrency(data.corpusRequired)}
             </span>
           </div>
@@ -228,7 +228,7 @@ export function FirePlannerDossier({
           </h3>
           <div className="mt-2 flex items-baseline gap-1.5">
             <span
-              className={`text-2xl font-black tabular-nums ${
+              className={`min-w-0 break-words text-2xl font-black leading-tight tabular-nums ${
                 data.excess ? "text-emerald-950" : "text-rose-950"
               }`}
             >

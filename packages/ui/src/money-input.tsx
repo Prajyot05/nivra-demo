@@ -1,5 +1,6 @@
 import { Field, TextInput, inputErrorClass } from "./field";
 import { formatINR, parseDigits } from "./format";
+import { MONEY_INPUT_MAX } from "./limits";
 
 export function MoneyInput({
   label,
@@ -11,7 +12,7 @@ export function MoneyInput({
   wrapLabel = false,
   /** Trailing unit like YearInput ("Years") / PercentInput ("%"). Defaults to ₹. */
   suffix = "₹",
-  max,
+  max = MONEY_INPUT_MAX,
 }: {
   label: string;
   value: number;

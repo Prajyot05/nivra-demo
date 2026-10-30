@@ -1,6 +1,6 @@
 "use client";
 
-import { formatINRCurrency, formatPercent } from "@nivra/ui";
+import { formatINRCurrency, formatPercent, inrAmountTextClass } from "@nivra/ui";
 
 export function TaxBreakdownBar({
   invested,
@@ -56,7 +56,9 @@ export function TaxBreakdownBar({
           <p className="text-[11px] font-normal uppercase tracking-[0.14em] text-emerald-700/80">
             Net after tax
           </p>
-          <p className="mt-1 text-[28px] font-medium leading-none tracking-tight tabular-nums text-emerald-900 sm:text-[32px]">
+          <p
+            className={`mt-1 break-words font-medium tabular-nums text-emerald-900 ${inrAmountTextClass(formatINRCurrency(net), "hero")}`}
+          >
             {formatINRCurrency(net)}
           </p>
         </div>

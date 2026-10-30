@@ -1,5 +1,7 @@
 "use client";
 
+import { MONEY_INPUT_MAX, YEARS_MAX } from "@nivra/ui/limits";
+
 import { useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { generatePdfFromElement } from "@/lib/pdf-generator";
@@ -82,18 +84,18 @@ type Mode = (typeof MODES)[number]["id"];
 const MODE_IDS = MODES.map((m) => m.id);
 
 const SIP_AMOUNT_MIN = 1_000;
-const SIP_AMOUNT_MAX = 10_00_000;
+const SIP_AMOUNT_MAX = MONEY_INPUT_MAX;
 const SIP_AMOUNT_PRESETS = [
-  { label: "₹5k", value: 5_000 },
-  { label: "₹10k", value: 10_000 },
-  { label: "₹25k", value: 25_000 },
-  { label: "₹50k", value: 50_000 },
   { label: "₹1L", value: 1_00_000 },
-  { label: "₹2L", value: 2_00_000 },
+  { label: "₹10L", value: 10_00_000 },
+  { label: "₹1Cr", value: 1_00_00_000 },
+  { label: "₹10Cr", value: 10_00_00_000 },
+  { label: "₹100Cr", value: 100_00_00_000 },
+  { label: "₹999Cr", value: MONEY_INPUT_MAX },
 ];
 const PERIODIC_AMOUNT_MIN = 10_000;
-const PERIODIC_AMOUNT_MAX = 10_00_00_000;
-const YEARS_SLIDER_MAX = 40;
+const PERIODIC_AMOUNT_MAX = MONEY_INPUT_MAX;
+const YEARS_SLIDER_MAX = YEARS_MAX;
 
 const FREQUENCY_OPTIONS = [
   { value: "12", label: "Monthly" },
@@ -802,7 +804,7 @@ function InvestmentGrowthModes({
                     label="Tenure"
                     value={periodicYears}
                     min={1}
-                    max={50}
+                    max={YEARS_MAX}
                     suffix="Years"
                     onChange={setPeriodicYears}
                     error={periodicYearsError}

@@ -121,7 +121,7 @@ export function SipStepUpCalculatorDossier({
               <h3 className="text-sm font-bold text-slate-100">Full Maturity Corpus</h3>
             </div>
             <div className="flex items-baseline space-x-2 py-4">
-              <span className="text-3xl font-black tracking-tight tabular-nums text-white sm:text-4xl">
+              <span className="min-w-0 break-words text-2xl font-black leading-tight tracking-tight tabular-nums sm:text-3xl text-white">
                 {formatINRCurrency(data.maturity)}
               </span>
             </div>
@@ -157,7 +157,7 @@ export function SipStepUpCalculatorDossier({
               </h3>
             </div>
             <div className="flex items-baseline space-x-2 py-4">
-              <span className="text-3xl font-black tracking-tight tabular-nums text-emerald-950 sm:text-4xl">
+              <span className="min-w-0 break-words text-2xl font-black leading-tight tracking-tight tabular-nums sm:text-3xl text-emerald-950">
                 {formatINRCurrency(data.startMonthly)}
               </span>
               <span className="text-xs font-semibold text-emerald-800">/ mo initial</span>

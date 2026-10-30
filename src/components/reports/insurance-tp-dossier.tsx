@@ -181,7 +181,7 @@ export function InsuranceTpDossier({
           </span>
           <h3 className="mt-0.5 text-sm font-bold text-slate-100">Keep the policy</h3>
           <div className="mt-2 flex items-baseline gap-1.5">
-            <span className="text-2xl font-black tabular-nums text-white">
+            <span className="min-w-0 break-words text-2xl font-black leading-tight tabular-nums text-white">
               {formatINRCurrency(data.keep.net)}
             </span>
             <span className="text-[10px] font-medium text-slate-400">net after tax</span>
@@ -222,7 +222,7 @@ export function InsuranceTpDossier({
             Switch to term + invest
           </h3>
           <div className="mt-2 flex items-baseline gap-1.5">
-            <span className="text-2xl font-black tabular-nums text-emerald-950">
+            <span className="min-w-0 break-words text-2xl font-black leading-tight tabular-nums text-emerald-950">
               {formatINRCurrency(data.switch.investMaturity)}
             </span>
             <span className="text-[10px] font-medium text-emerald-700">corpus</span>

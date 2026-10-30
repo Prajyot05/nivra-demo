@@ -6,6 +6,7 @@ export {
   formatPercent,
   formatCompactINR,
   formatAxisINR,
+  inrAmountTextClass,
   parseDigits,
 } from "./format";
 export { Field, TextInput, SelectInput } from "./field";
@@ -43,6 +44,12 @@ export { CalculatorPage } from "./calculator-page";
 export { CalculatorPageHeader } from "./calculator-page-header";
 export { COLOR_THEMES, getColorTheme } from "./color-themes";
 export type { ColorTheme, ColorThemeId } from "./color-themes";
+export { ThemePicker } from "./theme-picker";
+export {
+  COLOR_THEME_STORAGE_KEY,
+  readStoredColorTheme,
+  writeStoredColorTheme,
+} from "./theme-storage";
 
 export { ClientProfileBar, BentoSection, BentoGroup, ComplianceFootnote } from "./bento-components";
 export {

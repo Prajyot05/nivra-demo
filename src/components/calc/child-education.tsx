@@ -1,5 +1,7 @@
 "use client";
 
+import { MONEY_INPUT_MAX } from "@nivra/ui/limits";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -62,14 +64,14 @@ import {
 } from "@/components/wealth";
 
 const FEE_MIN = 1_000;
-const FEE_MAX = 5_00_00_000;
+const FEE_MAX = MONEY_INPUT_MAX;
 const FEE_PRESETS = [
-  { label: "₹25k", value: 25_000 },
-  { label: "₹50k", value: 50_000 },
   { label: "₹1L", value: 1_00_000 },
-  { label: "₹5L", value: 5_00_000 },
-  { label: "₹25L", value: 25_00_000 },
-  { label: "₹50L", value: 50_00_000 },
+  { label: "₹10L", value: 10_00_000 },
+  { label: "₹1Cr", value: 1_00_00_000 },
+  { label: "₹10Cr", value: 10_00_00_000 },
+  { label: "₹100Cr", value: 100_00_00_000 },
+  { label: "₹999Cr", value: MONEY_INPUT_MAX },
 ];
 const DEFAULT_COSTS = [
   { age: 3, classLabel: "Nursery", cost: 20_000 },

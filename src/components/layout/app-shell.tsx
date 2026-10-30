@@ -117,7 +117,8 @@ function AppShellInner({ children }: { children: ReactNode }) {
     pathname.startsWith("/sign-in") ||
     pathname.startsWith("/sign-up") ||
     pathname.startsWith("/admin") ||
-    pathname.startsWith("/company")
+    pathname.startsWith("/company") ||
+    pathname.startsWith("/2")
   ) {
     return <>{children}</>;
   }

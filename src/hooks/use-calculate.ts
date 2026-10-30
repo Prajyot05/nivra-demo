@@ -1,12 +1,23 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { calculate } from "@/lib/calculate-client";
 
-export function useCalculate<T>(id: string, input: unknown, enabled = true) {
+export function useCalculate<T>(
+  id: string,
+  input: unknown,
+  enabled = true,
+  options?: { debounceMs?: number },
+) {
+  const debounceMs = options?.debounceMs ?? 250;
   const [result, setResult] = useState<T | null>(null);
   const [resultId, setResultId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const serialized = JSON.stringify(input);
+  const hasResultRef = useRef(false);
+
+  useEffect(() => {
+    hasResultRef.current = resultId === id && result != null;
+  }, [resultId, id, result]);
 
   useEffect(() => {
     let cancelled = false;
@@ -19,7 +30,8 @@ export function useCalculate<T>(id: string, input: unknown, enabled = true) {
       };
     }
 
-    setLoading(true);
+    // Recalculations keep prior numbers visible. Only first load shows loading.
+    if (!hasResultRef.current) setLoading(true);
     setError(null);
 
     const handle = window.setTimeout(() => {
@@ -39,13 +51,13 @@ export function useCalculate<T>(id: string, input: unknown, enabled = true) {
         .finally(() => {
           if (!cancelled) setLoading(false);
         });
-    }, 250);
+    }, debounceMs);
 
     return () => {
       cancelled = true;
       window.clearTimeout(handle);
     };
-  }, [id, serialized, enabled]);
+  }, [id, serialized, enabled, debounceMs]);
 
   // Drop stale results immediately on id change (effects run after paint).
   const matched = resultId === id ? result : null;

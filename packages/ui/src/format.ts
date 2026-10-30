@@ -51,3 +51,37 @@ export function formatCompactINR(value: number): string {
 export function formatAxisINR(value: number | string): string {
   return `₹${formatCompactINR(Number(value))}`;
 }
+
+/**
+ * Type scale for a full-INR headline. ₹99,99,00,00,000 (9999 Cr) is 15
+ * characters, so long amounts step down instead of overflowing the card.
+ */
+export function inrAmountTextClass(
+  amount: string,
+  size: "hero" | "stat" | "panel" | "compact" | "kpi" = "stat",
+): string {
+  const len = amount.length;
+  if (size === "hero") {
+    if (len >= 16) return "text-xl leading-tight tracking-tight sm:text-2xl";
+    if (len >= 14) return "text-2xl leading-tight tracking-tight sm:text-3xl";
+    return "text-[32px] leading-none tracking-tight sm:text-[36px]";
+  }
+  if (size === "panel") {
+    if (len >= 16) return "text-base leading-tight tracking-tight sm:text-lg";
+    if (len >= 14) return "text-lg leading-tight tracking-tight sm:text-xl";
+    return "text-xl leading-tight tracking-tight sm:text-2xl";
+  }
+  if (size === "compact") {
+    if (len >= 16) return "text-base leading-tight tracking-tight sm:text-lg";
+    if (len >= 14) return "text-lg leading-tight tracking-tight sm:text-xl";
+    return "text-2xl leading-tight tracking-tight";
+  }
+  if (size === "kpi") {
+    if (len >= 16) return "text-lg leading-tight tracking-tight sm:text-xl";
+    if (len >= 14) return "text-xl leading-tight tracking-tight sm:text-2xl";
+    return "text-[26px] leading-none tracking-tight sm:text-[30px]";
+  }
+  if (len >= 16) return "text-lg leading-tight tracking-tight sm:text-xl";
+  if (len >= 14) return "text-xl leading-tight tracking-tight sm:text-2xl";
+  return "text-2xl leading-tight tracking-tight sm:text-3xl";
+}

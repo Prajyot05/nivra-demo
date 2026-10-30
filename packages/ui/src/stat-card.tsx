@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { AlertCircle, CheckCircle2, Info } from "lucide-react";
-import { formatINRCurrency } from "./format";
+import { formatINRCurrency, inrAmountTextClass } from "./format";
 
 export type StatCardTone = "positive" | "neutral" | "negative" | "default";
 
@@ -76,6 +76,7 @@ export function StatCard({
   } as const;
 
   const selected = tones[resolvedTone];
+  const formatted = formatINRCurrency(value);
 
   return (
     <div
@@ -91,9 +92,9 @@ export function StatCard({
         {badge ? <div className="shrink-0">{badge}</div> : null}
       </div>
       <div
-        className={`text-2xl font-extrabold leading-tight tracking-tight tabular-nums sm:text-3xl ${selected.valueText}`}
+        className={`break-words font-extrabold tabular-nums ${inrAmountTextClass(formatted)} ${selected.valueText}`}
       >
-        {formatINRCurrency(value)}
+        {formatted}
       </div>
       {hint ? (
         <p className={`mt-2 text-xs font-medium leading-snug ${selected.hintText}`}>{hint}</p>
