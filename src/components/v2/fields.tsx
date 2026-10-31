@@ -105,7 +105,7 @@ function inputVisualClass(visual: FieldVisual) {
 }
 
 const inputBaseClass = cn(
-  "h-8 w-full rounded-[var(--v2-radius)] border bg-[var(--v2-surface)] px-2 text-[13px] tabular-nums text-[var(--v2-ink)] outline-none",
+  "h-8 w-full rounded-[var(--v2-radius)] border bg-[var(--v2-surface)] px-2 text-[13px] tabular-nums text-[var(--v2-ink)] outline-none shadow-[0_1px_2px_rgba(0,0,0,0.04)]",
   "placeholder:text-[var(--v2-faint)]",
   TRANSITION,
 );

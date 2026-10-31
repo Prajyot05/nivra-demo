@@ -129,12 +129,14 @@ export function V2Button({
   disabled,
   variant = "secondary",
   type = "button",
+  className,
 }: {
   children: React.ReactNode;
   onClick?: () => void;
   disabled?: boolean;
   variant?: "primary" | "secondary";
   type?: "button" | "submit";
+  className?: string;
 }) {
   return (
     <button
@@ -146,6 +148,7 @@ export function V2Button({
         variant === "primary"
           ? "bg-[var(--v2-navy)] text-[var(--v2-navy-fg)] hover:bg-[var(--v2-navy-hover)]"
           : "border border-[var(--v2-border)] bg-[var(--v2-surface)] text-[var(--v2-ink-soft)] hover:bg-[var(--v2-bg)]",
+        className,
       )}
     >
       {children}

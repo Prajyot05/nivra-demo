@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { cn } from "@/lib/utils";
 import {
   CompositionChart,
   GrowthChart,
@@ -68,6 +69,48 @@ type GrowthResult = {
   schedule: YearRow[];
 };
 
+type InputTone = "sky" | "green" | "slate" | "sand";
+
+const INPUT_TONES: Record<
+  InputTone,
+  {
+    label: string;
+    swatch: string;
+    sectionClass: string;
+    labelClass: string;
+    resetBtnClass: string;
+  }
+> = {
+  sky: {
+    label: "Sky Blue",
+    swatch: "bg-[#38bdf8]",
+    sectionClass: "!bg-[#f0f7ff] !border-[#bae6fd] shadow-[0_1px_3px_0_rgba(14,165,233,0.08)] ring-1 ring-sky-500/[0.08]",
+    labelClass: "text-sky-900/75",
+    resetBtnClass: "!bg-white !border-sky-200 text-sky-900 shadow-xs hover:!bg-sky-50/50",
+  },
+  green: {
+    label: "Pastel Green",
+    swatch: "bg-[#34d399]",
+    sectionClass: "!bg-[#f0fdf4] !border-[#bbf7d0] shadow-[0_1px_3px_0_rgba(16,185,129,0.08)] ring-1 ring-emerald-500/[0.08]",
+    labelClass: "text-emerald-950/75",
+    resetBtnClass: "!bg-white !border-emerald-200 text-emerald-950 shadow-xs hover:!bg-emerald-50/50",
+  },
+  slate: {
+    label: "Soft Slate",
+    swatch: "bg-[#94a3b8]",
+    sectionClass: "!bg-[#eef2f6] !border-[#cbd5e1] shadow-[0_1px_3px_0_rgba(15,23,42,0.06)] ring-1 ring-slate-900/[0.04]",
+    labelClass: "text-slate-600",
+    resetBtnClass: "!bg-white !border-slate-300 text-slate-700 shadow-xs hover:!bg-slate-50",
+  },
+  sand: {
+    label: "Warm Sand",
+    swatch: "bg-[#f59e0b]",
+    sectionClass: "!bg-[#fbf8f3] !border-[#f0e6d6] shadow-[0_1px_3px_0_rgba(180,83,9,0.05)] ring-1 ring-amber-700/[0.04]",
+    labelClass: "text-amber-950/75",
+    resetBtnClass: "!bg-white !border-[#e6d7c3] text-amber-950 shadow-xs hover:!bg-amber-50/50",
+  },
+};
+
 export function V2SipCalculator() {
   const { chart } = useV2Theme();
   const [name, setName] = useState("Mr. Anshu Kaul");
@@ -84,6 +127,7 @@ export function V2SipCalculator() {
   const [corpusView, setCorpusView] = useState<"nominal" | "inflation">("nominal");
   const [isDownloading, setIsDownloading] = useState(false);
   const [formResetKey, setFormResetKey] = useState(0);
+  const [inputTone, setInputTone] = useState<InputTone>("sky");
 
   const clientNameError = nameError(name);
   const clientAgeError = ageError(age);
@@ -184,6 +228,8 @@ export function V2SipCalculator() {
   const hasDelay =
     sipDelay > 0 && result?.costOfDelay != null && result.delayedMaturity != null;
 
+  const currentTone = INPUT_TONES[inputTone];
+
   return (
     <>
       <V2PageHeader
@@ -204,14 +250,44 @@ export function V2SipCalculator() {
           <V2Section
             title="Inputs"
             subtitle="Client profile and SIP assumptions"
+            className={cn("transition-colors duration-200", currentTone.sectionClass)}
             actions={
-              <V2Button onClick={resetDefaults}>Reset</V2Button>
+              <div className="flex items-center gap-2">
+                <div
+                  className="flex items-center gap-1 rounded-md border border-black/10 bg-white/70 p-1 shadow-2xs backdrop-blur-xs"
+                  title="Preview input section color"
+                >
+                  {(Object.keys(INPUT_TONES) as InputTone[]).map((key) => {
+                    const t = INPUT_TONES[key];
+                    const active = inputTone === key;
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setInputTone(key)}
+                        title={t.label}
+                        aria-label={t.label}
+                        className={cn(
+                          "size-4 rounded-full transition-all hover:scale-110",
+                          t.swatch,
+                          active
+                            ? "ring-2 ring-slate-800 ring-offset-1 ring-offset-white scale-110"
+                            : "opacity-60 hover:opacity-100",
+                        )}
+                      />
+                    );
+                  })}
+                </div>
+                <V2Button onClick={resetDefaults} className={currentTone.resetBtnClass}>
+                  Reset
+                </V2Button>
+              </div>
             }
           >
             <V2FormScope resetKey={formResetKey}>
             <div className="space-y-2.5">
               <div>
-                <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.04em] text-[var(--v2-faint)]">
+                <p className={cn("mb-1.5 text-[11px] font-semibold uppercase tracking-[0.04em] transition-colors", currentTone.labelClass)}>
                   Client
                 </p>
                 <V2FieldRow>
@@ -254,7 +330,7 @@ export function V2SipCalculator() {
               </div>
 
               <div>
-                <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.04em] text-[var(--v2-faint)]">
+                <p className={cn("mb-1.5 text-[11px] font-semibold uppercase tracking-[0.04em] transition-colors", currentTone.labelClass)}>
                   Investment
                 </p>
                 <V2FieldRow>
@@ -309,7 +385,7 @@ export function V2SipCalculator() {
               </div>
 
               <div>
-                <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.04em] text-[var(--v2-faint)]">
+                <p className={cn("mb-1.5 text-[11px] font-semibold uppercase tracking-[0.04em] transition-colors", currentTone.labelClass)}>
                   Rates
                 </p>
                 <V2FieldRow>
