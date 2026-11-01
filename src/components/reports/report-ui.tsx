@@ -59,9 +59,13 @@ export function ReportCard({
       </div>
       <div>
         <div
-          className={`text-3xl font-bold tracking-tight ${
-            danger && !highlight ? "text-red-600" : ""
-          }`}
+          className={`break-words font-bold leading-tight tracking-tight tabular-nums ${
+            typeof value === "string" && value.length >= 16
+              ? "text-lg"
+              : typeof value === "string" && value.length >= 14
+                ? "text-xl"
+                : "text-3xl"
+          } ${danger && !highlight ? "text-red-600" : ""}`}
         >
           {value}
         </div>

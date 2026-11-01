@@ -1,5 +1,7 @@
 "use client";
 
+import { MONEY_INPUT_MAX, YEARS_MAX } from "@nivra/ui/limits";
+
 import { useMemo, useRef, useState, type ReactNode } from "react";
 import { generateCalculatorReport, generatePdfFromElement } from "@/lib/pdf-generator";
 import { playbookForPdf } from "@/lib/report-playbooks";
@@ -70,20 +72,20 @@ import {
 } from "@/components/wealth";
 
 const GOAL_AMOUNT_MIN = 10_000;
-const GOAL_AMOUNT_MAX = 10_00_00_000;
+const GOAL_AMOUNT_MAX = MONEY_INPUT_MAX;
 const SIP_AMOUNT_MIN = 1_000;
-const SIP_AMOUNT_MAX = 10_00_000;
+const SIP_AMOUNT_MAX = MONEY_INPUT_MAX;
 const SIP_AMOUNT_PRESETS = [
-  { label: "₹5k", value: 5_000 },
-  { label: "₹10k", value: 10_000 },
-  { label: "₹25k", value: 25_000 },
-  { label: "₹50k", value: 50_000 },
   { label: "₹1L", value: 1_00_000 },
-  { label: "₹2L", value: 2_00_000 },
+  { label: "₹10L", value: 10_00_000 },
+  { label: "₹1Cr", value: 1_00_00_000 },
+  { label: "₹10Cr", value: 10_00_00_000 },
+  { label: "₹100Cr", value: 100_00_00_000 },
+  { label: "₹999Cr", value: MONEY_INPUT_MAX },
 ];
 const CORPUS_AMOUNT_MIN = 10_000;
-const CORPUS_AMOUNT_MAX = 10_00_00_000;
-const YEARS_SLIDER_MAX = 40;
+const CORPUS_AMOUNT_MAX = MONEY_INPUT_MAX;
+const YEARS_SLIDER_MAX = YEARS_MAX;
 import {
   GOAL_LS_SIP_REPORT_ID,
   GoalLsSipDossier,
@@ -240,7 +242,9 @@ export function UnifiedGoalPlanner() {
   const clientPhoneError = phoneError(phone);
   const goalError = goalAmount <= 0 ? "Enter your goal amount." : undefined;
   const tenureError =
-    tenureYears < 1 || tenureYears > 50 ? "Tenure should be between 1 and 50 years." : undefined;
+    tenureYears < 1 || tenureYears > YEARS_MAX
+      ? "Tenure should be between 1 and 100 years."
+      : undefined;
   const returnError =
     mode === "compounding"
       ? returnPct <= 0 || returnPct > 30
@@ -671,9 +675,9 @@ export function UnifiedGoalPlanner() {
                   value={tenureYears}
                   onChange={setTenureYears}
                   min={1}
-                  max={50}
+                  max={YEARS_MAX}
                   error={tenureError}
-                  hint="Max 50 years"
+                  hint="Max 100 years"
                   slider={{
                     min: 1,
                     max: YEARS_SLIDER_MAX,

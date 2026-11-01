@@ -158,7 +158,7 @@ export function VehicleLoanDossier({
             {noLoan?.name ?? "No loan"}
           </h3>
           <div className="mt-2 flex items-baseline gap-1.5">
-            <span className="text-2xl font-black tabular-nums text-white">
+            <span className="min-w-0 break-words text-2xl font-black leading-tight tabular-nums text-white">
               {formatINRCurrency(noLoan?.financialBenefit ?? 0)}
             </span>
             <span className="text-[10px] font-medium text-slate-400">benefit</span>
@@ -197,7 +197,7 @@ export function VehicleLoanDossier({
             {top?.name ?? "Loan + invest"}
           </h3>
           <div className="mt-2 flex items-baseline gap-1.5">
-            <span className="text-2xl font-black tabular-nums text-emerald-950">
+            <span className="min-w-0 break-words text-2xl font-black leading-tight tabular-nums text-emerald-950">
               {formatINRCurrency(top?.financialBenefit ?? 0)}
             </span>
             <span className="text-[10px] font-medium text-emerald-700">benefit</span>

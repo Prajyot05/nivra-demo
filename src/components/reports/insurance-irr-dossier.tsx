@@ -116,7 +116,7 @@ export function InsuranceIrrDossier({
           </span>
           <h3 className="mt-0.5 text-sm font-bold text-slate-100">Maturity value</h3>
           <div className="mt-2 flex items-baseline gap-1.5">
-            <span className="text-2xl font-black tabular-nums text-white">
+            <span className="min-w-0 break-words text-2xl font-black leading-tight tabular-nums text-white">
               {formatINRCurrency(data.maturity)}
             </span>
           </div>
@@ -154,7 +154,7 @@ export function InsuranceIrrDossier({
           </span>
           <h3 className="mt-0.5 text-sm font-bold text-emerald-950">Net proceeds</h3>
           <div className="mt-2 flex items-baseline gap-1.5">
-            <span className="text-2xl font-black tabular-nums text-emerald-950">
+            <span className="min-w-0 break-words text-2xl font-black leading-tight tabular-nums text-emerald-950">
               {formatINRCurrency(data.net)}
             </span>
           </div>

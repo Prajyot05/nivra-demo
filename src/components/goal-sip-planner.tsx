@@ -1,5 +1,7 @@
 "use client";
 
+import { MONEY_INPUT_MAX, YEARS_MAX } from "@nivra/ui/limits";
+
 import { useRef, useState } from "react";
 import { useGoalSip } from "@/hooks/use-goal-sip";
 import {
@@ -53,11 +55,11 @@ import {
   WealthYearField,
 } from "@/components/wealth";
 
-const GOAL_AMOUNT_MAX = 1000_00_00_000; // ₹1,000 Cr
+const GOAL_AMOUNT_MAX = MONEY_INPUT_MAX;
 const GOAL_AMOUNT_MIN = 10_000;
 const GOAL_SLIDER_MAX = GOAL_AMOUNT_MAX;
-const TENURE_MAX = 75;
-const TENURE_SLIDER_MAX = 40;
+const TENURE_MAX = YEARS_MAX;
+const TENURE_SLIDER_MAX = YEARS_MAX;
 
 export function GoalSipPlanner() {
   const [clientName, setClientName] = useState("Mr. John Doe");

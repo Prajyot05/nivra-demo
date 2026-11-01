@@ -1,5 +1,7 @@
 "use client";
 
+import { MONEY_INPUT_MAX, YEARS_MAX } from "@nivra/ui/limits";
+
 import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { generatePdfFromElement } from "@/lib/pdf-generator";
 import {
@@ -66,27 +68,28 @@ import {
 } from "@/components/wealth";
 
 const EXPENSE_MIN = 1_000;
-const EXPENSE_MAX = 10_00_000;
+const EXPENSE_MAX = MONEY_INPUT_MAX;
 const EXPENSE_PRESETS = [
-  { label: "₹25k", value: 25_000 },
-  { label: "₹50k", value: 50_000 },
   { label: "₹1L", value: 1_00_000 },
-  { label: "₹2L", value: 2_00_000 },
-  { label: "₹5L", value: 5_00_000 },
+  { label: "₹10L", value: 10_00_000 },
+  { label: "₹1Cr", value: 1_00_00_000 },
+  { label: "₹10Cr", value: 10_00_00_000 },
+  { label: "₹100Cr", value: 100_00_00_000 },
+  { label: "₹999Cr", value: MONEY_INPUT_MAX },
 ];
 const CORPUS_MIN = 10_000;
-const CORPUS_MAX = 10_00_00_000;
+const CORPUS_MAX = MONEY_INPUT_MAX;
 const SIP_MIN = 1_000;
-const SIP_MAX = 10_00_000;
+const SIP_MAX = MONEY_INPUT_MAX;
 const SIP_PRESETS = [
-  { label: "₹5k", value: 5_000 },
-  { label: "₹10k", value: 10_000 },
-  { label: "₹25k", value: 25_000 },
-  { label: "₹50k", value: 50_000 },
   { label: "₹1L", value: 1_00_000 },
-  { label: "₹2L", value: 2_00_000 },
+  { label: "₹10L", value: 10_00_000 },
+  { label: "₹1Cr", value: 1_00_00_000 },
+  { label: "₹10Cr", value: 10_00_00_000 },
+  { label: "₹100Cr", value: 100_00_00_000 },
+  { label: "₹999Cr", value: MONEY_INPUT_MAX },
 ];
-const YEARS_SLIDER_MAX = 40;
+const YEARS_SLIDER_MAX = YEARS_MAX;
 
 type MiniIconProps = { className?: string };
 function IconPlus({ className }: MiniIconProps) {
@@ -1132,7 +1135,7 @@ export function FireHealthCalculator() {
                       onChange={setStepUpEvery}
                       error={fireStepEveryError}
                       min={1}
-                      max={50}
+                      max={YEARS_MAX}
                     />
                     <WealthYearField
                       label="Delay (mos)"

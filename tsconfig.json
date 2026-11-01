@@ -17,6 +17,7 @@
     "paths": {
       "@/*": ["./src/*"],
       "@nivra/ui": ["./packages/ui/src/index.ts"],
+      "@nivra/ui/limits": ["./packages/ui/src/limits.ts"],
       "@nivra/finance": ["./packages/finance/src/index.ts"]
     }
   },

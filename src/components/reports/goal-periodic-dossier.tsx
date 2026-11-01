@@ -175,7 +175,7 @@ export function GoalPeriodicDossier({
               <h3 className="text-sm font-bold text-slate-100">Additional SIP / Month</h3>
             </div>
             <div className="flex items-baseline space-x-2 py-3">
-              <span className="text-3xl font-black tracking-tight tabular-nums text-white">
+              <span className="min-w-0 break-words text-2xl font-black leading-tight tracking-tight tabular-nums sm:text-3xl text-white">
                 {formatINRCurrency(data.standard.monthlySip)}
               </span>
               <span className="text-xs font-medium text-slate-400">/ month</span>
@@ -210,7 +210,7 @@ export function GoalPeriodicDossier({
               <h3 className="text-sm font-bold text-emerald-950">Target Goal</h3>
             </div>
             <div className="flex items-baseline space-x-2 py-3">
-              <span className="text-3xl font-black tracking-tight tabular-nums text-emerald-950">
+              <span className="min-w-0 break-words text-2xl font-black leading-tight tracking-tight tabular-nums sm:text-3xl text-emerald-950">
                 {formatINRCurrency(data.targetGoal)}
               </span>
             </div>

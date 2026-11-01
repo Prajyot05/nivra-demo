@@ -1,6 +1,8 @@
 "use client";
 
 import type { ReactNode } from "react";
+import type { ColorThemeId } from "./color-themes";
+import { ThemePicker } from "./theme-picker";
 
 /**
  * Calculator page title — same Geist family as body (Brex / shadcn / Composer pattern).
@@ -12,13 +14,19 @@ export function CalculatorPageHeader({
   meta,
   leading,
   actions,
+  themeId,
+  onThemeChange,
 }: {
   title: string;
   description?: string;
   meta?: ReactNode;
   leading?: ReactNode;
   actions?: ReactNode;
+  themeId?: ColorThemeId;
+  onThemeChange?: (id: ColorThemeId) => void;
 }) {
+  const showTheme = Boolean(themeId && onThemeChange);
+
   return (
     <header className="shrink-0 pb-1 pt-1 sm:pb-2">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
@@ -41,9 +49,12 @@ export function CalculatorPageHeader({
           </div>
         </div>
 
-        {actions ? (
-          <div className="flex shrink-0 flex-wrap items-center gap-2 sm:pt-1.5">
+        {actions || showTheme ? (
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 sm:pt-1.5">
             {actions}
+            {showTheme && themeId && onThemeChange ? (
+              <ThemePicker themeId={themeId} onThemeChange={onThemeChange} />
+            ) : null}
           </div>
         ) : null}
       </div>

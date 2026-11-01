@@ -368,7 +368,7 @@ function PathCard({
         </span>
         <h3 className="mt-0.5 text-sm font-bold text-emerald-950">{title}</h3>
         <div className="mt-2 flex items-baseline gap-1.5">
-          <span className="text-2xl font-black tabular-nums text-emerald-950">{primary}</span>
+          <span className="min-w-0 break-words text-2xl font-black leading-tight tabular-nums text-emerald-950">{primary}</span>
           <span className="text-[10px] font-medium text-emerald-700">{primaryHint}</span>
         </div>
         <div className="mt-3 grid grid-cols-2 gap-2 border-t border-emerald-200/60 pt-2 text-[11px]">
@@ -390,7 +390,7 @@ function PathCard({
       </span>
       <h3 className="mt-0.5 text-sm font-bold text-slate-100">{title}</h3>
       <div className="mt-2 flex items-baseline gap-1.5">
-        <span className="text-2xl font-black tabular-nums text-white">{primary}</span>
+        <span className="min-w-0 break-words text-2xl font-black leading-tight tabular-nums text-white">{primary}</span>
         <span className="text-[10px] font-medium text-slate-400">{primaryHint}</span>
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2 border-t border-slate-800 pt-2 text-[11px]">

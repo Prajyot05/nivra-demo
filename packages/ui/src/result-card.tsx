@@ -72,6 +72,10 @@ export function ResultCard({
           const isHighlight = Boolean(item.highlight);
           const isWarnHighlight = isHighlight && (tone === "delay" || tone === "tax");
           const isLast = index === items.length - 1;
+          const shown =
+            item.displayValue != null
+              ? item.displayValue
+              : formatINRCurrency(item.value ?? 0);
 
           return (
             <div
@@ -93,17 +97,17 @@ export function ResultCard({
               >
                 {item.label}
               </dt>
-              <dd className="shrink-0 text-right">
+              <dd className="min-w-0 max-w-[65%] text-right">
                 <div
-                  className={`font-semibold tabular-nums leading-snug ${
-                    isHighlight || tone === "maturity" || tone === "net"
-                      ? "text-[15px] sm:text-base"
-                      : "text-[13px] sm:text-sm"
+                  className={`break-words font-semibold tabular-nums leading-snug ${
+                    shown.length >= 14
+                      ? "text-xs sm:text-[13px]"
+                      : isHighlight || tone === "maturity" || tone === "net"
+                        ? "text-[15px] sm:text-base"
+                        : "text-[13px] sm:text-sm"
                   } ${accent ? "text-[var(--app-step-text)]" : VALUE_TONE[tone]}`}
                 >
-                  {item.displayValue != null
-                    ? item.displayValue
-                    : formatINRCurrency(item.value ?? 0)}
+                  {shown}
                 </div>
                 {item.hint ? (
                   <div className="mt-0.5 text-[10px] leading-snug text-[var(--app-text-subtle)] sm:text-[11px]">

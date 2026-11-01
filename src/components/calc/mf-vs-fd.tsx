@@ -1,5 +1,7 @@
 "use client";
 
+import { DAYS_MAX, MONEY_INPUT_MAX } from "@nivra/ui/limits";
+
 import { useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { formatINRCurrency, formatPercent } from "@nivra/ui";
@@ -49,17 +51,17 @@ import {
 } from "@/components/wealth";
 
 const AMOUNT_MIN = 10_000;
-const AMOUNT_MAX = 100_00_00_000; // ₹100 Cr
+const AMOUNT_MAX = MONEY_INPUT_MAX;
 const AMOUNT_STEP = 1_00_000;
 const AMOUNT_PRESETS = [
-  { label: "₹1L", value: 1_00_000 },
   { label: "₹10L", value: 10_00_000 },
-  { label: "₹50L", value: 50_00_000 },
   { label: "₹1Cr", value: 1_00_00_000 },
   { label: "₹10Cr", value: 10_00_00_000 },
+  { label: "₹100Cr", value: 100_00_00_000 },
+  { label: "₹999Cr", value: MONEY_INPUT_MAX },
 ] as const;
 
-const DAY_SLIDER_MAX = 3650; // 10 years on the slider; typing still allows longer
+const DAY_SLIDER_MAX = DAYS_MAX;
 const DAY_PRESETS = WEALTH_DAY_PRESETS_DEFAULT;
 
 type Leg = {
@@ -137,7 +139,7 @@ function amountErrorMsg(value: number, max: number): string | undefined {
 function daysErrorMsg(value: number): string | undefined {
   if (!Number.isFinite(value)) return "Investment period must be a valid number.";
   if (value < 1) return "Investment period must be at least 1 day.";
-  if (value > 36500) return "Investment period cannot exceed 36,500 days (100 years).";
+  if (value > DAYS_MAX) return "Investment period cannot exceed 36,500 days (100 years).";
   return undefined;
 }
 
@@ -607,7 +609,7 @@ export function MfVsFd() {
                   label="Investment period"
                   value={days}
                   min={1}
-                  max={36500}
+                  max={DAYS_MAX}
                   suffix="Days"
                   onChange={setDays}
                   error={daysError}

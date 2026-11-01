@@ -1,6 +1,7 @@
 "use client";
 
 import { formatAxisINR, formatINR, parseDigits } from "@nivra/ui";
+import { MONEY_INPUT_MAX } from "@nivra/ui/limits";
 import { WealthFieldShell, wealthInputClass, wealthInputEmphasizedClass } from "./wealth-field";
 import {
   WealthRangeControl,
@@ -25,7 +26,7 @@ export function WealthMoneyField({
   hint,
   error,
   suffix = "₹",
-  max,
+  max = MONEY_INPUT_MAX,
   className,
   slider,
 }: {

@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { formatINRCurrency, inrAmountTextClass } from "@nivra/ui";
 import { AnimatedCurrency } from "./animated-counter";
 import { cn } from "@/lib/utils";
 
@@ -61,7 +62,10 @@ export function WealthMetricCard({
       </div>
       <div
         className={cn(
-          "text-[32px] font-medium leading-none tracking-tight tabular-nums sm:text-[36px]",
+          "break-words font-medium tabular-nums",
+          display
+            ? "text-[32px] leading-none tracking-tight sm:text-[36px]"
+            : inrAmountTextClass(formatINRCurrency(value), "hero"),
           valueTone[tone],
         )}
       >

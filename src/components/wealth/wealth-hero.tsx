@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { formatINRCurrency, inrAmountTextClass } from "@nivra/ui";
 import { AnimatedCurrency, AnimatedPercent } from "./animated-counter";
 import { IconEdit, IconMail, IconPhone, IconSip, IconTarget, WealthIconMark } from "./wealth-icons";
 import { cn } from "@/lib/utils";
@@ -10,11 +11,13 @@ function KpiCard({
   children,
   tone = "emerald",
   mark,
+  valueClass,
 }: {
   label: string;
   children: React.ReactNode;
   tone?: "emerald" | "slate";
   mark?: React.ReactNode;
+  valueClass?: string;
 }) {
   const tones = {
     emerald: "bg-emerald-50/40",
@@ -36,7 +39,12 @@ function KpiCard({
           {label}
         </div>
       </div>
-      <div className="text-[26px] font-medium leading-none tracking-tight text-slate-900 tabular-nums sm:text-[30px]">
+      <div
+        className={cn(
+          "break-words font-medium tabular-nums text-slate-900",
+          valueClass ?? "text-[26px] leading-none tracking-tight sm:text-[30px]",
+        )}
+      >
         {children}
       </div>
     </motion.div>
@@ -165,7 +173,17 @@ export function WealthHero({
         )}
       >
         {resolved.map((m) => (
-          <KpiCard key={m.label} label={m.label} tone={m.tone ?? "slate"} mark={m.mark}>
+          <KpiCard
+            key={m.label}
+            label={m.label}
+            tone={m.tone ?? "slate"}
+            mark={m.mark}
+            valueClass={
+              m.kind === "currency"
+                ? inrAmountTextClass(formatINRCurrency(m.value), "kpi")
+                : undefined
+            }
+          >
             {m.kind === "currency" ? (
               <AnimatedCurrency value={m.value} />
             ) : (

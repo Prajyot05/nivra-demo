@@ -137,7 +137,7 @@ export function LoanEmiDossier({
           </span>
           <h3 className="mt-0.5 text-sm font-bold text-slate-100">Monthly EMI</h3>
           <div className="mt-2 flex items-baseline gap-1.5">
-            <span className="text-2xl font-black tabular-nums text-white">
+            <span className="min-w-0 break-words text-2xl font-black leading-tight tabular-nums text-white">
               {formatINRCurrency(data.emi)}
             </span>
             <span className="text-[10px] font-medium text-slate-400">/ month</span>
@@ -178,7 +178,7 @@ export function LoanEmiDossier({
             SIP to offset interest
           </h3>
           <div className="mt-2 flex items-baseline gap-1.5">
-            <span className="text-2xl font-black tabular-nums text-emerald-950">
+            <span className="min-w-0 break-words text-2xl font-black leading-tight tabular-nums text-emerald-950">
               {formatINRCurrency(data.recoverMonthlySip)}
             </span>
             <span className="text-[10px] font-medium text-emerald-700">/ month now</span>

@@ -1,5 +1,6 @@
 "use client";
 
+import { inrAmountTextClass } from "@nivra/ui";
 import { cn } from "@/lib/utils";
 
 /**
@@ -61,6 +62,13 @@ export function WealthComputedValue({
     slate: "border-slate-200/80 bg-slate-50",
     emerald: "border-emerald-200/70 bg-emerald-50/80",
   } as const;
+  const text = typeof value === "string" ? value : "";
+  const sizeClass =
+    text.length >= 14
+      ? inrAmountTextClass(text, size === "lg" ? "hero" : "panel")
+      : size === "lg"
+        ? "text-[28px] leading-none sm:text-[32px]"
+        : "text-[17px] leading-tight";
 
   return (
     <div
@@ -72,9 +80,9 @@ export function WealthComputedValue({
       </div>
       <div
         className={cn(
-          "mt-1.5 font-semibold tabular-nums tracking-tight",
+          "mt-1.5 break-words font-semibold tabular-nums tracking-tight",
           tone === "emerald" ? "text-emerald-900" : "text-slate-900",
-          size === "lg" ? "text-[28px] leading-none sm:text-[32px]" : "text-[17px] leading-tight",
+          sizeClass,
         )}
       >
         {value}

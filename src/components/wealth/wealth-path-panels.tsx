@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { motion } from "framer-motion";
+import { formatINRCurrency, inrAmountTextClass } from "@nivra/ui";
 import { AnimatedCurrency } from "./animated-counter";
 import { IconChevron, IconTarget, WealthIconMark } from "./wealth-icons";
 import { cn } from "@/lib/utils";
@@ -117,13 +118,23 @@ function SideCard({
   const labelTone = tone === "emerald" ? "text-emerald-700" : "text-slate-500";
   const valueTone = tone === "emerald" ? "text-emerald-950" : "text-slate-900";
   const hintTone = tone === "emerald" ? "text-emerald-700/80" : "text-slate-500";
+  const amountText =
+    side.kind === "text" || typeof side.value === "string"
+      ? String(side.value)
+      : formatINRCurrency(side.value);
 
   return (
     <div className={cn("rounded-xl border px-3.5 py-3", shell)}>
       <div className={cn("text-[10px] font-semibold uppercase tracking-[0.14em]", labelTone)}>
         {side.label}
       </div>
-      <div className={cn("mt-1.5 text-xl font-semibold tabular-nums tracking-tight sm:text-2xl", valueTone)}>
+      <div
+        className={cn(
+          "mt-1.5 break-words font-semibold tabular-nums",
+          inrAmountTextClass(amountText, "panel"),
+          valueTone,
+        )}
+      >
         {side.kind === "text" || typeof side.value === "string" ? (
           side.value
         ) : (

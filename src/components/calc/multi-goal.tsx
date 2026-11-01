@@ -1,5 +1,7 @@
 "use client";
 
+import { MONEY_INPUT_MAX, YEARS_MAX } from "@nivra/ui/limits";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { generatePdfFromElement } from "@/lib/pdf-generator";
@@ -76,8 +78,8 @@ import {
 } from "@/components/wealth";
 
 const CORPUS_MIN = 10_000;
-const CORPUS_MAX = 10_00_00_000;
-const ST_YEARS_MAX = 20;
+const CORPUS_MAX = MONEY_INPUT_MAX;
+const ST_YEARS_MAX = YEARS_MAX;
 
 const BTN_SECONDARY =
   "inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50 disabled:opacity-50";
@@ -391,6 +393,7 @@ export function MultiGoalCalculator() {
       }
       if (!(g.amount > 0)) err.amount = "Goal amount should be greater than ₹0.";
       if (!(g.years > 0)) err.years = "Enter a valid goal year.";
+      else if (g.years > YEARS_MAX) err.years = "Goal years cannot exceed 100.";
       if (err.name || err.amount || err.years) map.set(g.id, err);
     }
     return map;
@@ -2015,7 +2018,7 @@ function AssignGoalEditTimeline({
                   label="Years"
                   value={openGoal.years}
                   min={0}
-                  max={75}
+                  max={YEARS_MAX}
                   onChange={(years) => onPatch(openGoal.id, { years })}
                   error={openErr?.years}
                   hint={!openErr?.years ? openWarn : undefined}

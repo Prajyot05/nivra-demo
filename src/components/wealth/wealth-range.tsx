@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { formatINRCurrency } from "@nivra/ui";
+import { MONEY_INPUT_MAX } from "@nivra/ui/limits";
 import { cn } from "@/lib/utils";
 
 export type WealthRangePreset = { label: string; value: number };
@@ -43,7 +44,8 @@ function adaptiveRound(raw: number, baseStep: number, scale: "linear" | "log") {
   else if (abs < 10_00_000) step = Math.max(5_000, Math.round(baseStep / 10));
   else if (abs < 1_00_00_000) step = Math.max(25_000, Math.round(baseStep / 4));
   else if (abs < 10_00_00_000) step = Math.max(1_00_000, baseStep);
-  else step = Math.max(5_00_000, baseStep * 5);
+  else if (abs < 100_00_00_000) step = Math.max(10_00_000, baseStep * 10);
+  else step = Math.max(1_00_00_000, baseStep * 50);
   return Math.round(raw / step) * step;
 }
 
@@ -183,17 +185,19 @@ export function WealthRangeControl({
 }
 
 export const WEALTH_MONEY_PRESETS_DEFAULT: WealthRangePreset[] = [
-  { label: "₹1L", value: 1_00_000 },
   { label: "₹10L", value: 10_00_000 },
-  { label: "₹50L", value: 50_00_000 },
   { label: "₹1Cr", value: 1_00_00_000 },
+  { label: "₹10Cr", value: 10_00_00_000 },
+  { label: "₹100Cr", value: 100_00_00_000 },
+  { label: "₹999Cr", value: MONEY_INPUT_MAX },
 ];
 
 export const WEALTH_GOAL_PRESETS_DEFAULT: WealthRangePreset[] = [
-  { label: "₹50L", value: 50_00_000 },
   { label: "₹1Cr", value: 1_00_00_000 },
-  { label: "₹2Cr", value: 2_00_00_000 },
-  { label: "₹5Cr", value: 5_00_00_000 },
+  { label: "₹10Cr", value: 10_00_00_000 },
+  { label: "₹50Cr", value: 50_00_00_000 },
+  { label: "₹100Cr", value: 100_00_00_000 },
+  { label: "₹999Cr", value: MONEY_INPUT_MAX },
 ];
 
 export const WEALTH_YEAR_PRESETS_DEFAULT: WealthRangePreset[] = [
@@ -202,6 +206,8 @@ export const WEALTH_YEAR_PRESETS_DEFAULT: WealthRangePreset[] = [
   { label: "15Y", value: 15 },
   { label: "20Y", value: 20 },
   { label: "25Y", value: 25 },
+  { label: "50Y", value: 50 },
+  { label: "100Y", value: 100 },
 ];
 
 export const WEALTH_DAY_PRESETS_DEFAULT: WealthRangePreset[] = [

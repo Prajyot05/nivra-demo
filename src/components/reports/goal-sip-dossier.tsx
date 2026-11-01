@@ -188,7 +188,7 @@ export function GoalSipDossier({ id = GOAL_SIP_REPORT_ID, data }: GoalSipDossier
               <h3 className="text-sm font-bold text-slate-100">Standard SIP</h3>
             </div>
             <div className="flex items-baseline space-x-2 py-3">
-              <span className="text-3xl font-black tracking-tight tabular-nums text-white">
+              <span className="min-w-0 break-words text-2xl font-black leading-tight tracking-tight tabular-nums sm:text-3xl text-white">
                 {formatINRCurrency(data.standardSIP)}
               </span>
               <span className="text-xs font-medium text-slate-400">/ month</span>
@@ -223,7 +223,7 @@ export function GoalSipDossier({ id = GOAL_SIP_REPORT_ID, data }: GoalSipDossier
               <h3 className="text-sm font-bold text-emerald-950">Step-Up SIP</h3>
             </div>
             <div className="flex items-baseline space-x-2 py-2.5">
-              <span className="text-3xl font-black tracking-tight tabular-nums text-emerald-950">
+              <span className="min-w-0 break-words text-2xl font-black leading-tight tracking-tight tabular-nums sm:text-3xl text-emerald-950">
                 {formatINRCurrency(data.stepUpSIP)}
               </span>
               <span className="text-xs font-semibold text-emerald-800">starting /mo</span>
@@ -264,7 +264,7 @@ export function GoalSipDossier({ id = GOAL_SIP_REPORT_ID, data }: GoalSipDossier
               <h3 className="text-sm font-bold text-slate-900">Target Corpus</h3>
             </div>
             <div className="py-2.5">
-              <span className="block text-2xl font-black tracking-tight tabular-nums text-emerald-700">
+              <span className="block min-w-0 break-words text-2xl font-black leading-tight tracking-tight tabular-nums text-emerald-700">
                 {formatINRCurrency(data.targetGoal)}
               </span>
               <span className="mt-1 block text-[10px] text-slate-500">

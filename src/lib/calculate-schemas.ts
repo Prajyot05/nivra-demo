@@ -1,12 +1,15 @@
+import { DAYS_MAX, MONEY_INPUT_MAX, MONTHS_MAX, YEARS_MAX } from "@nivra/ui/limits";
 import { z } from "zod";
 
 const pct = z.number().min(0).max(100);
 /** Expense/lifestyle multipliers at retirement (100 = same as current; UI allows up to 200%). */
 const factorPct = z.number().min(0).max(200);
-const money = z.number().min(0);
-const years = z.number().positive().max(100);
+const money = z.number().min(0).max(MONEY_INPUT_MAX);
+const moneyPositive = z.number().positive().max(MONEY_INPUT_MAX);
+const years = z.number().positive().max(YEARS_MAX);
+const yearsFromZero = z.number().min(0).max(YEARS_MAX);
 const age = z.number().int().min(0).max(120);
-const months = z.number().int().min(0).max(1200);
+const months = z.number().int().min(0).max(MONTHS_MAX);
 
 export const clientFields = {
   clientName: z.string().optional(),
@@ -60,15 +63,15 @@ export const growthPeriodicSchema = z.object({
     .refine((n) => 12 % n === 0, {
       message: "timesPerYear must be 1, 2, 3, 4, 6, or 12",
     }),
-  years: z.number().positive().max(50),
+  years,
   returnPct: pct,
   taxPct: pct.optional().default(0),
 });
 
 export const goalSipSchema = z.object({
   ...clientFields,
-  goalAmount: money.max(1000_00_00_000), // ₹1,000 Cr
-  tenureYears: z.number().positive().max(75),
+  goalAmount: money,
+  tenureYears: years,
   returnPct: pct,
   inflationPct: pct,
   taxPct: pct,
@@ -80,7 +83,7 @@ export const goalSipSchema = z.object({
 const goalPlannerBase = {
   ...clientFields,
   goalAmount: money,
-  tenureYears: z.number().positive().max(75),
+  tenureYears: years,
   returnPct: pct,
   inflationPct: pct,
   taxPct: pct,
@@ -130,13 +133,13 @@ export const compoundingStepSizeSchema = z.union([
 
 export const goalCompoundingSchema = z.object({
   ...clientFields,
-  goalAmount: z.number().positive(),
-  tenureYears: z.number().positive().max(50),
+  goalAmount: moneyPositive,
+  tenureYears: years,
   returnPct: z.number().gt(0).max(100),
   inflationPct: pct.optional().default(0),
   taxPct: pct,
   useInflationAdjustedGoal: z.boolean().optional().default(false),
-  extraYears: z.number().min(0).max(50).optional().default(0),
+  extraYears: yearsFromZero.optional().default(0),
   investmentType: z.enum(["one-time", "sip"]).optional().default("one-time"),
   stepSize: compoundingStepSizeSchema.optional().default(1_000_000),
 });
@@ -144,11 +147,11 @@ export const goalCompoundingSchema = z.object({
 export const loanEmiSchema = z
   .object({
     ...clientFields,
-    principal: z.number().positive(),
-    years: z.number().positive().max(50),
+    principal: moneyPositive,
+    years,
     interestPct: z.number().positive().max(100),
     recoverReturnPct: z.number().positive().max(100).optional().default(12),
-    delayMonths: z.number().int().min(0).max(1199).optional().default(12),
+    delayMonths: z.number().int().min(0).max(MONTHS_MAX - 1).optional().default(12),
   })
   .superRefine((val, ctx) => {
     if (val.delayMonths >= val.years * 12) {
@@ -163,7 +166,7 @@ export const loanEmiSchema = z
 export const mfFdSchema = z.object({
   ...clientFields,
   amount: money,
-  days: z.number().int().positive().max(36500),
+  days: z.number().int().positive().max(DAYS_MAX),
   mfReturnPct: pct,
   fdReturnPct: pct,
   mfTaxPct: pct,
@@ -186,7 +189,7 @@ export const loanExtraVsInvestSchema = z
     years,
     interestPct: pct,
     extraAmount: money,
-    extraMonth: z.number().int().positive().max(1200),
+    extraMonth: z.number().int().positive().max(MONTHS_MAX),
     investReturnPct: pct,
     taxPct: pct,
     incomeTaxPct: pct,
@@ -276,7 +279,7 @@ export const insuranceIrrSchema = z
     premium: money,
     payTerm: years,
     corpusAtPayEnd: money,
-    policyTerm: z.number().positive().max(50),
+    policyTerm: years,
     returnPct: pct,
     taxPct: pct,
   })
@@ -316,8 +319,8 @@ export const insuranceTpSchema = z
     ...clientFields,
     premium: money,
     payTerm: years,
-    yearsPaid: z.number().min(0).max(50),
-    policyTerm: z.number().positive().max(50),
+    yearsPaid: yearsFromZero,
+    policyTerm: years,
     yearsToMaturity: years,
     maturityValue: money,
     taxPct: pct,
@@ -374,7 +377,7 @@ export const insuranceTpSchema = z
 
 export const multiGoalAssignSchema = z.object({
   ...clientFields,
-  shortTermYears: z.number().positive().max(20).default(5),
+  shortTermYears: years.default(5),
   shortTermReturnPct: pct,
   longTermReturnPct: pct,
   inflationPct: pct,
@@ -387,7 +390,7 @@ export const multiGoalAssignSchema = z.object({
       z.object({
         name: z.string().min(1),
         amount: money,
-        years: z.number().min(0).max(75),
+        years: yearsFromZero,
       }),
     )
     .min(1)
@@ -454,9 +457,9 @@ export const firePlannerSchema = z
       .default([]),
     currentSipMonthly: money.optional().default(0),
     currentSipReturnPct: pct.optional().default(0),
-    limitSipYears: z.number().min(0).max(50).optional().default(0),
+    limitSipYears: yearsFromZero.optional().default(0),
     stepUpPct: pct.optional().default(10),
-    stepUpEveryYears: z.number().int().min(1).max(50).optional().default(1),
+    stepUpEveryYears: z.number().int().min(1).max(YEARS_MAX).optional().default(1),
     delayMonths: months.optional().default(0),
     events: z
       .array(

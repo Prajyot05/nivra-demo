@@ -1,5 +1,7 @@
 "use client";
 
+import { MONEY_INPUT_MAX, YEARS_MAX } from "@nivra/ui/limits";
+
 import { useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { generatePdfFromElement } from "@/lib/pdf-generator";
@@ -68,18 +70,18 @@ import {
 } from "@/components/wealth";
 
 const PREMIUM_MIN = 1_000;
-const PREMIUM_MAX = 1_00_00_000;
+const PREMIUM_MAX = MONEY_INPUT_MAX;
 const PREMIUM_PRESETS = [
-  { label: "₹25k", value: 25_000 },
-  { label: "₹50k", value: 50_000 },
   { label: "₹1L", value: 1_00_000 },
-  { label: "₹2L", value: 2_00_000 },
-  { label: "₹5L", value: 5_00_000 },
   { label: "₹10L", value: 10_00_000 },
+  { label: "₹1Cr", value: 1_00_00_000 },
+  { label: "₹10Cr", value: 10_00_00_000 },
+  { label: "₹100Cr", value: 100_00_00_000 },
+  { label: "₹999Cr", value: MONEY_INPUT_MAX },
 ];
 const CORPUS_MIN = 10_000;
-const CORPUS_MAX = 10_00_00_000;
-const YEARS_SLIDER_MAX = 40;
+const CORPUS_MAX = MONEY_INPUT_MAX;
+const YEARS_SLIDER_MAX = YEARS_MAX;
 
 const MODES = [
   { id: "irr", label: "IRR" },
@@ -174,8 +176,8 @@ export function InsuranceCalculator() {
   const irrPolicyTermError =
     !(policyTerm > 0)
       ? "Policy term must be greater than 0."
-      : policyTerm > 50
-        ? "Policy term cannot exceed 50 years."
+      : policyTerm > YEARS_MAX
+        ? "Policy term cannot exceed 100 years."
         : undefined;
   const irrReturnError = rateError(ret, "Expected return") ?? (
     ret <= 0 ? "Expected return must be above 0%." : undefined
@@ -213,8 +215,8 @@ export function InsuranceCalculator() {
   const tpPolError =
     !(tpPol > 0)
       ? "Policy term must be greater than 0."
-      : tpPol > 50
-        ? "Policy term cannot exceed 50 years."
+      : tpPol > YEARS_MAX
+        ? "Policy term cannot exceed 100 years."
         : undefined;
   const tpYearsLeftError =
     !(yearsLeft > 0)
@@ -545,7 +547,7 @@ export function InsuranceCalculator() {
                       label="Pay term"
                       value={payTerm}
                       min={1}
-                      max={50}
+                      max={YEARS_MAX}
                       onChange={setPayTerm}
                       error={irrPayTermError}
                       hint="Premium years"
@@ -574,7 +576,7 @@ export function InsuranceCalculator() {
                       label="Policy term"
                       value={policyTerm}
                       min={1}
-                      max={50}
+                      max={YEARS_MAX}
                       onChange={setPolicyTerm}
                       error={irrPolicyTermError}
                       slider={{
@@ -657,7 +659,7 @@ export function InsuranceCalculator() {
                       label="Pay term"
                       value={tpPay}
                       min={1}
-                      max={50}
+                      max={YEARS_MAX}
                       onChange={setTpPay}
                       error={tpPayError}
                       hint="Original premium years"
@@ -672,7 +674,7 @@ export function InsuranceCalculator() {
                       label="Years paid"
                       value={yearsPaid}
                       min={0}
-                      max={50}
+                      max={YEARS_MAX}
                       onChange={setYearsPaid}
                       error={tpYearsPaidError}
                       hint="Already paid"
@@ -681,7 +683,7 @@ export function InsuranceCalculator() {
                       label="Policy term"
                       value={tpPol}
                       min={1}
-                      max={50}
+                      max={YEARS_MAX}
                       onChange={setTpPol}
                       error={tpPolError}
                       slider={{
@@ -695,7 +697,7 @@ export function InsuranceCalculator() {
                       label="Yrs to maturity"
                       value={yearsLeft}
                       min={1}
-                      max={50}
+                      max={YEARS_MAX}
                       onChange={setYearsLeft}
                       error={tpYearsLeftError}
                       hint={`${yearsLeft}y remaining`}
@@ -736,7 +738,7 @@ export function InsuranceCalculator() {
                       label="Term years"
                       value={termYears}
                       min={1}
-                      max={50}
+                      max={YEARS_MAX}
                       onChange={setTermYears}
                       error={tpTermYearsError}
                       slider={{
