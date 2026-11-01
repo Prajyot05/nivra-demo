@@ -1,7 +1,7 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { PATHNAME_HEADER } from "@/lib/pathname-header";
-import { CALCULATORS_PUBLIC } from "@/lib/public-access";
+import { CALCULATORS_PUBLIC, V2_CALCULATORS_PUBLIC } from "@/lib/public-access";
 
 /**
  * Early hop for signed-out visitors. This is not the auth guarantee.
@@ -18,6 +18,10 @@ function matchesPrefix(pathname: string, prefixes: string[]): boolean {
 function isPublicPath(pathname: string): boolean {
   if (pathname === "/api/health") return true;
   if (matchesPrefix(pathname, PUBLIC_PREFIXES)) return true;
+  if (V2_CALCULATORS_PUBLIC) {
+    if (pathname === "/2" || pathname.startsWith("/2/")) return true;
+    if (matchesPrefix(pathname, ["/api/calculate"])) return true;
+  }
   if (!CALCULATORS_PUBLIC) return false;
   if (matchesPrefix(pathname, PUBLIC_CALCULATOR_APIS)) return true;
   return !matchesPrefix(pathname, PROTECTED_WHEN_CALCULATORS_PUBLIC);
