@@ -520,20 +520,31 @@ function padKeepTogetherSections(element: HTMLElement) {
     element.querySelectorAll<HTMLElement>("[data-pdf-keep-together]"),
   );
 
+  // Two passes: early spacers shift later blocks, so remeasure after each insert.
   for (const el of keepers) {
     const parentRect = element.getBoundingClientRect();
     const rect = el.getBoundingClientRect();
     const top = rect.top - parentRect.top + element.scrollTop;
     const height = el.offsetHeight;
+    if (height <= 0) continue;
+
     const pageIndex = Math.floor(top / A4_PAGE_HEIGHT_PX);
     const pageEnd = (pageIndex + 1) * A4_PAGE_HEIGHT_PX;
+    const remaining = pageEnd - top;
 
-    // Block starts on this page but would finish past the cut line
-    if (top < pageEnd - 4 && top + height > pageEnd + 2) {
-      const pad = Math.ceil(pageEnd - top + 12);
+    // If the block fits on a page but would be sliced by the cut line, push it
+    // to the next page. Skip blocks taller than one page (cannot keep whole).
+    const wouldSlice = top < pageEnd - 4 && top + height > pageEnd + 2;
+    const fitsOnOnePage = height <= A4_PAGE_HEIGHT_PX - 24;
+    // Also push when only a thin strip remains at the bottom of the page.
+    const orphanStart = remaining < 160 && height > remaining + 2;
+
+    if (fitsOnOnePage && (wouldSlice || orphanStart)) {
+      const pad = Math.ceil(remaining + 12);
+      if (pad <= 0) continue;
       const spacer = document.createElement("div");
       spacer.setAttribute("data-pdf-spacer", "true");
-      spacer.style.cssText = `height:${pad}px;width:100%;flex-shrink:0;`;
+      spacer.style.cssText = `height:${pad}px;width:100%;flex-shrink:0;pointer-events:none;`;
       el.parentElement?.insertBefore(spacer, el);
     }
   }
@@ -554,19 +565,24 @@ export async function generatePdfFromElement(elementId: string, filename: string
   }
 
   const prevCss = element.style.cssText;
+  const isV2Report = element.getAttribute("data-v2-report") === "true";
 
-  // Make measurable and visible for layout
-  element.style.cssText = [
-    "position: absolute",
-    "left: 0",
-    "top: 0",
-    "z-index: -1000",
-    "width: 900px",
-    "background-color: #ffffff",
-    "opacity: 1",
-    "visibility: visible",
-    "pointer-events: none",
-  ].join(";");
+  // Keep existing inline styles (padding, type). Only override capture geometry.
+  element.style.position = "absolute";
+  element.style.left = "0";
+  element.style.top = "0";
+  element.style.zIndex = "-1000";
+  element.style.width = "900px";
+  element.style.backgroundColor = isV2Report ? "#f4f5f7" : "#ffffff";
+  element.style.opacity = "1";
+  element.style.visibility = "visible";
+  element.style.pointerEvents = "none";
+
+  if (isV2Report) {
+    const host = element.parentElement ?? document.body;
+    const family = getComputedStyle(host).fontFamily;
+    if (family) element.style.fontFamily = family;
+  }
 
   try {
     await new Promise<void>((resolve) =>
@@ -602,14 +618,27 @@ export async function generatePdfFromElement(elementId: string, filename: string
     const maxCanvas = 8192;
     const pixelRatio = Math.min(2, maxCanvas / Math.max(w, h));
 
-    const dataUrl = await toPng(element, {
-      width: w,
-      height: h,
-      pixelRatio: pixelRatio,
-      cacheBust: true,
-      backgroundColor: "#ffffff",
-      skipFonts: true, // often causes issues in html-to-image
-    });
+    const capture = (skipFonts: boolean) =>
+      toPng(element, {
+        width: w,
+        height: h,
+        pixelRatio: pixelRatio,
+        cacheBust: true,
+        backgroundColor: isV2Report ? "#f4f5f7" : "#ffffff",
+        skipFonts,
+      });
+
+    let dataUrl: string;
+    if (isV2Report) {
+      try {
+        dataUrl = await capture(false);
+      } catch (err) {
+        console.warn("V2 PDF font embed failed, retrying without font embed", err);
+        dataUrl = await capture(true);
+      }
+    } else {
+      dataUrl = await capture(true);
+    }
 
     const pdf = new jsPDF({
       orientation: "portrait",

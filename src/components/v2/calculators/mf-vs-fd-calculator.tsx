@@ -12,9 +12,9 @@ import { V2_MONEY_INPUT_MAX } from "@/components/v2/tokens";
 import { ReportDownloadButton } from "@/components/calc/report-download-button";
 import { DUMMY_REPORT_CONTACT } from "@/components/reports/executive-dossier";
 import {
-  MfVsFdDossier,
-  MF_VS_FD_REPORT_ID,
-} from "@/components/reports/mf-vs-fd-dossier";
+  V2MfVsFdAdvisoryDossier,
+  V2_MF_VS_FD_REPORT_ID,
+} from "@/components/v2/reports/mf-vs-fd-advisory-dossier";
 import { V2ChartFrame, V2_CHART_CLASS } from "@/components/v2/chart-frame";
 import {
   V2MoneyField,
@@ -202,7 +202,7 @@ export function V2MfVsFdCalculator() {
         .trim()
         .replace(/\s+/g, "-")
         .toLowerCase();
-      await generatePdfFromElement(MF_VS_FD_REPORT_ID, `mf-vs-fd-${safe || "report"}`);
+      await generatePdfFromElement(V2_MF_VS_FD_REPORT_ID, `mf-vs-fd-${safe || "report"}`);
     } catch (err) {
       console.error("PDF download failed:", err);
     } finally {
@@ -491,7 +491,7 @@ export function V2MfVsFdCalculator() {
       />
 
       {result ? (
-        <MfVsFdDossier
+        <V2MfVsFdAdvisoryDossier
           data={{
             clientName: name,
             age,
