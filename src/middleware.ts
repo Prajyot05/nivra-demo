@@ -2,6 +2,7 @@ import { clerkMiddleware } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { PATHNAME_HEADER } from "@/lib/pathname-header";
 import { CALCULATORS_PUBLIC } from "@/lib/public-access";
+import { CLASSIC_HOME_ENABLED } from "@/lib/route-flags";
 
 /**
  * Early hop for signed-out visitors. This is not the auth guarantee.
@@ -27,6 +28,10 @@ export default clerkMiddleware(async (auth, request) => {
   const { pathname, search } = request.nextUrl;
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set(PATHNAME_HEADER, `${pathname}${search}`);
+
+  if (!CLASSIC_HOME_ENABLED && pathname === "/") {
+    return NextResponse.redirect(new URL("/2", request.url));
+  }
 
   if (!isPublicPath(pathname)) {
     const { userId } = await auth();

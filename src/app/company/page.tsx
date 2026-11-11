@@ -144,7 +144,7 @@ export default async function CompanyOverviewPage() {
               { href: "/company/users", label: "Add or remove users" },
               { href: "/company/branding", label: "Edit disclaimer, logo, contact" },
               { href: "/company/calculators", label: "See calculators on this plan" },
-              { href: "/", label: "Open calculators" },
+              { href: "/2", label: "Open calculators" },
             ].map((item) => (
               <Button
                 key={item.href}

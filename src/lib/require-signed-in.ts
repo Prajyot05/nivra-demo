@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { enforceSingleSession, SIGNED_OUT_ELSEWHERE_PATH } from "@/lib/single-session";
 import { PATHNAME_HEADER } from "@/lib/pathname-header";
 import { CALCULATORS_PUBLIC } from "@/lib/public-access";
+import { DEFAULT_APP_HOME } from "@/lib/route-flags";
+import { safeAppPath } from "@/lib/safe-app-path";
 
 /**
  * Signed-in gate for Server Components (pages and layouts).
@@ -11,7 +13,7 @@ import { CALCULATORS_PUBLIC } from "@/lib/public-access";
  */
 export async function requireSignedIn() {
   const headerStore = await headers();
-  const from = safeAppPath(headerStore.get(PATHNAME_HEADER));
+  const from = loginReturnPath(headerStore.get(PATHNAME_HEADER));
   const session = await auth.protect({
     unauthenticatedUrl: `/login?from=${encodeURIComponent(from)}`,
   });
@@ -30,9 +32,6 @@ export async function requireCalculatorAccess() {
   await requireSignedIn();
 }
 
-function safeAppPath(value: string | null): string {
-  if (!value || !value.startsWith("/") || value.startsWith("//") || value.includes("\\")) {
-    return "/";
-  }
-  return value;
+function loginReturnPath(value: string | null): string {
+  return safeAppPath(value, DEFAULT_APP_HOME);
 }
