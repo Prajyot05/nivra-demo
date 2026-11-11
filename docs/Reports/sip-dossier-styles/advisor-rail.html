@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SIP Calculator Dossier · advisor-rail</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+
+@page { size: A4; margin: 0; }
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body { background: #E8EEF4; color: #0F172A; }
+.desktop { background: #E8EEF4; padding: 32px 16px; display: flex; justify-content: center; }
+.sheet {
+  width: 900px; background: #fff; padding: 0;
+  font-family: "IBM Plex Sans", Inter, Arial, sans-serif; font-size: 12px; line-height: 1.45; color: #0F172A;
+  display: grid; grid-template-columns: 300px 1fr;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+.r { text-align: right; } .c { text-align: center; }
+.teal { color: #0EA5A0; }
+.nums, .r, .kpi-val, .hero-val, .legend-value { font-variant-numeric: tabular-nums; }
+.rail {
+  background: #0B1C2C; color: #E2E8F0; padding: 18px 16px 22px;
+  display: flex; flex-direction: column; gap: 0; min-height: 100%;
+}
+.rail .mark {
+  width: 30px; height: 30px; border: 1px solid rgba(255,255,255,0.35); color: #fff;
+  display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; margin-bottom: 8px;
+}
+.rail .brand { font-size: 8.5px; letter-spacing: 0.16em; text-transform: uppercase; margin: 0 0 4px; color: #94A3B8; }
+.rail .title { font-size: 14px; font-weight: 700; color: #fff; margin: 0 0 3px; line-height: 1.25; }
+.rail .client { font-size: 11px; margin: 0 0 8px; color: #CBD5E1; }
+.rail .contact { font-size: 10px; color: #94A3B8; margin: 0 0 10px; line-height: 1.4; }
+.kpi { padding: 7px 0; border-top: 1px solid rgba(148,163,184,0.2); }
+.kpi-label { font-size: 8.5px; letter-spacing: 0.1em; text-transform: uppercase; color: #94A3B8; margin: 0 0 2px; }
+.kpi-val { font-size: 13.5px; font-weight: 700; color: #fff; margin: 0; word-break: break-word; }
+.kpi-val.accent { color: #5EEAD4; }
+.rail-block { margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(148,163,184,0.22); }
+.rail-h { font-size: 8.5px; letter-spacing: 0.12em; text-transform: uppercase; color: #94A3B8; margin: 0 0 8px; }
+.ass-row { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; border-bottom: 1px solid rgba(148,163,184,0.16); font-size: 10.5px; }
+.ass-row:last-child { border-bottom: 0; }
+.ass-row .k { color: #94A3B8; }
+.ass-row .v { color: #F8FAFC; font-weight: 600; }
+.comp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 8px; }
+.comp-block { display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 0; }
+.comp-title { font-size: 8px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #94A3B8; margin: 0; align-self: stretch; text-align: center; }
+.legend { width: 100%; }
+.legend-row {
+  display: grid; grid-template-columns: 6px minmax(0, 1fr) auto; gap: 4px; align-items: start;
+  padding: 2px 0; border-bottom: 1px solid rgba(148,163,184,0.16); font-size: 8.5px; color: #E2E8F0;
+}
+.legend-row:last-child { border-bottom: 0; }
+.swatch { display: inline-block; border-radius: 1px; margin-top: 3px; }
+.legend-label { color: #CBD5E1; line-height: 1.25; }
+.legend-value { font-weight: 600; color: #F8FAFC; text-align: right; word-break: break-word; }
+.shortfall { font-size: 8.5px; color: #94A3B8; margin: 4px 0 0; grid-column: 1 / -1; }
+.kpi-strip {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; padding-top: 10px;
+  border-top: 1px solid rgba(148,163,184,0.22);
+}
+.kpi-chip { background: rgba(148,163,184,0.08); padding: 7px 8px; }
+.kpi-chip .kpi-label { margin: 0 0 2px; }
+.kpi-chip .kpi-val { font-size: 11.5px; }
+.rail-foot {
+  margin-top: auto; padding-top: 12px; border-top: 1px solid rgba(148,163,184,0.22);
+}
+.rail-foot p { margin: 0 0 6px; font-size: 9.5px; line-height: 1.4; color: #94A3B8; }
+.rail-foot .rail-h { margin-bottom: 6px; }
+.rail-stat { display: flex; justify-content: space-between; gap: 8px; padding: 5px 0; border-bottom: 1px solid rgba(148,163,184,0.14); font-size: 10px; }
+.rail-stat:last-child { border-bottom: 0; }
+.rail-stat .k { color: #94A3B8; }
+.rail-stat .v { color: #F8FAFC; font-weight: 600; text-align: right; word-break: break-word; }
+.main { padding: 22px 26px 28px; }
+.hero { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.hero-card { padding: 12px; background: #F8FAFC; border-left: 3px solid #0B1C2C; }
+.hero-card.right { border-left-color: #0EA5A0; background: #F0FDFA; }
+.hero-label { font-size: 9px; color: #64748B; text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 4px; font-weight: 600; }
+.hero-val { font-size: 20px; font-weight: 700; margin: 0; word-break: break-word; }
+.section { margin-top: 14px; }
+.section-h { font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #64748B; margin: 0 0 7px; }
+.reading { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.reading-col { padding-top: 4px; border-top: 1px solid #0B1C2C; }
+.tag { font-size: 8px; color: #64748B; font-weight: 600; margin: 0 0 1px; }
+.reading-title { font-size: 10px; font-weight: 700; margin: 0 0 2px; }
+.reading-body { margin: 0; font-size: 10px; line-height: 1.35; color: #475569; }
+.delay { background: #FBF1F3; border: 1px solid #E8C5CC; padding: 10px; }
+.delay h3 { margin: 0 0 4px; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #BE5A6B; }
+.delay p { margin: 0 0 8px; font-size: 11px; }
+.delay-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.delay-label { font-size: 9px; color: #64748B; margin: 0 0 2px; }
+.delay-val { font-size: 13px; font-weight: 700; margin: 0; word-break: break-word; }
+.chart-wrap { margin-bottom: 8px; }
+.sched-wrap { margin-top: 2px; }
+table.sched { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+table.sched thead th { background: #0B1C2C; color: #fff; font-size: 9px; padding: 5px; text-align: right; text-transform: uppercase; }
+table.sched thead th:first-child { text-align: center; }
+table.sched td { padding: 4px 5px; border-bottom: 1px solid #E2E8F0; }
+table.sched tr { break-inside: avoid; page-break-inside: avoid; }
+table.sched .row-mid td { background: #F1F5F9; }
+table.sched .row-final td { background: #CCFBF1; font-weight: 600; }
+.caption { font-size: 10px; color: #64748B; margin: 5px 0 0; }
+.playbook { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.play-num { font-size: 12px; font-weight: 700; color: #CBD5E1; margin: 0 0 1px; }
+.play-title { font-size: 10px; font-weight: 700; margin: 0 0 2px; }
+.play-body { margin: 0; font-size: 10px; line-height: 1.35; color: #475569; }
+@media print { body, .desktop { background: #fff; padding: 0; } }
+.hero-val.amt-hero-md { font-size: 16.4px; line-height: 1.1; }
+.hero-val.amt-hero-sm { font-size: 14.4px; line-height: 1.12; letter-spacing: -0.02em; }
+.hero-val.amt-hero-xs { font-size: 12.4px; line-height: 1.15; letter-spacing: -0.02em; }
+.kpi-val.amt-kpi-md { font-size: 11.1px; }
+.kpi-val.amt-kpi-sm { font-size: 9.7px; letter-spacing: -0.01em; }
+
+.sheet { max-width: 100%; overflow-x: hidden; }
+.minw0 { min-width: 0; }
+.hero-val, .stat-val, .kpi-val, .side-val, .delay-val, .meta-val, .ass-val, .legend-value {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: none;
+}
+.legend-value.amt-legend-md { font-size: 0.92em; }
+.legend-value.amt-legend-sm { font-size: 0.84em; }
+.delay-val.amt-delay-md { font-size: 0.88em; }
+.delay-val.amt-delay-sm { font-size: 0.8em; }
+.ass-val.amt-ass-md { font-size: 0.92em; }
+.ass-val.amt-ass-sm { font-size: 0.84em; }
+.ass-row .v.amt-ass-md { font-size: 0.9em; }
+.ass-row .v.amt-ass-sm { font-size: 0.82em; }
+.side-val.amt-side-md { font-size: 0.92em; }
+.side-val.amt-side-sm { font-size: 0.84em; }
+.bar-h.amt-bar-md { font-size: 0.9em; }
+.bar-h.amt-bar-sm { font-size: 0.82em; }
+.line strong.amt-meta-md { font-size: 0.92em; }
+.line strong.amt-meta-sm { font-size: 0.84em; }
+.meta-val.amt-meta-md { font-size: 0.92em; }
+.meta-val.amt-meta-sm { font-size: 0.84em; }
+table.sched { table-layout: fixed; width: 100%; }
+table.sched .col-yr { width: 6%; }
+table.sched .col-num { width: 16.5%; }
+table.sched .col-milestone { width: 22%; }
+table.sched th, table.sched td { overflow-wrap: anywhere; word-break: break-word; }
+table.sched thead th {
+  white-space: normal;
+  line-height: 1.25;
+  vertical-align: bottom;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+table.sched td.num, table.sched th.r { text-align: right; }
+table.sched td.yr, table.sched th.c { text-align: center; }
+table.sched td.milestone, table.sched th.milestone {
+  text-align: left;
+  font-weight: 500;
+  color: #475569;
+  font-size: 0.92em;
+}
+table.sched.sched-dense { font-size: 10px; }
+table.sched.sched-dense thead th { font-size: 8.5px; padding: 4px 3px; }
+table.sched.sched-dense td { padding: 4px 3px; }
+table.sched.sched-xdense { font-size: 9px; }
+table.sched.sched-xdense thead th { font-size: 7.5px; padding: 3px 2px; }
+table.sched.sched-xdense td { padding: 3px 2px; letter-spacing: -0.02em; }
+.sched-head { break-inside: avoid; page-break-inside: avoid; }
+
+
+.report-footer {
+  margin-top: 24px;
+  padding-top: 14px;
+  border-top: 1px solid #E2E8F0;
+}
+.report-footer .disclaimer {
+  font-size: 10px;
+  color: #64748B;
+  margin: 0 0 16px;
+  line-height: 1.55;
+}
+.powered-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding-top: 4px;
+}
+.powered-mark {
+  width: 40px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #0B7A5B 20%, #0B7A5B 80%, transparent);
+  border-radius: 1px;
+}
+.powered-line {
+  margin: 0;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #94A3B8;
+  font-weight: 500;
+}
+.powered-line .brand-name {
+  font-weight: 700;
+  color: #334155;
+  letter-spacing: 0.06em;
+  text-transform: none;
+  font-size: 11px;
+}
+
+
+.section { break-inside: auto; page-break-inside: auto; }
+.section-block { break-inside: auto; page-break-inside: auto; }
+.playbook-block,
+.reading-block,
+.comp-block,
+.report-footer {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+table.sched thead {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+table.sched tbody tr {
+  break-inside: auto;
+  page-break-inside: auto;
+}
+.reading-col, .play-item, .playbook > div, .delay, .outcome-card, .hero-card {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+
+</style>
+</head>
+<body>
+<!-- Toggle delayed scenario: append ?delay=12 to the URL -->
+<script id="report-data" type="application/json">
+{
+  "brand": "Nivra Private Wealth",
+  "monogram": "N",
+  "footer": "Powered by Nivra",
+  "title": "SIP Calculator Dossier",
+  "clientName": "Mr. Anshu Kaul",
+  "age": 45,
+  "endAge": 60,
+  "investYears": 15,
+  "contactEmail": "advisor@example.com",
+  "contactPhone": "+91 98765 43210",
+  "monthlySip": 25000,
+  "sipYears": 15,
+  "tenure": 15,
+  "returnCagr": 12,
+  "inflation": 5.75,
+  "taxOnGains": 12.5,
+  "delayMonths": 0,
+  "nominalMaturity": 10022896,
+  "inflationAdjusted": 4218450,
+  "totalInvested": 4500000,
+  "preTaxGain": 5522896,
+  "taxOnGain": 690362,
+  "netAfterTax": 9332534,
+  "realGainShortfall": 281550,
+  "gainAfterTax": 4832534,
+  "realCorpusAfterTax": 3927895,
+  "capitalTaxToday": 290555,
+  "delayedOnTime": 10022896,
+  "delayedMaturity": 8940000,
+  "capitalPenalty": 1082896,
+  "nominalInvestedPct": 44.9,
+  "nominalGainAfterTaxPct": 48.2,
+  "nominalCapitalTaxPct": 6.9,
+  "realCorpusPct": 93.1,
+  "realCapitalTaxPct": 6.9,
+  "schedule": [
+    {
+      "year": 1,
+      "monthly": 25000,
+      "invested": 300000,
+      "fullReturn": 254444,
+      "inflationAdjusted": 240180,
+      "milestone": "Initiation"
+    },
+    {
+      "year": 2,
+      "monthly": 25000,
+      "invested": 600000,
+      "fullReturn": 541159,
+      "inflationAdjusted": 482184,
+      "milestone": "Compounding"
+    },
+    {
+      "year": 3,
+      "monthly": 25000,
+      "invested": 900000,
+      "fullReturn": 864236,
+      "inflationAdjusted": 726882,
+      "milestone": "Compounding"
+    },
+    {
+      "year": 4,
+      "monthly": 25000,
+      "invested": 1200000,
+      "fullReturn": 1228287,
+      "inflationAdjusted": 975160,
+      "milestone": "Compounding"
+    },
+    {
+      "year": 5,
+      "monthly": 25000,
+      "invested": 1500000,
+      "fullReturn": 1638509,
+      "inflationAdjusted": 1227916,
+      "milestone": "Compounding"
+    },
+    {
+      "year": 6,
+      "monthly": 25000,
+      "invested": 1800000,
+      "fullReturn": 2100757,
+      "inflationAdjusted": 1486072,
+      "milestone": "Compounding"
+    },
+    {
+      "year": 7,
+      "monthly": 25000,
+      "invested": 2100000,
+      "fullReturn": 2621630,
+      "inflationAdjusted": 1750569,
+      "milestone": "Compounding"
+    },
+    {
+      "year": 8,
+      "monthly": 25000,
+      "invested": 2400000,
+      "fullReturn": 3208563,
+      "inflationAdjusted": 2022378,
+      "milestone": "Midpoint"
+    },
+    {
+      "year": 9,
+      "monthly": 25000,
+      "invested": 2700000,
+      "fullReturn": 3869934,
+      "inflationAdjusted": 2302498,
+      "milestone": "Compounding"
+    },
+    {
+      "year": 10,
+      "monthly": 25000,
+      "invested": 3000000,
+      "fullReturn": 4615183,
+      "inflationAdjusted": 2591962,
+      "milestone": "Compounding"
+    },
+    {
+      "year": 11,
+      "monthly": 25000,
+      "invested": 3300000,
+      "fullReturn": 5454948,
+      "inflationAdjusted": 2891841,
+      "milestone": "Compounding"
+    },
+    {
+      "year": 12,
+      "monthly": 25000,
+      "invested": 3600000,
+      "fullReturn": 6401216,
+      "inflationAdjusted": 3203246,
+      "milestone": "Compounding"
+    },
+    {
+      "year": 13,
+      "monthly": 25000,
+      "invested": 3900000,
+      "fullReturn": 7467495,
+      "inflationAdjusted": 3527335,
+      "milestone": "Compounding"
+    },
+    {
+      "year": 14,
+      "monthly": 25000,
+      "invested": 4200000,
+      "fullReturn": 8669005,
+      "inflationAdjusted": 3865315,
+      "milestone": "Compounding"
+    },
+    {
+      "year": 15,
+      "monthly": 25000,
+      "invested": 4500000,
+      "fullReturn": 10022896,
+      "inflationAdjusted": 4218450,
+      "milestone": "Final year"
+    }
+  ],
+  "disclaimer": "This report is for illustrative planning purposes only. Projected returns are not guaranteed. Investments are subject to market risks, and actual outcomes may differ. Please consult your advisor before acting."
+}
+</script>
+<script>
+(function () {
+  try {
+    var raw = document.getElementById("report-data");
+    var data = raw ? JSON.parse(raw.textContent || "{}") : {};
+    var params = new URLSearchParams(window.location.search);
+    if (params.get("delay") === "12") data.delayMonths = 12;
+    window.REPORT_DATA = data;
+    var delaySection = document.getElementById("cost-of-delay");
+    if (delaySection) {
+      delaySection.hidden = !(data.delayMonths > 0);
+    }
+    var delayValue = document.getElementById("delay-value");
+    if (delayValue) {
+      delayValue.textContent = (data.delayMonths || 0) + " mo";
+    }
+  } catch (e) {}
+})();
+</script>
+<div class="desktop">
+
+<article class="sheet" data-style="advisor-rail">
+  <aside class="rail">
+    <div data-pdf-keep-together>
+      <div class="mark">N</div>
+      <p class="brand">NIVRA PRIVATE WEALTH</p>
+      <h1 class="title">SIP Calculator Dossier</h1>
+      <p class="client">Mr. Anshu Kaul · Age 45</p>
+      <div class="contact">
+        <p>advisor@example.com</p>
+        <p>+91 98765 43210</p>
+      </div>
+      <div class="kpi-strip">
+        <div class="kpi-chip"><p class="kpi-label">Monthly SIP</p><p class="kpi-val accent">₹25,000</p></div>
+        <div class="kpi-chip"><p class="kpi-label">Net after tax</p><p class="kpi-val">₹93,32,534</p></div>
+        <div class="kpi-chip"><p class="kpi-label">Nominal maturity</p><p class="kpi-val">₹1,00,22,896</p></div>
+        <div class="kpi-chip"><p class="kpi-label">Inflation-adjusted</p><p class="kpi-val accent">₹42,18,450</p></div>
+      </div>
+    </div>
+
+    <div class="rail-block" data-pdf-keep-together>
+      <p class="rail-h">Assumptions</p>
+      <div class="ass-row"><span class="k">SIP years</span><span class="v">15 yrs</span></div>
+      <div class="ass-row"><span class="k">Tenure</span><span class="v">15 yrs</span></div>
+      <div class="ass-row"><span class="k">Return CAGR</span><span class="v">12%</span></div>
+      <div class="ass-row"><span class="k">Inflation</span><span class="v">5.75%</span></div>
+      <div class="ass-row"><span class="k">Tax on gains</span><span class="v">12.5%</span></div>
+      <div class="ass-row"><span class="k">Delay</span><span class="v" id="delay-value">0 mo</span></div>
+    </div>
+
+    <div class="rail-block" data-pdf-keep-together>
+      <p class="rail-h">Corpus Composition</p>
+      <div class="comp-grid">
+        <div class="comp-block">
+          <p class="comp-title">Nominal mix</p>
+          <svg width="132" height="132" viewBox="0 0 132 132" role="img" aria-hidden="true"><circle cx="66" cy="66" r="50" fill="#0B1C2C" /><path d="M 67.01223957336244 8.008833680929307 A 58 58 0 0 1 85.22714832648091 120.7203505766502" fill="none" stroke="#5EEAD4" stroke-width="14" stroke-linecap="butt" /><path d="M 83.3057229727111 121.35803421719181 A 58 58 0 0 1 40.72014700867244 13.799147202973138" fill="none" stroke="#94A3B8" stroke-width="14" stroke-linecap="butt" /><path d="M 42.55733030213359 12.948692405966689 A 58 58 0 0 1 64.98776042663755 8.008833680929307" fill="none" stroke="#475569" stroke-width="14" stroke-linecap="butt" /><text x="66" y="66" text-anchor="middle" dominant-baseline="middle" fill="#F8FAFC" font-size="13.0" font-weight="700" font-family="inherit" font-variant-numeric="tabular-nums">₹1,00,22,896</text></svg>
+          <div class="legend">
+            <div class="legend-row">
+    <span class="swatch" style="width:6px;height:6px;background:#5EEAD4"></span>
+    <span class="legend-label">Invested 44.9%</span>
+    <span class="legend-value">₹45,00,000</span>
+  </div>
+            <div class="legend-row">
+    <span class="swatch" style="width:6px;height:6px;background:#94A3B8"></span>
+    <span class="legend-label">Gain 48.2%</span>
+    <span class="legend-value">₹48,32,534</span>
+  </div>
+            <div class="legend-row">
+    <span class="swatch" style="width:6px;height:6px;background:#475569"></span>
+    <span class="legend-label">Tax 6.9%</span>
+    <span class="legend-value">₹6,90,362</span>
+  </div>
+          </div>
+        </div>
+        <div class="comp-block">
+          <p class="comp-title">Today Rs</p>
+          <svg width="132" height="132" viewBox="0 0 132 132" role="img" aria-hidden="true"><circle cx="66" cy="66" r="50" fill="#0B1C2C" /><path d="M 67.01223957336244 8.008833680929307 A 58 58 0 1 1 40.72014700867239 13.799147202973167" fill="none" stroke="#5EEAD4" stroke-width="14" stroke-linecap="butt" /><path d="M 42.557330302133494 12.948692405966739 A 58 58 0 0 1 64.98776042663755 8.008833680929307" fill="none" stroke="#475569" stroke-width="14" stroke-linecap="butt" /><text x="66" y="66" text-anchor="middle" dominant-baseline="middle" fill="#F8FAFC" font-size="13.0" font-weight="700" font-family="inherit" font-variant-numeric="tabular-nums">₹42,18,450</text></svg>
+          <div class="legend">
+            <div class="legend-row">
+    <span class="swatch" style="width:6px;height:6px;background:#5EEAD4"></span>
+    <span class="legend-label">Real 93.1%</span>
+    <span class="legend-value">₹39,27,895</span>
+  </div>
+            <div class="legend-row">
+    <span class="swatch" style="width:6px;height:6px;background:#475569"></span>
+    <span class="legend-label">Tax 6.9%</span>
+    <span class="legend-value">₹2,90,555</span>
+  </div>
+          </div>
+        </div>
+        <p class="shortfall">Real shortfall: ₹2,81,550</p>
+      </div>
+    </div>
+
+    <div class="rail-foot" data-pdf-keep-together>
+      <p class="rail-h">Outcome Snapshot</p>
+      <div class="rail-stat"><span class="k">Total invested</span><span class="v">₹45,00,000</span></div>
+      <div class="rail-stat"><span class="k">Pre-tax gain</span><span class="v">₹55,22,896</span></div>
+      <div class="rail-stat"><span class="k">Tax on gain</span><span class="v">₹6,90,362</span></div>
+      <div class="rail-stat"><span class="k">Real shortfall</span><span class="v">₹2,81,550</span></div>
+      <p>Lead reviews with purchasing power (₹42,18,450), not the headline maturity.</p>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="hero" data-pdf-keep-together>
+      <div class="hero-card">
+        <p class="hero-label">Nominal maturity</p>
+        <p class="hero-val">₹1,00,22,896</p>
+      </div>
+      <div class="hero-card right">
+        <p class="hero-label">Inflation-adjusted, today's rupees</p>
+        <p class="hero-val teal">₹42,18,450</p>
+      </div>
+    </div>
+
+    <section class="section">
+      <div class="reading-block" data-pdf-keep-together>
+        <h2 class="section-h">Advisory Reading</h2>
+        <div class="reading">
+          <div class="reading-col"><p class="tag">01</p><p class="reading-title">Purchasing power</p><p class="reading-body">Nominal maturity is ₹1,00,22,896 at age 60. At 5.75% inflation that is ₹42,18,450 in today's rupees. Lead with purchasing power, not the headline corpus.</p></div><div class="reading-col"><p class="tag">02</p><p class="reading-title">Tax on the gain</p><p class="reading-body">Pre-tax gain ₹55,22,896. Tax at 12.5% is ₹6,90,362, leaving ₹93,32,534 after tax. Real outcome shows a shortfall of ₹2,81,550 versus invested capital.</p></div><div class="reading-col"><p class="tag">03</p><p class="reading-title">How the path is built</p><p class="reading-body">₹25,000 for 15 SIP years at 12% CAGR from age 45 to 60. Shift toward debt in the final 2 to 3 years before redemption.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="cost-of-delay" data-pdf-keep-together hidden>
+      <div class="delay">
+        <h3>Cost of Delay</h3>
+        <p>Delaying SIP inception by 12 months shortens the compounding window and reduces terminal wealth under identical return assumptions. The capital penalty is the gap between the on-time and delayed maturity paths.</p>
+        <div class="delay-grid">
+          <div><p class="delay-label">On-time maturity</p><p class="delay-val">₹1,00,22,896</p></div>
+          <div><p class="delay-label">Delayed maturity</p><p class="delay-val">₹89,40,000</p></div>
+          <div><p class="delay-label">Capital penalty</p><p class="delay-val">₹10,82,896</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="sched-head" data-pdf-keep-together>
+        <h2 class="section-h">Yearly Accumulation Schedule</h2>
+      </div>
+      <div class="chart-wrap"><svg width="560" height="110" viewBox="0 0 560 110" role="img" aria-label="Yearly invested versus full return">
+    <line x1="52" y1="82" x2="552" y2="82" stroke="#D5DBE3" stroke-width="1" />
+        <text x="46" y="85" text-anchor="end" font-size="8" fill="#64748B" font-variant-numeric="tabular-nums">₹0</text><line x1="52" y1="47" x2="552" y2="47" stroke="#D5DBE3" stroke-width="1" />
+        <text x="46" y="50" text-anchor="end" font-size="8" fill="#64748B" font-variant-numeric="tabular-nums">₹50L</text><line x1="52" y1="12" x2="552" y2="12" stroke="#D5DBE3" stroke-width="1" />
+        <text x="46" y="15" text-anchor="end" font-size="8" fill="#64748B" font-variant-numeric="tabular-nums">₹1Cr</text>
+    <path d="M 68.66666666666667 80.32258061941378 L 102.00000000000001 78.63242240566 L 135.33333333333334 76.92344927055015 L 168.66666666666666 75.18947338174516 L 202 73.42422309879301 L 235.33333333333334 71.62125916501579 L 268.6666666666667 69.77400962755675 L 302.00000000000006 67.8756930132768 L 335.33333333333337 65.9193322967733 L 368.6666666666667 63.89771299632362 L 402.00000000000006 61.80335523784743 L 435.33333333333337 59.62849978688794 L 468.6666666666667 57.36505916054601 L 502.00000000000006 55.004603659461296 L 535.3333333333334 52.538305495736964" fill="none" stroke="#94A3B8" stroke-width="1.5" stroke-dasharray="4 3" />
+    
+        <rect x="58.333333333333336" y="79.90479717638495" width="9.333333333333336" height="2.095202823615054" fill="#12223F" />
+        <rect x="69.66666666666667" y="80.2229607091603" width="9.333333333333336" height="1.7770392908396957" fill="#0B7A5B" />
+        <circle cx="68.66666666666667" cy="80.32258061941378" r="1.8" fill="#94A3B8" />
+        <text x="68.66666666666667" y="102" text-anchor="middle" font-size="8" fill="#64748B">1</text>
+        <rect x="91.66666666666669" y="77.80959435276989" width="9.333333333333336" height="4.190405647230108" fill="#12223F" />
+        <rect x="103.00000000000001" y="78.22054045058434" width="9.333333333333336" height="3.7794595494156624" fill="#0B7A5B" />
+        <circle cx="102.00000000000001" cy="78.63242240566" r="1.8" fill="#94A3B8" />
+        <text x="102.00000000000001" y="102" text-anchor="middle" font-size="8" fill="#64748B">2</text>
+        <rect x="125" y="75.71439152915485" width="9.333333333333336" height="6.285608470845148" fill="#12223F" />
+        <rect x="136.33333333333334" y="75.9641676417674" width="9.333333333333336" height="6.035832358232597" fill="#0B7A5B" />
+        <circle cx="135.33333333333334" cy="76.92344927055015" r="1.8" fill="#94A3B8" />
+        <text x="135.33333333333334" y="102" text-anchor="middle" font-size="8" fill="#64748B">3</text>
+        <rect x="158.33333333333331" y="73.6191887055398" width="9.333333333333336" height="8.380811294460202" fill="#12223F" />
+        <rect x="169.66666666666666" y="73.42163203130113" width="9.333333333333336" height="8.57836796869887" fill="#0B7A5B" />
+        <circle cx="168.66666666666666" cy="75.18947338174516" r="1.8" fill="#94A3B8" />
+        <text x="168.66666666666666" y="102" text-anchor="middle" font-size="8" fill="#64748B">4</text>
+        <rect x="191.66666666666666" y="71.52398588192474" width="9.333333333333336" height="10.476014118075256" fill="#12223F" />
+        <rect x="203" y="70.55663772227109" width="9.333333333333336" height="11.443362277728909" fill="#0B7A5B" />
+        <circle cx="202" cy="73.42422309879301" r="1.8" fill="#94A3B8" />
+        <text x="202" y="102" text-anchor="middle" font-size="8" fill="#64748B">5</text>
+        <rect x="225" y="69.42878305830969" width="9.333333333333336" height="12.57121694169031" fill="#12223F" />
+        <rect x="236.33333333333334" y="67.32829333956973" width="9.333333333333336" height="14.671706660430274" fill="#0B7A5B" />
+        <circle cx="235.33333333333334" cy="71.62125916501579" r="1.8" fill="#94A3B8" />
+        <text x="235.33333333333334" y="102" text-anchor="middle" font-size="8" fill="#64748B">6</text>
+        <rect x="258.33333333333337" y="67.33358023469464" width="9.333333333333336" height="14.666419765305363" fill="#12223F" />
+        <rect x="269.6666666666667" y="63.69051140508691" width="9.333333333333336" height="18.30948859491309" fill="#0B7A5B" />
+        <circle cx="268.6666666666667" cy="69.77400962755675" r="1.8" fill="#94A3B8" />
+        <text x="268.6666666666667" y="102" text-anchor="middle" font-size="8" fill="#64748B">7</text>
+        <rect x="291.66666666666674" y="65.2383774110796" width="9.333333333333336" height="16.761622588920403" fill="#12223F" />
+        <rect x="303.00000000000006" y="59.591365808844074" width="9.333333333333336" height="22.408634191155926" fill="#0B7A5B" />
+        <circle cx="302.00000000000006" cy="67.8756930132768" r="1.8" fill="#94A3B8" />
+        <text x="302.00000000000006" y="102" text-anchor="middle" font-size="8" fill="#64748B">8</text>
+        <rect x="325.00000000000006" y="63.14317458746454" width="9.333333333333336" height="18.856825412535457" fill="#12223F" />
+        <rect x="336.33333333333337" y="54.97234451998703" width="9.333333333333336" height="27.027655480012967" fill="#0B7A5B" />
+        <circle cx="335.33333333333337" cy="65.9193322967733" r="1.8" fill="#94A3B8" />
+        <text x="335.33333333333337" y="102" text-anchor="middle" font-size="8" fill="#64748B">9</text>
+        <rect x="358.33333333333337" y="61.04797176384949" width="9.333333333333336" height="20.95202823615051" fill="#12223F" />
+        <rect x="369.6666666666667" y="49.76751848966606" width="9.333333333333336" height="32.23248151033394" fill="#0B7A5B" />
+        <circle cx="368.6666666666667" cy="63.89771299632362" r="1.8" fill="#94A3B8" />
+        <text x="368.6666666666667" y="102" text-anchor="middle" font-size="8" fill="#64748B">10</text>
+        <rect x="391.66666666666674" y="58.952768940234435" width="9.333333333333336" height="23.047231059765565" fill="#12223F" />
+        <rect x="403.00000000000006" y="43.90259182575575" width="9.333333333333336" height="38.09740817424425" fill="#0B7A5B" />
+        <circle cx="402.00000000000006" cy="61.80335523784743" r="1.8" fill="#94A3B8" />
+        <text x="402.00000000000006" y="102" text-anchor="middle" font-size="8" fill="#64748B">11</text>
+        <rect x="425.00000000000006" y="56.85756611661939" width="9.333333333333336" height="25.142433883380612" fill="#12223F" />
+        <rect x="436.33333333333337" y="37.29384720743386" width="9.333333333333336" height="44.70615279256614" fill="#0B7A5B" />
+        <circle cx="435.33333333333337" cy="59.62849978688794" r="1.8" fill="#94A3B8" />
+        <text x="435.33333333333337" y="102" text-anchor="middle" font-size="8" fill="#64748B">12</text>
+        <rect x="458.33333333333337" y="54.76236329300434" width="9.333333333333336" height="27.23763670699566" fill="#12223F" />
+        <rect x="469.6666666666667" y="29.846944635562416" width="9.333333333333336" height="52.153055364437584" fill="#0B7A5B" />
+        <circle cx="468.6666666666667" cy="57.36505916054601" r="1.8" fill="#94A3B8" />
+        <text x="468.6666666666667" y="102" text-anchor="middle" font-size="8" fill="#64748B">13</text>
+        <rect x="491.66666666666674" y="52.66716046938929" width="9.333333333333336" height="29.332839530610713" fill="#12223F" />
+        <rect x="503.00000000000006" y="21.455587486890018" width="9.333333333333336" height="60.54441251310998" fill="#0B7A5B" />
+        <circle cx="502.00000000000006" cy="55.004603659461296" r="1.8" fill="#94A3B8" />
+        <text x="502.00000000000006" y="102" text-anchor="middle" font-size="8" fill="#64748B">14</text>
+        <rect x="525" y="50.57195764577423" width="9.333333333333336" height="31.428042354225767" fill="#12223F" />
+        <rect x="536.3333333333334" y="12" width="9.333333333333336" height="70" fill="#0B7A5B" />
+        <circle cx="535.3333333333334" cy="52.538305495736964" r="1.8" fill="#94A3B8" />
+        <text x="535.3333333333334" y="102" text-anchor="middle" font-size="8" fill="#64748B">15</text>
+  </svg></div>
+      <div class="sched-wrap">
+    <table class="sched">
+      <colgroup>
+        <col class="col-yr" />
+        <col class="col-num" />
+        <col class="col-num" />
+        <col class="col-num" />
+        <col class="col-num" />
+        <col class="col-milestone" />
+      </colgroup>
+      <thead>
+        <tr>
+          <th class="c" scope="col">Yr</th>
+          <th class="r" scope="col">SIP / mo</th>
+          <th class="r" scope="col">Invested</th>
+          <th class="r" scope="col">Full return</th>
+          <th class="r" scope="col">Infl. adjusted</th>
+          <th class="milestone" scope="col">Milestone</th>
+        </tr>
+      </thead>
+      <tbody><tr class="">
+        <td class="c yr">1</td>
+        <td class="r num">₹25,000</td>
+        <td class="r num">₹3,00,000</td>
+        <td class="r num">₹2,54,444</td>
+        <td class="r num">₹2,40,180</td>
+        <td class="milestone">Initiation</td>
+      </tr><tr class="">
+        <td class="c yr">2</td>
+        <td class="r num">₹25,000</td>
+        <td class="r num">₹6,00,000</td>
+        <td class="r num">₹5,41,159</td>
+        <td class="r num">₹4,82,184</td>
+        <td class="milestone">Compounding</td>
+      </tr><tr class="">
+        <td class="c yr">3</td>
+        <td class="r num">₹25,000</td>
+        <td class="r num">₹9,00,000</td>
+        <td class="r num">₹8,64,236</td>
+        <td class="r num">₹7,26,882</td>
+        <td class="milestone">Compounding</td>
+      </tr><tr class="">
+        <td class="c yr">4</td>
+        <td class="r num">₹25,000</td>
+        <td class="r num">₹12,00,000</td>
+        <td class="r num">₹12,28,287</td>
+        <td class="r num">₹9,75,160</td>
+        <td class="milestone">Compounding</td>
+      </tr><tr class="">
+        <td class="c yr">5</td>
+        <td class="r num">₹25,000</td>
+        <td class="r num">₹15,00,000</td>
+        <td class="r num">₹16,38,509</td>
+        <td class="r num">₹12,27,916</td>
+        <td class="milestone">Compounding</td>
+      </tr><tr class="">
+        <td class="c yr">6</td>
+        <td class="r num">₹25,000</td>
+        <td class="r num">₹18,00,000</td>
+        <td class="r num">₹21,00,757</td>
+        <td class="r num">₹14,86,072</td>
+        <td class="milestone">Compounding</td>
+      </tr><tr class="">
+        <td class="c yr">7</td>
+        <td class="r num">₹25,000</td>
+        <td class="r num">₹21,00,000</td>
+        <td class="r num">₹26,21,630</td>
+        <td class="r num">₹17,50,569</td>
+        <td class="milestone">Compounding</td>
+      </tr><tr class="row-mid">
+        <td class="c yr">8</td>
+        <td class="r num">₹25,000</td>
+        <td class="r num">₹24,00,000</td>
+        <td class="r num">₹32,08,563</td>
+        <td class="r num">₹20,22,378</td>
+        <td class="milestone">Midpoint</td>
+      </tr><tr class="">
+        <td class="c yr">9</td>
+        <td class="r num">₹25,000</td>
+        <td class="r num">₹27,00,000</td>
+        <td class="r num">₹38,69,934</td>
+        <td class="r num">₹23,02,498</td>
+        <td class="milestone">Compounding</td>
+      </tr><tr class="">
+        <td class="c yr">10</td>
+        <td class="r num">₹25,000</td>
+        <td class="r num">₹30,00,000</td>
+        <td class="r num">₹46,15,183</td>
+        <td class="r num">₹25,91,962</td>
+        <td class="milestone">Compounding</td>
+      </tr><tr class="">
+        <td class="c yr">11</td>
+        <td class="r num">₹25,000</td>
+        <td class="r num">₹33,00,000</td>
+        <td class="r num">₹54,54,948</td>
+        <td class="r num">₹28,91,841</td>
+        <td class="milestone">Compounding</td>
+      </tr><tr class="">
+        <td class="c yr">12</td>
+        <td class="r num">₹25,000</td>
+        <td class="r num">₹36,00,000</td>
+        <td class="r num">₹64,01,216</td>
+        <td class="r num">₹32,03,246</td>
+        <td class="milestone">Compounding</td>
+      </tr><tr class="">
+        <td class="c yr">13</td>
+        <td class="r num">₹25,000</td>
+        <td class="r num">₹39,00,000</td>
+        <td class="r num">₹74,67,495</td>
+        <td class="r num">₹35,27,335</td>
+        <td class="milestone">Compounding</td>
+      </tr><tr class="">
+        <td class="c yr">14</td>
+        <td class="r num">₹25,000</td>
+        <td class="r num">₹42,00,000</td>
+        <td class="r num">₹86,69,005</td>
+        <td class="r num">₹38,65,315</td>
+        <td class="milestone">Compounding</td>
+      </tr><tr class="row-final">
+        <td class="c yr">15</td>
+        <td class="r num">₹25,000</td>
+        <td class="r num">₹45,00,000</td>
+        <td class="r num">₹1,00,22,896</td>
+        <td class="r num">₹42,18,450</td>
+        <td class="milestone">Final year</td>
+      </tr></tbody>
+    </table>
+  </div>
+      <p class="caption">15 cycles · full return vs inflation-adjusted</p>
+    </section>
+
+    <section class="section">
+      <div class="playbook-block" data-pdf-keep-together>
+        <h2 class="section-h">Advisory Playbook</h2>
+        <div class="playbook">
+          <div><p class="play-num">01</p><p class="play-title">Automate the Monthly SIP</p><p class="play-body">Lock ₹25,000 per month on ECS or OTM for 15 contribution years. Missed months permanently reduce the 15-year terminal corpus under the same return path.</p></div><div><p class="play-num">02</p><p class="play-title">Inflation Reality Check</p><p class="play-body">Headline maturity of ₹1,00,22,896 is ₹42,18,450 in today's rupees at 5.75% inflation. Anchor reviews to purchasing power.</p></div><div><p class="play-num">03</p><p class="play-title">Glidepath Before Year 15</p><p class="play-body">Begin shifting equity exposure toward short-duration debt or hybrids via STP in the final 2 to 3 years so the planned redemption is not hostage to a late-cycle drawdown.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="report-footer" data-pdf-keep-together>
+  <p class="disclaimer">This report is for illustrative planning purposes only. Projected returns are not guaranteed. Investments are subject to market risks, and actual outcomes may differ. Please consult your advisor before acting.</p>
+  <div class="powered-wrap">
+    <span class="powered-mark" aria-hidden="true"></span>
+    <p class="powered-line">Powered by <span class="brand-name">Nivra</span></p>
+  </div>
+</footer>
+  </div>
+</article>
+</div>
+</body>
+</html>

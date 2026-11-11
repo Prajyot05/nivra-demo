@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { flushSync } from "react-dom";
 import { cn } from "@/lib/utils";
 import {
   CompositionChart,
@@ -15,12 +16,14 @@ import {
 } from "@nivra/ui";
 import { YEARS_MAX } from "@nivra/ui/limits";
 import { V2_MONEY_INPUT_MAX } from "@/components/v2/tokens";
-import { ReportDownloadButton } from "@/components/calc/report-download-button";
+import { ReportStyleDownloadButton } from "@/components/calc/report-style-download-button";
 import { DUMMY_REPORT_CONTACT } from "@/components/reports/executive-dossier";
 import {
-  SipCalculatorDossier,
-  SIP_CALCULATOR_REPORT_ID,
-} from "@/components/reports/sip-calculator-dossier";
+  SIP_DOSSIER_STYLES,
+  SipStyledDossier,
+  V2_SIP_STYLED_REPORT_ID,
+  type SipDossierStyleId,
+} from "@/components/v2/reports/sip-styles";
 import { V2ChartFrame, V2_CHART_CLASS } from "@/components/v2/chart-frame";
 import {
   V2MoneyField,
@@ -126,6 +129,7 @@ export function V2SipCalculator() {
   const [sipTax, setSipTax] = useState(12.5);
   const [corpusView, setCorpusView] = useState<"nominal" | "inflation">("nominal");
   const [isDownloading, setIsDownloading] = useState(false);
+  const [reportStyle, setReportStyle] = useState<SipDossierStyleId>("classic-memo");
   const [formResetKey, setFormResetKey] = useState(0);
   const [inputTone, setInputTone] = useState<InputTone>("sky");
 
@@ -205,18 +209,26 @@ export function V2SipCalculator() {
     setFormResetKey((k) => k + 1);
   };
 
-  const handleDownload = async () => {
+  const handleDownload = async (styleId: SipDossierStyleId) => {
     if (!result || isDownloading) return;
     setIsDownloading(true);
     try {
+      flushSync(() => {
+        setReportStyle(styleId);
+      });
+      // Allow the selected theme HTML to mount and fonts to settle.
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      );
+      await new Promise((resolve) => setTimeout(resolve, 320));
       const safeName = (name || "client")
         .replace(/[^a-zA-Z0-9-_ ]/g, "")
         .trim()
         .replace(/\s+/g, "-")
         .toLowerCase();
       await generatePdfFromElement(
-        SIP_CALCULATOR_REPORT_ID,
-        `sip-calculator-${safeName || "report"}`,
+        V2_SIP_STYLED_REPORT_ID,
+        `sip-calculator-${styleId}-${safeName || "report"}`,
       );
     } catch (err) {
       console.error("PDF download failed:", err);
@@ -236,8 +248,9 @@ export function V2SipCalculator() {
         title="SIP Calculator"
         description="Monthly systematic investment plan with inflation, tax, and delay impact."
         actions={
-          <ReportDownloadButton
-            onClick={handleDownload}
+          <ReportStyleDownloadButton
+            styles={SIP_DOSSIER_STYLES}
+            onDownload={handleDownload}
             disabled={!result}
             loading={isDownloading}
           />
@@ -607,7 +620,8 @@ export function V2SipCalculator() {
       />
 
       {result && result.inflationAdjusted != null ? (
-        <SipCalculatorDossier
+        <SipStyledDossier
+          styleId={reportStyle}
           data={{
             clientName: name,
             age,

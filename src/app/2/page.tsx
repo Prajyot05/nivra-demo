@@ -38,11 +38,8 @@ export default function V2IndexPage() {
       </ul>
 
       <p className="mt-5 text-[13px] text-[var(--v2-faint)]">
-        Classic suite remains at{" "}
-        <Link href="/" className="underline underline-offset-2">
-          /
-        </Link>
-        . Calculation engines are shared; only presentation differs.
+        Classic suite routes are unchanged; use Classic UI on each calculator when you need the
+        prior layout. Calculation engines are shared.
       </p>
     </div>
   );

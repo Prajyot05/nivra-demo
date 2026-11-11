@@ -1,6 +1,11 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { toPng } from "html-to-image";
+import {
+  clearPdfSpacers,
+  padKeepTogetherSections,
+  PDF_DOSSIER_PAGE_HEIGHT_PX,
+} from "./pdf-keep-together";
 
 /** Classic Nivra theme tokens (matches packages/ui color-themes "classic") */
 const INK: RGB = [15, 23, 42]; // --app-text / primary
@@ -505,43 +510,8 @@ export function generateCalculatorReport(data: CalculatorReportData) {
   doc.save(`${safeName || "report"}.pdf`);
 }
 
-/** A4 page height in CSS px for a 900px-wide dossier sheet (210mm × 297mm). */
 const DOSSIER_WIDTH_PX = 900;
-const A4_PAGE_HEIGHT_PX = (297 / 210) * DOSSIER_WIDTH_PX;
-
-/**
- * Push `[data-pdf-keep-together]` blocks that would be sliced by a page boundary
- * onto the next page by inserting temporary spacers before capture.
- */
-function padKeepTogetherSections(element: HTMLElement) {
-  element.querySelectorAll("[data-pdf-spacer]").forEach((n) => n.remove());
-
-  const keepers = Array.from(
-    element.querySelectorAll<HTMLElement>("[data-pdf-keep-together]"),
-  );
-
-  for (const el of keepers) {
-    const parentRect = element.getBoundingClientRect();
-    const rect = el.getBoundingClientRect();
-    const top = rect.top - parentRect.top + element.scrollTop;
-    const height = el.offsetHeight;
-    const pageIndex = Math.floor(top / A4_PAGE_HEIGHT_PX);
-    const pageEnd = (pageIndex + 1) * A4_PAGE_HEIGHT_PX;
-
-    // Block starts on this page but would finish past the cut line
-    if (top < pageEnd - 4 && top + height > pageEnd + 2) {
-      const pad = Math.ceil(pageEnd - top + 12);
-      const spacer = document.createElement("div");
-      spacer.setAttribute("data-pdf-spacer", "true");
-      spacer.style.cssText = `height:${pad}px;width:100%;flex-shrink:0;`;
-      el.parentElement?.insertBefore(spacer, el);
-    }
-  }
-}
-
-function clearPdfSpacers(element: HTMLElement) {
-  element.querySelectorAll("[data-pdf-spacer]").forEach((n) => n.remove());
-}
+const A4_PAGE_HEIGHT_PX = PDF_DOSSIER_PAGE_HEIGHT_PX;
 
 /**
  * Capture an off-screen HTML dossier element to a multi-page A4 PDF.
@@ -554,19 +524,24 @@ export async function generatePdfFromElement(elementId: string, filename: string
   }
 
   const prevCss = element.style.cssText;
+  const isV2Report = element.getAttribute("data-v2-report") === "true";
 
-  // Make measurable and visible for layout
-  element.style.cssText = [
-    "position: absolute",
-    "left: 0",
-    "top: 0",
-    "z-index: -1000",
-    "width: 900px",
-    "background-color: #ffffff",
-    "opacity: 1",
-    "visibility: visible",
-    "pointer-events: none",
-  ].join(";");
+  // Keep existing inline styles (padding, type). Only override capture geometry.
+  element.style.position = "absolute";
+  element.style.left = "0";
+  element.style.top = "0";
+  element.style.zIndex = "-1000";
+  element.style.width = "900px";
+  element.style.backgroundColor = isV2Report ? "#f4f5f7" : "#ffffff";
+  element.style.opacity = "1";
+  element.style.visibility = "visible";
+  element.style.pointerEvents = "none";
+
+  if (isV2Report) {
+    const host = element.parentElement ?? document.body;
+    const family = getComputedStyle(host).fontFamily;
+    if (family) element.style.fontFamily = family;
+  }
 
   try {
     await new Promise<void>((resolve) =>
@@ -588,6 +563,17 @@ export async function generatePdfFromElement(elementId: string, filename: string
     );
     await new Promise((resolve) => setTimeout(resolve, 150));
 
+    if (isV2Report && document.fonts?.ready) {
+      try {
+        await Promise.race([
+          document.fonts.ready,
+          new Promise((resolve) => setTimeout(resolve, 1200)),
+        ]);
+      } catch {
+        /* ignore */
+      }
+    }
+
     padKeepTogetherSections(element);
     await new Promise<void>((resolve) =>
       requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
@@ -602,14 +588,27 @@ export async function generatePdfFromElement(elementId: string, filename: string
     const maxCanvas = 8192;
     const pixelRatio = Math.min(2, maxCanvas / Math.max(w, h));
 
-    const dataUrl = await toPng(element, {
-      width: w,
-      height: h,
-      pixelRatio: pixelRatio,
-      cacheBust: true,
-      backgroundColor: "#ffffff",
-      skipFonts: true, // often causes issues in html-to-image
-    });
+    const capture = (skipFonts: boolean) =>
+      toPng(element, {
+        width: w,
+        height: h,
+        pixelRatio: pixelRatio,
+        cacheBust: true,
+        backgroundColor: isV2Report ? "#f4f5f7" : "#ffffff",
+        skipFonts,
+      });
+
+    let dataUrl: string;
+    if (isV2Report) {
+      try {
+        dataUrl = await capture(false);
+      } catch (err) {
+        console.warn("V2 PDF font embed failed, retrying without font embed", err);
+        dataUrl = await capture(true);
+      }
+    } else {
+      dataUrl = await capture(true);
+    }
 
     const pdf = new jsPDF({
       orientation: "portrait",

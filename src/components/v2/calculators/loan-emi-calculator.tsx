@@ -17,9 +17,9 @@ import { V2_MONEY_INPUT_MAX } from "@/components/v2/tokens";
 import { ReportDownloadButton } from "@/components/calc/report-download-button";
 import { DUMMY_REPORT_CONTACT } from "@/components/reports/executive-dossier";
 import {
-  LoanEmiDossier,
-  LOAN_EMI_REPORT_ID,
-} from "@/components/reports/loan-emi-dossier";
+  V2LoanEmiAdvisoryDossier,
+  V2_LOAN_EMI_REPORT_ID,
+} from "@/components/v2/reports/loan-emi-advisory-dossier";
 import { V2ChartFrame, V2_CHART_CLASS } from "@/components/v2/chart-frame";
 import {
   V2MoneyField,
@@ -151,7 +151,7 @@ export function V2LoanEmiCalculator() {
         .trim()
         .replace(/\s+/g, "-")
         .toLowerCase();
-      await generatePdfFromElement(LOAN_EMI_REPORT_ID, `loan-emi-${safe || "report"}`);
+      await generatePdfFromElement(V2_LOAN_EMI_REPORT_ID, `loan-emi-${safe || "report"}`);
     } catch (err) {
       console.error("PDF download failed:", err);
     } finally {
@@ -214,8 +214,8 @@ export function V2LoanEmiCalculator() {
         actions={
           <ReportDownloadButton
             onClick={handleDownload}
-            disabled={!result}
-            loading={isDownloading}
+            disabled
+            title="Report PDF coming soon"
           />
         }
       />
@@ -477,7 +477,7 @@ export function V2LoanEmiCalculator() {
       />
 
       {result && Array.isArray(result.schedule) ? (
-        <LoanEmiDossier
+        <V2LoanEmiAdvisoryDossier
           data={{
             clientName: name,
             age,
