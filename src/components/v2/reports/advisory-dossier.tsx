@@ -1,7 +1,7 @@
 "use client";
 
 import { type CSSProperties, type ReactNode } from "react";
-import { formatINRCurrency, formatPercent } from "@nivra/ui";
+import { formatINRCurrency, formatPercent, inrAmountTextClass } from "@nivra/ui";
 import {
   DUMMY_REPORT_CONTACT,
   type ExecutiveContact,
@@ -144,7 +144,11 @@ export function AdvisoryDossierSheet({
                   {cell.label}
                 </p>
                 <p
-                  className="mt-1.5 break-words text-[13px] font-semibold leading-snug tabular-nums"
+                  className={`mt-1.5 break-words font-semibold leading-snug tabular-nums ${
+                    typeof cell.value === "string"
+                      ? `${inrAmountTextClass(cell.value, "compact")} text-[13px]`
+                      : "text-[13px]"
+                  }`}
                   style={{ color: cell.accent ? ACCENT : INK }}
                 >
                   {cell.value}
@@ -169,9 +173,25 @@ export function AdvisoryDossierSheet({
             <p className="text-[11.5px] leading-relaxed" style={{ color: MUTED }}>
               {disclaimer}
             </p>
-            <p className="mt-5 text-center text-[11px]" style={{ color: "#94a3b8" }}>
-              Powered by <span className="font-semibold text-slate-600">Nivra</span>
-            </p>
+            <div className="mt-6 flex flex-col items-center gap-2">
+              <span
+                className="block h-0.5 w-10 rounded-sm"
+                style={{
+                  background:
+                    "linear-gradient(90deg, transparent, #0f3d32 20%, #0f3d32 80%, transparent)",
+                }}
+                aria-hidden
+              />
+              <p
+                className="m-0 text-center text-[10px] font-medium uppercase tracking-[0.14em]"
+                style={{ color: "#94a3b8" }}
+              >
+                Powered by{" "}
+                <span className="text-[11px] font-bold normal-case tracking-wide text-slate-700">
+                  Nivra
+                </span>
+              </p>
+            </div>
           </div>
         </footer>
       ) : null}
@@ -230,7 +250,13 @@ export function AdvisoryHero({
         >
           {left.label}
         </p>
-        <p className="mt-2.5 break-words text-[28px] font-semibold leading-none tracking-tight tabular-nums text-slate-950">
+        <p
+          className={`mt-2.5 break-words font-semibold leading-none tracking-tight tabular-nums text-slate-950 ${
+            typeof left.value === "string"
+              ? inrAmountTextClass(left.value, "hero")
+              : "text-[28px]"
+          }`}
+        >
           {left.value}
         </p>
         {left.hint ? (
@@ -247,7 +273,11 @@ export function AdvisoryHero({
           {right.label}
         </p>
         <p
-          className="mt-2.5 break-words text-[28px] font-semibold leading-none tracking-tight tabular-nums"
+          className={`mt-2.5 break-words font-semibold leading-none tracking-tight tabular-nums ${
+            typeof right.value === "string"
+              ? inrAmountTextClass(right.value, "hero")
+              : "text-[28px]"
+          }`}
           style={{ color: ACCENT }}
         >
           {right.value}
@@ -294,7 +324,13 @@ export function AdvisoryStatRow({
           >
             {item.label}
           </p>
-          <p className="mt-1.5 break-words text-[15px] font-semibold leading-tight tabular-nums text-slate-950">
+          <p
+            className={`mt-1.5 break-words font-semibold leading-tight tabular-nums text-slate-950 ${
+              typeof item.value === "string"
+                ? `${inrAmountTextClass(item.value, "stat")} text-[15px]`
+                : "text-[15px]"
+            }`}
+          >
             {item.value}
           </p>
         </div>
@@ -360,7 +396,11 @@ export function AdvisoryAssumptions({
             {item.label}
           </p>
           <p
-            className="mt-1 truncate text-[13px] font-semibold tabular-nums"
+            className={`mt-1 break-words text-[13px] font-semibold tabular-nums ${
+              item.value.startsWith("₹")
+                ? inrAmountTextClass(item.value, "compact")
+                : ""
+            }`}
             style={{ color: item.accent ? ACCENT : INK }}
             title={item.value}
           >
@@ -460,7 +500,7 @@ export function AdvisoryTable({
         className="w-full border-collapse text-left text-[12.5px] tabular-nums"
         style={{ tableLayout: "fixed" }}
       >
-        <thead>
+        <thead data-pdf-keep-together>
           <tr style={{ backgroundColor: NAVY }}>
             {columns.map((col) => (
               <th
@@ -491,6 +531,7 @@ export function AdvisoryTable({
             return (
               <tr
                 key={i}
+                data-pdf-keep-together
                 style={{
                   backgroundColor: bg,
                   borderBottom: `1px solid ${RULE}`,
@@ -548,10 +589,13 @@ export function AdvisoryComposition({
   const multiplier = invested > 0 ? centerValue / invested : 0;
 
   return (
-    <div className="min-w-0">
+    <div className="min-w-0" data-pdf-keep-together>
       <div className="mb-2.5 flex items-baseline justify-between gap-3">
         <p className="text-[13px] font-semibold text-slate-950">{title}</p>
-        <p className="text-[11.5px] tabular-nums" style={{ color: MUTED }}>
+        <p
+          className={`break-words tabular-nums ${inrAmountTextClass(formatINRCurrency(centerValue), "compact")} text-[11.5px]`}
+          style={{ color: MUTED }}
+        >
           {centerLabel} {formatINRCurrency(centerValue)} · {multiplier.toFixed(2)}x
         </p>
       </div>

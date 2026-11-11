@@ -38,6 +38,9 @@ export function SipStyledDossier({
         top: 0,
         zIndex: -1,
         isolation: "isolate",
+        boxSizing: "border-box",
+        overflowX: "hidden",
+        backgroundColor: "#f4f5f7",
       }}
       aria-hidden
       dangerouslySetInnerHTML={{ __html: html }}

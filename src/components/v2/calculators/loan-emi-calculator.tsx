@@ -214,8 +214,8 @@ export function V2LoanEmiCalculator() {
         actions={
           <ReportDownloadButton
             onClick={handleDownload}
-            disabled={!result}
-            loading={isDownloading}
+            disabled
+            title="Report PDF coming soon"
           />
         }
       />

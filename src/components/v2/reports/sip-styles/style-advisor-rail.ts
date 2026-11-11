@@ -1,6 +1,9 @@
 import { advisoryReading, delaySectionCopy, playbook } from "./copy";
-import { formatINR, formatPct, esc } from "./format";
+import { formatINR, formatPct, esc, amountClass, amountScaleCssBlock } from "./format";
 import { renderScheduleTable } from "./schedule";
+import { SHARED_AMOUNT_CSS } from "./shared-report-css";
+import { SHARED_FOOTER_CSS, renderReportFooter } from "./shared-footer";
+import { SHARED_PAGINATION_CSS } from "./shared-pagination";
 import { donutSvg, factsheetColumnsSvg, legendRow } from "./svg";
 import type { BuiltStyle, SipDossierData } from "./types";
 
@@ -113,7 +116,7 @@ body { background: #E8EEF4; color: #0F172A; }
 .hero-card.right { border-left-color: #0EA5A0; background: #F0FDFA; }
 .hero-label { font-size: 9px; color: #64748B; text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 4px; font-weight: 600; }
 .hero-val { font-size: 20px; font-weight: 700; margin: 0; word-break: break-word; }
-.section { margin-top: 14px; break-inside: avoid; page-break-inside: avoid; }
+.section { margin-top: 14px; }
 .section-h { font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #64748B; margin: 0 0 7px; }
 .reading { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .reading-col { padding-top: 4px; border-top: 1px solid #0B1C2C; }
@@ -140,10 +143,11 @@ table.sched .row-final td { background: #CCFBF1; font-weight: 600; }
 .play-num { font-size: 12px; font-weight: 700; color: #CBD5E1; margin: 0 0 1px; }
 .play-title { font-size: 10px; font-weight: 700; margin: 0 0 2px; }
 .play-body { margin: 0; font-size: 10px; line-height: 1.35; color: #475569; }
-.footer { margin-top: 14px; padding-top: 10px; border-top: 1px solid #E2E8F0; }
-.disclaimer { font-size: 10px; color: #64748B; margin: 0 0 8px; }
-.powered { text-align: center; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: #64748B; margin: 0; }
 @media print { body, .desktop { background: #fff; padding: 0; } }
+${amountScaleCssBlock({ hero: 20, kpi: 13.5 })}
+${SHARED_AMOUNT_CSS}
+${SHARED_FOOTER_CSS}
+${SHARED_PAGINATION_CSS}
 `;
 
   const body = `
@@ -159,10 +163,10 @@ table.sched .row-final td { background: #CCFBF1; font-weight: 600; }
         <p>${esc(data.contactPhone)}</p>
       </div>
       <div class="kpi-strip">
-        <div class="kpi-chip"><p class="kpi-label">Monthly SIP</p><p class="kpi-val accent">${formatINR(data.monthlySip)}</p></div>
-        <div class="kpi-chip"><p class="kpi-label">Net after tax</p><p class="kpi-val">${formatINR(data.netAfterTax)}</p></div>
-        <div class="kpi-chip"><p class="kpi-label">Nominal maturity</p><p class="kpi-val">${formatINR(data.nominalMaturity)}</p></div>
-        <div class="kpi-chip"><p class="kpi-label">Inflation-adjusted</p><p class="kpi-val accent">${formatINR(data.inflationAdjusted)}</p></div>
+        <div class="kpi-chip"><p class="kpi-label">Monthly SIP</p><p class="${amountClass("kpi-val accent", data.monthlySip, "kpi")}">${formatINR(data.monthlySip)}</p></div>
+        <div class="kpi-chip"><p class="kpi-label">Net after tax</p><p class="${amountClass("kpi-val", data.netAfterTax, "kpi")}">${formatINR(data.netAfterTax)}</p></div>
+        <div class="kpi-chip"><p class="kpi-label">Nominal maturity</p><p class="${amountClass("kpi-val", data.nominalMaturity, "kpi")}">${formatINR(data.nominalMaturity)}</p></div>
+        <div class="kpi-chip"><p class="kpi-label">Inflation-adjusted</p><p class="${amountClass("kpi-val accent", data.inflationAdjusted, "kpi")}">${formatINR(data.inflationAdjusted)}</p></div>
       </div>
     </div>
 
@@ -202,10 +206,10 @@ table.sched .row-final td { background: #CCFBF1; font-weight: 600; }
 
     <div class="rail-foot" data-pdf-keep-together>
       <p class="rail-h">Outcome Snapshot</p>
-      <div class="rail-stat"><span class="k">Total invested</span><span class="v">${formatINR(data.totalInvested)}</span></div>
-      <div class="rail-stat"><span class="k">Pre-tax gain</span><span class="v">${formatINR(data.preTaxGain)}</span></div>
-      <div class="rail-stat"><span class="k">Tax on gain</span><span class="v">${formatINR(data.taxOnGain)}</span></div>
-      <div class="rail-stat"><span class="k">Real shortfall</span><span class="v">${formatINR(data.realGainShortfall)}</span></div>
+      <div class="rail-stat"><span class="k">Total invested</span><span class="${amountClass("v", data.totalInvested, "ass")}">${formatINR(data.totalInvested)}</span></div>
+      <div class="rail-stat"><span class="k">Pre-tax gain</span><span class="${amountClass("v", data.preTaxGain, "ass")}">${formatINR(data.preTaxGain)}</span></div>
+      <div class="rail-stat"><span class="k">Tax on gain</span><span class="${amountClass("v", data.taxOnGain, "ass")}">${formatINR(data.taxOnGain)}</span></div>
+      <div class="rail-stat"><span class="k">Real shortfall</span><span class="${amountClass("v", data.realGainShortfall, "ass")}">${formatINR(data.realGainShortfall)}</span></div>
       <p>Lead reviews with purchasing power (${formatINR(data.inflationAdjusted)}), not the headline maturity.</p>
     </div>
   </aside>
@@ -214,18 +218,20 @@ table.sched .row-final td { background: #CCFBF1; font-weight: 600; }
     <div class="hero" data-pdf-keep-together>
       <div class="hero-card">
         <p class="hero-label">Nominal maturity</p>
-        <p class="hero-val">${formatINR(data.nominalMaturity)}</p>
+        <p class="${amountClass("hero-val", data.nominalMaturity, "hero")}">${formatINR(data.nominalMaturity)}</p>
       </div>
       <div class="hero-card right">
         <p class="hero-label">Inflation-adjusted, today's rupees</p>
-        <p class="hero-val teal">${formatINR(data.inflationAdjusted)}</p>
+        <p class="${amountClass("hero-val teal", data.inflationAdjusted, "hero")}">${formatINR(data.inflationAdjusted)}</p>
       </div>
     </div>
 
-    <section class="section" data-pdf-keep-together>
-      <h2 class="section-h">Advisory Reading</h2>
-      <div class="reading">
-        ${reading.map((b, i) => `<div class="reading-col"><p class="tag">0${i + 1}</p><p class="reading-title">${esc(b.title)}</p><p class="reading-body">${esc(b.body)}</p></div>`).join("")}
+    <section class="section">
+      <div class="reading-block" data-pdf-keep-together>
+        <h2 class="section-h">Advisory Reading</h2>
+        <div class="reading">
+          ${reading.map((b, i) => `<div class="reading-col"><p class="tag">0${i + 1}</p><p class="reading-title">${esc(b.title)}</p><p class="reading-body">${esc(b.body)}</p></div>`).join("")}
+        </div>
       </div>
     </section>
 
@@ -234,31 +240,32 @@ table.sched .row-final td { background: #CCFBF1; font-weight: 600; }
         <h3>Cost of Delay</h3>
         <p>${esc(delaySectionCopy(data))}</p>
         <div class="delay-grid">
-          <div><p class="delay-label">On-time maturity</p><p class="delay-val">${formatINR(data.delayedOnTime)}</p></div>
-          <div><p class="delay-label">Delayed maturity</p><p class="delay-val">${formatINR(data.delayedMaturity)}</p></div>
-          <div><p class="delay-label">Capital penalty</p><p class="delay-val">${formatINR(data.capitalPenalty)}</p></div>
+          <div><p class="delay-label">On-time maturity</p><p class="${amountClass("delay-val", data.delayedOnTime, "delay")}">${formatINR(data.delayedOnTime)}</p></div>
+          <div><p class="delay-label">Delayed maturity</p><p class="${amountClass("delay-val", data.delayedMaturity, "delay")}">${formatINR(data.delayedMaturity)}</p></div>
+          <div><p class="delay-label">Capital penalty</p><p class="${amountClass("delay-val", data.capitalPenalty, "delay")}">${formatINR(data.capitalPenalty)}</p></div>
         </div>
       </div>
     </section>
 
-    <section class="section" data-pdf-keep-together>
-      <h2 class="section-h">Yearly Accumulation Schedule</h2>
+    <section class="section">
+      <div class="sched-head" data-pdf-keep-together>
+        <h2 class="section-h">Yearly Accumulation Schedule</h2>
+      </div>
       <div class="chart-wrap">${chart}</div>
       ${scheduleHtml}
       <p class="caption">${data.investYears} cycles · full return vs inflation-adjusted</p>
     </section>
 
-    <section class="section" data-pdf-keep-together>
-      <h2 class="section-h">Advisory Playbook</h2>
-      <div class="playbook">
-        ${pillars.map((p) => `<div><p class="play-num">${p.id}</p><p class="play-title">${esc(p.title)}</p><p class="play-body">${esc(p.body)}</p></div>`).join("")}
+    <section class="section">
+      <div class="playbook-block" data-pdf-keep-together>
+        <h2 class="section-h">Advisory Playbook</h2>
+        <div class="playbook">
+          ${pillars.map((p) => `<div><p class="play-num">${p.id}</p><p class="play-title">${esc(p.title)}</p><p class="play-body">${esc(p.body)}</p></div>`).join("")}
+        </div>
       </div>
     </section>
 
-    <footer class="footer" data-pdf-keep-together>
-      <p class="disclaimer">${esc(data.disclaimer)}</p>
-      <p class="powered">${esc(data.footer)}</p>
-    </footer>
+    ${renderReportFooter(data.disclaimer)}
   </div>
 </article>`;
 

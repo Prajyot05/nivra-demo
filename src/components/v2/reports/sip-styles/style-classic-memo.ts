@@ -1,6 +1,9 @@
 import { advisoryReading, delaySectionCopy, playbook } from "./copy";
-import { formatINR, formatPct, esc } from "./format";
+import { formatINR, formatPct, esc, amountClass, amountScaleCssBlock } from "./format";
 import { renderScheduleTable } from "./schedule";
+import { SHARED_AMOUNT_CSS } from "./shared-report-css";
+import { SHARED_FOOTER_CSS, renderReportFooter } from "./shared-footer";
+import { SHARED_PAGINATION_CSS } from "./shared-pagination";
 import { donutSvg, legendRow } from "./svg";
 import type { BuiltStyle, SipDossierData } from "./types";
 
@@ -60,7 +63,7 @@ body { background: #F4F5F7; color: #0F172A; }
 .navy { color: #1E293B; }
 .emerald { color: #047857; }
 .deep-emerald { color: #065F46; }
-.section { margin-top: 28px; break-inside: avoid; page-break-inside: avoid; }
+.section { margin-top: 28px; }
 .section-h {
   font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
   color: #1E293B; margin: 0 0 12px;
@@ -129,34 +132,81 @@ body { background: #F4F5F7; color: #0F172A; }
 .delay-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .delay-label { font-size: 11px; color: #64748B; margin: 0 0 4px; }
 .delay-val { font-size: 17px; font-weight: 600; margin: 0; color: #0F172A; }
-.sched-wrap { margin-top: 2px; }
-table.sched { width: 100%; border-collapse: collapse; font-size: 11.5px; }
-table.sched thead th {
-  background: #1E293B; color: #fff; font-weight: 600; font-size: 10.5px;
-  padding: 6px 7px; text-align: right;
+.schedule-block { margin-top: 20px; }
+.sched-frame {
+  border: 1px solid #D5DBE3;
+  background: #fff;
 }
-table.sched thead th:first-child { text-align: center; }
-table.sched td { padding: 5px 7px; border-bottom: 1px solid #D5DBE3; }
-table.sched tr { break-inside: avoid; page-break-inside: avoid; }
-table.sched .row-mid td { background: #F1F5F9; }
-table.sched .row-final td {
-  background: #DCEFE6; font-weight: 600; border-bottom: 1px solid #047857;
+.sched-frame .sched-wrap { margin: 0; }
+.sched-frame table.sched {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  line-height: 1.35;
+  table-layout: fixed;
 }
-.caption { font-size: 11px; color: #64748B; margin: 8px 0 0; }
+.sched-frame table.sched .col-yr { width: 7%; }
+.sched-frame table.sched .col-num { width: 13.5%; }
+.sched-frame table.sched .col-infl { width: 18%; }
+.sched-frame table.sched .col-milestone { width: 20%; }
+.sched-frame table.sched thead th {
+  background: #1E293B;
+  color: #f8fafc;
+  font-size: 9px;
+  padding: 10px 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  vertical-align: middle;
+  white-space: normal;
+  line-height: 1.3;
+}
+.sched-frame table.sched thead th.c { padding-left: 12px; }
+.sched-frame table.sched thead th.infl { padding-right: 20px; }
+.sched-frame table.sched thead th.milestone {
+  padding-left: 20px;
+  padding-right: 14px;
+  text-align: left;
+}
+.sched-frame table.sched tbody td {
+  padding: 8px 8px;
+  border-bottom: 1px solid #E8ECF0;
+  color: #0f172a;
+  vertical-align: middle;
+}
+.sched-frame table.sched tbody td.yr { padding-left: 12px; font-weight: 600; }
+.sched-frame table.sched tbody td.num.infl { padding-right: 20px; }
+.sched-frame table.sched tbody td.milestone {
+  padding-left: 20px;
+  padding-right: 14px;
+}
+.sched-frame table.sched tbody tr:last-child td { border-bottom: none; }
+.sched-frame table.sched .row-mid td { background: #F8FAFC; }
+.sched-frame table.sched .row-mid td.milestone { color: #1e293b; font-weight: 600; }
+.sched-frame table.sched .row-final td {
+  background: #E7F5F0;
+  font-weight: 600;
+  color: #065f46;
+}
+.sched-frame table.sched .row-final td.milestone { color: #047857; }
+.sched-frame table.sched.sched-dense thead th { padding: 8px 6px; font-size: 8.5px; }
+.sched-frame table.sched.sched-dense tbody td { padding: 7px 6px; }
+.sched-frame table.sched.sched-xdense thead th { padding: 7px 5px; font-size: 8px; }
+.sched-frame table.sched.sched-xdense tbody td { padding: 6px 5px; font-size: 9.5px; }
+.sched-head .section-h { margin-bottom: 8px; }
+.sched-hint { font-size: 10.5px; color: #64748B; margin: 0 0 12px; line-height: 1.45; max-width: 52em; }
+.caption { font-size: 11px; color: #64748B; margin: 12px 0 0; }
 .playbook { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .play-num { font-size: 12px; font-weight: 600; color: #D5DBE3; margin: 0 0 1px; }
 .play-title { font-size: 10px; font-weight: 600; margin: 0 0 2px; color: #1E293B; }
 .play-body { margin: 0; font-size: 10px; line-height: 1.35; color: #475569; }
-.footer { margin-top: 28px; padding-top: 14px; border-top: 1px solid #D5DBE3; }
-.disclaimer { font-size: 10.5px; color: #64748B; margin: 0 0 14px; line-height: 1.55; }
-.powered {
-  text-align: center; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
-  color: #64748B; margin: 0;
-}
 @media print {
   body, .desktop { background: #fff; padding: 0; }
   .sheet { box-shadow: none; }
 }
+${amountScaleCssBlock({ hero: 28, stat: 17 })}
+${SHARED_AMOUNT_CSS}
+${SHARED_FOOTER_CSS}
+${SHARED_PAGINATION_CSS}
 `;
 
   const body = `
@@ -183,31 +233,32 @@ table.sched .row-final td {
     </div>
     <div class="meta-item">
       <p class="meta-label">Monthly SIP</p>
-      <p class="meta-val emerald">${formatINR(data.monthlySip)}</p>
+      <p class="${amountClass("meta-val emerald", data.monthlySip, "meta")}">${formatINR(data.monthlySip)}</p>
     </div>
   </div>
 
   <div class="hero" data-pdf-keep-together>
     <div class="hero-card hero-left">
       <p class="hero-label">Nominal maturity</p>
-      <p class="hero-val">${formatINR(data.nominalMaturity)}</p>
+      <p class="${amountClass("hero-val", data.nominalMaturity, "hero")}">${formatINR(data.nominalMaturity)}</p>
     </div>
     <div class="hero-card hero-right">
       <p class="hero-label">Inflation-adjusted, today's rupees</p>
-      <p class="hero-val deep-emerald">${formatINR(data.inflationAdjusted)}</p>
+      <p class="${amountClass("hero-val deep-emerald", data.inflationAdjusted, "hero")}">${formatINR(data.inflationAdjusted)}</p>
     </div>
   </div>
 
   <div class="stats" data-pdf-keep-together>
-    <div class="stat"><p class="stat-label">Invested</p><p class="stat-val">${formatINR(data.totalInvested)}</p></div>
-    <div class="stat"><p class="stat-label">Pre-tax gain</p><p class="stat-val">${formatINR(data.preTaxGain)}</p></div>
-    <div class="stat"><p class="stat-label">Net after tax</p><p class="stat-val">${formatINR(data.netAfterTax)}</p></div>
-    <div class="stat"><p class="stat-label">Monthly SIP</p><p class="stat-val">${formatINR(data.monthlySip)}</p></div>
+    <div class="stat"><p class="stat-label">Invested</p><p class="${amountClass("stat-val", data.totalInvested, "stat")}">${formatINR(data.totalInvested)}</p></div>
+    <div class="stat"><p class="stat-label">Pre-tax gain</p><p class="${amountClass("stat-val", data.preTaxGain, "stat")}">${formatINR(data.preTaxGain)}</p></div>
+    <div class="stat"><p class="stat-label">Net after tax</p><p class="${amountClass("stat-val", data.netAfterTax, "stat")}">${formatINR(data.netAfterTax)}</p></div>
+    <div class="stat"><p class="stat-label">Monthly SIP</p><p class="${amountClass("stat-val", data.monthlySip, "stat")}">${formatINR(data.monthlySip)}</p></div>
   </div>
 
-  <section class="section" data-pdf-keep-together>
-    <h2 class="section-h">Advisory Reading</h2>
-    <div class="reading">
+  <section class="section">
+    <div class="reading-block" data-pdf-keep-together>
+      <h2 class="section-h">Advisory Reading</h2>
+      <div class="reading">
       ${reading
         .map(
           (block, i) => `
@@ -218,6 +269,7 @@ table.sched .row-final td {
         </div>`,
         )
         .join("")}
+      </div>
     </div>
   </section>
 
@@ -225,7 +277,7 @@ table.sched .row-final td {
     <h2 class="section-h">Assumptions</h2>
     <div class="assumptions">
       <div><p class="ass-label">Client age</p><p class="ass-val">${data.age} yrs</p></div>
-      <div><p class="ass-label">Monthly SIP</p><p class="ass-val">${formatINR(data.monthlySip)}</p></div>
+      <div><p class="ass-label">Monthly SIP</p><p class="${amountClass("ass-val", data.monthlySip, "ass")}">${formatINR(data.monthlySip)}</p></div>
       <div><p class="ass-label">SIP years</p><p class="ass-val">${data.sipYears} yrs</p></div>
       <div><p class="ass-label">Tenure</p><p class="ass-val">${data.tenure} yrs</p></div>
       <div><p class="ass-label">Return CAGR</p><p class="ass-val emerald">${formatPct(data.returnCagr)}</p></div>
@@ -235,9 +287,10 @@ table.sched .row-final td {
     </div>
   </section>
 
-  <section class="section" data-pdf-keep-together>
-    <h2 class="section-h">Corpus Composition</h2>
-    <div class="comp">
+  <section class="section">
+    <div class="comp-block" data-pdf-keep-together>
+      <h2 class="section-h">Corpus Composition</h2>
+      <div class="comp">
       <div class="comp-col">
         <p class="comp-title">Nominal mix</p>
         ${nominalDonut}
@@ -257,6 +310,7 @@ table.sched .row-final td {
         <p class="shortfall">Real shortfall versus invested capital: ${formatINR(data.realGainShortfall)}</p>
       </div>
     </div>
+    </div>
   </section>
 
   <section class="section" id="cost-of-delay" data-pdf-keep-together ${showDelay ? "" : "hidden"}>
@@ -264,22 +318,28 @@ table.sched .row-final td {
       <h3>Cost of Delay</h3>
       <p>${esc(delaySectionCopy(data))}</p>
       <div class="delay-grid">
-        <div><p class="delay-label">On-time maturity</p><p class="delay-val">${formatINR(data.delayedOnTime)}</p></div>
-        <div><p class="delay-label">Delayed maturity</p><p class="delay-val">${formatINR(data.delayedMaturity)}</p></div>
-        <div><p class="delay-label">Capital penalty</p><p class="delay-val">${formatINR(data.capitalPenalty)}</p></div>
+        <div><p class="delay-label">On-time maturity</p><p class="${amountClass("delay-val", data.delayedOnTime, "delay")}">${formatINR(data.delayedOnTime)}</p></div>
+        <div><p class="delay-label">Delayed maturity</p><p class="${amountClass("delay-val", data.delayedMaturity, "delay")}">${formatINR(data.delayedMaturity)}</p></div>
+        <div><p class="delay-label">Capital penalty</p><p class="${amountClass("delay-val", data.capitalPenalty, "delay")}">${formatINR(data.capitalPenalty)}</p></div>
       </div>
     </div>
   </section>
 
-  <section class="section" data-pdf-keep-together>
-    <h2 class="section-h">Yearly Accumulation Schedule</h2>
-    ${scheduleHtml}
-    <p class="caption">${data.investYears} cycles · full return vs inflation-adjusted</p>
+  <section class="section schedule-block">
+    <div class="sched-head" data-pdf-keep-together>
+      <h2 class="section-h">Yearly accumulation schedule</h2>
+      <p class="sched-hint">Year-by-year SIP, invested capital, nominal return, and inflation-adjusted value (full INR).</p>
+    </div>
+    <div class="sched-frame">
+      ${scheduleHtml}
+    </div>
+    <p class="caption">${data.investYears} years · nominal return vs inflation-adjusted</p>
   </section>
 
-  <section class="section" data-pdf-keep-together>
-    <h2 class="section-h">Advisory Playbook</h2>
-    <div class="playbook">
+  <section class="section">
+    <div class="playbook-block" data-pdf-keep-together>
+      <h2 class="section-h">Advisory Playbook</h2>
+      <div class="playbook">
       ${pillars
         .map(
           (p) => `
@@ -290,13 +350,11 @@ table.sched .row-final td {
         </div>`,
         )
         .join("")}
+      </div>
     </div>
   </section>
 
-  <footer class="footer" data-pdf-keep-together>
-    <p class="disclaimer">${esc(data.disclaimer)}</p>
-    <p class="powered">${esc(data.footer)}</p>
-  </footer>
+  ${renderReportFooter(data.disclaimer)}
 </article>`;
 
   return {

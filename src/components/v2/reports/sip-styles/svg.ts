@@ -1,3 +1,4 @@
+import { amountScaleClass } from "./format";
 import type { SipDossierScheduleRow } from "./types";
 
 type Slice = { pct: number; color: string };
@@ -167,6 +168,22 @@ export function stackedBarSvg(
   return `<svg width="100%" height="${height}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-hidden="true">${rects}</svg>`;
 }
 
+function chartTickLabel(value: number): string {
+  const n = Math.round(Math.abs(value));
+  if (n >= 1_00_00_000) {
+    const cr = n / 1_00_00_000;
+    if (cr >= 100) return `₹${Math.round(cr)}Cr`;
+    if (cr >= 10) return `₹${cr.toFixed(0)}Cr`;
+    return `₹${cr.toFixed(1).replace(/\.0$/, "")}Cr`;
+  }
+  if (n >= 1_00_000) {
+    const lac = n / 1_00_000;
+    return lac >= 10 ? `₹${Math.round(lac)}L` : `₹${lac.toFixed(1).replace(/\.0$/, "")}L`;
+  }
+  if (n === 0) return "₹0";
+  return `₹${n.toLocaleString("en-IN")}`;
+}
+
 export function factsheetColumnsSvg(rows: SipDossierScheduleRow[], width = 560, height = 150): string {
   const padL = 52;
   const padR = 8;
@@ -174,18 +191,17 @@ export function factsheetColumnsSvg(rows: SipDossierScheduleRow[], width = 560, 
   const padB = 28;
   const plotW = width - padL - padR;
   const plotH = height - padT - padB;
-  const maxY = Math.max(10_000_000, ...rows.map((r) => r.fullReturn), 1);
+  const maxY = Math.max(
+    1,
+    ...rows.map((r) => Math.max(r.invested, r.fullReturn, r.inflationAdjusted)),
+  );
   const n = rows.length;
   const groupW = plotW / n;
   const barW = Math.max(3, groupW * 0.28);
 
   const yScale = (v: number) => padT + plotH - (Math.min(v, maxY) / maxY) * plotH;
   const tickVals = [0, maxY / 2, maxY];
-  const tickLabel = (v: number) => {
-    const n = Math.round(v);
-    if (n === 0) return "₹0";
-    return `₹${n.toLocaleString("en-IN")}`;
-  };
+  const tickLabel = chartTickLabel;
   const grid = tickVals
     .map((v) => {
       const y = yScale(v);
@@ -231,9 +247,10 @@ export function legendRow(
   value: string,
   swatchSize = 10,
 ): string {
+  const scale = amountScaleClass(value, "legend");
   return `<div class="legend-row">
     <span class="swatch" style="width:${swatchSize}px;height:${swatchSize}px;background:${swatch}"></span>
     <span class="legend-label">${label}</span>
-    <span class="legend-value">${value}</span>
+    <span class="legend-value${scale ? ` ${scale}` : ""}">${value}</span>
   </div>`;
 }

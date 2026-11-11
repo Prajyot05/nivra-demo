@@ -1,6 +1,11 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { toPng } from "html-to-image";
+import {
+  clearPdfSpacers,
+  padKeepTogetherSections,
+  PDF_DOSSIER_PAGE_HEIGHT_PX,
+} from "./pdf-keep-together";
 
 /** Classic Nivra theme tokens (matches packages/ui color-themes "classic") */
 const INK: RGB = [15, 23, 42]; // --app-text / primary
@@ -505,54 +510,8 @@ export function generateCalculatorReport(data: CalculatorReportData) {
   doc.save(`${safeName || "report"}.pdf`);
 }
 
-/** A4 page height in CSS px for a 900px-wide dossier sheet (210mm × 297mm). */
 const DOSSIER_WIDTH_PX = 900;
-const A4_PAGE_HEIGHT_PX = (297 / 210) * DOSSIER_WIDTH_PX;
-
-/**
- * Push `[data-pdf-keep-together]` blocks that would be sliced by a page boundary
- * onto the next page by inserting temporary spacers before capture.
- */
-function padKeepTogetherSections(element: HTMLElement) {
-  element.querySelectorAll("[data-pdf-spacer]").forEach((n) => n.remove());
-
-  const keepers = Array.from(
-    element.querySelectorAll<HTMLElement>("[data-pdf-keep-together]"),
-  );
-
-  // Two passes: early spacers shift later blocks, so remeasure after each insert.
-  for (const el of keepers) {
-    const parentRect = element.getBoundingClientRect();
-    const rect = el.getBoundingClientRect();
-    const top = rect.top - parentRect.top + element.scrollTop;
-    const height = el.offsetHeight;
-    if (height <= 0) continue;
-
-    const pageIndex = Math.floor(top / A4_PAGE_HEIGHT_PX);
-    const pageEnd = (pageIndex + 1) * A4_PAGE_HEIGHT_PX;
-    const remaining = pageEnd - top;
-
-    // If the block fits on a page but would be sliced by the cut line, push it
-    // to the next page. Skip blocks taller than one page (cannot keep whole).
-    const wouldSlice = top < pageEnd - 4 && top + height > pageEnd + 2;
-    const fitsOnOnePage = height <= A4_PAGE_HEIGHT_PX - 24;
-    // Also push when only a thin strip remains at the bottom of the page.
-    const orphanStart = remaining < 160 && height > remaining + 2;
-
-    if (fitsOnOnePage && (wouldSlice || orphanStart)) {
-      const pad = Math.ceil(remaining + 12);
-      if (pad <= 0) continue;
-      const spacer = document.createElement("div");
-      spacer.setAttribute("data-pdf-spacer", "true");
-      spacer.style.cssText = `height:${pad}px;width:100%;flex-shrink:0;pointer-events:none;`;
-      el.parentElement?.insertBefore(spacer, el);
-    }
-  }
-}
-
-function clearPdfSpacers(element: HTMLElement) {
-  element.querySelectorAll("[data-pdf-spacer]").forEach((n) => n.remove());
-}
+const A4_PAGE_HEIGHT_PX = PDF_DOSSIER_PAGE_HEIGHT_PX;
 
 /**
  * Capture an off-screen HTML dossier element to a multi-page A4 PDF.
@@ -603,6 +562,17 @@ export async function generatePdfFromElement(elementId: string, filename: string
       ),
     );
     await new Promise((resolve) => setTimeout(resolve, 150));
+
+    if (isV2Report && document.fonts?.ready) {
+      try {
+        await Promise.race([
+          document.fonts.ready,
+          new Promise((resolve) => setTimeout(resolve, 1200)),
+        ]);
+      } catch {
+        /* ignore */
+      }
+    }
 
     padKeepTogetherSections(element);
     await new Promise<void>((resolve) =>

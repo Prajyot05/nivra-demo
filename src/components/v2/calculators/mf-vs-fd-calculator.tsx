@@ -218,8 +218,8 @@ export function V2MfVsFdCalculator() {
         actions={
           <ReportDownloadButton
             onClick={handleDownload}
-            disabled={!result}
-            loading={isDownloading}
+            disabled
+            title="Report PDF coming soon"
           />
         }
       />

@@ -42,7 +42,7 @@ body { background: #F1F5F9; color: #0F172A; }
 .hero .accent { background: #F0FDFA; }
 .hero-label { font-size: 9px; color: #64748B; text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 4px; }
 .hero-val { font-size: 16px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
-.section { margin-top: 16px; break-inside: avoid; page-break-inside: avoid; }
+.section { margin-top: 16px; }
 .section-h { font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #64748B; margin: 0 0 7px; }
 .reading { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .reading-col { padding-top: 4px; border-top: 1px solid #0F172A; }
@@ -81,10 +81,126 @@ table.sched .row-final td { background: #E7F5F1; font-weight: 600; }
 .play-num { font-size: 12px; font-weight: 700; color: #CBD5E1; margin: 0 0 1px; }
 .play-title { font-size: 10px; font-weight: 700; margin: 0 0 2px; }
 .play-body { margin: 0; font-size: 10px; line-height: 1.35; color: #475569; }
-.footer { margin-top: 16px; padding-top: 10px; border-top: 1px solid #E2E8F0; }
-.disclaimer { font-size: 10px; color: #64748B; margin: 0 0 8px; }
-.powered { text-align: center; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: #64748B; margin: 0; }
 @media print { body, .desktop { background: #fff; padding: 0; } }
+.hero-val.amt-hero-md { font-size: 13.1px; line-height: 1.1; }
+.hero-val.amt-hero-sm { font-size: 11.5px; line-height: 1.12; letter-spacing: -0.02em; }
+.hero-val.amt-hero-xs { font-size: 9.9px; line-height: 1.15; letter-spacing: -0.02em; }
+
+.sheet { max-width: 100%; overflow-x: hidden; }
+.minw0 { min-width: 0; }
+.hero-val, .stat-val, .kpi-val, .side-val, .delay-val, .meta-val, .ass-val, .legend-value {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: none;
+}
+.legend-value.amt-legend-md { font-size: 0.92em; }
+.legend-value.amt-legend-sm { font-size: 0.84em; }
+.delay-val.amt-delay-md { font-size: 0.88em; }
+.delay-val.amt-delay-sm { font-size: 0.8em; }
+.ass-val.amt-ass-md { font-size: 0.92em; }
+.ass-val.amt-ass-sm { font-size: 0.84em; }
+.ass-row .v.amt-ass-md { font-size: 0.9em; }
+.ass-row .v.amt-ass-sm { font-size: 0.82em; }
+.side-val.amt-side-md { font-size: 0.92em; }
+.side-val.amt-side-sm { font-size: 0.84em; }
+.bar-h.amt-bar-md { font-size: 0.9em; }
+.bar-h.amt-bar-sm { font-size: 0.82em; }
+.line strong.amt-meta-md { font-size: 0.92em; }
+.line strong.amt-meta-sm { font-size: 0.84em; }
+.meta-val.amt-meta-md { font-size: 0.92em; }
+.meta-val.amt-meta-sm { font-size: 0.84em; }
+table.sched { table-layout: fixed; width: 100%; }
+table.sched .col-yr { width: 6%; }
+table.sched .col-num { width: 16.5%; }
+table.sched .col-milestone { width: 22%; }
+table.sched th, table.sched td { overflow-wrap: anywhere; word-break: break-word; }
+table.sched thead th {
+  white-space: normal;
+  line-height: 1.25;
+  vertical-align: bottom;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+table.sched td.num, table.sched th.r { text-align: right; }
+table.sched td.yr, table.sched th.c { text-align: center; }
+table.sched td.milestone, table.sched th.milestone {
+  text-align: left;
+  font-weight: 500;
+  color: #475569;
+  font-size: 0.92em;
+}
+table.sched.sched-dense { font-size: 10px; }
+table.sched.sched-dense thead th { font-size: 8.5px; padding: 4px 3px; }
+table.sched.sched-dense td { padding: 4px 3px; }
+table.sched.sched-xdense { font-size: 9px; }
+table.sched.sched-xdense thead th { font-size: 7.5px; padding: 3px 2px; }
+table.sched.sched-xdense td { padding: 3px 2px; letter-spacing: -0.02em; }
+.sched-head { break-inside: avoid; page-break-inside: avoid; }
+
+
+.report-footer {
+  margin-top: 24px;
+  padding-top: 14px;
+  border-top: 1px solid #E2E8F0;
+}
+.report-footer .disclaimer {
+  font-size: 10px;
+  color: #64748B;
+  margin: 0 0 16px;
+  line-height: 1.55;
+}
+.powered-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding-top: 4px;
+}
+.powered-mark {
+  width: 40px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #0B7A5B 20%, #0B7A5B 80%, transparent);
+  border-radius: 1px;
+}
+.powered-line {
+  margin: 0;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #94A3B8;
+  font-weight: 500;
+}
+.powered-line .brand-name {
+  font-weight: 700;
+  color: #334155;
+  letter-spacing: 0.06em;
+  text-transform: none;
+  font-size: 11px;
+}
+
+
+.section { break-inside: auto; page-break-inside: auto; }
+.section-block { break-inside: auto; page-break-inside: auto; }
+.playbook-block,
+.reading-block,
+.comp-block,
+.report-footer {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+table.sched thead {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+table.sched tbody tr {
+  break-inside: auto;
+  page-break-inside: auto;
+}
+.reading-col, .play-item, .playbook > div, .delay, .outcome-card, .hero-card {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
 
 </style>
 </head>
@@ -302,10 +418,12 @@ table.sched .row-final td { background: #E7F5F1; font-weight: 600; }
     <div><p class="hero-label">Net after tax</p><p class="hero-val">₹93,32,534</p></div>
   </div>
 
-  <section class="section" data-pdf-keep-together>
-    <h2 class="section-h">Advisory Reading</h2>
-    <div class="reading">
-      <div class="reading-col"><p class="tag">01</p><p class="reading-title">Purchasing power</p><p class="reading-body">Nominal maturity is ₹1,00,22,896 at age 60. At 5.75% inflation that is ₹42,18,450 in today's rupees. Lead with purchasing power, not the headline corpus.</p></div><div class="reading-col"><p class="tag">02</p><p class="reading-title">Tax on the gain</p><p class="reading-body">Pre-tax gain ₹55,22,896. Tax at 12.5% is ₹6,90,362, leaving ₹93,32,534 after tax. Real outcome shows a shortfall of ₹2,81,550 versus invested capital.</p></div><div class="reading-col"><p class="tag">03</p><p class="reading-title">How the path is built</p><p class="reading-body">₹25,000 for 15 SIP years at 12% CAGR from age 45 to 60. Shift toward debt in the final 2 to 3 years before redemption.</p></div>
+  <section class="section">
+    <div class="reading-block" data-pdf-keep-together>
+      <h2 class="section-h">Advisory Reading</h2>
+      <div class="reading">
+        <div class="reading-col"><p class="tag">01</p><p class="reading-title">Purchasing power</p><p class="reading-body">Nominal maturity is ₹1,00,22,896 at age 60. At 5.75% inflation that is ₹42,18,450 in today's rupees. Lead with purchasing power, not the headline corpus.</p></div><div class="reading-col"><p class="tag">02</p><p class="reading-title">Tax on the gain</p><p class="reading-body">Pre-tax gain ₹55,22,896. Tax at 12.5% is ₹6,90,362, leaving ₹93,32,534 after tax. Real outcome shows a shortfall of ₹2,81,550 versus invested capital.</p></div><div class="reading-col"><p class="tag">03</p><p class="reading-title">How the path is built</p><p class="reading-body">₹25,000 for 15 SIP years at 12% CAGR from age 45 to 60. Shift toward debt in the final 2 to 3 years before redemption.</p></div>
+      </div>
     </div>
   </section>
 
@@ -323,9 +441,10 @@ table.sched .row-final td { background: #E7F5F1; font-weight: 600; }
     </div>
   </section>
 
-  <section class="section" data-pdf-keep-together>
-    <h2 class="section-h">Corpus Composition</h2>
-    <div class="comp">
+  <section class="section">
+    <div class="comp-block" data-pdf-keep-together>
+      <h2 class="section-h">Corpus Composition</h2>
+      <div class="comp">
       <div class="comp-col">
         <p class="comp-title">Nominal mix</p>
         <svg width="128" height="128" viewBox="0 0 128 128" role="img" aria-hidden="true"><circle cx="64" cy="64" r="46" fill="#F8FAFC" /><path d="M 64.95988235405059 9.008376766398477 A 55 55 0 0 1 82.23264065442156 115.88998761578898" fill="none" stroke="#0F172A" stroke-width="16" stroke-linecap="butt" /><path d="M 80.4105993706743 116.49468761975086 A 55 55 0 0 1 40.02772561167214 14.499191313164182" fill="none" stroke="#0B7A5B" stroke-width="16" stroke-linecap="butt" /><path d="M 41.76988218305772 13.69272555738221 A 55 55 0 0 1 63.04011764594941 9.008376766398477" fill="none" stroke="#94A3B8" stroke-width="16" stroke-linecap="butt" /><text x="64" y="57.025" text-anchor="middle" dominant-baseline="middle" fill="#0F172A" font-size="8.5" font-weight="600" font-family="inherit" font-variant-numeric="tabular-nums">Maturity</text><text x="64" y="69.25" text-anchor="middle" dominant-baseline="middle" fill="#0F172A" font-size="12.0" font-weight="700" font-family="inherit" font-variant-numeric="tabular-nums">₹1,00,22,896</text></svg>
@@ -365,6 +484,7 @@ table.sched .row-final td { background: #E7F5F1; font-weight: 600; }
         <p class="shortfall">Real shortfall: ₹2,81,550</p>
       </div>
     </div>
+    </div>
   </section>
 
   <section class="section" id="cost-of-delay" data-pdf-keep-together hidden>
@@ -379,142 +499,157 @@ table.sched .row-final td { background: #E7F5F1; font-weight: 600; }
     </div>
   </section>
 
-  <section class="section" data-pdf-keep-together>
-    <h2 class="section-h">Yearly Accumulation Schedule</h2>
+  <section class="section">
+    <div class="sched-head" data-pdf-keep-together>
+      <h2 class="section-h">Yearly Accumulation Schedule</h2>
+    </div>
     <div class="sched-wrap">
     <table class="sched">
+      <colgroup>
+        <col class="col-yr" />
+        <col class="col-num" />
+        <col class="col-num" />
+        <col class="col-num" />
+        <col class="col-num" />
+        <col class="col-milestone" />
+      </colgroup>
       <thead>
         <tr>
-          <th class="c">Yr</th>
-          <th>SIP (Mo)</th>
-          <th>Invested</th>
-          <th>Full return (end)</th>
-          <th>Inflation-adjusted</th>
-          <th>Milestone</th>
+          <th class="c" scope="col">Yr</th>
+          <th class="r" scope="col">SIP / mo</th>
+          <th class="r" scope="col">Invested</th>
+          <th class="r" scope="col">Full return</th>
+          <th class="r" scope="col">Infl. adjusted</th>
+          <th class="milestone" scope="col">Milestone</th>
         </tr>
       </thead>
       <tbody><tr class="">
-        <td class="c">1</td>
-        <td class="r">₹25,000</td>
-        <td class="r">₹3,00,000</td>
-        <td class="r">₹2,54,444</td>
-        <td class="r">₹2,40,180</td>
-        <td class="r">Initiation</td>
+        <td class="c yr">1</td>
+        <td class="r num">₹25,000</td>
+        <td class="r num">₹3,00,000</td>
+        <td class="r num">₹2,54,444</td>
+        <td class="r num">₹2,40,180</td>
+        <td class="milestone">Initiation</td>
       </tr><tr class="">
-        <td class="c">2</td>
-        <td class="r">₹25,000</td>
-        <td class="r">₹6,00,000</td>
-        <td class="r">₹5,41,159</td>
-        <td class="r">₹4,82,184</td>
-        <td class="r">Compounding</td>
+        <td class="c yr">2</td>
+        <td class="r num">₹25,000</td>
+        <td class="r num">₹6,00,000</td>
+        <td class="r num">₹5,41,159</td>
+        <td class="r num">₹4,82,184</td>
+        <td class="milestone">Compounding</td>
       </tr><tr class="">
-        <td class="c">3</td>
-        <td class="r">₹25,000</td>
-        <td class="r">₹9,00,000</td>
-        <td class="r">₹8,64,236</td>
-        <td class="r">₹7,26,882</td>
-        <td class="r">Compounding</td>
+        <td class="c yr">3</td>
+        <td class="r num">₹25,000</td>
+        <td class="r num">₹9,00,000</td>
+        <td class="r num">₹8,64,236</td>
+        <td class="r num">₹7,26,882</td>
+        <td class="milestone">Compounding</td>
       </tr><tr class="">
-        <td class="c">4</td>
-        <td class="r">₹25,000</td>
-        <td class="r">₹12,00,000</td>
-        <td class="r">₹12,28,287</td>
-        <td class="r">₹9,75,160</td>
-        <td class="r">Compounding</td>
+        <td class="c yr">4</td>
+        <td class="r num">₹25,000</td>
+        <td class="r num">₹12,00,000</td>
+        <td class="r num">₹12,28,287</td>
+        <td class="r num">₹9,75,160</td>
+        <td class="milestone">Compounding</td>
       </tr><tr class="">
-        <td class="c">5</td>
-        <td class="r">₹25,000</td>
-        <td class="r">₹15,00,000</td>
-        <td class="r">₹16,38,509</td>
-        <td class="r">₹12,27,916</td>
-        <td class="r">Compounding</td>
+        <td class="c yr">5</td>
+        <td class="r num">₹25,000</td>
+        <td class="r num">₹15,00,000</td>
+        <td class="r num">₹16,38,509</td>
+        <td class="r num">₹12,27,916</td>
+        <td class="milestone">Compounding</td>
       </tr><tr class="">
-        <td class="c">6</td>
-        <td class="r">₹25,000</td>
-        <td class="r">₹18,00,000</td>
-        <td class="r">₹21,00,757</td>
-        <td class="r">₹14,86,072</td>
-        <td class="r">Compounding</td>
+        <td class="c yr">6</td>
+        <td class="r num">₹25,000</td>
+        <td class="r num">₹18,00,000</td>
+        <td class="r num">₹21,00,757</td>
+        <td class="r num">₹14,86,072</td>
+        <td class="milestone">Compounding</td>
       </tr><tr class="">
-        <td class="c">7</td>
-        <td class="r">₹25,000</td>
-        <td class="r">₹21,00,000</td>
-        <td class="r">₹26,21,630</td>
-        <td class="r">₹17,50,569</td>
-        <td class="r">Compounding</td>
+        <td class="c yr">7</td>
+        <td class="r num">₹25,000</td>
+        <td class="r num">₹21,00,000</td>
+        <td class="r num">₹26,21,630</td>
+        <td class="r num">₹17,50,569</td>
+        <td class="milestone">Compounding</td>
       </tr><tr class="row-mid">
-        <td class="c">8</td>
-        <td class="r">₹25,000</td>
-        <td class="r">₹24,00,000</td>
-        <td class="r">₹32,08,563</td>
-        <td class="r">₹20,22,378</td>
-        <td class="r">Midpoint</td>
+        <td class="c yr">8</td>
+        <td class="r num">₹25,000</td>
+        <td class="r num">₹24,00,000</td>
+        <td class="r num">₹32,08,563</td>
+        <td class="r num">₹20,22,378</td>
+        <td class="milestone">Midpoint</td>
       </tr><tr class="">
-        <td class="c">9</td>
-        <td class="r">₹25,000</td>
-        <td class="r">₹27,00,000</td>
-        <td class="r">₹38,69,934</td>
-        <td class="r">₹23,02,498</td>
-        <td class="r">Compounding</td>
+        <td class="c yr">9</td>
+        <td class="r num">₹25,000</td>
+        <td class="r num">₹27,00,000</td>
+        <td class="r num">₹38,69,934</td>
+        <td class="r num">₹23,02,498</td>
+        <td class="milestone">Compounding</td>
       </tr><tr class="">
-        <td class="c">10</td>
-        <td class="r">₹25,000</td>
-        <td class="r">₹30,00,000</td>
-        <td class="r">₹46,15,183</td>
-        <td class="r">₹25,91,962</td>
-        <td class="r">Compounding</td>
+        <td class="c yr">10</td>
+        <td class="r num">₹25,000</td>
+        <td class="r num">₹30,00,000</td>
+        <td class="r num">₹46,15,183</td>
+        <td class="r num">₹25,91,962</td>
+        <td class="milestone">Compounding</td>
       </tr><tr class="">
-        <td class="c">11</td>
-        <td class="r">₹25,000</td>
-        <td class="r">₹33,00,000</td>
-        <td class="r">₹54,54,948</td>
-        <td class="r">₹28,91,841</td>
-        <td class="r">Compounding</td>
+        <td class="c yr">11</td>
+        <td class="r num">₹25,000</td>
+        <td class="r num">₹33,00,000</td>
+        <td class="r num">₹54,54,948</td>
+        <td class="r num">₹28,91,841</td>
+        <td class="milestone">Compounding</td>
       </tr><tr class="">
-        <td class="c">12</td>
-        <td class="r">₹25,000</td>
-        <td class="r">₹36,00,000</td>
-        <td class="r">₹64,01,216</td>
-        <td class="r">₹32,03,246</td>
-        <td class="r">Compounding</td>
+        <td class="c yr">12</td>
+        <td class="r num">₹25,000</td>
+        <td class="r num">₹36,00,000</td>
+        <td class="r num">₹64,01,216</td>
+        <td class="r num">₹32,03,246</td>
+        <td class="milestone">Compounding</td>
       </tr><tr class="">
-        <td class="c">13</td>
-        <td class="r">₹25,000</td>
-        <td class="r">₹39,00,000</td>
-        <td class="r">₹74,67,495</td>
-        <td class="r">₹35,27,335</td>
-        <td class="r">Compounding</td>
+        <td class="c yr">13</td>
+        <td class="r num">₹25,000</td>
+        <td class="r num">₹39,00,000</td>
+        <td class="r num">₹74,67,495</td>
+        <td class="r num">₹35,27,335</td>
+        <td class="milestone">Compounding</td>
       </tr><tr class="">
-        <td class="c">14</td>
-        <td class="r">₹25,000</td>
-        <td class="r">₹42,00,000</td>
-        <td class="r">₹86,69,005</td>
-        <td class="r">₹38,65,315</td>
-        <td class="r">Compounding</td>
+        <td class="c yr">14</td>
+        <td class="r num">₹25,000</td>
+        <td class="r num">₹42,00,000</td>
+        <td class="r num">₹86,69,005</td>
+        <td class="r num">₹38,65,315</td>
+        <td class="milestone">Compounding</td>
       </tr><tr class="row-final">
-        <td class="c">15</td>
-        <td class="r">₹25,000</td>
-        <td class="r">₹45,00,000</td>
-        <td class="r">₹1,00,22,896</td>
-        <td class="r">₹42,18,450</td>
-        <td class="r">Final year</td>
+        <td class="c yr">15</td>
+        <td class="r num">₹25,000</td>
+        <td class="r num">₹45,00,000</td>
+        <td class="r num">₹1,00,22,896</td>
+        <td class="r num">₹42,18,450</td>
+        <td class="milestone">Final year</td>
       </tr></tbody>
     </table>
   </div>
     <p class="caption">15 cycles · full return vs inflation-adjusted</p>
   </section>
 
-  <section class="section" data-pdf-keep-together>
-    <h2 class="section-h">Advisory Playbook</h2>
-    <div class="playbook">
-      <div><p class="play-num">01</p><p class="play-title">Automate the Monthly SIP</p><p class="play-body">Lock ₹25,000 per month on ECS or OTM for 15 contribution years. Missed months permanently reduce the 15-year terminal corpus under the same return path.</p></div><div><p class="play-num">02</p><p class="play-title">Inflation Reality Check</p><p class="play-body">Headline maturity of ₹1,00,22,896 is ₹42,18,450 in today's rupees at 5.75% inflation. Anchor reviews to purchasing power.</p></div><div><p class="play-num">03</p><p class="play-title">Glidepath Before Year 15</p><p class="play-body">Begin shifting equity exposure toward short-duration debt or hybrids via STP in the final 2 to 3 years so the planned redemption is not hostage to a late-cycle drawdown.</p></div>
+  <section class="section">
+    <div class="playbook-block" data-pdf-keep-together>
+      <h2 class="section-h">Advisory Playbook</h2>
+      <div class="playbook">
+        <div><p class="play-num">01</p><p class="play-title">Automate the Monthly SIP</p><p class="play-body">Lock ₹25,000 per month on ECS or OTM for 15 contribution years. Missed months permanently reduce the 15-year terminal corpus under the same return path.</p></div><div><p class="play-num">02</p><p class="play-title">Inflation Reality Check</p><p class="play-body">Headline maturity of ₹1,00,22,896 is ₹42,18,450 in today's rupees at 5.75% inflation. Anchor reviews to purchasing power.</p></div><div><p class="play-num">03</p><p class="play-title">Glidepath Before Year 15</p><p class="play-body">Begin shifting equity exposure toward short-duration debt or hybrids via STP in the final 2 to 3 years so the planned redemption is not hostage to a late-cycle drawdown.</p></div>
+      </div>
     </div>
   </section>
 
-  <footer class="footer" data-pdf-keep-together>
-    <p class="disclaimer">This report is for illustrative planning purposes only. Projected returns are not guaranteed. Investments are subject to market risks, and actual outcomes may differ. Please consult your advisor before acting.</p>
-    <p class="powered">Powered by Nivra</p>
-  </footer>
+  <footer class="report-footer" data-pdf-keep-together>
+  <p class="disclaimer">This report is for illustrative planning purposes only. Projected returns are not guaranteed. Investments are subject to market risks, and actual outcomes may differ. Please consult your advisor before acting.</p>
+  <div class="powered-wrap">
+    <span class="powered-mark" aria-hidden="true"></span>
+    <p class="powered-line">Powered by <span class="brand-name">Nivra</span></p>
+  </div>
+</footer>
 </article>
 </div>
 </body>

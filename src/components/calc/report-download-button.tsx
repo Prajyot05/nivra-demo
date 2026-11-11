@@ -11,19 +11,26 @@ export function ReportDownloadButton({
   onClick,
   disabled,
   loading = false,
+  title: titleOverride,
 }: {
   onClick: () => void;
   disabled?: boolean;
   loading?: boolean;
+  /** Shown when set; otherwise defaults from loading state. */
+  title?: string;
 }) {
+  const title =
+    titleOverride ?? (loading ? "Preparing PDF…" : "Download report");
+  const ariaLabel = loading ? "Preparing PDF" : title;
+
   return (
     <button
       type="button"
       className={ICON_BUTTON}
       onClick={onClick}
       disabled={disabled || loading}
-      title={loading ? "Preparing PDF…" : "Download report"}
-      aria-label={loading ? "Preparing PDF" : "Download report"}
+      title={title}
+      aria-label={ariaLabel}
     >
       {loading ? (
         <Loader2 className="size-4 animate-spin" />

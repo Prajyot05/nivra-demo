@@ -1,6 +1,9 @@
 import { advisoryReading, delaySectionCopy, playbook } from "./copy";
-import { formatINR, formatPct, esc } from "./format";
+import { formatINR, formatPct, esc, amountClass, amountScaleCssBlock } from "./format";
 import { renderScheduleTable } from "./schedule";
+import { SHARED_AMOUNT_CSS } from "./shared-report-css";
+import { SHARED_FOOTER_CSS, renderReportFooter } from "./shared-footer";
+import { SHARED_PAGINATION_CSS } from "./shared-pagination";
 import { donutSvg, legendRow } from "./svg";
 import type { BuiltStyle, SipDossierData } from "./types";
 
@@ -73,7 +76,7 @@ body { background: #F1F5F9; color: #0F172A; }
 .hero .accent { background: #F0FDFA; }
 .hero-label { font-size: 9px; color: #64748B; text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 4px; }
 .hero-val { font-size: 16px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
-.section { margin-top: 16px; break-inside: avoid; page-break-inside: avoid; }
+.section { margin-top: 16px; }
 .section-h { font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #64748B; margin: 0 0 7px; }
 .reading { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .reading-col { padding-top: 4px; border-top: 1px solid #0F172A; }
@@ -112,10 +115,11 @@ table.sched .row-final td { background: #E7F5F1; font-weight: 600; }
 .play-num { font-size: 12px; font-weight: 700; color: #CBD5E1; margin: 0 0 1px; }
 .play-title { font-size: 10px; font-weight: 700; margin: 0 0 2px; }
 .play-body { margin: 0; font-size: 10px; line-height: 1.35; color: #475569; }
-.footer { margin-top: 16px; padding-top: 10px; border-top: 1px solid #E2E8F0; }
-.disclaimer { font-size: 10px; color: #64748B; margin: 0 0 8px; }
-.powered { text-align: center; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: #64748B; margin: 0; }
 @media print { body, .desktop { background: #fff; padding: 0; } }
+${amountScaleCssBlock({ hero: 16 })}
+${SHARED_AMOUNT_CSS}
+${SHARED_FOOTER_CSS}
+${SHARED_PAGINATION_CSS}
 `;
 
   const body = `
@@ -137,21 +141,23 @@ table.sched .row-final td { background: #E7F5F1; font-weight: 600; }
   <div class="line" data-pdf-keep-together>
     <span><span class="lbl">Client</span><strong>${esc(data.clientName)} · ${data.age}</strong></span>
     <span><span class="lbl">Timeline</span><strong>Age ${data.age} to ${data.endAge}</strong></span>
-    <span><span class="lbl">Monthly SIP</span><strong class="teal">${formatINR(data.monthlySip)}</strong></span>
+    <span><span class="lbl">Monthly SIP</span><strong class="${amountClass("teal", data.monthlySip, "meta")}">${formatINR(data.monthlySip)}</strong></span>
     <span><span class="lbl">Return CAGR</span><strong class="teal">${formatPct(data.returnCagr)}</strong></span>
   </div>
 
   <div class="hero" data-pdf-keep-together>
-    <div><p class="hero-label">Nominal maturity</p><p class="hero-val">${formatINR(data.nominalMaturity)}</p></div>
-    <div class="accent"><p class="hero-label">Inflation-adjusted</p><p class="hero-val teal">${formatINR(data.inflationAdjusted)}</p></div>
-    <div><p class="hero-label">Invested</p><p class="hero-val">${formatINR(data.totalInvested)}</p></div>
-    <div><p class="hero-label">Net after tax</p><p class="hero-val">${formatINR(data.netAfterTax)}</p></div>
+    <div><p class="hero-label">Nominal maturity</p><p class="${amountClass("hero-val", data.nominalMaturity, "hero")}">${formatINR(data.nominalMaturity)}</p></div>
+    <div class="accent"><p class="hero-label">Inflation-adjusted</p><p class="${amountClass("hero-val teal", data.inflationAdjusted, "hero")}">${formatINR(data.inflationAdjusted)}</p></div>
+    <div><p class="hero-label">Invested</p><p class="${amountClass("hero-val", data.totalInvested, "hero")}">${formatINR(data.totalInvested)}</p></div>
+    <div><p class="hero-label">Net after tax</p><p class="${amountClass("hero-val", data.netAfterTax, "hero")}">${formatINR(data.netAfterTax)}</p></div>
   </div>
 
-  <section class="section" data-pdf-keep-together>
-    <h2 class="section-h">Advisory Reading</h2>
-    <div class="reading">
-      ${reading.map((b, i) => `<div class="reading-col"><p class="tag">0${i + 1}</p><p class="reading-title">${esc(b.title)}</p><p class="reading-body">${esc(b.body)}</p></div>`).join("")}
+  <section class="section">
+    <div class="reading-block" data-pdf-keep-together>
+      <h2 class="section-h">Advisory Reading</h2>
+      <div class="reading">
+        ${reading.map((b, i) => `<div class="reading-col"><p class="tag">0${i + 1}</p><p class="reading-title">${esc(b.title)}</p><p class="reading-body">${esc(b.body)}</p></div>`).join("")}
+      </div>
     </div>
   </section>
 
@@ -159,7 +165,7 @@ table.sched .row-final td { background: #E7F5F1; font-weight: 600; }
     <h2 class="section-h">Assumptions</h2>
     <div class="assumptions">
       <div><p class="ass-label">Client age</p><p class="ass-val">${data.age} yrs</p></div>
-      <div><p class="ass-label">Monthly SIP</p><p class="ass-val">${formatINR(data.monthlySip)}</p></div>
+      <div><p class="ass-label">Monthly SIP</p><p class="${amountClass("ass-val", data.monthlySip, "ass")}">${formatINR(data.monthlySip)}</p></div>
       <div><p class="ass-label">SIP years</p><p class="ass-val">${data.sipYears} yrs</p></div>
       <div><p class="ass-label">Tenure</p><p class="ass-val">${data.tenure} yrs</p></div>
       <div><p class="ass-label">Return CAGR</p><p class="ass-val teal">${formatPct(data.returnCagr)}</p></div>
@@ -169,9 +175,10 @@ table.sched .row-final td { background: #E7F5F1; font-weight: 600; }
     </div>
   </section>
 
-  <section class="section" data-pdf-keep-together>
-    <h2 class="section-h">Corpus Composition</h2>
-    <div class="comp">
+  <section class="section">
+    <div class="comp-block" data-pdf-keep-together>
+      <h2 class="section-h">Corpus Composition</h2>
+      <div class="comp">
       <div class="comp-col">
         <p class="comp-title">Nominal mix</p>
         ${nominalDonut}
@@ -191,6 +198,7 @@ table.sched .row-final td { background: #E7F5F1; font-weight: 600; }
         <p class="shortfall">Real shortfall: ${formatINR(data.realGainShortfall)}</p>
       </div>
     </div>
+    </div>
   </section>
 
   <section class="section" id="cost-of-delay" data-pdf-keep-together ${showDelay ? "" : "hidden"}>
@@ -198,30 +206,31 @@ table.sched .row-final td { background: #E7F5F1; font-weight: 600; }
       <h3>Cost of Delay</h3>
       <p>${esc(delaySectionCopy(data))}</p>
       <div class="delay-grid">
-        <div><p class="delay-label">On-time maturity</p><p class="delay-val">${formatINR(data.delayedOnTime)}</p></div>
-        <div><p class="delay-label">Delayed maturity</p><p class="delay-val">${formatINR(data.delayedMaturity)}</p></div>
-        <div><p class="delay-label">Capital penalty</p><p class="delay-val">${formatINR(data.capitalPenalty)}</p></div>
+        <div><p class="delay-label">On-time maturity</p><p class="${amountClass("delay-val", data.delayedOnTime, "delay")}">${formatINR(data.delayedOnTime)}</p></div>
+        <div><p class="delay-label">Delayed maturity</p><p class="${amountClass("delay-val", data.delayedMaturity, "delay")}">${formatINR(data.delayedMaturity)}</p></div>
+        <div><p class="delay-label">Capital penalty</p><p class="${amountClass("delay-val", data.capitalPenalty, "delay")}">${formatINR(data.capitalPenalty)}</p></div>
       </div>
     </div>
   </section>
 
-  <section class="section" data-pdf-keep-together>
-    <h2 class="section-h">Yearly Accumulation Schedule</h2>
+  <section class="section">
+    <div class="sched-head" data-pdf-keep-together>
+      <h2 class="section-h">Yearly Accumulation Schedule</h2>
+    </div>
     ${scheduleHtml}
     <p class="caption">${data.investYears} cycles · full return vs inflation-adjusted</p>
   </section>
 
-  <section class="section" data-pdf-keep-together>
-    <h2 class="section-h">Advisory Playbook</h2>
-    <div class="playbook">
-      ${pillars.map((p) => `<div><p class="play-num">${p.id}</p><p class="play-title">${esc(p.title)}</p><p class="play-body">${esc(p.body)}</p></div>`).join("")}
+  <section class="section">
+    <div class="playbook-block" data-pdf-keep-together>
+      <h2 class="section-h">Advisory Playbook</h2>
+      <div class="playbook">
+        ${pillars.map((p) => `<div><p class="play-num">${p.id}</p><p class="play-title">${esc(p.title)}</p><p class="play-body">${esc(p.body)}</p></div>`).join("")}
+      </div>
     </div>
   </section>
 
-  <footer class="footer" data-pdf-keep-together>
-    <p class="disclaimer">${esc(data.disclaimer)}</p>
-    <p class="powered">${esc(data.footer)}</p>
-  </footer>
+  ${renderReportFooter(data.disclaimer)}
 </article>`;
 
   return {
